@@ -174,3 +174,10 @@ here for the rest.
 - Table: docs/results.md, "The reviewers ranked across the mismatched modes"
 - Links: [[RES-16]], [[RES-17]], [[DEC-48]], [[MEA-12]], [[UNK-09]]
 
+### RES-20 [O] The container image on each Python version
+- Ran: `make image PYTHON=3.11`, `make image` (3.12) and `make image PYTHON=3.14`, then `make docker-test` on each, on 2026-10-12. Docker 28.4.0 ran on an aarch64 Ubuntu VM with 4 CPUs and 4 GiB.
+- Result: each image builds in 24 s and passes 278 tests with 3 skipped, the slow ones, in about 45 s. The 3.12 image runs seed 7 in 1.6 s, and its decisions.jsonl matches the native run's sha256.
+- Detail: every dependency came as a wheel on all three Pythons, 3.14 included. pip took numpy 2.4.6 on 3.11 and 2.5.4 on 3.12 and 3.14. pandas 3.0.6, duckdb 1.5.6 and anthropic 1.13.0 are the same everywhere.
+- Sizes: the images are 615 MB, 592 MB and 600 MB on 3.11, 3.12 and 3.14. The suite inside the image runs from its copy of the repository. The demo file and the schema lookups expect the repository root.
+- Table: docs/results.md, "The container image on each Python version"
+- Links: [[UNK-03]], [[DEC-28]], [[RES-15]]

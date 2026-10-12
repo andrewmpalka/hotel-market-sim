@@ -337,10 +337,10 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Metadata: pyproject.toml holds the metadata, the dependencies with tested lower bounds, the dev extras and the pytest and ruff settings.
 - Replaces: [[DEC-27]]
 - Reason: a reader of production code expects this layout.
-- Measured: the suite ran against the installed package on numpy 1.26 and pandas 2.2 as well as the current versions ([[RES-15]]). A seed-7 run from the package reproduced decisions.jsonl byte for byte.
+- Measured: the suite ran against the installed package on numpy 1.26 and pandas 2.2 ([[RES-15]]). The image built and passed the suite on Python 3.11, 3.12 and 3.14 ([[RES-20]]). A seed-7 run in it reproduced decisions.jsonl byte for byte.
 - Commit: 15e0215
-- Evidence: test_the_replay_command_prints_day_20s_queue, test_python_m_hotel_market_runs_the_command
-- Links: [[MOD-12]], [[MOD-14]], [[RES-15]]
+- Evidence: test_the_replay_command_prints_day_20s_queue, test_python_m_hotel_market_runs_the_command, test_the_image_takes_its_python_version_as_a_build_argument
+- Links: [[MOD-12]], [[MOD-14]], [[RES-15]], [[RES-20]]
 
 ### DEC-29 [H] A hosted workflow ran the tests on every push
 - Decided: a workflow file ran the tests on three Python versions and the linter on every push.

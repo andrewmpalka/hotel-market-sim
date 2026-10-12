@@ -23,11 +23,11 @@ and a RES node records the run. A claim that no test can confirm stays [U].
 - Evidence: test_the_recorded_live_run_of_seed_7_passes_the_audit, test_the_schema_limits_ids_and_choices_to_the_requests_options, test_claude_client_sends_the_request_and_handles_a_refusal
 - Links: [[DEC-34]], [[MOD-09]], [[MOD-22]], [[DAT-29]], [[RES-09]], [[RES-18]]
 
-### UNK-03 [U] Whether the container image builds and its tests pass
-- Unknown: the Dockerfile has not been built. The machine the code was written on has no container daemon running.
-- Best guess: it builds and the tests pass. The same non-editable install from the same files was exercised in a virtual environment. The suite passed from another directory.
-- Resolves when: make image and make docker-test run on a machine with a daemon.
-- Links: [[DEC-28]]
+### UNK-03 [H] Whether the container image builds and its tests pass
+- Was unknown: the Dockerfile had not been built. The machine the code was written on had no container daemon running.
+- Closed by: [[RES-20]]
+- Result: the image built on Python 3.11, 3.12 and 3.14 on 2026-10-12 and passed the suite on each. A seed-7 run inside it reproduced the native decisions.jsonl.
+- Links: [[DEC-28]], [[RES-20]]
 
 ### UNK-04 [H] Whether the suite passes on Python 3.12 and 3.13
 - Was unknown: only Python 3.11 had run the suite. The hosted runs that would have covered the others never started ([[DEC-29]]).

@@ -35,3 +35,14 @@ def test_the_checks_run_locally_with_no_hosted_workflow():
     makefile = (ROOT / "Makefile").read_text()
     assert "\ntest:" in makefile and "\nlint:" in makefile and "\ntest-all:" in makefile
     assert "--slow" in (ROOT / "tests" / "conftest.py").read_text()
+
+
+def test_the_image_takes_its_python_version_as_a_build_argument():
+    # The Dockerfile builds on python:<PYTHON>-slim with 3.12 as the default, and the
+    # Makefile tags the image by that version, so one image per Python can sit side by side.
+    dockerfile = (ROOT / "Dockerfile").read_text()
+    assert "ARG PYTHON=3.12\n" in dockerfile and "FROM python:${PYTHON}-slim" in dockerfile
+    makefile = (ROOT / "Makefile").read_text()
+    assert "--build-arg PYTHON=$(IMAGE_PYTHON)" in makefile
+    assert "TAG    := $(IMAGE):py$(IMAGE_PYTHON)" in makefile
+    assert "IMAGE_PYTHON := $(if $(filter 3.%,$(PYTHON)),$(PYTHON),3.12)" in makefile

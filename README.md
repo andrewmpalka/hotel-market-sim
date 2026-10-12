@@ -43,10 +43,10 @@ With make, on a Mac or Linux machine:
 
 With Docker:
 
-    docker build -t hotel-market .
-    docker run --rm -v "$PWD:/work" hotel-market --seed 7 --template
-    docker run --rm -v "$PWD:/work" -e ANTHROPIC_API_KEY hotel-market --seed 7
-    docker run --rm --entrypoint python hotel-market -m pytest -p no:cacheprovider /app/tests
+    docker build -t hotel-market:py3.12 .                        # --build-arg PYTHON=3.11 for another Python
+    docker run --rm -v "$PWD:/work" hotel-market:py3.12 --seed 7 --template
+    docker run --rm -v "$PWD:/work" -e ANTHROPIC_API_KEY hotel-market:py3.12 --seed 7
+    docker run --rm --entrypoint python -w /app hotel-market:py3.12 -m pytest -p no:cacheprovider tests
 
 ## Results
 
@@ -167,8 +167,8 @@ bookings.
   the plans alone.
 - The benchmark ran the live models on seeds 1 to 20 (docs/results.md), and only
   Opus declined any plan. Learn mode has not run live.
-- The container image has not been built, and the suite has run on Python 3.11,
-  3.12 and 3.13 only.
+- The container image was built on Python 3.11, 3.12 and 3.14 and passed the
+  suite on each. A seed-7 run inside it matches the native run (docs/results.md).
 
 The next version puts each hotel's past rate changes and their outcomes into the
 model request. The model can then compare a plan with the previous ones. It also

@@ -6,7 +6,8 @@
 #   make run SEED=7     run the simulation with the template reasons
 #   make bench FIRST=1 LAST=3   benchmark the reviewers; make bench BENCH=--template runs it offline
 #   make day SEED=7 DAY=20   run day 20 through the stored tables; make day-replay DAY=20 replays it
-#   make image          build a Docker image instead; make docker-run SEED=7 runs it
+#   make image          build the Docker image hotel-market:py3.12; make docker-run SEED=7 runs it
+#   make image PYTHON=3.11   the same on another Python, tagged hotel-market:py3.11
 #   make help           list every target
 #
 # Every target that needs the package runs the setup first, so `make test`
@@ -23,6 +24,10 @@ export ANTHROPIC_API_KEY ANTHROPIC_WORKSPACE_ID
 PYTHON ?= python3
 VENV   ?= .venv
 IMAGE  ?= hotel-market
+# A PYTHON that is a version, such as 3.11, picks the image's base Python; any other
+# PYTHON is the interpreter for the venv, and the image keeps the Dockerfile's default.
+IMAGE_PYTHON := $(if $(filter 3.%,$(PYTHON)),$(PYTHON),3.12)
+TAG    := $(IMAGE):py$(IMAGE_PYTHON)
 SEED   ?= 7
 DAY    ?= 20
 FIRST  ?= 1
@@ -101,15 +106,15 @@ clean-all: clean clean-run ## Also remove .venv
 
 # The container route: the same commands, with Docker instead of a .venv.
 # The mount makes cache/ and decisions.jsonl land here, as a local run would.
-image: ## Build the Docker image (needs Docker)
-	docker build -t $(IMAGE) .
+image: ## Build the Docker image, tagged hotel-market:py3.12 (needs Docker); PYTHON=3.11 builds on that Python
+	docker build --build-arg PYTHON=$(IMAGE_PYTHON) -t $(TAG) .
 
-docker-test: image ## Run the tests inside the image
-	docker run --rm --entrypoint python $(IMAGE) -m pytest -p no:cacheprovider /app/tests
+docker-test: image ## Run the tests inside the image, from its copy of the repository
+	docker run --rm --entrypoint python -w /app $(TAG) -m pytest -p no:cacheprovider tests
 
 docker-run: image ## Run seed SEED in a container with the template reasons
-	docker run --rm -v "$(CURDIR):/work" $(IMAGE) --seed $(SEED) --template
+	docker run --rm -v "$(CURDIR):/work" $(TAG) --seed $(SEED) --template
 
 docker-live: image ## The same with the model writing the reasons (needs ANTHROPIC_API_KEY)
 	@test -n "$$ANTHROPIC_API_KEY" || { echo "ANTHROPIC_API_KEY is not set, so the run would fall back to the template."; exit 1; }
-	docker run --rm -e ANTHROPIC_API_KEY -v "$(CURDIR):/work" $(IMAGE) --seed $(SEED)
+	docker run --rm -e ANTHROPIC_API_KEY -v "$(CURDIR):/work" $(TAG) --seed $(SEED)

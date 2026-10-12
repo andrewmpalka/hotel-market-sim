@@ -240,6 +240,7 @@ it differs from what that would write. `README.md` is the legend.
 - RES-17 [C] The reviewers at fixed:2.0 on seeds 1 to 20 — kg/results.md
 - RES-18 [O] The reviewers in the true mode on seeds 1 to 20 — kg/results.md
 - RES-19 [O] The reviewers ranked across the mismatched modes — kg/results.md
+- RES-20 [O] The container image on each Python version — kg/results.md
 
 ## Open forks (`forks.md`)
 
@@ -255,7 +256,7 @@ it differs from what that would write. `README.md` is the legend.
 
 - UNK-01 [C] How the live model decides, compared with the template — kg/unknowns.md
 - UNK-02 [C] Whether the enum schema behaves as expected against the live API — kg/unknowns.md
-- UNK-03 [U] Whether the container image builds and its tests pass — kg/unknowns.md
+- UNK-03 [H] Whether the container image builds and its tests pass — kg/unknowns.md
 - UNK-04 [H] Whether the suite passes on Python 3.12 and 3.13 — kg/unknowns.md
 - UNK-05 [U] How a change in arriving seats turns into hotel demand in a real market — kg/unknowns.md
 - UNK-06 [U] The real cost to service an occupied room — kg/unknowns.md
