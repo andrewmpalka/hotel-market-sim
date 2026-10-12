@@ -9,6 +9,7 @@ from hotel_market.agent import MIN_STAY, Agent, ElasticityMode
 from hotel_market.bookings import Books, simulate
 from hotel_market.customer import demo
 from hotel_market.detect import AHEAD
+from hotel_market.model import MODEL
 from hotel_market.plan import HOLD, TRUE_PRICING, Pricing
 from hotel_market.schedule import HORIZON_DAYS
 from hotel_market.simulated import deciding, simulated_sources
@@ -100,6 +101,28 @@ def test_a_model_that_declines_changes_no_rate(tmp_path):
     assert all(e.action == HOLD for e in agent.entries)
     assert all(e.reason_source == "model" for e in agent.entries if e.queued)
     assert (books.rates == simulate(SEED).rates).all()
+
+
+def test_another_model_gets_its_own_cache_folder_and_record(tmp_path):
+    # The default model in the default mode keeps cache/seed7, so the recorded run replays.
+    assert Agent(SEED, tmp_path).model == MODEL and Agent(SEED, tmp_path).cache_dir.name == "seed7"
+    assert Agent(SEED, tmp_path, client=DecliningClient()).cache_dir.name == "seed7"
+    # Another model joins the folder name after the mode, and every record names it.
+    agent = Agent(
+        SEED,
+        tmp_path,
+        client=DecliningClient(),
+        elasticity=ElasticityMode.parse("fixed:1.0"),
+        model="claude-sonnet-5-5",
+    )
+    assert agent.cache_dir.name == "seed7-fixed-1-claude-sonnet-5-5"
+    simulate(SEED, deciding(agent))
+    records = [json.loads(p.read_text()) for p in sorted(agent.cache_dir.glob("day*_*.json"))]
+    assert records and {r["model"] for r in records} == {"claude-sonnet-5-5"}
+    assert {r["source"] for r in records} == {"model"}
+    # Unnamed, the model is the client's own when the client has one.
+    named = SimpleNamespace(model="claude-haiku-5-5", complete=DecliningClient().complete)
+    assert Agent(SEED, tmp_path, client=named).cache_dir.name == "seed7-claude-haiku-5-5"
 
 
 def test_minimum_stay_advice_is_not_repeated_on_later_days(tmp_path):

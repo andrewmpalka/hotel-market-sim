@@ -27,11 +27,11 @@ it. None of these is in progress.
 
 ### FRK-04 [O] Swapping the model for a locally hosted one
 - Choice: whether the decisions could come from a model run on the owner's machine instead of the hosted one ([[RUL-46]]).
-- Known: the call sits behind the Client protocol in [[MOD-09]]. A client needs one method, complete(system, prompt, schema), returning JSON that fits the schema ([[DEC-34]]).
-- Cache: the cache records "source": "model" without saying which model. Answers from two models would share one cache. They would need the model's name in the record ([[DAT-17]]) to be told apart.
+- Known: the call sits behind the Client protocol in [[MOD-09]]. A client needs one method, complete(system, prompt, schema), returning JSON that fits the schema ([[DEC-34]]). The remaining choice is the local client itself.
+- Cache: the cache record names its model ([[DAT-17]]). An agent given another model keeps its answers in their own folder ([[DEC-23]]). Two models' answers are told apart.
 - Template: the template already shows the loop running with no model at all.
-- To decide it: write a client for a local server, give the cache record a model field. Then compare the two models' choices on the same seed's queue.
-- Links: [[MOD-09]], [[DAT-17]], [[UNK-01]]
+- To decide it: write a client for a local server. Then compare the two models' choices on the same seed's queue with the benchmark ([[MOD-23]]).
+- Links: [[MOD-09]], [[DAT-17]], [[DEC-23]], [[UNK-01]], [[MOD-23]]
 
 ### FRK-05 [O] Deliberate price tests, to learn the elasticity faster
 - Choice: whether a learning agent should make small deliberate rate changes on ordinary nights, far from selling out. The aim is to sharpen its elasticity estimate sooner.

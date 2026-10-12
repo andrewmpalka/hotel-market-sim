@@ -6,11 +6,11 @@ One seed with the live model, measured and audited.
     python scripts/live_audit.py --seed 7 --audit-only # audit the cache a live run left
 
 The run is the hotel-market command's run for the seed in the default mode:
-both simulations, decisions.jsonl and the cache. Around each model call it
-records the tokens, the time, the stop reason and the model that answered,
-and writes them to calls.jsonl. The audit then reads the cache and prints
-every reason the model wrote, every plan it declined, and every number in a
-reason that does not appear in the request the model was answering.
+both simulations, decisions.jsonl and the cache. A Measured client (model.py)
+records each call's tokens, time, stop reason and answering model to
+calls.jsonl. The audit then reads the cache and prints every reason the model
+wrote, every plan it declined, and every number in a reason that does not
+appear in the request the model was answering.
 
 Every figure in the request is a display string written by code ("$8,050 more
 than holding", "10.7% to 14.6% below the median", "1,188") that the model is
@@ -40,7 +40,7 @@ import time
 from pathlib import Path
 
 from hotel_market.cli import run, summary
-from hotel_market.model import HOLD, ClaudeClient
+from hotel_market.model import HOLD, ClaudeClient, Measured
 
 # List prices for claude-opus-5-5 on 2026-10-06, dollars per million tokens; the
 # cost line is an estimate from them, and the token counts are printed for any
@@ -58,56 +58,26 @@ SPAN = re.compile(rf"(?P<a>{_FIGURE})\s*(?:–|—|-|to)\s*(?P<b>{_FIGURE})")
 SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
 
 
-class Recorder:
-    """Stands in for the SDK: passes each call through and records its usage and time."""
-
-    def __init__(self, sdk):
-        self.sdk = sdk
-        self.calls: list[dict] = []
-        self.beta = self  # ClaudeClient calls sdk.beta.messages.create(...)
-        self.messages = self
-
-    def create(self, **request):
-        start = time.perf_counter()
-        response = self.sdk.beta.messages.create(**request)
-        usage = response.usage
-        self.calls.append(
-            {
-                "input_tokens": usage.input_tokens,
-                "output_tokens": usage.output_tokens,
-                "cache_creation_input_tokens": getattr(usage, "cache_creation_input_tokens", 0)
-                or 0,
-                "cache_read_input_tokens": getattr(usage, "cache_read_input_tokens", 0) or 0,
-                "seconds": round(time.perf_counter() - start, 2),
-                "stop_reason": response.stop_reason,
-                "model": response.model,
-                "fallback": any(block.type == "fallback" for block in response.content),
-                "request_id": getattr(response, "_request_id", None),
-            }
-        )
-        return response
-
-
 def live_run(seed: int, out_dir: Path) -> list[dict]:
     """Seed `seed` with the live model, writing decisions.jsonl, cache/ and calls.jsonl
-    under out_dir. Returns the calls' measurements."""
+    under out_dir. A Measured client (model.py) records each call; the file holds this
+    run's calls only. Returns the calls' measurements."""
     import anthropic
 
     # A key that is not scoped to a workspace needs the workspace named on every request.
     workspace = os.environ.get("ANTHROPIC_WORKSPACE_ID")
     headers = {"anthropic-workspace-id": workspace} if workspace else None
-    recorder = Recorder(anthropic.Anthropic(default_headers=headers))
-    client = ClaudeClient(sdk=recorder)
+    calls_path = out_dir / "calls.jsonl"
+    if calls_path.exists():
+        calls_path.unlink()
+    client = Measured(ClaudeClient(sdk=anthropic.Anthropic(default_headers=headers)), calls_path)
     start = time.perf_counter()
     fixed, books, agent = run(seed, out_dir / "decisions.jsonl", out_dir / "cache", client)
     total = time.perf_counter() - start
-    (out_dir / "calls.jsonl").write_text("".join(json.dumps(c) + "\n" for c in recorder.calls))
     print(summary(seed, fixed, books, agent))
     print()
-    print(
-        f"{len(recorder.calls)} model calls in a run of {total:.0f} s, both simulations included."
-    )
-    return recorder.calls
+    print(f"{len(client.calls)} model calls in a run of {total:.0f} s, both simulations included.")
+    return client.calls
 
 
 def audit(cache_dir: Path) -> None:

@@ -324,6 +324,13 @@ marked [H], with one line that names the node it moved to.
 - Meaning: how the request names an elasticity mode to the model. The command line's "true" reads "assumed", a value the agent was given; fixed and learn keep their names ([[DEC-44]], [[RUL-49]]).
 - Evidence: test_the_request_carries_the_elasticity_and_its_digest_changes_with_it
 
+### RUL-76 [C] RETRIES
+- Value: 2
+- File: src/hotel_market/model.py
+- Kind: parameter
+- Meaning: how many times a Measured client asks again after a refusal or an invalid answer. The third failure raises. Each attempt counts in the call record ([[DAT-30]]).
+- Evidence: test_a_measured_client_retries_a_bad_answer_and_counts_it
+
 ## agent.py
 
 ### RUL-48 [C] MIN_STAY

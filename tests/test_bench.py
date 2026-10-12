@@ -1,5 +1,6 @@
-"""bench.py: the oracle reviewer as a grader, and the reviewer measures."""
+"""bench.py: the oracle reviewer as a grader, the reviewer measures and the scripted client."""
 
+import json
 import math
 
 import pytest
@@ -7,6 +8,7 @@ import pytest
 from hotel_market.agent import Agent, ElasticityMode
 from hotel_market.bench import (
     OracleReviewer,
+    ScriptedClient,
     accept_rate,
     decline_f1,
     decline_precision,
@@ -23,8 +25,18 @@ from hotel_market.bench import (
 )
 from hotel_market.bookings import simulate
 from hotel_market.customer import demo
-from hotel_market.detect import AHEAD
-from hotel_market.plan import HOLD, Candidate, Entry, FlagNumbers, Range, StayDate, WeekdayGroup
+from hotel_market.detect import AHEAD, flags
+from hotel_market.model import SYSTEM, Measured, request_digest, request_for
+from hotel_market.plan import (
+    HOLD,
+    Candidate,
+    Entry,
+    FlagNumbers,
+    Range,
+    StayDate,
+    WeekdayGroup,
+    entry_for,
+)
 from hotel_market.simulated import deciding
 
 DEMO = demo()
@@ -176,3 +188,55 @@ def test_an_oracle_run_writes_nothing_to_the_cache(oracle_fixed_run):
     assert agent.cache_dir.name == "seed7-fixed-1" and not agent.cache_dir.exists()
     assert list(cache.iterdir()) == []
     assert {e.reason_source for e in agent.entries if e.queued} == {"oracle"}
+
+
+# ---- the scripted client -------------------------------------------------------
+
+
+def test_a_scripted_client_answers_from_its_dict_of_digests(day10):
+    _, table = day10
+    hotel = DEMO.hotel("convention")
+    entries = [entry_for(10, f, table) for f in flags(10, table) if f.hotel == "convention"]
+    request = request_for(10, hotel, entries)
+    [asked] = request["entries"]
+    scripted = [{"id": asked["id"], "choice": HOLD, "reason": "Scripted by the test."}]
+    client = ScriptedClient({request_digest(request): scripted})
+    assert json.loads(client.complete(SYSTEM, json.dumps(request), {}))["decisions"] == scripted
+    # A request its dict does not hold is accepted unless its key is among the declines.
+    [decision] = json.loads(ScriptedClient().complete(SYSTEM, json.dumps(request), {}))["decisions"]
+    assert decision == {
+        "id": asked["id"],
+        "choice": asked["plan"],
+        "reason": f"Scripted: {asked['plan']}.",
+    }
+    declining = ScriptedClient(declines={(10, "convention", asked["id"])})
+    [decision] = json.loads(declining.complete(SYSTEM, json.dumps(request), {}))["decisions"]
+    assert decision["choice"] == HOLD
+
+
+def test_a_scripted_client_declines_chosen_plans_and_is_read_back(fixed_mode_run, tmp_path):
+    # The first plan the oracle would decline in the fixed:1.0 run; the scripted client
+    # declines that one and accepts the rest, measured, with its calls beside the cache.
+    target = min(oracle_labels(fixed_mode_run.entries))
+    mode = ElasticityMode.parse("fixed:1.0")
+    client = Measured(ScriptedClient(declines={target}), tmp_path / "cache" / "calls.jsonl")
+    agent = Agent(SEED, tmp_path / "cache", client=client, elasticity=mode)
+    simulate(SEED, deciding(agent))
+    assert declined(agent.entries) == {target}
+    assert decline_precision(agent.entries, oracle_labels(agent.entries)) == 1.0
+    # It plays a model: its answers are cached under its own model name, scripted.
+    assert agent.model == "scripted" and agent.cache_dir.name == "seed7-fixed-1-scripted"
+    records = [json.loads(p.read_text()) for p in sorted(agent.cache_dir.glob("day*_*.json"))]
+    assert records and {(r["source"], r["model"]) for r in records} == {("model", "scripted")}
+    assert {e.reason_source for e in agent.entries if e.queued} == {"model"}
+    # One call record per cache file, each a valid first answer, in memory and in the file.
+    assert len(client.calls) == len(records)
+    assert {(c["asked"], c["retries"], c["invalid"]) for c in client.calls} == {
+        ("scripted", 0, False)
+    }
+    lines = (tmp_path / "cache" / "calls.jsonl").read_text().splitlines()
+    assert [json.loads(line) for line in lines] == client.calls
+    # A replay with a client that would decline nothing reads the declines back from the cache.
+    again = Agent(SEED, tmp_path / "cache", client=ScriptedClient(), replay=True, elasticity=mode)
+    simulate(SEED, deciding(again))
+    assert declined(again.entries) == {target}

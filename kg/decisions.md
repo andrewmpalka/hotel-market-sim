@@ -291,11 +291,12 @@ design keeps its node, marked [H], and names the decision that replaced it.
 ### DEC-23 [C] The cache is keyed by seed, day and hotel, and each file records a digest of its request
 - Decided: the answer to one hotel's queue on one day is saved at cache/seed<seed>/day<DDD>_<hotel key>.json. The file records the sha256 of the request's sorted-keys JSON ([[DAT-17]]), and a rerun reads the cache first.
 - Detail: a file whose digest does not match the request raises StaleCache instead of answering the wrong question. A replay reads the cache and never calls the model.
+- Model: a model other than MODEL ([[RUL-46]]) adds -<model> to the folder, as a mode does. Each new record names its model. The default model in the default mode keeps cache/seed<seed>/, so [[DAT-29]] replays unchanged.
 - Replaces: nothing built.
 - Reason: each hotel's queue costs one model call a day, paid once per seed. A changed rule or constant changes the request, so it cannot reuse a stale answer silently.
 - Commit: abef71f
-- Evidence: test_ask_calls_the_model_once_and_then_reads_the_cache, test_a_cache_written_for_another_request_is_refused, test_a_replay_never_calls_the_model
-- Links: [[MOD-09]], [[DAT-17]], [[DEC-25]]
+- Evidence: test_ask_calls_the_model_once_and_then_reads_the_cache, test_a_cache_written_for_another_request_is_refused, test_a_replay_never_calls_the_model, test_the_cache_record_names_the_model_asked
+- Links: [[MOD-09]], [[DAT-17]], [[DEC-25]], [[FRK-04]]
 
 ### DEC-24 [H] Template answers were cached like the model's
 - Decided: the template's answers were written to the same cache files as the model's, marked "source": "template". A client replaced a template-sourced file with the model's answer.
@@ -414,8 +415,8 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Decided: bench.py ([[MOD-23]]) holds an oracle reviewer. It re-scores each queued plan and hold at ORACLE_ELASTICITY ([[RUL-56]]). It declines the plan when hold scores at least as well.
 - Client: it stands in as the client the agent asks ([[MOD-09]]) and reads the day's entries from agent.today. Its decisions then drive a run of their own. It also labels the entries of any other run after the fact.
 - Boundary: it imports from plan.py and agent.py, and nothing in the agent's path imports it. tests/test_sources.py checks its imports with the agent's modules. Its answers are never cached and record source oracle ([[DEC-25]]).
-- Replaces: nothing built.
 - Reason: the oracle uses the simulator's elasticity, which the agent may not see. A grader outside the agent's path cannot leak it. It is the ceiling for a reviewer: it cannot pick a better candidate, and a seed's draw can beat it.
 - Measured: in the default mode the oracle accepts every queued plan. That mode therefore cannot separate reviewers, and the mismatched modes can ([[RES-03]]).
+- Commit: 03506d4
 - Evidence: test_the_oracle_reviewer_accepts_every_queued_plan_in_true_mode, test_the_oracle_declines_where_hold_scores_at_least_as_well, test_the_agent_reads_only_through_the_interfaces
 - Links: [[MOD-23]], [[DEC-01]], [[DEC-02]], [[DEC-40]], [[MEA-06]]

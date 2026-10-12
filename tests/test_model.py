@@ -9,9 +9,12 @@ import pytest
 from hotel_market.customer import demo
 from hotel_market.detect import flags
 from hotel_market.model import (
+    MODEL,
+    RETRIES,
     SYSTEM,
     CacheMiss,
     ClaudeClient,
+    Measured,
     ModelRefused,
     StaleCache,
     ask,
@@ -28,27 +31,44 @@ SCHEMA = {"type": "object", "properties": {}}  # any schema will do for the clie
 
 
 class FakeClient:
-    """Stands in for the model: accepts each plan, or always gives one choice."""
+    """Stands in for the model: accepts each plan, or gives one choice; with several
+    choices, one per call in turn, the last one repeated."""
 
-    def __init__(self, choice=None):
-        self.choice = choice
+    model = "fake"
+
+    def __init__(self, *choices):
+        self.choices = list(choices)
         self.calls = []
 
     def complete(self, system, prompt, schema):
         request = json.loads(prompt)
         self.calls.append(request)
+        choice = self.choices[min(len(self.calls), len(self.choices)) - 1] if self.choices else None
         return json.dumps(
             {
                 "decisions": [
                     {
                         "id": e["id"],
-                        "choice": self.choice or e["plan"],
+                        "choice": choice or e["plan"],
                         "reason": f"Fake reason for {e['id']}.",
                     }
                     for e in request["entries"]
                 ]
             }
         )
+
+
+class Refusing:
+    """Stands in for a Claude client whose every call ends in a refusal."""
+
+    model = "refusing"
+
+    def __init__(self):
+        self.calls = 0
+
+    def complete(self, system, prompt, schema):
+        self.calls += 1
+        raise ModelRefused("the model declined")
 
 
 class NoCalls:
@@ -198,6 +218,107 @@ def test_a_choice_that_is_not_the_plan_or_hold_is_rejected(convention_request, t
     request, _ = convention_request
     with pytest.raises(ValueError):
         ask(request, tmp_path / "x.json", FakeClient("raise 50%"))
+
+
+def test_the_cache_record_names_the_model_asked(convention_request, tmp_path):
+    request, _ = convention_request
+    # The default model unless the caller names another; the agent passes its own.
+    assert ask(request, tmp_path / "a.json", FakeClient())["model"] == MODEL
+    record = ask(request, tmp_path / "b.json", FakeClient(), model="claude-sonnet-5-5")
+    assert record["model"] == "claude-sonnet-5-5"
+    assert json.loads((tmp_path / "b.json").read_text())["model"] == "claude-sonnet-5-5"
+    # A record from before the field was added names no model and still reads back.
+    older = {"request_digest": request_digest(request), "request": request, "source": "model"}
+    older["decisions"] = record["decisions"]
+    (tmp_path / "c.json").write_text(json.dumps(older))
+    assert ask(request, tmp_path / "c.json", NoCalls(), replay=True) == older
+
+
+def test_a_measured_client_records_one_call(convention_request, tmp_path):
+    request, _ = convention_request
+    client = Measured(FakeClient(), tmp_path / "calls.jsonl")
+    text = client.complete(SYSTEM, json.dumps(request), schema_for(request))
+    assert json.loads(text)["decisions"][0]["choice"] == request["entries"][0]["plan"]
+    [record] = client.calls
+    assert record["asked"] == "fake" and record["model"] == "fake"  # the wrapped client's own
+    assert record["retries"] == 0 and record["invalid"] is False
+    assert record["input_tokens"] == record["output_tokens"] == 0  # a fake client has no usage
+    assert record["stop_reason"] is None and record["fallback"] is False
+    assert 0 <= record["seconds"] < 1
+    assert [json.loads(line) for line in (tmp_path / "calls.jsonl").read_text().splitlines()] == [
+        record
+    ]
+    # The wrapped client's model, name and cached flag pass through, so ask() still treats
+    # a measured oracle as uncached and an agent still names the model for its folder.
+    assert client.model == "fake" and not hasattr(client, "cached")
+
+    class Uncached(FakeClient):
+        name, cached = "oracle", False
+
+    measured = Measured(Uncached())
+    assert (measured.name, measured.cached, measured.model) == ("oracle", False, "fake")
+    assert ask(request, tmp_path / "u.json", measured)["source"] == "oracle"
+    assert not (tmp_path / "u.json").exists() and len(measured.calls) == 1
+
+
+def test_a_measured_client_retries_a_bad_answer_and_counts_it(convention_request, tmp_path):
+    request, _ = convention_request
+    # The first answer picks an option the request does not hold; the second is valid.
+    wrapped = FakeClient("raise 50%", None)
+    client = Measured(wrapped, tmp_path / "calls.jsonl")
+    text = client.complete(SYSTEM, json.dumps(request), schema_for(request))
+    assert json.loads(text)["decisions"][0]["choice"] == request["entries"][0]["plan"]
+    assert len(wrapped.calls) == 2
+    [record] = client.calls
+    assert record["retries"] == 1 and record["invalid"] is True
+    # A refusal on every attempt is raised after RETRIES more tries, and still recorded.
+    refusing = Refusing()
+    client = Measured(refusing, tmp_path / "calls.jsonl")
+    with pytest.raises(ModelRefused):
+        client.complete(SYSTEM, json.dumps(request), schema_for(request))
+    assert refusing.calls == RETRIES + 1 == 3
+    [record] = client.calls
+    assert record["retries"] == RETRIES and record["invalid"] is True
+    assert len((tmp_path / "calls.jsonl").read_text().splitlines()) == 2
+    # Through ask(), nothing is cached for a call that never got a valid answer.
+    with pytest.raises(ModelRefused):
+        ask(request, tmp_path / "r.json", Measured(Refusing()))
+    assert not (tmp_path / "r.json").exists()
+
+
+def test_a_measured_claude_client_records_its_usage(convention_request):
+    request, _ = convention_request
+    answer = FakeClient().complete(SYSTEM, json.dumps(request), {})
+    content = [SimpleNamespace(type="text", text=answer)]
+
+    def create(**kwargs):
+        return SimpleNamespace(
+            model="claude-opus-5-5-20260901",
+            usage=SimpleNamespace(
+                input_tokens=1200,
+                output_tokens=300,
+                cache_creation_input_tokens=0,
+                cache_read_input_tokens=0,
+            ),
+            stop_reason="end_turn",
+            stop_details=None,
+            content=content,
+            _request_id="req_1",
+        )
+
+    sdk = SimpleNamespace(beta=SimpleNamespace(messages=SimpleNamespace(create=create)))
+    client = Measured(ClaudeClient(sdk=sdk))
+    client.complete(SYSTEM, json.dumps(request), schema_for(request))
+    [record] = client.calls
+    assert record["asked"] == MODEL and record["model"] == "claude-opus-5-5-20260901"
+    assert (record["input_tokens"], record["output_tokens"]) == (1200, 300)
+    assert record["stop_reason"] == "end_turn" and record["request_id"] == "req_1"
+    assert record["fallback"] is False and record["retries"] == 0
+    assert client.client.last["input_tokens"] == 1200
+    # After a hand-over to the fallback model, the record says so.
+    content.insert(0, SimpleNamespace(type="fallback"))
+    client.complete(SYSTEM, json.dumps(request), schema_for(request))
+    assert client.calls[1]["fallback"] is True
 
 
 def test_claude_client_sends_the_request_and_handles_a_refusal():

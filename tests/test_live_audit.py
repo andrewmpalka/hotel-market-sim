@@ -11,7 +11,7 @@ import pytest
 from hotel_market.cli import run
 from hotel_market.customer import demo
 from hotel_market.detect import flags
-from hotel_market.model import request_for, template_decisions
+from hotel_market.model import MODEL, request_for, template_decisions
 from hotel_market.plan import HOLD, entry_for
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -155,6 +155,10 @@ def test_the_recorded_live_run_replays_without_a_key_and_gives_28818(tmp_path):
     fixed, books, agent = run(7, tmp_path / "decisions.jsonl", tmp_path / "cache", NoCalls())
     change = sum(books.contribution(h) - fixed.contribution(h) for h in demo().hotels)
     assert change == pytest.approx(28818, abs=1)
+    # The default model in the default mode resolves to cache/seed7, and the fixture's
+    # records, written before the record named its model, read back as they are.
+    assert agent.model == MODEL and agent.cache_dir == tmp_path / "cache" / "seed7"
+    assert all("model" not in json.loads(p.read_text()) for p in FIXTURE.glob("day*_*.json"))
     decided = [e for e in agent.entries if e.queued]
     assert len(decided) == 7 and all(e.reason_source == "model" for e in decided)
     assert all(e.action != HOLD for e in decided)

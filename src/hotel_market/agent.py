@@ -32,7 +32,7 @@ from hotel_market.customer import Customer, demo
 from hotel_market.detect import AHEAD, detect_numbers, flags
 from hotel_market.estimate import Estimate, estimate_elasticity
 from hotel_market.forecast import peak_night
-from hotel_market.model import Client, ask, request_for
+from hotel_market.model import MODEL, Client, ask, request_for
 from hotel_market.plan import (
     HOLD,
     MODES,
@@ -108,7 +108,12 @@ class Advice:
 class Agent:
     """The daily decision: decide(day, sources) runs after each of days 0 to 59 and
     returns the rate changes to apply from the next day. It reads the day through the
-    four sources and never the simulator; simulated.deciding() wraps it for a run."""
+    four sources and never the simulator; simulated.deciding() wraps it for a run.
+
+    `model` names the model the client asks: the client's own name when it has one,
+    else model.MODEL. It goes into the cache folder when it is not the default, and
+    into every cache record, so another model's answers never mix with the default's.
+    """
 
     def __init__(
         self,
@@ -118,12 +123,16 @@ class Agent:
         replay: bool = False,
         elasticity: ElasticityMode = TRUE_MODE,
         customer: Customer | None = None,
+        model: str | None = None,
     ):
         self.customer = customer or demo()
-        # Another mode or target asks other questions, so its answers live in their own folder.
+        self.model = model or getattr(client, "model", None) or MODEL
+        # Another mode, target or model gives other answers, so they live in their own folder.
         folder = f"seed{seed}" if elasticity == TRUE_MODE else f"seed{seed}-{elasticity}"
         if not self.customer.scores_contribution():
             folder += f"-{self.customer.target}"
+        if self.model != MODEL:
+            folder += f"-{self.model}"
         self.cache_dir = Path(cache_dir) / folder.replace(":", "-").replace(" ", "-")
         self.client = client
         self.replay = replay
@@ -196,7 +205,8 @@ class Agent:
         queued = [entry for entry in entries if entry.queued]
         if queued:
             path = self.cache_dir / f"day{day:03d}_{hotel.key}.json"
-            answer = ask(request_for(day, hotel, queued), path, self.client, self.replay)
+            request = request_for(day, hotel, queued)
+            answer = ask(request, path, self.client, self.replay, model=self.model)
             decisions = {decision["id"]: decision for decision in answer["decisions"]}
             for entry in queued:
                 entry.action = decisions[entry.id]["choice"]

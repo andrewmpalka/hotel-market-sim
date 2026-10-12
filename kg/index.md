@@ -61,6 +61,7 @@ it differs from what that would write. `README.md` is the legend.
 - DAT-27 [C] Customer — src/hotel_market/customer.py
 - DAT-28 [C] The stored tables — sql/schema.sql
 - DAT-29 [C] The recorded live run — tests/fixtures/live_seed7/
+- DAT-30 [C] The call record — src/hotel_market/model.py
 
 ## Rules and constants (`rules.md`)
 
@@ -94,6 +95,7 @@ it differs from what that would write. `README.md` is the legend.
 - RUL-40 [H] MIN_VALUE_AT_STAKE — kg/rules.md
 - RUL-43 [C] CANDIDATES — src/hotel_market/plan.py
 - RUL-54 [C] BAND_STANDARD_ERRORS — src/hotel_market/plan.py
+- RUL-76 [C] RETRIES — src/hotel_market/model.py
 - RUL-50 [C] PRIOR_SD — src/hotel_market/estimate.py
 - RUL-51 [C] ELASTICITY_MIN — src/hotel_market/estimate.py
 - RUL-52 [C] ELASTICITY_MAX — src/hotel_market/estimate.py

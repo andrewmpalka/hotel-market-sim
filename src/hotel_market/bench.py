@@ -26,6 +26,11 @@ The measures follow a fraud benchmark's four detection measures, with a decline
 standing for a block: decline precision, decline recall, their F1 and a
 dollar-weighted recall, plus the regret of an arm against the oracle's arm and
 the accept rate. Each is a function whose docstring gives its formula.
+
+A ScriptedClient plays a model offline: it answers from a dict of request
+digest to decisions, or declines the entries it is told to and accepts the
+rest, and it is cached under the model name "scripted", so the whole benchmark
+runs without a key.
 """
 
 from __future__ import annotations
@@ -36,6 +41,7 @@ from collections.abc import Iterable
 
 from hotel_market.agent import Agent
 from hotel_market.customer import Customer, demo
+from hotel_market.model import request_digest
 from hotel_market.plan import HOLD, ORACLE_ELASTICITY, Entry, rescored
 from hotel_market.text import tens_of_dollars
 
@@ -108,6 +114,39 @@ def _oracle_reason(hold: float, plan: float, choice: str) -> str:
         f"At the simulator's elasticity of {ORACLE_ELASTICITY:g}, holding is estimated at "
         f"{tens_of_dollars(hold)} and the plan at {tens_of_dollars(plan)}, so {verdict}."
     )
+
+
+class ScriptedClient:
+    """A client for tests and offline runs. It answers a request from `answers`, a dict
+    of request digest to decisions, when the digest is there. Otherwise it declines the
+    entries whose Key is in `declines` and accepts every other plan, with a scripted
+    reason. It plays a model: its answers are cached and record source "model", and the
+    record's model field, "scripted", tells them from a real model's. An agent given it
+    therefore keeps its cache in its own folder."""
+
+    def __init__(
+        self,
+        answers: dict[str, list[dict]] | None = None,
+        declines: Iterable[Key] = (),
+        model: str = "scripted",
+        customer: Customer | None = None,
+    ):
+        self.answers = dict(answers or {})
+        self.declines = set(declines)
+        self.model = model
+        self.customer = customer or demo()
+
+    def complete(self, system: str, prompt: str, schema: dict) -> str:
+        request = json.loads(prompt)
+        decisions = self.answers.get(request_digest(request))
+        if decisions is None:
+            hotel = next(h for h in self.customer.hotels if h.name == request["hotel"]["name"])
+            decisions = [self._decision(request["day"], hotel.key, e) for e in request["entries"]]
+        return json.dumps({"decisions": decisions})
+
+    def _decision(self, day: int, hotel: str, entry: dict) -> dict:
+        choice = HOLD if (day, hotel, entry["id"]) in self.declines else entry["plan"]
+        return {"id": entry["id"], "choice": choice, "reason": f"Scripted: {choice}."}
 
 
 # ---- the measures -------------------------------------------------------------

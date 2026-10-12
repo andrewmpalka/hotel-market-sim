@@ -82,22 +82,22 @@ which is also the order in which they depend on each other.
 ### MOD-09 [C] model.py
 - File: src/hotel_market/model.py
 - Owns: the model call: the request the model sees ([[DAT-16]]) and the system prompt ([[RUL-47]]). It builds the answer schema from the request's own options ([[DEC-34]]) and checks the answer against them.
-- Holds: the cache of the model's answers ([[DAT-17]], [[DEC-23]], [[DEC-25]]) and the Claude client with its refusal fallback. The template answers without an API key from the request's display strings.
+- Holds: the cache ([[DAT-17]], [[DEC-23]], [[DEC-25]]), the Claude client with its refusal fallback and the template, which needs no key. Measured wraps any client, records each call ([[DAT-30]]) and retries a bad answer ([[RUL-76]]).
 - Names: MODEL ([[RUL-46]]) and MODE_NAMES ([[RUL-75]]). Every figure in the request is a display string from [[MOD-11]] ([[DEC-44]]). A client's name is the source its decisions record; an uncached client is never cached ([[DEC-25]]).
 - Reads: [[MOD-02]], [[MOD-07]], [[MOD-08]], [[MOD-11]]
-- Writes: [[DAT-16]], [[DAT-17]]
+- Writes: [[DAT-16]], [[DAT-17]], [[DAT-30]]
 - Tests: tests/test_model.py
-- Evidence: test_ask_calls_the_model_once_and_then_reads_the_cache, test_a_choice_that_is_not_the_plan_or_hold_is_rejected, test_every_figure_in_the_request_is_a_display_string
+- Evidence: test_ask_calls_the_model_once_and_then_reads_the_cache, test_a_choice_that_is_not_the_plan_or_hold_is_rejected, test_every_figure_in_the_request_is_a_display_string, test_a_measured_client_records_one_call
 
 ### MOD-10 [C] agent.py
 - File: src/hotel_market/agent.py
 - Owns: the daily decision, decide(day, sources): detect numbers, flags, entries and the queue of plans worth the minimum. It makes one model or template call per hotel and records the accepted changes, their hold and the log ([[DAT-18]]).
-- Also: the minimum-stay advice ([[DAT-15]], [[DEC-10]]), named by MIN_STAY ([[RUL-48]]). decide() keeps the day's entries in agent.today while it asks about them. A client such as the oracle reviewer can read them there ([[MOD-23]]).
+- Also: the minimum-stay advice ([[DAT-15]], [[DEC-10]]), named by MIN_STAY ([[RUL-48]]). decide() keeps the day's entries in agent.today for the oracle ([[MOD-23]]). Agent(model=) names the model and its cache folder ([[DEC-23]]).
 - Modes: the elasticity modes ([[DAT-22]]): true, fixed:X or learn:X. In learn mode it re-estimates every hotel's elasticity every day ([[MOD-16]], [[DEC-38]]). It passes the cautious flag into each day's pricing ([[CON-11]]).
 - Resume: plans_for() builds a day's entries and advice_for() the advice. resume() picks up the hold and the advice that earlier days left. That is how a table-backed run gives each day's agent its state ([[MOD-21]], [[DEC-42]]).
 - Reads: [[MOD-02]], [[MOD-07]], [[MOD-08]], [[MOD-09]], [[MOD-16]], [[MOD-17]], [[MOD-18]], [[MOD-20]]; never the simulator, which wraps it with deciding() ([[MOD-19]])
 - Tests: tests/test_agent.py
-- Evidence: test_accepted_rates_apply_and_hold_those_stay_dates_for_7_days, test_a_model_that_declines_changes_no_rate, test_each_mode_records_the_elasticity_its_plans_assume
+- Evidence: test_accepted_rates_apply_and_hold_those_stay_dates_for_7_days, test_a_model_that_declines_changes_no_rate, test_each_mode_records_the_elasticity_its_plans_assume, test_another_model_gets_its_own_cache_folder_and_record
 
 ### MOD-11 [C] text.py
 - File: src/hotel_market/text.py
@@ -205,8 +205,8 @@ which is also the order in which they depend on each other.
 
 ### MOD-22 [C] scripts/live_audit.py
 - File: scripts/live_audit.py
-- Owns: the measured live run and its audit, outside the package. A Recorder stands in for the SDK and notes each call's tokens, time, stop reason and answering model.
-- Run: live_run() is the command's run for a seed with that client ([[MOD-12]]), so ClaudeClient's request stays the one in [[MOD-09]]. It also writes calls.jsonl and sends the workspace header when ANTHROPIC_WORKSPACE_ID is set.
+- Owns: the measured live run and its audit, outside the package. A Measured client ([[MOD-09]]) records each call's tokens, time, stop reason and answering model ([[DAT-30]]).
+- Run: live_run() is the command's run for a seed with that client ([[MOD-12]]), so the request stays the one in [[MOD-09]]. calls.jsonl lands beside cache/. The run sends the workspace header when ANTHROPIC_WORKSPACE_ID is set.
 - Audit: audit() reads the cache ([[DAT-17]]) and prints each reason and declined plan. It lists each figure in a reason that its request does not hold, and each sentence with no request figure. It ends with the token, time and cost totals.
 - Quoted: a figure is quoted when a display string holding it appears whole in the same sentence. It is also quoted as a whole number or inside a name the request holds. "More than holding" in a sentence vouches for a bare dollar gain.
 - Ranges: a range such as "12–14%" counts as its two ends. Figures with different units stay apart, and one end of a request range on its own is not a quotation. The recorded run it audits is [[DAT-29]].
@@ -217,7 +217,8 @@ which is also the order in which they depend on each other.
 - File: src/hotel_market/bench.py
 - Owns: the benchmark of the model as a reviewer ([[DEC-47]]). The oracle reviewer re-scores each queued plan and hold at ORACLE_ELASTICITY ([[RUL-56]]). It declines the plan when hold scores at least as well.
 - Measures: regret ([[MEA-06]]), the accept rate ([[MEA-07]]), decline precision ([[MEA-08]]), decline recall ([[MEA-09]]), their F1 ([[MEA-10]]) and dollar-weighted recall ([[MEA-11]]). Each function's docstring gives its formula.
-- Counts: invalid_answers() and retries() sum the flags of the call records a measured client writes.
-- Reads: [[MOD-08]] (the entries and rescored()), [[MOD-10]] (the day's entries in agent.today), [[MOD-11]], [[MOD-20]]; never the simulator, and nothing in the agent's path imports it
+- Counts: invalid_answers() and retries() sum the flags of the call records a Measured client writes ([[DAT-30]]).
+- Scripted: ScriptedClient answers from a dict of request digest to decisions. Otherwise it declines the keys it is given and accepts the rest. It plays a model, so its answers are cached under the model name scripted ([[DEC-23]]).
+- Reads: [[MOD-08]] (the entries and rescored()), [[MOD-09]] (request_digest()), [[MOD-10]] (the day's entries in agent.today), [[MOD-11]], [[MOD-20]]; never the simulator, and nothing in the agent's path imports it
 - Tests: tests/test_bench.py
-- Evidence: test_the_oracle_reviewer_accepts_every_queued_plan_in_true_mode, test_the_oracle_declines_where_hold_scores_at_least_as_well, test_decline_precision_recall_and_f1_against_the_oracle
+- Evidence: test_the_oracle_reviewer_accepts_every_queued_plan_in_true_mode, test_the_oracle_declines_where_hold_scores_at_least_as_well, test_a_scripted_client_declines_chosen_plans_and_is_read_back

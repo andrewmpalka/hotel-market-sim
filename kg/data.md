@@ -143,12 +143,12 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-17 [C] The cache record
 - File: src/hotel_market/model.py
-- Where: cache/seed<seed>/day<DDD>_<hotel key>.json, one file per model call, for the default mode. Another elasticity mode keeps its answers in cache/seed<seed>-<mode>/, such as seed7-learn-1, and a revenue target adds -revenue.
-- Fields: request_digest (sha256 of the request's sorted-keys JSON), request, source "model", and decisions (id, choice, reason per entry).
-- Template: template answers are not cached ([[DEC-25]]). A file from an older version that holds one is ignored and overwritten.
+- Where: cache/seed<seed>/day<DDD>_<hotel key>.json, one file per model call, in the default mode and model. Another mode adds -<mode>, such as seed7-learn-1, a revenue target adds -revenue and another model adds -<model>.
+- Fields: request_digest (sha256 of the request's sorted-keys JSON), request, source "model" and decisions (id, choice, reason per entry). The model field names the model asked, [[RUL-46]] by default.
+- Template: template answers are not cached ([[DEC-25]]). A file from an older version that holds one is ignored and overwritten. A record from before the model field has none and still reads back ([[DAT-29]]).
 - Written by: [[MOD-09]]
 - Read by: [[MOD-09]] on a rerun or a replay; a digest that does not match the request raises StaleCache
-- Evidence: test_ask_calls_the_model_once_and_then_reads_the_cache, test_a_cache_written_for_another_request_is_refused, test_a_learn_run_keeps_its_own_cache_and_says_where_its_estimates_ended
+- Evidence: test_ask_calls_the_model_once_and_then_reads_the_cache, test_a_learn_run_keeps_its_own_cache_and_says_where_its_estimates_ended, test_another_model_gets_its_own_cache_folder_and_record
 
 ### DAT-18 [C] A decisions.jsonl line
 - File: src/hotel_market/plan.py
@@ -254,9 +254,18 @@ the plans, the model's request and answer, and what the command writes.
 ### DAT-29 [C] The recorded live run
 - File: tests/fixtures/live_seed7/
 - Fields: the seven cache records ([[DAT-17]]) of one live run of seed 7 in the default mode with claude-opus-5-5. The files day010_convention.json to day034_convention.json each hold the request, its digest and the model's decisions.
-- Calls: calls.jsonl, one line per call, as [[MOD-22]] writes it. A line holds the input and output tokens, cache tokens, seconds, stop reason, answering model and request id.
+- Calls: calls.jsonl, one line per call, as [[MOD-22]] wrote it before [[DAT-30]]. A line holds the input and output tokens, cache tokens, seconds, stop reason, answering model and request id. It has no asked, retries or invalid field.
 - Origin: copied from the run's cache/seed7/ and calls.jsonl on the day of the run. It was the fourth live run of the seed, made after each range became one phrase ([[DEC-44]], [[RES-08]]).
 - Stale: a change to the request makes the fixture stale, and the replay test then says to record a run again.
 - Written by: scripts/live_audit.py's live run, then copied by hand
 - Read by: tests/test_live_audit.py. The audit on it finds no declined plan, no figure outside its request and no sentence without a request figure. With it as the cache, seed 7 replays without a key and ends at +$28,818 ([[RES-09]]).
 - Evidence: test_the_recorded_live_run_of_seed_7_passes_the_audit, test_the_recorded_live_run_replays_without_a_key_and_gives_28818
+
+### DAT-30 [C] The call record
+- File: src/hotel_market/model.py
+- Where: calls.jsonl, one line per call to a Measured client, at the path its maker gives. scripts/live_audit.py writes it beside cache/ ([[MOD-22]]). The recorded run keeps one ([[DAT-29]]).
+- Fields: asked (the model asked), model (the model that answered), input_tokens, output_tokens, cache_creation_input_tokens, cache_read_input_tokens, seconds, stop_reason, fallback, request_id, retries and invalid.
+- Retries: a call that got a refusal or an invalid answer is asked again, RETRIES times at most ([[RUL-76]]). Its tokens and seconds sum over the attempts, retries counts them and invalid is true.
+- Written by: [[MOD-09]], Measured.complete(), which also keeps the records in memory as calls
+- Read by: [[MOD-22]] for the token, time and cost totals; [[MOD-23]] for invalid_answers() and retries()
+- Evidence: test_a_measured_client_records_one_call, test_a_measured_client_retries_a_bad_answer_and_counts_it, test_a_measured_claude_client_records_its_usage

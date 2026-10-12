@@ -9,13 +9,17 @@ The model's answers are cached under cache/seed<seed>/, one file per day and
 hotel, keyed by a digest of the request, and a rerun reads them first. With no
 client a template accepts each plan and writes a reason from the entry's
 numbers; the template is a function of the request, so it is never cached,
-and nothing here needs an API key. A replay only reads the cache.
+and nothing here needs an API key. A replay only reads the cache. Each record
+names the model asked, and an agent given another model keeps its answers in
+their own folder (agent.py). A Measured client wraps any client, records every
+call to a calls.jsonl and asks again after a refusal or an invalid answer.
 """
 
 from __future__ import annotations
 
 import hashlib
 import json
+import time
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any, Protocol
@@ -135,6 +139,7 @@ class ClaudeClient:
             sdk = anthropic.Anthropic()
         self.sdk = sdk
         self.model = model
+        self.last: dict | None = None  # what the last call returned, for a Measured wrapper
 
     def complete(self, system: str, prompt: str, schema: dict) -> str:
         response = self.sdk.beta.messages.create(
@@ -148,11 +153,108 @@ class ClaudeClient:
             system=system,
             messages=[{"role": "user", "content": prompt}],
         )
+        usage = getattr(response, "usage", None)
+        self.last = {
+            "model": getattr(response, "model", None) or self.model,
+            "input_tokens": getattr(usage, "input_tokens", 0) or 0,
+            "output_tokens": getattr(usage, "output_tokens", 0) or 0,
+            "cache_creation_input_tokens": getattr(usage, "cache_creation_input_tokens", 0) or 0,
+            "cache_read_input_tokens": getattr(usage, "cache_read_input_tokens", 0) or 0,
+            "stop_reason": response.stop_reason,
+            "fallback": any(block.type == "fallback" for block in response.content),
+            "request_id": getattr(response, "_request_id", None),
+        }
         if response.stop_reason == "refusal":
             raise ModelRefused(f"the model declined: {response.stop_details}")
         if response.stop_reason == "max_tokens":
             raise ValueError("the model's answer was cut off at max_tokens")
         return _answer_text(list(response.content))
+
+
+RETRIES = 2  # how many times a Measured client asks again after a refusal or an invalid answer
+
+
+class Measured:
+    """Wraps any client, records each call and asks again after a bad answer.
+
+    One record per call holds the model asked and the model that answered, the
+    input and output tokens, the wall time, the stop reason, the retries made and
+    whether any attempt was invalid: a refusal, or an answer that failed _check.
+    The records are kept in `calls` and appended to a calls.jsonl when a path is
+    given, so that an arm's calls sit beside its cache. The client's model, name
+    and cached flag pass through, so a measured oracle stays uncached and an
+    agent still finds the model's name for its cache folder.
+    """
+
+    def __init__(self, client: Client, path: Path | None = None, retries: int = RETRIES):
+        self.client = client
+        self.path = Path(path) if path is not None else None
+        self.retries = retries
+        self.calls: list[dict] = []
+        self.model = getattr(client, "model", getattr(client, "name", None))
+        if hasattr(client, "name"):
+            self.name = client.name
+        if hasattr(client, "cached"):
+            self.cached = client.cached
+
+    def complete(self, system: str, prompt: str, schema: dict) -> str:
+        request = json.loads(prompt)
+        record = {
+            "asked": self.model,
+            "model": self.model,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "seconds": 0.0,
+            "stop_reason": None,
+            "fallback": False,
+            "request_id": None,
+            "retries": 0,
+            "invalid": False,
+        }
+        attempts = 0
+        while True:
+            attempts += 1
+            start = time.perf_counter()
+            try:
+                text = self.client.complete(system, prompt, schema)
+                _check(json.loads(text)["decisions"], request)
+                error = None
+            except (ModelRefused, ValueError, KeyError, TypeError) as failure:
+                error = failure
+            record["seconds"] += time.perf_counter() - start
+            self._add_usage(record)
+            if error is None or attempts > self.retries:
+                break
+        record["retries"] = attempts - 1
+        record["invalid"] = error is not None or attempts > 1
+        record["seconds"] = round(record["seconds"], 2)
+        self.calls.append(record)
+        if self.path is not None:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            with self.path.open("a") as file:
+                file.write(json.dumps(record) + "\n")
+        if error is not None:
+            raise error
+        return text
+
+    def _add_usage(self, record: dict) -> None:
+        """What the wrapped client knows about its last call, when it is a ClaudeClient."""
+        last = getattr(self.client, "last", None)
+        if not last:
+            return
+        record["model"] = last.get("model") or record["model"]
+        for field in (
+            "input_tokens",
+            "output_tokens",
+            "cache_creation_input_tokens",
+            "cache_read_input_tokens",
+        ):
+            record[field] += last.get(field, 0) or 0
+        record["stop_reason"] = last.get("stop_reason")
+        record["fallback"] = record["fallback"] or bool(last.get("fallback"))
+        record["request_id"] = last.get("request_id")
 
 
 def _answer_text(blocks: list) -> str:
@@ -286,7 +388,13 @@ def _band_request(candidate: Candidate, group: WeekdayGroup) -> dict:
     }
 
 
-def ask(request: dict, path: Path, client: Client | None = None, replay: bool = False) -> dict:
+def ask(
+    request: dict,
+    path: Path,
+    client: Client | None = None,
+    replay: bool = False,
+    model: str = MODEL,
+) -> dict:
     """The decisions for one hotel's queue on one day.
 
     Without a client the template answers, and nothing is cached: the template
@@ -295,7 +403,8 @@ def ask(request: dict, path: Path, client: Client | None = None, replay: bool = 
     With any other client, the model's cached answer is read first. A cached
     answer written for a different request raises rather than answering the
     wrong question, and a replay never calls the model: it reads the cache or
-    raises.
+    raises. A new record names `model`, the model the client asks, so a cache
+    that holds several models' answers tells them apart.
     """
     if client is None:
         return {"source": "template", "decisions": template_decisions(request)}
@@ -313,7 +422,7 @@ def ask(request: dict, path: Path, client: Client | None = None, replay: bool = 
         raise CacheMiss(f"{path} is missing; run without --replay first")
     answer = {"source": source, "decisions": _answer(client, request)}
     _check(answer["decisions"], request)
-    record = {"request_digest": digest, "request": request, **answer}
+    record = {"request_digest": digest, "request": request, **answer, "model": model}
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(record, indent=2) + "\n")
     return record
