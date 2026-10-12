@@ -1,0 +1,51 @@
+"""forecast.py
+
+The agent's own demand model: the rooms a hotel expects to sell for a stay
+date at its starting rate, from what the feeds say on a day.
+
+    rooms x base occupancy x weekday factor
+    x (1 + air share x seat change for that stay date)
+    x (1 + uplift of every known event that covers the date)
+
+normal_demand leaves out seats and events; pace is measured against it. The
+weekday factors, base occupancy and air share are the hotel's own settings,
+the seat change comes from the schedule feed and the events from the events
+feed. The simulator books with the same formula (demand.py), which is the
+known limit that the agent's demand model is right by construction; the
+agent never reads demand.py.
+"""
+
+from __future__ import annotations
+
+from hotel_market.sources import Event, Sources
+from hotel_market.world import Hotel, weekday
+
+
+def weekday_factor(hotel: Hotel, stay_day: int) -> float:
+    return hotel.weekday_factors[weekday(stay_day)]
+
+
+def normal_demand(hotel: Hotel, stay_day: int) -> float:
+    """Rooms a hotel expects to sell for a stay date with no seat change and no event."""
+    return hotel.rooms * hotel.base_occupancy * weekday_factor(hotel, stay_day)
+
+
+def event_uplift(hotel: Hotel, stay_day: int, as_of_day: int, sources: Sources) -> float:
+    """The demand uplift of the known events that cover the date; they add up."""
+    return sum(e.uplift for e in sources.events.known(as_of_day) if e.covers(hotel.key, stay_day))
+
+
+def expected_demand(hotel: Hotel, stay_day: int, as_of_day: int, sources: Sources) -> float:
+    """Rooms a hotel expects to sell for a stay date, from what the feeds say on as_of_day."""
+    return (
+        normal_demand(hotel, stay_day)
+        * (1 + hotel.air_share * sources.schedules.seat_change(as_of_day)[stay_day])
+        * (1 + event_uplift(hotel, stay_day, as_of_day, sources))
+    )
+
+
+def peak_night(hotel: Hotel, event: Event, sources: Sources) -> int:
+    """The event night with the highest expected demand at a hotel, as of the day
+    the event becomes known. Ties go to the earliest night."""
+    nights = range(event.start_day, event.end_day + 1)
+    return max(nights, key=lambda night: expected_demand(hotel, night, event.known_day, sources))
