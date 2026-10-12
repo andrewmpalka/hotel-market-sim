@@ -20,6 +20,7 @@ It reports a problem when:
 - a measure's Function does not exist,
 - a RES node names no table in docs/results.md, or names one that is not there,
 - a [C] node gives "review" as its evidence but is not a policy node (Kind: policy),
+- a field line is longer than 240 characters, or a node has more than 8 fields,
 - a decision sits outside the two groups the index is built from,
 - kg/index.md differs from what --write-index would write.
 
@@ -151,6 +152,7 @@ def problems(kg_dir: Path = KG_DIR, root: Path = ROOT) -> list[str]:
     found += _unlisted_constants(nodes, root)
     found += _missing_functions(nodes)
     found += _missing_tables(nodes, root)
+    found += _bad_fields(nodes)
     found += _ungrouped_decisions(nodes)
     found += _index_differs(kg_dir, nodes)
     return found
@@ -267,6 +269,24 @@ def _bad_evidence(nodes: list[Node]) -> list[str]:
             LINK.search(node.fields.get(key, "")) for key in HISTORY_KEYS
         ):
             found.append(f"{node.where} is [H] but names no node that replaced it")
+    return found
+
+
+def _bad_fields(nodes: list[Node]) -> list[str]:
+    """Every field line fits in FIELD_LIMIT characters, and a node has at most
+    FIELD_COUNT_LIMIT of them, so that a node stays a few lines of plain facts."""
+    found = []
+    for node in nodes:
+        found += [
+            f"kg/{node.file}:{number}: {node.id}: the field {key} is {length} characters; "
+            f"the limit is {FIELD_LIMIT}"
+            for number, key, length in node.field_lines
+            if length > FIELD_LIMIT
+        ]
+        if len(node.field_lines) > FIELD_COUNT_LIMIT:
+            found.append(
+                f"{node.where} has {len(node.field_lines)} fields; the limit is {FIELD_COUNT_LIMIT}"
+            )
     return found
 
 

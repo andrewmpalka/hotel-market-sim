@@ -171,6 +171,17 @@ def _problem_with(kg_copy: Path, *texts: str) -> bool:
     return any(all(text in problem for text in texts) for problem in kg_check.problems(kg_copy))
 
 
+def test_a_field_longer_than_the_limit_is_reported(kg_copy):
+    _set_field(kg_copy / "shocks.md", "SHK-01", "Known on day", "10, " + "and more " * 30)
+    assert _problem_with(kg_copy, "SHK-01: the field Known on day is", "the limit is 240")
+
+
+def test_a_node_with_more_than_eight_fields_is_reported(kg_copy):
+    for extra in ("one", "two", "three", "four", "five", "six", "seven", "eight"):
+        _set_field(kg_copy / "shocks.md", "SHK-01", f"Extra {extra}", "a fact")
+    assert _problem_with(kg_copy, "SHK-01 has", "fields; the limit is 8")
+
+
 def test_review_as_evidence_is_accepted_only_on_a_policy_node(kg_copy):
     _set_field(kg_copy / "shocks.md", "SHK-01", "Evidence", "review")
     assert _problem_with(kg_copy, "SHK-01 cites review as its evidence but is not a policy node")
