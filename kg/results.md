@@ -181,3 +181,31 @@ here for the rest.
 - Sizes: the images are 615 MB, 592 MB and 600 MB on 3.11, 3.12 and 3.14. The suite inside the image runs from its copy of the repository. The demo file and the schema lookups expect the repository root.
 - Table: docs/results.md, "The container image on each Python version"
 - Links: [[UNK-03]], [[DEC-28]], [[RES-15]]
+
+### RES-21 [C] Seeds 1 to 20 at a demand bias of 0.9
+- Ran: `hotel-market bench --seeds 1 20 --template --demand-bias 0.9 --elasticity true --elasticity fixed:1.0 --elasticity learn:1.0` on 2026-10-12. The same command with `--elasticity learn:1.0 --cautious` ran the cautious arm.
+- Result: the true mode earns +$1,913 a seed, ahead in 12 of 20, against +$32,899 at 1.0 ([[RES-23]]). Accept-all loses $25,179 a seed at fixed:1.0 and $14,376 at learn:1.0. The oracle earns +$2,334 to +$2,748 in every mode.
+- Flags: each arm raises 2,541 to 3,230 flags over the 20 seeds, and 90% to 93% carry a pace cause. The true mode at 1.0 raises 1,952, 88% with a pace cause. Accept-all at fixed:1.0 changes 886 rates.
+- Estimates: the learn:1.0 arm's day-59 estimates are 1.36 to 1.46 by hotel, against 1.36 to 1.45 at 1.0. The cautious arm's are 1.26 to 1.48, against 1.28 to 1.43. The level error landed in the intercept ([[UNK-07]]).
+- Oracle: the oracle accepts 4% to 10% of the plans in the mismatched modes. Its learn arms therefore barely move a rate. Their day-59 estimates stay at 1.05 to 1.31, near the prior.
+- Table: docs/results.md, "Seeds 1 to 20 at a demand bias of 0.9"
+- Evidence: test_the_demand_bias_runs_pin_their_headline
+- Links: [[DEC-50]], [[RUL-82]], [[RES-22]], [[RES-23]], [[UNK-07]], [[UNK-08]]
+
+### RES-22 [C] Seeds 1 to 20 at a demand bias of 1.1
+- Ran: the two commands of [[RES-21]] with `--demand-bias 1.1`, on 2026-10-12.
+- Result: every arm is ahead in 20 of 20. The true mode earns +$112,082 a seed, accept-all +$93,008 at fixed:1.0 and +$98,401 at learn:1.0. The oracle earns +$107,393 to +$107,714 in the mismatched modes.
+- Flags: the true mode raises 8,526 flags over the 20 seeds, 97% with a pace cause. It changes 464 rates against 179 at 1.0. The start rates were set for a smaller market, so the dates run ahead of pace.
+- Estimates: the learn:1.0 arm's day-59 estimates are 1.39 to 1.49 by hotel, against 1.36 to 1.45 at 1.0 ([[RES-23]]). The cautious arm's are 1.29 to 1.46, against 1.28 to 1.43.
+- Table: docs/results.md, "Seeds 1 to 20 at a demand bias of 1.1"
+- Evidence: test_the_demand_bias_runs_pin_their_headline
+- Links: [[DEC-50]], [[RUL-82]], [[RES-21]], [[RES-23]], [[UNK-07]], [[UNK-08]]
+
+### RES-23 [C] The same arms at the default demand bias of 1.0
+- Ran: the two commands of [[RES-21]] with `--demand-bias 1.0`, on 2026-10-12. The run read no cache and made no call.
+- Result: the true, fixed:1.0 and template learn arms repeat [[RES-01]], [[RES-16]], [[RES-04]] and [[RES-05]] to the dollar. They earn +$32,899, +$8,438, +$14,141 and +$25,076 a seed. The default run did not change.
+- Oracle: in learn:1.0 the oracle earns +$30,828 a seed and accepts 21% of the plans. In the cautious arm it earns +$31,042 and accepts 34%. The bench had not run the learn modes before ([[RES-16]]).
+- Flags: the true mode raises 1,952 flags over the 20 seeds, 88% with a pace cause. Accept-all at fixed:1.0 raises 789, because each of its 515 rate changes holds its stay dates for seven days ([[RUL-66]]).
+- Table: docs/results.md, "Seeds 1 to 20 at the default demand bias of 1.0"
+- Evidence: test_the_offline_bench_on_20_seeds_pins_the_benchmarks_headline, test_the_default_mode_still_gives_a_20_seed_mean_of_32899
+- Links: [[DEC-50]], [[RUL-82]], [[RES-01]], [[RES-04]], [[RES-05]], [[RES-16]], [[RES-21]], [[RES-22]]

@@ -12,7 +12,8 @@ bookings. They are drawn around
     x (rate / comp median) ** -ELASTICITY
 
 and capped at the rooms still unsold. Rates can change on days 0 to 59. A change applies from the
-next day, and rates are frozen from day 60.
+next day, and rates are frozen from day 60. A demand bias other than 1.0 multiplies the preload
+and every day's expected demand (demand.py). The agent never sees it.
 
 Every draw has its own random number, fixed by the seed before the run starts. The function
 poisson_draw turns it into a Poisson count. A change to one rate changes only that stay date's
@@ -35,7 +36,7 @@ from collections.abc import Callable, Sequence
 import numpy as np
 
 from hotel_market.customer import Customer, demo
-from hotel_market.demand import expected_demand, normal_demand
+from hotel_market.demand import DEMAND_BIAS, expected_demand, normal_demand
 from hotel_market.schedule import HORIZON_DAYS
 from hotel_market.shops import comp_median
 from hotel_market.world import SIM_DAYS, Hotel, stay_window
@@ -44,9 +45,14 @@ ELASTICITY = 1.5  # bookings scale with (rate / comp median) ** -ELASTICITY
 BOOKING_STREAM = 2  # keeps these draws apart from the rate-shop noise (stream 1)
 
 
-def preload_mean(hotel: Hotel, stay_day: int, customer: Customer | None = None) -> float:
+def preload_mean(
+    hotel: Hotel,
+    stay_day: int,
+    customer: Customer | None = None,
+    demand_bias: float = DEMAND_BIAS,
+) -> float:
     """Rooms expected on the books for a stay date before day 0's bookings."""
-    return normal_demand(hotel, stay_day) * (customer or demo()).curve(stay_day + 1)
+    return normal_demand(hotel, stay_day, demand_bias) * (customer or demo()).curve(stay_day + 1)
 
 
 def poisson_draw(u: np.ndarray, mean: np.ndarray) -> np.ndarray:
@@ -82,9 +88,12 @@ class Books:
     before day 0. The market is the customer's; the demo market by default.
     """
 
-    def __init__(self, seed: int, customer: Customer | None = None):
+    def __init__(
+        self, seed: int, customer: Customer | None = None, demand_bias: float = DEMAND_BIAS
+    ):
         self.seed = seed
         self.customer = customer or demo()
+        self.demand_bias = demand_bias  # multiplies the preload and every day's expected demand
         hotels = self.customer.hotels
         rng = np.random.default_rng([seed, BOOKING_STREAM])
         self._preload_luck = rng.random((len(hotels), HORIZON_DAYS))
@@ -108,7 +117,9 @@ class Books:
         stays = np.array(window)
         for hotel in self.customer.hotels:
             i = hotel.row
-            mean = np.array([preload_mean(hotel, s, self.customer) for s in window])
+            mean = np.array(
+                [preload_mean(hotel, s, self.customer, self.demand_bias) for s in window]
+            )
             rooms = np.minimum(poisson_draw(self._preload_luck[i, stays], mean), hotel.rooms)
             self.preload[i, stays] = rooms
             self.rooms[i, stays] = rooms
@@ -125,7 +136,7 @@ class Books:
             median = comp_median(day, hotel, stay_day, seed=self.seed, customer=self.customer)
         curve = self.customer.curve
         return (
-            expected_demand(hotel, stay_day, day)
+            expected_demand(hotel, stay_day, day, self.demand_bias)
             * (curve(days_out) - curve(days_out + 1))
             * (rate / median) ** -ELASTICITY
         )
@@ -189,13 +200,15 @@ def simulate(
     decide: Decide | None = None,
     last_day: int = HORIZON_DAYS - 1,
     customer: Customer | None = None,
+    demand_bias: float = DEMAND_BIAS,
 ) -> Books:
     """Run the booking loop on days 0 to last_day (149 for a full run) and return the books.
 
     Without decide, every rate stays at the hotel's starting rate. Without a
-    customer, the market is the demo market.
+    customer, the market is the demo market. The demand bias multiplies the
+    simulator's demand, and nothing the agent reads carries it.
     """
-    books = Books(seed, customer)
+    books = Books(seed, customer, demand_bias)
     for day in range(last_day + 1):
         books.book(day)
         if decide is not None and day < SIM_DAYS:
@@ -206,9 +219,12 @@ def simulate(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run the booking loop at fixed rates.")
     parser.add_argument("--seed", type=int, required=True)
-    seed = parser.parse_args().seed
-    books = simulate(seed)
-    print(f"Fixed-rate run, seed {seed}, the demo market")
+    parser.add_argument("--demand-bias", type=float, default=DEMAND_BIAS, metavar="F")
+    arguments = parser.parse_args()
+    seed, demand_bias = arguments.seed, arguments.demand_bias
+    books = simulate(seed, demand_bias=demand_bias)
+    bias = f", demand bias {demand_bias:g}" if demand_bias != DEMAND_BIAS else ""
+    print(f"Fixed-rate run, seed {seed}, the demo market{bias}")
     print(f"{'':28}{'occupancy':>12}{'occupancy':>12}{'room revenue':>16}{'contribution':>16}")
     print(f"{'':28}{'stays 0-59':>12}{'stays 0-149':>12}{'stays 0-149':>16}{'stays 0-149':>16}")
     for hotel in books.customer.hotels:

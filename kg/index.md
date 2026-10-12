@@ -83,6 +83,7 @@ it differs from what that would write. `README.md` is the legend.
 - RUL-23 [H] CURVE_DAYS_OUT — kg/rules.md
 - RUL-24 [H] CURVE_SHARE — kg/rules.md
 - RUL-25 [H] HOTEL_ROW — kg/rules.md
+- RUL-82 [C] DEMAND_BIAS — src/hotel_market/demand.py
 - RUL-19 [C] NOISE — src/hotel_market/shops.py
 - RUL-20 [C] NOISE_STREAM — src/hotel_market/shops.py
 - RUL-21 [C] ELASTICITY — src/hotel_market/bookings.py
@@ -199,6 +200,7 @@ it differs from what that would write. `README.md` is the legend.
 - DEC-45 [T] Each model request carries the hotel's past decisions and their outcomes — kg/decisions.md
 - DEC-46 [T] The agent reprices when data arrives during the day — kg/decisions.md
 - DEC-49 [C] The benchmark measures the reviewer in the mismatched modes — kg/decisions.md
+- DEC-50 [C] A demand bias the agent never sees is the demand-level twin of a fixed elasticity — kg/decisions.md
 
 ### Engineering
 
@@ -241,6 +243,9 @@ it differs from what that would write. `README.md` is the legend.
 - RES-18 [O] The reviewers in the true mode on seeds 1 to 20 — kg/results.md
 - RES-19 [O] The reviewers ranked across the mismatched modes — kg/results.md
 - RES-20 [O] The container image on each Python version — kg/results.md
+- RES-21 [C] Seeds 1 to 20 at a demand bias of 0.9 — kg/results.md
+- RES-22 [C] Seeds 1 to 20 at a demand bias of 1.1 — kg/results.md
+- RES-23 [C] The same arms at the default demand bias of 1.0 — kg/results.md
 
 ## Open forks (`forks.md`)
 

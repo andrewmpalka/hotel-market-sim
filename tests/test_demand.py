@@ -3,7 +3,7 @@
 import pytest
 
 from hotel_market.customer import demo
-from hotel_market.demand import expected_demand, known_seat_change, normal_demand
+from hotel_market.demand import DEMAND_BIAS, expected_demand, known_seat_change, normal_demand
 from hotel_market.schedule import seat_change
 from hotel_market.shocks import event_uplift
 from hotel_market.world import stay_window, weekday
@@ -87,3 +87,17 @@ def test_known_seat_change_matches_the_schedule(as_of_day):
 def test_known_seat_change_is_read_only():
     with pytest.raises(TypeError):
         known_seat_change(20)[55] = 0.0
+
+
+def test_the_demand_bias_multiplies_both_demands_and_is_1_by_default():
+    assert DEMAND_BIAS == 1.0
+    for hotel in DEMO.hotels:
+        for stay_day in (0, 45, 100):
+            assert normal_demand(hotel, stay_day) == normal_demand(hotel, stay_day, 1.0)
+            assert normal_demand(hotel, stay_day, 0.9) == pytest.approx(
+                0.9 * normal_demand(hotel, stay_day)
+            )
+            # The bias scales the whole formula, seats and events included.
+            assert expected_demand(hotel, stay_day, 20, 1.1) == pytest.approx(
+                1.1 * expected_demand(hotel, stay_day, 20)
+            )

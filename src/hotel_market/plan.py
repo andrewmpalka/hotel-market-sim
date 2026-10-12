@@ -445,22 +445,33 @@ def _candidates(
     ]
 
 
-def rescored(group: WeekdayGroup, candidate: Candidate, elasticity: float, cost: float) -> float:
+def rescored(
+    group: WeekdayGroup,
+    candidate: Candidate,
+    elasticity: float,
+    cost: float,
+    demand_bias: float = 1.0,
+) -> float:
     """A candidate's estimate made again at another elasticity, from the stay dates the group was
-    built from. The cost is the room cost for contribution, 0 for revenue. A grader outside the
-    agent's path uses this to score a plan at the simulator's elasticity."""
-    return _estimate(group.stay_dates, candidate.rates, elasticity, cost)
+    built from. The cost is the room cost for contribution, 0 for revenue. The demand bias
+    multiplies the remaining demand of every stay date. A grader outside the agent's path uses
+    this to score a plan at the simulator's elasticity and demand level."""
+    return _estimate(group.stay_dates, candidate.rates, elasticity, cost, demand_bias)
 
 
 def _estimate(
-    stay_dates: list[StayDate], rates: dict[int, float], elasticity: float, cost: float
+    stay_dates: list[StayDate],
+    rates: dict[int, float],
+    elasticity: float,
+    cost: float,
+    demand_bias: float = 1.0,
 ) -> float:
     """Estimated contribution (or revenue, when cost is 0) on the rooms still unsold,
-    summed over the stay dates."""
+    summed over the stay dates. The agent's path never passes a demand bias."""
     total = 0.0
     for s in stay_dates:
         rate = rates[s.stay_day]
-        demand = s.remaining_demand * (rate / s.comp_median) ** -elasticity
+        demand = s.remaining_demand * demand_bias * (rate / s.comp_median) ** -elasticity
         total += expected_bookings(demand, s.unsold) * (rate - cost)
     return total
 

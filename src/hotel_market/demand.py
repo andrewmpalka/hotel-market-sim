@@ -8,8 +8,12 @@ uses what is known on as_of_day.
     x (1 + event uplift, from events known by as_of_day)
 
 normal_demand leaves out seats and events. The agent never reads this module. Its own demand
-model is forecast.py, which uses the same formula from the feeds. That is the known limit: the
-agent's demand model is right by construction.
+model is forecast.py, which uses the same formula from the feeds. At the default demand bias the
+agent's demand model is therefore right by construction. That is a known limit.
+
+DEMAND_BIAS multiplies both functions. The command sets it with --demand-bias, and the booking
+loop passes it to every draw. The agent never receives it, so at a bias other than 1.0 its
+forecast is wrong by that factor. The error is in the demand level alone.
 
 Run `python -m hotel_market.demand` to print normal demand as occupancy by day of week.
 """
@@ -24,20 +28,27 @@ from hotel_market.schedule import AIR_SHOCKS, seat_change
 from hotel_market.shocks import event_uplift
 from hotel_market.world import Hotel, weekday
 
+# A factor on the simulator's demand that the agent never sees; --demand-bias sets it per run.
+DEMAND_BIAS = 1.0
+
 
 def dow_factor(hotel: Hotel, stay_day: int) -> float:
     return hotel.weekday_factors[weekday(stay_day)]
 
 
-def normal_demand(hotel: Hotel, stay_day: int) -> float:
-    """Rooms a hotel expects to sell for a stay date with no seat change and no event."""
-    return hotel.rooms * hotel.base_occupancy * dow_factor(hotel, stay_day)
+def normal_demand(hotel: Hotel, stay_day: int, demand_bias: float = DEMAND_BIAS) -> float:
+    """Rooms a hotel expects to sell for a stay date with no seat change and no event. The
+    demand bias multiplies it."""
+    return hotel.rooms * hotel.base_occupancy * dow_factor(hotel, stay_day) * demand_bias
 
 
-def expected_demand(hotel: Hotel, stay_day: int, as_of_day: int) -> float:
-    """Rooms a hotel expects to sell for a stay date, given what is known on as_of_day."""
+def expected_demand(
+    hotel: Hotel, stay_day: int, as_of_day: int, demand_bias: float = DEMAND_BIAS
+) -> float:
+    """Rooms a hotel expects to sell for a stay date, given what is known on as_of_day. The
+    demand bias multiplies it."""
     return (
-        normal_demand(hotel, stay_day)
+        normal_demand(hotel, stay_day, demand_bias)
         * (1 + hotel.air_share * known_seat_change(as_of_day)[stay_day])
         * (1 + event_uplift(hotel.key, stay_day, as_of_day))
     )

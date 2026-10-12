@@ -57,7 +57,7 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-07 [C] Books
 - File: src/hotel_market/bookings.py
-- Fields: rooms (int, hotels x stay dates), revenue (float, same shape) and rates (float, same shape). Rates start at each hotel's start rate.
+- Fields: rooms (int, hotels x stay dates), revenue (float, same shape) and rates (float, same shape). Rates start at each hotel's start rate. demand_bias is the simulator's factor on demand ([[RUL-82]]).
 - Draws: the random numbers for every draw of the run ([[DEC-22]]). The preload has one per hotel and stay date, and the loop one per day, hotel and stay date.
 - Log: daily_rooms, daily_rates and daily_medians, shape (days, hotels, stay dates), zero outside the day's window. preload holds the rooms loaded before day 0, and [[MOD-19]] serves the agent from the log as of any day.
 - Methods: book(day), set_rates(changes), and the measures occupancy, average_rate, revpar, room_revenue and contribution over a range of stay dates ([[MEA-01]] to [[MEA-05]]).
@@ -162,10 +162,10 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-19 [C] SeedResult
 - File: src/hotel_market/cli.py
-- Fields: SeedResult(seed, contribution_change, revenue_change, rate_changes, estimated, estimates, rejected_at_an_end, shock_changes, shock_gain, other_changes, other_gain, entries, calls, counts), frozen. One seed of one arm.
+- Fields: SeedResult(seed, contribution_change, revenue_change, rate_changes, estimated, estimates, rejected_at_an_end, shock_changes, shock_gain, other_changes, other_gain, entries, calls, counts, flags, pace_flags), frozen.
 - Meaning: estimated is what the accepted plans were estimated to earn over holding. estimates maps (day, hotel key) to the learned Estimate ([[DAT-23]]) in learn mode. rejected_at_an_end counts the candidates the cautious band rejected.
 - Shocks: the shock fields count the plans whose causes include one of [[RUL-55]] and the target's change on their stay dates. The other fields do the same for every other plan, on the stay dates only those changed.
-- Bench: entries are the run's entries, calls its call records ([[DAT-30]]) and counts the oracle's labels on it ([[DAT-31]]). The bench tables sum them over an arm's seeds.
+- Bench: entries are the run's entries, calls its call records ([[DAT-30]]) and counts the oracle's labels on it ([[DAT-31]]). flags counts the entries and pace_flags those with a pace cause. The bench tables sum them over an arm's seeds.
 - Written by: [[MOD-12]] (sweep)
 - Read by: [[MOD-12]] through [[DAT-24]] (the seeds table, the arm table, the estimate table and the bench tables)
 - Evidence: test_the_sweep_gives_each_seeds_change_over_the_fixed_run, test_a_sweep_counts_the_shock_plans_apart_from_the_other_plans, test_a_sweep_with_reviewers_keeps_each_arms_entries_calls_and_counts
@@ -282,8 +282,8 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-32 [C] Reviewer
 - File: src/hotel_market/bench.py
-- Fields: Reviewer(name, model, make), frozen: an arm's reviewer. name labels the row, model is the model it asks (None when none) and make builds its client. TEMPLATE, ORACLE and live(model) are the three kinds.
-- Client: client_for(agent) builds the client once the agent exists. The template has none. The oracle reads agent.today ([[DEC-47]]). A model gets a measured Claude client that writes calls.jsonl in the arm's cache folder ([[DAT-30]]).
+- Fields: Reviewer(name, model, make), frozen: an arm's reviewer. name labels the row, model is the model it asks (None when none) and make builds its client. TEMPLATE, ORACLE, oracle(demand_bias) and live(model) are the kinds.
+- Client: client_for(agent) builds the client once the agent exists. The template has none. The oracle reads agent.today ([[DEC-47]]) and takes the demand bias ([[DEC-50]]). A model gets a measured Claude client ([[DAT-30]]).
 - Model: the agent takes the reviewer's model, so the arm's cache folder names it ([[DEC-23]]). live is true when the arm asks a model, and the bench then prints its calls, tokens, latency and cost.
 - Written by: [[MOD-12]] (the bench command, from --model) and tests
 - Read by: [[MOD-12]] (sweep)

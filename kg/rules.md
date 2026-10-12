@@ -129,6 +129,15 @@ marked [H], with one line that names the node it moved to.
 ### RUL-25 [H] HOTEL_ROW
 - Moved to: [[DAT-04]], as each hotel's row, its position in the file
 
+## demand.py
+
+### RUL-82 [C] DEMAND_BIAS
+- Value: 1.0
+- File: src/hotel_market/demand.py
+- Kind: parameter
+- Meaning: a factor on the simulator's demand, the day-0 preload included, that the agent never sees ([[DEC-50]]). --demand-bias sets it for a run. At 1.0 the agent's forecast equals the simulator's demand ([[MOD-18]]).
+- Evidence: test_the_forecast_is_the_simulators_demand_for_the_demo_market, test_the_demand_bias_multiplies_both_demands_and_is_1_by_default
+
 ## shops.py
 
 ### RUL-19 [C] NOISE

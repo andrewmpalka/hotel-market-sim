@@ -24,6 +24,7 @@ from hotel_market.bench import (
     oracle_labels,
     recovered_share,
 )
+from hotel_market.bookings import simulate
 from hotel_market.cli import (
     BENCH_MODES,
     REPORT_DAYS,
@@ -42,7 +43,7 @@ from hotel_market.cli import (
     sweep,
 )
 from hotel_market.customer import demo
-from hotel_market.detect import NEW_EVENT, SEATS_UP
+from hotel_market.detect import NEW_EVENT, PACE, SEATS_UP
 from hotel_market.estimate import Estimate
 from hotel_market.model import Measured
 from hotel_market.plan import HOLD
@@ -281,7 +282,7 @@ ROWS = [
 def test_the_seeds_command_prints_each_seed_and_the_mean_and_range(monkeypatch, capsys):
     monkeypatch.setattr(
         "hotel_market.cli.sweep",
-        lambda first, last, modes, customer: [ArmResult(TRUE_MODE, ROWS)],
+        lambda first, last, modes, customer, demand_bias: [ArmResult(TRUE_MODE, ROWS)],
     )
     main(["--seeds", "1", "3"])
     out = capsys.readouterr().out
@@ -302,7 +303,9 @@ def test_the_seeds_command_prints_each_seed_and_the_mean_and_range(monkeypatch, 
 def test_a_revenue_target_arm_counts_wins_and_earnings_in_revenue(monkeypatch, capsys):
     arm = ArmResult(TRUE_MODE, ROWS, "revenue")
     assert arm.wins == 1 and arm.realised == pytest.approx(-5.0)
-    monkeypatch.setattr("hotel_market.cli.sweep", lambda first, last, modes, customer: [arm])
+    monkeypatch.setattr(
+        "hotel_market.cli.sweep", lambda first, last, modes, customer, demand_bias: [arm]
+    )
     main(["--seeds", "1", "3", "--target", "revenue"])
     out = capsys.readouterr().out
     assert "candidates scored on revenue" in out
@@ -326,7 +329,9 @@ def test_the_seeds_command_prints_one_row_per_arm_and_a_learn_arms_estimates(mon
     ]
     cautious = replace(learn, cautious=True)
     arms = [ArmResult(TRUE_MODE, ROWS), ArmResult(cautious, learned)]
-    monkeypatch.setattr("hotel_market.cli.sweep", lambda first, last, modes, customer: arms)
+    monkeypatch.setattr(
+        "hotel_market.cli.sweep", lambda first, last, modes, customer, demand_bias: arms
+    )
     main(["--seeds", "1", "3", "--elasticity", "true", "--elasticity", "learn:1.0", "--cautious"])
     out = capsys.readouterr().out
     rows = [line.split() for line in out.splitlines() if line.startswith(("true", "learn:1"))]
@@ -435,7 +440,8 @@ def test_the_bench_command_prints_its_tables(bench_arms, monkeypatch, capsys):
     _, arms = bench_arms
     template, oracle, scripted = arms
     monkeypatch.setattr(
-        "hotel_market.cli.sweep", lambda first, last, modes, customer, reviewers: arms
+        "hotel_market.cli.sweep",
+        lambda first, last, modes, customer, reviewers, demand_bias: arms,
     )
     main(["bench", "--seeds", "1", "2", "--elasticity", "fixed:1.0", "--template"])
     out = capsys.readouterr().out
@@ -457,6 +463,9 @@ def test_the_bench_command_prints_its_tables(bench_arms, monkeypatch, capsys):
             "to",
             f"{max(arm.changes):+,.0f}",
             f"{arm.wins}/2",
+            str(arm.flags),
+            str(arm.pace_flags),
+            str(arm.rate_changes),
             f"{oracle_mean - mean:+,.0f}",
             rate(recovered_share(template_mean, oracle_mean, mean)),
             rate(counts.accept_rate),
@@ -470,10 +479,10 @@ def test_the_bench_command_prints_its_tables(bench_arms, monkeypatch, capsys):
     assert rows["oracle"] == expected(oracle, ["-", "-", "-", "-", "-"])
     # regret, recovered share, then precision, recall, F1 and $ recall: the oracle is its own
     # reference, and the template recovers nothing and declines nothing.
-    assert rows["oracle"][6:8] == ["+0", "1.00"]
-    assert rows["oracle"][9:13] == ["1.00", "1.00", "1.00", "1.00"]
-    assert rows["template"][7] == "0.00" and rows["template"][9] == "-"
-    assert rows["template"][10] == "0.00"
+    assert rows["oracle"][9:11] == ["+0", "1.00"]
+    assert rows["oracle"][12:16] == ["1.00", "1.00", "1.00", "1.00"]
+    assert rows["template"][10] == "0.00" and rows["template"][12] == "-"
+    assert rows["template"][13] == "0.00"
     # The scripted model is live: its calls, tokens, median latency and cost are printed; its
     # model is not in the price table, so the cost is n/a.
     calls = len(scripted.calls)
@@ -486,6 +495,69 @@ def test_the_bench_command_prints_its_tables(bench_arms, monkeypatch, capsys):
         [str(rank), arm.reviewer.name] for rank, arm in enumerate(by_change, 1)
     ]
     assert ranked[0][2:] == rows[ranked[0][1]][1:]
+
+
+def test_a_sweep_counts_each_runs_flags_and_its_pace_flags(bench_arms):
+    _, arms = bench_arms
+    for arm in arms:
+        for result in arm.seeds:
+            assert result.flags == len(result.entries) > 0
+            assert result.pace_flags == sum(bool(PACE & set(e.causes)) for e in result.entries)
+            assert 0 < result.pace_flags <= result.flags
+        assert arm.flags == sum(r.flags for r in arm.seeds)
+        assert arm.pace_flags == sum(r.pace_flags for r in arm.seeds)
+
+
+def test_a_demand_bias_goes_to_both_runs_and_never_to_the_agent(tmp_path):
+    fixed, books, agent = run(
+        SEED, tmp_path / "d.jsonl", tmp_path / "cache", FakeClient(), demand_bias=0.9
+    )
+    assert fixed.demand_bias == books.demand_bias == 0.9
+    assert fixed.rooms.sum() < simulate(SEED).rooms.sum()
+    # The agent's folder sits under one for the bias, and nothing it wrote names the bias.
+    assert agent.cache_dir == tmp_path / "cache" / "demand-bias-0.9" / "seed7"
+    assert not hasattr(agent, "demand_bias") and "bias" not in json.dumps(agent.log)
+    assert "The simulator multiplied its demand by 0.9 in both runs." in summary(
+        SEED, fixed, books, agent
+    )
+    plain, _, plain_agent = run(SEED, tmp_path / "p.jsonl", tmp_path / "cache", FakeClient())
+    assert plain.demand_bias == 1.0 and plain_agent.cache_dir == tmp_path / "cache" / "seed7"
+    assert "multiplied its demand" not in summary(SEED, plain, plain, plain_agent)
+
+
+def test_the_command_and_the_bench_take_a_demand_bias(monkeypatch, capsys):
+    seen = {}
+
+    def fake_sweep(first, last, modes, customer, reviewers=(TEMPLATE,), demand_bias=1.0):
+        seen["bias"], seen["reviewers"] = demand_bias, list(reviewers)
+        return [ArmResult(mode, ROWS, reviewer=r) for mode in modes for r in reviewers]
+
+    monkeypatch.setattr("hotel_market.cli.sweep", fake_sweep)
+    main(["--seeds", "1", "3", "--demand-bias", "0.9"])
+    out = capsys.readouterr().out
+    assert seen["bias"] == 0.9 and "multiplied by 0.9 unseen by the agent" in out
+    main(
+        ["bench", "--seeds", "1", "3", "--template", "--elasticity", "learn:1.0", "--cautious"]
+        + ["--demand-bias", "1.1"]
+    )
+    out = capsys.readouterr().out
+    assert seen["bias"] == 1.1 and "multiplied by 1.1 unseen by the agent" in out
+    template, oracle_arm = seen["reviewers"]
+    assert template is TEMPLATE and oracle_arm is not ORACLE and oracle_arm.name == "oracle"
+    assert "Elasticity learn:1 cautious: each reviewer" in out
+    assert "Elasticity learn:1 cautious, oracle: the estimate each hotel priced with" in out
+    # The default is 1.0, where the oracle is ORACLE itself; a bias must be above zero, and
+    # --cautious needs a learn mode, as on the sweep.
+    main(["bench", "--seeds", "1", "3", "--template", "--elasticity", "fixed:1.0"])
+    assert seen["bias"] == 1.0 and seen["reviewers"][1] is ORACLE
+    for argv in (
+        ["--seeds", "1", "3", "--demand-bias", "0"],
+        ["bench", "--seeds", "1", "3", "--template", "--demand-bias", "-1"],
+        ["bench", "--seeds", "1", "3", "--template", "--demand-bias", "x"],
+        ["bench", "--seeds", "1", "3", "--template", "--cautious"],
+    ):
+        with pytest.raises(SystemExit):
+            main(argv)
 
 
 def test_an_arms_call_records_are_read_from_its_folder_and_counted_once(tmp_path):
@@ -544,6 +616,18 @@ def test_the_offline_bench_on_20_seeds_pins_the_benchmarks_headline(tmp_path):
         oracle = by_arm[(mode, "oracle")]
         assert oracle.counts.precision == oracle.counts.recall == 1.0 and oracle.wins == 20
         assert by_arm[(mode, "template")].counts.declined == 0
+
+
+@pytest.mark.slow
+def test_the_demand_bias_runs_pin_their_headline(tmp_path):
+    """The true and fixed:1.0 template arms at a bias of 0.9 and 1.1 end where the recorded runs
+    ended, so the demand-bias tables stay pinned."""
+    headline = {0.9: (1913, -25179), 1.1: (112082, 93008)}
+    for bias, (true_mean, fixed_mean) in headline.items():
+        arms = sweep(1, 20, tmp_path / "cache", [TRUE_MODE, FIXED_1], demand_bias=bias)
+        by_mode = {str(arm.mode): arm for arm in arms}
+        assert statistics.mean(by_mode["true"].changes) == pytest.approx(true_mean, abs=1)
+        assert statistics.mean(by_mode["fixed:1"].changes) == pytest.approx(fixed_mean, abs=1)
 
 
 def test_a_learn_run_keeps_its_own_cache_and_says_where_its_estimates_ended(tmp_path):

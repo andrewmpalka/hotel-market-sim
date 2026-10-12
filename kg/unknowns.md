@@ -53,15 +53,16 @@ and a RES node records the run. A claim that no test can confirm stays [U].
 - Error: the standard error says how little the data pin it down. It is 0.12 to 0.31 on day 59 when the agent has been changing rates. When it has not, it is 0.4 to 0.5, the prior's own width.
 - Cost: what a wrong value costs, and what learning wins back, is measured ([[RES-03]], [[RES-04]], [[RES-05]]). That closed [[FRK-02]].
 - Not settled: whether a real market's bookings obey one elasticity at all ([[UNK-14]]). The same one across stay dates, days out and guest segments is less likely still.
-- Baseline: the estimator takes the simulator's own demand formula as its baseline. A real baseline error lands in the intercept only if it is a constant factor.
+- Measured: the estimator's baseline is the simulator's demand formula, so a constant level error lands in the intercept ([[DEC-50]]). At a demand bias of 0.9 or 1.1 the day-59 estimates stay at 1.26 to 1.49 ([[RES-21]], [[RES-22]]).
 - Best guess: between 1 and 2 at a real hotel, different by hotel and by distance to arrival. It is not recoverable from a run in which the hotel's own rate barely moves. The estimate needs the rate to move to learn anything.
 - Resolves when: never within this repository.
 
 ### UNK-08 [U] Whether the measured gains say anything about a real hotel
 - Unknown: the agent shares the simulator's demand formula and booking curve in every mode. In the default mode it is also handed the simulator's elasticity, so it knows price response exactly only there ([[DEC-38]]).
 - Best guess: no. The numbers show that the loop detects, scores, decides and records correctly, and nothing more. They are a test of the machinery.
+- Measured: at a demand bias of 0.9 the default mode keeps +$1,913 a seed of its +$32,899 ([[RES-21]]). At 1.1 it earns +$112,082 ([[RES-22]]). The gain follows the size of a forecast error these runs set ([[DEC-50]]).
 - Resolves when: never within this repository.
-- Links: [[DEC-36]], [[DEC-38]], [[UNK-05]], [[UNK-07]]
+- Links: [[DEC-36]], [[DEC-38]], [[DEC-50]], [[RES-21]], [[RES-22]], [[UNK-05]], [[UNK-07]]
 
 ### UNK-09 [C] What a live run costs and how long it takes
 - Was unknown: no live call had been made from this repository. The guess was about seven calls, a few cents to under a dollar, and under a minute.

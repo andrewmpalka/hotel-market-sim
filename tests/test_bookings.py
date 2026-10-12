@@ -7,7 +7,7 @@ import pytest
 
 from hotel_market.bookings import ELASTICITY, Books, poisson_draw, preload_mean, simulate
 from hotel_market.customer import demo
-from hotel_market.demand import expected_demand
+from hotel_market.demand import DEMAND_BIAS, expected_demand
 from hotel_market.schedule import HORIZON_DAYS
 from hotel_market.shops import comp_median
 from hotel_market.world import SIM_DAYS
@@ -96,6 +96,27 @@ def test_expected_new_bookings_follow_the_formula():
     before = books.expected_new_bookings(airport, 55, 20)
     books.set_rates({("airport", 55): 1.1 * airport.start_rate})
     assert books.expected_new_bookings(airport, 55, 20) == pytest.approx(before * 1.1**-1.5)
+
+
+def test_the_demand_bias_scales_the_preload_and_every_days_draw():
+    plain, biased = Books(SEED), Books(SEED, demand_bias=0.9)
+    assert plain.demand_bias == DEMAND_BIAS == 1.0 and biased.demand_bias == 0.9
+    airport = DEMO.hotel("airport")
+    assert preload_mean(airport, 0, demand_bias=0.9) == pytest.approx(
+        0.9 * preload_mean(airport, 0)
+    )
+    for day, stay_day in [(0, 0), (19, 55), (45, 80)]:
+        assert biased.expected_new_bookings(airport, stay_day, day) == pytest.approx(
+            0.9 * plain.expected_new_bookings(airport, stay_day, day)
+        )
+    # The same luck draws fewer rooms around the smaller means. The rates and the competitor
+    # medians are not the simulator's demand, so the bias leaves them alone.
+    assert biased.preload.sum() < plain.preload.sum()
+    full, less = simulate(SEED), simulate(SEED, demand_bias=0.9)
+    assert less.rooms.sum() < full.rooms.sum() and (less.rates == full.rates).all()
+    assert (less.daily_medians == full.daily_medians).all()
+    assert less.rooms.sum() / full.rooms.sum() == pytest.approx(0.9, abs=0.03)
+    assert np.array_equal(simulate(SEED, demand_bias=1.0).rooms, full.rooms)
 
 
 def test_same_seed_gives_the_same_books_and_another_seed_does_not(fixed):

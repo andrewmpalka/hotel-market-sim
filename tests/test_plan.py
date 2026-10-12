@@ -1,6 +1,7 @@
 """Module 7, plan.py: a flag's candidates and estimates, and its plan by day of the week."""
 
 import math
+from dataclasses import replace
 
 import numpy as np
 import pytest
@@ -344,3 +345,29 @@ def test_rescoring_at_the_pricings_elasticity_gives_the_candidates_own_estimate(
             at_true = rescored(group, candidate, 1.5, airport.room_cost)
             if candidate.name.startswith("raise"):
                 assert at_true < candidate.estimate
+
+
+def test_rescoring_with_a_demand_bias_scales_the_remaining_demand(day10):
+    # The grader's demand bias multiplies each stay date's remaining demand before the rate's
+    # effect on it. At 1.0 it changes nothing, and the agent's own estimate never carries one.
+    _, table = day10
+    airport = DEMO.hotel("airport")
+    entry = entry_for(10, Flag(10, "airport", 40, 46, (AHEAD,)), table, Pricing(1.5, "true"))
+    lower = 0
+    for group in entry.weekdays:
+        scaled = replace(
+            group,
+            stay_dates=[
+                replace(s, remaining_demand=0.9 * s.remaining_demand) for s in group.stay_dates
+            ],
+        )
+        for candidate in group.candidates:
+            cost = airport.room_cost
+            assert rescored(group, candidate, 1.5, cost, demand_bias=1.0) == pytest.approx(
+                candidate.estimate
+            )
+            at_bias = rescored(group, candidate, 1.5, cost, demand_bias=0.9)
+            assert at_bias == pytest.approx(rescored(scaled, candidate, 1.5, cost))
+            assert at_bias <= candidate.estimate
+            lower += at_bias < candidate.estimate
+    assert lower

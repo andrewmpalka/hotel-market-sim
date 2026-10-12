@@ -296,6 +296,15 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: test_the_oracle_reviewer_accepts_every_queued_plan_in_true_mode, test_the_offline_bench_on_20_seeds_pins_the_benchmarks_headline
 - Links: [[UNK-01]], [[DEC-38]], [[DEC-47]], [[DEC-48]], [[MEA-12]], [[RES-16]], [[RES-17]], [[RES-18]], [[RES-19]]
 
+### DEC-50 [C] A demand bias the agent never sees is the demand-level twin of a fixed elasticity
+- Decided: --demand-bias multiplies the simulator's demand, the preload included ([[RUL-82]]). simulate() takes it. The agent's modules never receive it, and tests/test_sources.py keeps their imports as they are.
+- Twin: fixed:X gives the agent a wrong price response and a right demand level ([[DEC-38]]). The bias gives it a wrong demand level and a right price response. Each is one wrong number the agent cannot see.
+- Oracle: cli.py tells the oracle reviewer the bias when it builds it, as ORACLE_ELASTICITY names the elasticity for it ([[RUL-56]]). rescored() scales the remaining demand by it, so the oracle stays the simulator's truth ([[DEC-47]]).
+- Reason: the estimator's intercept is meant to absorb a demand-level error ([[UNK-07]]). The bias is the first test of that, and of what a level error does to the pace flags ([[UNK-08]]).
+- Measured: at a bias of 0.9 the default mode's gain falls to +$1,913 a seed ([[RES-21]]). The learn arms' day-59 estimates hold near 1.5 at both biases ([[RES-22]], [[RES-23]]).
+- Evidence: test_the_demand_bias_scales_the_preload_and_every_days_draw, test_the_oracle_reviewer_is_told_the_demand_bias, test_the_agent_reads_only_through_the_interfaces
+- Links: [[RUL-82]], [[DEC-38]], [[DEC-47]], [[RES-21]], [[RES-22]], [[RES-23]], [[UNK-07]], [[UNK-08]]
+
 ## Engineering
 
 ### DEC-23 [C] The cache is keyed by seed, day and hotel, and each file records a digest of its request

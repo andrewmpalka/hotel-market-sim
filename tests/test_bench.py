@@ -27,6 +27,7 @@ from hotel_market.bench import (
     invalid_answers,
     key,
     live,
+    oracle,
     oracle_declines,
     oracle_labels,
     oracle_values,
@@ -313,6 +314,31 @@ def test_the_oracle_reviewer_drives_a_run_of_its_own_in_a_wrong_mode(oracle_fixe
     assert decline_recall(agent.entries, oracle_labels(agent.entries)) == 1.0
     held = [e for e in agent.entries if e.queued and e.action == HOLD]
     assert all(e.reason.endswith("so we hold.") and e.reason_source == "oracle" for e in held)
+
+
+def test_the_oracle_reviewer_is_told_the_demand_bias(fixed_mode_run, tmp_path):
+    # At 1.0 the command's oracle is ORACLE itself. At another bias it is a reviewer of its own,
+    # whose client scales the remaining demand by the bias and names it in every reason.
+    assert oracle(1.0) is ORACLE and oracle(0.9) is not ORACLE and oracle(0.9).name == "oracle"
+    agent = Agent(SEED, tmp_path, elasticity=ElasticityMode("fixed", 1.0))
+    client = oracle(0.9).client_for(agent)
+    assert isinstance(client, OracleReviewer) and client.demand_bias == 0.9 and not client.cached
+    queued = [e for e in fixed_mode_run.entries if e.queued]
+    lower = 0
+    for entry in queued:
+        hold, plan = oracle_values(entry)
+        hold_at, plan_at = oracle_values(entry, demand_bias=0.9)
+        assert hold_at <= hold and plan_at <= plan  # fewer rooms to come are worth less
+        lower += hold_at < hold
+        assert oracle_declines(entry, demand_bias=0.9) == (hold_at >= plan_at)
+    assert lower
+    labels = oracle_labels(queued, demand_bias=0.9)
+    assert labels == {key(e) for e in queued if oracle_declines(e, demand_bias=0.9)}
+    assert DeclineCounts.of(fixed_mode_run.entries, demand_bias=0.9).oracle == len(labels)
+    agent.client = client
+    simulate(SEED, deciding(agent), last_day=10, demand_bias=0.9)
+    reasons = [e.reason for e in agent.entries if e.queued]
+    assert reasons and all("of 1.5 and demand bias of 0.9, holding" in r for r in reasons)
 
 
 def test_an_oracle_run_writes_nothing_to_the_cache(oracle_fixed_run):

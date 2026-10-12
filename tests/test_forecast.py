@@ -1,5 +1,5 @@
 """Module 10, forecast.py: the agent's demand model, which the simulator's demand matches
-by construction for the demo market."""
+by construction for the demo market at the default demand bias and at no other."""
 
 from dataclasses import replace
 
@@ -28,7 +28,11 @@ def test_the_forecast_is_the_simulators_demand_for_the_demo_market(as_of_day, so
         for stay_day in stay_window(as_of_day):
             forecast = expected_demand(hotel, stay_day, as_of_day, sources)
             assert forecast == demand.expected_demand(hotel, stay_day, as_of_day)
-        assert normal_demand(hotel, as_of_day) == demand.normal_demand(hotel, as_of_day)
+            assert forecast == demand.expected_demand(hotel, stay_day, as_of_day, demand_bias=1.0)
+            # The demand bias is the simulator's alone: the forecast never carries it.
+            assert forecast != demand.expected_demand(hotel, stay_day, as_of_day, demand_bias=0.9)
+        assert normal_demand(hotel, as_of_day) == demand.normal_demand(hotel, as_of_day, 1.0)
+        assert normal_demand(hotel, as_of_day) != demand.normal_demand(hotel, as_of_day, 0.9)
 
 
 def test_convention_peak_night_is_its_busiest_night_as_of_day_10(sources):

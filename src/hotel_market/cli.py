@@ -28,6 +28,10 @@ follows over only the hotel and stay-date pairs where the agent changed a rate.
                                                and mode the template, the oracle and each
                                                model decide the same queues
     hotel-market bench --seeds 1 20 --template the template and the oracle only, offline
+    hotel-market --seeds 1 20 --demand-bias 0.9
+                                               the simulator's demand multiplied by 0.9,
+                                               which the agent never sees; the bench
+                                               takes the option too
 
 With ANTHROPIC_API_KEY set, the agent asks Claude. Otherwise a template writes the reasons. The
 option --elasticity is true, fixed:X or learn:X. The default is true, where the agent prices with
@@ -35,7 +39,9 @@ the simulator's own value.
 
 The option --cautious applies to every learn arm of the command. The option --customer names the
 market's file, customers/demo.toml by default. The option --target overrides its target,
-"contribution" or "revenue".
+"contribution" or "revenue". The option --demand-bias multiplies the simulator's demand in both
+runs. The agent never receives it, and a biased run keeps its cache in a folder of its own. The
+bench tells its oracle the bias, so the oracle stays the simulator's truth.
 
 The bench command (bench.py) runs the fixed-rate run once per seed. It then runs one agent run
 per mode and reviewer, each in its own cache folder. It prints one table per mode with a row per
@@ -72,12 +78,14 @@ from hotel_market.bench import (
     counted,
     invalid_answers,
     live,
+    oracle,
     recovered_share,
     regret,
 )
 from hotel_market.bookings import Books, simulate
 from hotel_market.customer import TARGETS, Customer, demo, demo_path, load
-from hotel_market.detect import NEW_EVENT, SEATS_UP
+from hotel_market.demand import DEMAND_BIAS
+from hotel_market.detect import NEW_EVENT, PACE, SEATS_UP
 from hotel_market.estimate import Estimate
 from hotel_market.model import MODELS, ClaudeClient, Client
 from hotel_market.plan import DAY_NAMES, HOLD, Entry, Pricing
@@ -105,12 +113,15 @@ def run(
     client: Client | None = None,
     mode: ElasticityMode = TRUE_MODE,
     customer: Customer | None = None,
+    demand_bias: float = DEMAND_BIAS,
 ) -> tuple[Books, Books, Agent]:
-    """The fixed-rate run, the agent run, and the agent. Writes decisions.jsonl."""
+    """The fixed-rate run, the agent run, and the agent. Writes decisions.jsonl. The demand bias
+    goes to both runs and never to the agent."""
     customer = customer or demo()
-    fixed = simulate(seed, customer=customer)
+    fixed = simulate(seed, customer=customer, demand_bias=demand_bias)
+    cache_dir = _cache_root(cache_dir, demand_bias)
     agent = Agent(seed, cache_dir, client, elasticity=mode, customer=customer)
-    books = simulate(seed, deciding(agent), customer=customer)
+    books = simulate(seed, deciding(agent), customer=customer, demand_bias=demand_bias)
     out.write_text("".join(json.dumps(line) + "\n" for line in agent.log))
     return fixed, books, agent
 
@@ -122,13 +133,15 @@ def replay(
     client: Client | None = None,
     mode: ElasticityMode = TRUE_MODE,
     customer: Customer | None = None,
+    demand_bias: float = DEMAND_BIAS,
 ) -> tuple[list[Entry], list[Advice]]:
     """A day's entries and advice, rebuilt without a model call. They come from the cache when there
     is a client, else from the template.
     """
     customer = customer or demo()
+    cache_dir = _cache_root(cache_dir, demand_bias)
     agent = Agent(seed, cache_dir, client, replay=True, elasticity=mode, customer=customer)
-    simulate(seed, deciding(agent), last_day=day, customer=customer)
+    simulate(seed, deciding(agent), last_day=day, customer=customer, demand_bias=demand_bias)
     return (
         [entry for entry in agent.entries if entry.day == day],
         [advice for advice in agent.advice if advice.day == day],
@@ -246,6 +259,8 @@ class SeedResult:
     entries: list[Entry] = field(default_factory=list)  # the run's entries, for the bench
     calls: list[dict] = field(default_factory=list)  # the arm's call records (model.Measured)
     counts: DeclineCounts = field(default_factory=DeclineCounts)  # the oracle's labels on the run
+    flags: int = 0  # the flags the run raised, one entry each
+    pace_flags: int = 0  # those with a pace cause, ahead of or behind pace
 
 
 @dataclass(frozen=True)
@@ -278,6 +293,14 @@ class ArmResult:
     @property
     def rate_changes(self) -> int:
         return sum(result.rate_changes for result in self.seeds)
+
+    @property
+    def flags(self) -> int:
+        return sum(result.flags for result in self.seeds)
+
+    @property
+    def pace_flags(self) -> int:
+        return sum(result.pace_flags for result in self.seeds)
 
     @property
     def estimated(self) -> float:
@@ -331,24 +354,26 @@ def sweep(
     modes: Sequence[ElasticityMode] = (TRUE_MODE,),
     customer: Customer | None = None,
     reviewers: Sequence[Reviewer] = (TEMPLATE,),
+    demand_bias: float = DEMAND_BIAS,
 ) -> list[ArmResult]:
     """Seeds first to last: one fixed-rate run per seed, and one agent run per seed, mode and
     reviewer. Each agent run is compared with the fixed-rate run. The arms come mode by mode, a
     reviewer at a time. Each arm has its own cache folder, because the agent is given the
     reviewer's model. Each seed keeps its entries, its call records and the oracle's labels on
-    it.
+    it. The demand bias goes to every run and to the oracle's labels, and never to the agent.
     """
     customer = customer or demo()
     hotels = customer.hotels
+    cache_dir = _cache_root(cache_dir, demand_bias)
     arms: dict[tuple[ElasticityMode, Reviewer], list[SeedResult]] = {
         (mode, reviewer): [] for mode in modes for reviewer in reviewers
     }
     for seed in range(first, last + 1):
-        fixed = simulate(seed, customer=customer)
+        fixed = simulate(seed, customer=customer, demand_bias=demand_bias)
         for mode, reviewer in arms:
             agent = Agent(seed, cache_dir, elasticity=mode, customer=customer, model=reviewer.model)
             agent.client = reviewer.client_for(agent)
-            books = simulate(seed, deciding(agent), customer=customer)
+            books = simulate(seed, deciding(agent), customer=customer, demand_bias=demand_bias)
             accepted = [entry for entry in agent.entries if entry.action != HOLD]
             shock = [entry for entry in accepted if SHOCK_PLAN_CAUSES & set(entry.causes)]
             other = [entry for entry in accepted if entry not in shock]
@@ -369,7 +394,9 @@ def sweep(
                     _gain_on(fixed, books, other_pairs, hotels, customer.target),
                     list(agent.entries),
                     _calls(agent),
-                    DeclineCounts.of(agent.entries, customer),
+                    DeclineCounts.of(agent.entries, customer, demand_bias),
+                    flags=len(agent.entries),
+                    pace_flags=sum(bool(PACE & set(entry.causes)) for entry in agent.entries),
                 )
             )
     return [
@@ -389,6 +416,15 @@ def _calls(agent: Agent) -> list[dict]:
     else:
         records = list(getattr(agent.client, "calls", []))
     return counted(records, agent.cache_dir)
+
+
+def _cache_root(cache_dir: Path, demand_bias: float) -> Path:
+    """Where a run's arm folders go. A demand bias other than the default changes every request.
+    Its runs therefore get a folder of their own under the cache. The agent's own folder name
+    never carries the bias, because the agent never sees it."""
+    if demand_bias == DEMAND_BIAS:
+        return Path(cache_dir)
+    return Path(cache_dir) / f"demand-bias-{demand_bias:g}"
 
 
 def _gain_on(
@@ -550,6 +586,7 @@ def summary(seed: int, fixed: Books, books: Books, agent: Agent) -> str:
         )
         + ["", _flag_counts(agent), _mode_text(agent)]
         + ([_target_text(agent)] if not agent.customer.scores_contribution() else [])
+        + ([_bias_text(books)] if books.demand_bias != DEMAND_BIAS else [])
     )
 
 
@@ -612,6 +649,13 @@ def _flag_counts(agent: Agent) -> str:
     )
 
 
+def _bias_text(books: Books) -> str:
+    return (
+        f"The simulator multiplied its demand by {books.demand_bias:g} in both runs. The agent "
+        f"never saw the factor, so its forecast was off by it."
+    )
+
+
 def _mode_text(agent: Agent) -> str:
     """How the agent priced its estimates, and in learn mode where its estimates ended."""
     mode = agent.elasticity
@@ -655,13 +699,13 @@ def main(argv: list[str] | None = None) -> None:
         _bench_main(argv[1:])
         return
     args = _parse_args(argv)
-    customer = _customer(args)
+    customer, bias = _customer(args), args.demand_bias
     if args.seeds:
-        _print_sweep(*args.seeds, args.modes, customer)
+        _print_sweep(*args.seeds, args.modes, customer, bias)
     elif args.replay is not None:
-        _print_replay(args.seed, args.replay, _client(args.template), args.modes[0], customer)
+        _print_replay(args.seed, args.replay, _client(args.template), args.modes[0], customer, bias)
     else:
-        _print_run(args.seed, _client(args.template), args.modes[0], customer)
+        _print_run(args.seed, _client(args.template), args.modes[0], customer, bias)
 
 
 def _customer(args: argparse.Namespace) -> Customer:
@@ -705,6 +749,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         help="in learn mode, change a rate only where the change beats holding one standard "
         "error either side of the estimate",
     )
+    _add_demand_bias_option(parser)
     _add_customer_options(parser)
     args = parser.parse_args(argv)
     if args.seeds and args.seeds[0] > args.seeds[1]:
@@ -723,6 +768,18 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
             replace(mode, cautious=True) if mode.kind == "learn" else mode for mode in args.modes
         ]
     return args
+
+
+def _add_demand_bias_option(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--demand-bias",
+        dest="demand_bias",
+        type=_factor,
+        default=DEMAND_BIAS,
+        metavar="F",
+        help=f"multiply the simulator's demand by F, which the agent never sees "
+        f"(default: {DEMAND_BIAS:g})",
+    )
 
 
 def _add_customer_options(parser: argparse.ArgumentParser) -> None:
@@ -848,6 +905,17 @@ def demo_path_text() -> str:
         return "customers/demo.toml"
 
 
+def _factor(text: str) -> float:
+    """A factor on the simulator's demand: a number above zero."""
+    try:
+        factor = float(text)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"{text!r} is not a number") from None
+    if not factor > 0:
+        raise argparse.ArgumentTypeError(f"{text} is not above zero; a factor is positive")
+    return factor
+
+
 def _mode(text: str) -> ElasticityMode:
     try:
         return ElasticityMode.parse(text)
@@ -862,8 +930,16 @@ def _client(template: bool) -> Client | None:
     return ClaudeClient()
 
 
-def _print_run(seed: int, client: Client | None, mode: ElasticityMode, customer: Customer) -> None:
-    fixed, books, agent = run(seed, client=client, mode=mode, customer=customer)
+def _print_run(
+    seed: int,
+    client: Client | None,
+    mode: ElasticityMode,
+    customer: Customer,
+    demand_bias: float = DEMAND_BIAS,
+) -> None:
+    fixed, books, agent = run(
+        seed, client=client, mode=mode, customer=customer, demand_bias=demand_bias
+    )
     for day in sorted({entry.day for entry in agent.entries}):
         lines = _queue_lines(day, agent.entries, agent.advice)
         if lines:
@@ -888,9 +964,16 @@ def _queue_lines(day: int, entries: list[Entry], advice: list[Advice]) -> list[s
 
 
 def _print_replay(
-    seed: int, day: int, client: Client | None, mode: ElasticityMode, customer: Customer
+    seed: int,
+    day: int,
+    client: Client | None,
+    mode: ElasticityMode,
+    customer: Customer,
+    demand_bias: float = DEMAND_BIAS,
 ) -> None:
-    entries, advice = replay(seed, day, client=client, mode=mode, customer=customer)
+    entries, advice = replay(
+        seed, day, client=client, mode=mode, customer=customer, demand_bias=demand_bias
+    )
     print(f"Day {day} queue, replayed from the cache (seed {seed})\n")
     blocks = [format_entry(e, customer) for e in queue(entries)]
     blocks += [format_advice(a) for a in advice]
@@ -898,12 +981,16 @@ def _print_replay(
 
 
 def _print_sweep(
-    first: int, last: int, modes: Sequence[ElasticityMode], customer: Customer
+    first: int,
+    last: int,
+    modes: Sequence[ElasticityMode],
+    customer: Customer,
+    demand_bias: float = DEMAND_BIAS,
 ) -> None:
-    arms = sweep(first, last, modes=modes, customer=customer)
+    arms = sweep(first, last, modes=modes, customer=customer, demand_bias=demand_bias)
     print(
         f"Seeds {first} to {last}: the agent run against the fixed-rate run, stay dates 0 to 149, "
-        f"template reasons, candidates scored on {customer.target}"
+        f"template reasons, candidates scored on {customer.target}{_bias_suffix(demand_bias)}"
     )
     if len(arms) == 1:
         print("\n".join(_seed_table(arms[0])))
@@ -915,6 +1002,13 @@ def _print_sweep(
         if arm.mode.kind == "learn":
             print()
             print("\n".join(_estimate_table(arm, customer.hotels)))
+
+
+def _bias_suffix(demand_bias: float) -> str:
+    """What a sweep's or a bench's heading adds when the simulator's demand was biased."""
+    if demand_bias == DEMAND_BIAS:
+        return ""
+    return f", the simulator's demand multiplied by {demand_bias:g} unseen by the agent"
 
 
 def _seed_table(arm: ArmResult) -> list[str]:
@@ -998,8 +1092,8 @@ def _source_table(arms: list[ArmResult]) -> list[str]:
 def _bench_main(argv: list[str]) -> None:
     args = _parse_bench_args(argv)
     customer = _customer(args)
-    reviewers = [TEMPLATE, ORACLE] + [live(model) for model in args.models]
-    _print_bench(*args.seeds, args.modes, reviewers, customer)
+    reviewers = [TEMPLATE, oracle(args.demand_bias)] + [live(model) for model in args.models]
+    _print_bench(*args.seeds, args.modes, reviewers, customer, args.demand_bias)
 
 
 def _parse_bench_args(argv: list[str]) -> argparse.Namespace:
@@ -1030,6 +1124,12 @@ def _parse_bench_args(argv: list[str]) -> argparse.Namespace:
         action="store_true",
         help="the template and the oracle only, with no model, so the bench runs offline",
     )
+    parser.add_argument(
+        "--cautious",
+        action="store_true",
+        help="in every learn mode run, the cautious rule, as the sweep applies it",
+    )
+    _add_demand_bias_option(parser)
     _add_customer_options(parser)
     args = parser.parse_args(argv)
     if args.seeds[0] > args.seeds[1]:
@@ -1037,6 +1137,12 @@ def _parse_bench_args(argv: list[str]) -> argparse.Namespace:
     if args.template and args.model:
         parser.error("--template runs no model; drop --model")
     args.modes = args.elasticity or [ElasticityMode.parse(text) for text in BENCH_MODES]
+    if args.cautious:
+        if not any(mode.kind == "learn" for mode in args.modes):
+            parser.error("--cautious applies to learn:X")
+        args.modes = [
+            replace(mode, cautious=True) if mode.kind == "learn" else mode for mode in args.modes
+        ]
     args.models = [] if args.template else args.model or list(MODELS)
     if args.models and not os.environ.get("ANTHROPIC_API_KEY"):
         parser.error(
@@ -1052,16 +1158,24 @@ def _print_bench(
     modes: Sequence[ElasticityMode],
     reviewers: Sequence[Reviewer],
     customer: Customer,
+    demand_bias: float = DEMAND_BIAS,
 ) -> None:
-    arms = sweep(first, last, modes=modes, customer=customer, reviewers=reviewers)
+    arms = sweep(
+        first, last, modes=modes, customer=customer, reviewers=reviewers, demand_bias=demand_bias
+    )
     print(
         f"Seeds {first} to {last}: each reviewer against the fixed-rate run, stay dates 0 to 149, "
-        f"candidates scored on {customer.target}. Regret is the oracle arm's mean change minus "
-        f"the reviewer's; the rates are pooled over the seeds."
+        f"candidates scored on {customer.target}{_bias_suffix(demand_bias)}. Regret is the oracle "
+        f"arm's mean change minus the reviewer's; the rates are pooled over the seeds."
     )
     for mode in modes:
+        in_mode = [arm for arm in arms if arm.mode == mode]
         print()
-        print("\n".join(_bench_table(mode, [arm for arm in arms if arm.mode == mode])))
+        print("\n".join(_bench_table(mode, in_mode)))
+        if mode.kind == "learn":
+            for arm in in_mode:
+                print()
+                print("\n".join(_estimate_table(arm, customer.hotels, named=True)))
     print()
     mismatched = [mode for mode in modes if mode.kind != "true"]
     if mismatched:
@@ -1073,7 +1187,8 @@ def _print_bench(
 
 
 _BENCH_HEADER = (
-    f"{'reviewer':20}{'mean change':>13}{'range':>22}{'ahead':>8}{'regret':>10}{'recovered':>11}"
+    f"{'reviewer':20}{'mean change':>13}{'range':>22}{'ahead':>8}{'flags':>7}{'pace':>6}"
+    f"{'changes':>9}{'regret':>10}{'recovered':>11}"
     f"{'accept':>8}{'precision':>11}{'recall':>8}{'F1':>8}{'$ recall':>10}{'invalid':>9}"
     f"{'calls':>7}{'tokens in/out':>18}{'median s':>10}{'cost':>9}"
 )
@@ -1081,7 +1196,8 @@ _BENCH_HEADER = (
 
 def _bench_table(mode: ElasticityMode, arms: list[ArmResult]) -> list[str]:
     """One mode's arms, a row per reviewer. Each row holds the mean realised change and its range.
-    It holds the seeds ahead of the fixed-rate run and the regret against the oracle arm.
+    It holds the seeds ahead of the fixed-rate run and the regret against the oracle arm. It
+    counts the flags raised, those with a pace cause and the plans that changed a rate.
 
     It also holds the recovered share of the oracle's gain over the template's and the accept
     rate. Then come the decline precision, recall, F1 and dollar-weighted recall. The last
@@ -1128,7 +1244,8 @@ def _bench_row(arm: ArmResult, oracle: ArmResult, template: ArmResult) -> str:
     return (
         f"{arm.reviewer.name:20}{mean:>+13,.0f}"
         f"{f'{min(changes):+,.0f} to {max(changes):+,.0f}':>22}"
-        f"{f'{arm.wins}/{len(changes)}':>8}{regret(oracle_mean, mean):>+10,.0f}"
+        f"{f'{arm.wins}/{len(changes)}':>8}{arm.flags:>7}{arm.pace_flags:>6}"
+        f"{arm.rate_changes:>9}{regret(oracle_mean, mean):>+10,.0f}"
         f"{_rate(recovered_share(statistics.mean(template.target_changes), oracle_mean, mean)):>11}"
         f"{_rate(counts.accept_rate):>8}{_rate(counts.precision):>11}{_rate(counts.recall):>8}"
         f"{_rate(counts.f1):>8}{_rate(counts.dollar_recall):>10}"
@@ -1153,12 +1270,13 @@ def _cost(calls: list[dict], model: str | None) -> str:
     return "n/a" if math.isnan(dollars) else f"${dollars:.2f}"
 
 
-def _estimate_table(arm: ArmResult, hotels: Sequence[Hotel]) -> list[str]:
+def _estimate_table(arm: ArmResult, hotels: Sequence[Hotel], named: bool = False) -> list[str]:
     """A learn arm's estimate per hotel on the report days, as mean (lowest to highest)
-    across the seeds."""
+    across the seeds. The bench names the arm's reviewer in the heading."""
+    reviewer = f", {arm.reviewer.name}" if named else ""
     lines = [
-        f"Elasticity {arm.mode}: the estimate each hotel priced with, mean (lowest to highest) "
-        f"across the seeds",
+        f"Elasticity {arm.mode}{reviewer}: the estimate each hotel priced with, mean (lowest to "
+        f"highest) across the seeds",
         f"{'day':>4}" + "".join(f"{h.key:>20}" for h in hotels),
     ]
     for day in REPORT_DAYS:

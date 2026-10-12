@@ -31,6 +31,8 @@ Python 3.11 or later, from the repository root:
     python scripts/live_audit.py --seed 7               # a live run, every model call measured, then audited
     hotel-market bench --seeds 1 20 --template          # the template and the oracle reviewer, in three modes, offline
     hotel-market bench --seeds 1 3                      # the same with each Claude model reviewing (needs ANTHROPIC_API_KEY)
+    hotel-market bench --seeds 1 20 --template --demand-bias 0.9 --elasticity true --elasticity learn:1.0
+                                                        # the simulator's demand times 0.9, which the agent never sees
 
 With make, on a Mac or Linux machine:
 
@@ -145,8 +147,16 @@ bookings.
 
 - All data is synthetic, so no real market, airline, hotel or booking appears in
   it.
-- The agent's demand forecast and booking curve are the simulator's own, held
-  equal by a test; the demand level and the curve are never learned.
+- The agent's demand forecast and booking curve are the simulator's own. A test
+  holds the forecast equal to the simulator's demand at the default demand bias
+  of 1.0, and the curve is never learned. The option `--demand-bias F`
+  multiplies the simulator's demand by F, which the agent never sees, so its
+  forecast is wrong by that factor. At 0.9 the default run keeps +$1,913 a seed
+  of its +$32,899, because every raise sells fewer rooms than the agent's
+  estimate says. At 1.1 it earns +$112,082 a seed, because the start rates were
+  set for a smaller market. The learning agent's day-59 elasticity stays at
+  1.26 to 1.49 at both biases, so the level error lands in the estimator's
+  intercept as designed (docs/results.md).
 - By default the agent is handed the simulator's elasticity of 1.5;
   `--elasticity fixed:X` and `learn:X` take it away.
 - Demand moves by the hotel's share of guests arriving by air times the change

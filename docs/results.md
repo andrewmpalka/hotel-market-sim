@@ -215,3 +215,50 @@ The reviewers ranked across the mismatched modes, fixed:1.0 and fixed:2.0, on se
 | 5 | claude-haiku-5-5 | +8,994 | -13,029 to +39,143 | 32/40 | +17,829 | 0.00 | 1.00 | - | 0.00 | - | 0.00 | 0 | 940 | 2,523,698/647,264 | 4.0 | $0.58 |
 
 Opus declined 47 plans at a fixed elasticity of 1.0, and the oracle agreed with every one. The day-40 raise of 10% on all seven days for stay dates 70 to 90 is 36 of the 47. Every declined plan was a raise. At a fixed elasticity of 2.0, Opus declined one plan, a 5% cut on a date ahead of pace. Sonnet and Haiku declined no plan in any mode. Sonnet answered for one entry when the request held two in seven calls across six of its 1,114 requests. A retry fixed five of them at once. The sixth request failed three tries in one run and answered on the rerun, so the table counts it twice.
+
+## The demand bias
+
+`hotel-market bench --seeds 1 20 --template --demand-bias F --elasticity true --elasticity fixed:1.0 --elasticity learn:1.0`, and the same command with `--elasticity learn:1.0 --cautious`, run on 2026-10-12 at F = 0.9, 1.1 and 1.0. The option multiplies the simulator's demand by F, the day-0 preload included. The agent never sees F, so its forecast is wrong by that factor in every mode. The oracle reviewer is told F, so it stays the simulator's truth. Each arm is measured against the fixed-rate run at the same bias.
+
+In every table, mean change and range are the contribution change per seed against the fixed-rate run, and ahead counts the seeds where the arm beat it. Flags counts the flags the arm raised over the 20 seeds, and pace flags those with a pace cause. Rate changes counts the plans that changed a rate, and accept is the share of queued plans the reviewer accepted. The day-59 estimate is the learning agent's elasticity on day 59, as the range over the four hotels of each hotel's mean across the seeds. The true value is 1.5.
+
+Seeds 1 to 20 at a demand bias of 0.9, the template and the oracle in four modes, each against the fixed-rate run at the same bias.
+
+| Mode | Reviewer | Mean change | Range | Ahead | Flags | Pace flags | Rate changes | Accept | Day-59 estimate |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| true | template | +1,913 | -4,369 to +8,664 | 12/20 | 3170 | 2937 | 98 | 1.00 | - |
+| true | oracle | +2,334 | -2,600 to +8,664 | 13/20 | 3147 | 2914 | 90 | 0.90 | - |
+| fixed:1.0 | template | -25,179 | -38,823 to -8,387 | 0/20 | 2541 | 2297 | 886 | 1.00 | - |
+| fixed:1.0 | oracle | +2,546 | -4,343 to +10,199 | 17/20 | 2757 | 2525 | 66 | 0.04 | - |
+| learn:1.0 | template | -14,376 | -36,881 to -237 | 0/20 | 3230 | 2986 | 484 | 1.00 | 1.36 to 1.46 |
+| learn:1.0 | oracle | +2,654 | -4,343 to +10,199 | 17/20 | 2758 | 2526 | 69 | 0.05 | 1.05 to 1.24 |
+| learn:1.0 --cautious | template | -4,280 | -19,310 to +9,584 | 6/20 | 3152 | 2914 | 284 | 1.00 | 1.26 to 1.48 |
+| learn:1.0 --cautious | oracle | +2,748 | -4,541 to +10,419 | 14/20 | 2952 | 2720 | 82 | 0.10 | 1.10 to 1.31 |
+
+Seeds 1 to 20 at a demand bias of 1.1, the same arms.
+
+| Mode | Reviewer | Mean change | Range | Ahead | Flags | Pace flags | Rate changes | Accept | Day-59 estimate |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| true | template | +112,082 | +76,253 to +159,750 | 20/20 | 8526 | 8257 | 464 | 1.00 | - |
+| true | oracle | +112,082 | +76,253 to +159,750 | 20/20 | 8526 | 8257 | 464 | 1.00 | - |
+| fixed:1.0 | template | +93,008 | +49,906 to +145,523 | 20/20 | 2000 | 1754 | 1184 | 1.00 | - |
+| fixed:1.0 | oracle | +107,529 | +67,163 to +158,039 | 20/20 | 4177 | 3926 | 623 | 0.20 | - |
+| learn:1.0 | template | +98,401 | +62,387 to +150,804 | 20/20 | 3446 | 3197 | 898 | 1.00 | 1.39 to 1.49 |
+| learn:1.0 | oracle | +107,393 | +67,292 to +165,267 | 20/20 | 4620 | 4367 | 604 | 0.32 | 1.37 to 1.46 |
+| learn:1.0 --cautious | template | +105,522 | +68,692 to +154,130 | 20/20 | 5750 | 5486 | 839 | 1.00 | 1.29 to 1.46 |
+| learn:1.0 --cautious | oracle | +107,714 | +70,497 to +157,310 | 20/20 | 6294 | 6031 | 662 | 0.48 | 1.29 to 1.44 |
+
+Seeds 1 to 20 at the default demand bias of 1.0, the same arms, as the reference. The template rows repeat the earlier tables, and the oracle's learn arms are new.
+
+| Mode | Reviewer | Mean change | Range | Ahead | Flags | Pace flags | Rate changes | Accept | Day-59 estimate |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| true | template | +32,899 | +13,479 to +52,809 | 20/20 | 1952 | 1726 | 179 | 1.00 | - |
+| true | oracle | +32,899 | +13,479 to +52,809 | 20/20 | 1952 | 1726 | 179 | 1.00 | - |
+| fixed:1.0 | template | +8,438 | -13,029 to +39,143 | 14/20 | 789 | 566 | 515 | 1.00 | - |
+| fixed:1.0 | oracle | +30,588 | +12,725 to +54,182 | 20/20 | 1559 | 1336 | 186 | 0.15 | - |
+| learn:1.0 | template | +14,141 | -6,839 to +45,818 | 16/20 | 1082 | 859 | 373 | 1.00 | 1.36 to 1.45 |
+| learn:1.0 | oracle | +30,828 | +13,813 to +54,182 | 20/20 | 1584 | 1361 | 188 | 0.21 | 1.22 to 1.38 |
+| learn:1.0 --cautious | template | +25,076 | +8,406 to +53,535 | 20/20 | 1515 | 1290 | 299 | 1.00 | 1.28 to 1.43 |
+| learn:1.0 --cautious | oracle | +31,042 | +12,679 to +55,153 | 20/20 | 1799 | 1575 | 201 | 0.34 | 1.25 to 1.35 |
+
+At 0.9 the agent expects 11% more demand than arrives, so every raise sells fewer rooms than its estimate says. The default mode's gain falls from +$32,899 to +$1,913 a seed, and accepting every plan at a wrong elasticity now loses money. In the mismatched modes the oracle holds 90% or more of the plans. At 1.1 every arm gains, because the start rates were set for a smaller market and the dates run ahead of pace. The learning agent's day-59 estimates move by 0.05 or less from the 1.0 values, so the demand-level error landed in the estimator's intercept, as estimate.py intends. The oracle's learn arms at 0.9 end at 1.05 to 1.31, because the oracle held most plans and the rates barely moved.

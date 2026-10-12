@@ -17,9 +17,11 @@ results, and docs/results.md has the tables of every experiment.
    event from the day it is announced. A competitor's rate counts from the day
    it is shopped.
 4. Model responses are saved under cache/, keyed by seed, day and hotel. The
-   elasticity mode and the model join the key when they are not the defaults. A
-   rerun reads the cache first. Without an API key, model.py writes a template
-   reason, so the tests run offline. The template's answers are never cached.
+   elasticity mode and the model join the key when they are not the defaults,
+   and a demand bias other than 1.0 puts a run's folders under
+   cache/demand-bias-F/. A rerun reads the cache first. Without an API key,
+   model.py writes a template reason, so the tests run offline. The template's
+   answers are never cached.
 5. The stack is Python 3.11+, numpy, pandas, duckdb, pytest, ruff and the
    anthropic SDK, declared in pyproject.toml. There is no web UI, no database
    server and no real data; DuckDB is a file the daily commands write.
