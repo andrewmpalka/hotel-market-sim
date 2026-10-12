@@ -526,11 +526,11 @@ def test_the_bench_needs_a_key_unless_it_runs_the_template_alone(monkeypatch):
 
 @pytest.mark.slow
 def test_the_offline_bench_on_20_seeds_pins_the_benchmarks_headline(tmp_path):
-    """The template and oracle arms need no key, so they pin the headline of the benchmark's
-    tables: the template arms are the --seeds sweep's arms and end where the recorded sweep of
-    the wrong elasticities ended, and the oracle arms end where the recorded benchmark put
-    them, accepting the share of plans it recorded. The live arms are not pinned, since the
-    cache is not committed."""
+    """The template and oracle arms need no key, so they pin the headline of the benchmark's tables.
+    The template arms are the --seeds sweep's arms. They end where the recorded sweep of the
+    wrong elasticities ended. The oracle arms end where the recorded benchmark put them and
+    accept the share of plans it recorded. The live arms are not pinned, because the cache is not
+    committed."""
     modes = [FIXED_1, ElasticityMode.parse("fixed:2.0")]
     arms = sweep(1, 20, tmp_path / "cache", modes, reviewers=[TEMPLATE, ORACLE])
     by_arm = {(str(arm.mode), arm.reviewer.name): arm for arm in arms}

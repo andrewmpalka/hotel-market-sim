@@ -1,5 +1,5 @@
-"""The package as installed: it imports, python -m runs the command, and the
-repository is laid out and configured the way the decisions in kg/ say."""
+"""The package as installed. It imports, and python -m runs the command. The repository is laid out
+and configured the way the decisions in kg/ say."""
 
 import subprocess
 import sys

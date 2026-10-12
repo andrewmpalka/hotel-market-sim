@@ -1,16 +1,16 @@
 """text.py
 
-Wording shared by the template reasons and the printed reports, so that a
-number reads the same wherever it appears, and the display strings the model
-request carries in place of every figure, so that the model quotes figures the
-way code wrote them: dollars to the dollar for a rate, to the nearest $10 for
-an estimate, percentages to one decimal, rooms to the room. A signed quantity
-reads as a phrase with a direction word and no sign ("14.6% below the median",
-"up 15.0%", "44 rooms ahead of pace", "$120 less than holding"), and a range
-as one phrase ("10.7% to 14.6% below the median", "up 17.0% to 21.6%", "2.5%
-below to 2.5% above the median", "$220 to $242"), the single value when both
-ends read the same, so that the model copies a phrase that already reads
-correctly.
+Wording shared by the template reasons and the printed reports, so a number reads the same
+wherever it appears. It also makes the display strings that the model request carries in place of
+every figure. The model then quotes figures the way code wrote them. A rate is written to the
+dollar and an estimate to the nearest $10. A percentage is written to one decimal and rooms to
+the room.
+
+A signed quantity reads as a phrase with a direction word and no sign. Examples are "14.6% below
+the median", "up 15.0%", "44 rooms ahead of pace" and "$120 less than holding". A range reads as
+one phrase. Examples are "10.7% to 14.6% below the median", "up 17.0% to 21.6%" and "2.5% below
+to 2.5% above the median". When both ends read the same, the single value stands for the range.
+The model then copies a phrase that already reads correctly.
 """
 
 from __future__ import annotations
@@ -75,9 +75,9 @@ def percent_change(fraction: float) -> str:
 
 
 def percent_change_range(fractions: Iterable[float]) -> str:
-    """One phrase for a range of changes: "up 17.0% to 21.6%", "down 17.0% to 21.6%" (the
-    smaller change first), "down 2.0% to up 3.0%", or the single phrase when both ends
-    read the same."""
+    """One phrase for a range of changes. Examples are "up 17.0% to 21.6%", "down 17.0% to 21.6%"
+    (the smaller change first) and "down 2.0% to up 3.0%". When both ends read the same, it is
+    the single phrase."""
     low, high = _bounds(_percent_value(fraction) for fraction in fractions)
     if low == high:
         return _change(high)
@@ -94,9 +94,10 @@ def against_median(fraction: float) -> str:
 
 
 def against_median_range(fractions: Iterable[float]) -> str:
-    """One phrase for a range of positions: "10.7% to 14.6% below the median" (the smaller
-    gap first), "2.5% to 3.0% above the median", "2.5% below to 2.5% above the median",
-    or the single phrase when both ends read the same."""
+    """One phrase for a range of positions. Examples are "10.7% to 14.6% below the median", with the
+    smaller gap first, and "2.5% to 3.0% above the median". A crossing reads "2.5% below to 2.5%
+    above the median". When both ends read the same, it is the single phrase.
+    """
     low, high = _bounds(_percent_value(fraction) for fraction in fractions)
     if low == high:
         return _position(high)
@@ -125,8 +126,9 @@ def _position(value: float) -> str:
 
 
 def versus_holding(amount: float) -> str:
-    """ "$340 more than holding", "$120 less than holding" or "the same as holding", to
-    the nearest $10, for an estimate against hold's."""
+    """An estimate against hold's, to the nearest $10. It reads "$340 more than holding", "$120 less
+    than holding" or "the same as holding".
+    """
     tens = 10 * round(amount / 10)
     if tens == 0:
         return "the same as holding"
@@ -145,8 +147,8 @@ def number(value: float) -> str:
 
 
 def span(values: Iterable[float], display: Callable[[float], str]) -> str:
-    """A range as one phrase: each end as display writes it, "45 to 48" or "$220 to
-    $242", or the single value when both ends read the same."""
+    """A range as one phrase, each end as display writes it: "45 to 48" or "$220 to $242". When both
+    ends read the same, it is the single value."""
     low, high = _bounds(values)
     lowest, highest = display(low), display(high)
     return lowest if lowest == highest else f"{lowest} to {highest}"

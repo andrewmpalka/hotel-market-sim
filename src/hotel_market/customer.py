@@ -1,16 +1,15 @@
 """customer.py
 
-Everything specific to one market, read from a customer file such as
-customers/demo.toml: the hotels with their rooms, starting rates, demand
-pattern and comp sets, the cost share and rate limits, the detect thresholds,
-the hold period, the minimum value at stake, the booking curve, and the
-target the agent scores candidates on, "contribution" or "revenue".
+Everything specific to one market, read from a customer file such as customers/demo.toml. The
+file holds the hotels with their rooms, starting rates, demand pattern and comp sets. It also
+holds the cost share and rate limits. The detect thresholds, the hold period and the minimum
+value at stake follow. The booking curve and the target the agent scores candidates on,
+"contribution" or "revenue", complete it.
 
-Both sides read it: the simulator to make the market, the agent to know its
-hotels and settings. The constants that describe the simulator itself (the
-calendar, the elasticity, the noise, the schedule and the shocks) stay in the
-code. The demo file is the default wherever no customer is given, so that the
-demo market runs with no arguments.
+Both sides read it: the simulator to make the market, the agent to know its hotels and settings.
+The constants of the simulator itself stay in the code. They are the calendar, the elasticity,
+the noise, the schedule and the shocks. The demo file is the default wherever no customer is
+given, so the demo market runs with no arguments.
 """
 
 from __future__ import annotations
@@ -123,8 +122,10 @@ def _hotel(row: int, entry: dict, floor_share: float, ceiling_share: float, cost
 
 
 def demo_path() -> Path:
-    """Where the demo customer file is: the HOTEL_MARKET_CUSTOMER variable if set, else
-    customers/demo.toml under the working directory, else under the repository root."""
+    """Where the demo customer file is. It is the path in HOTEL_MARKET_CUSTOMER if that is set.
+    Otherwise it is customers/demo.toml under the working directory, else under the repository
+    root.
+    """
     named = os.environ.get(CUSTOMER_VARIABLE)
     if named:
         return Path(named)

@@ -1,18 +1,17 @@
 """shops.py
 
-Rate shops: what each competitor charges for a stay date, as seen on a shop
-day, and the median of each hotel's comp set. Rates are flat across the
-week: with a fixed cost per occupied room, the best rate on a night that
-won't sell out is the same every day, so neither the hotels' starting rates
-nor their competitors' follow the day of the week.
+Rate shops: what each competitor charges for a stay date, as seen on a shop day. The module also
+gives the median of each hotel's comp set. Rates are flat across the week. The cost per occupied
+room is fixed. The best rate on a night that will not sell out is then the same every day.
+Neither the hotels' starting rates nor their competitors' rates therefore follow the day of the
+week.
 
     competitor rate = base rate x (1 + noise)
                       x (1 + event raise known by shop_day)
                       x (1 - rate cut known by shop_day)
 
-shop_day is the as_of_day of a rate shop. The noise is drawn once per
-competitor and stay date from the run's seed, so a comp median only moves
-when a shock does.
+shop_day is the as_of_day of a rate shop. The noise is drawn once per competitor and stay date
+from the run's seed. A comp median therefore moves only when a shock does.
 """
 
 from __future__ import annotations

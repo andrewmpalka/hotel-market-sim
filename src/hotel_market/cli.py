@@ -1,11 +1,10 @@
 """cli.py
 
-The hotel-market command (also `python -m hotel_market`). Runs the simulation
-twice with one seed: once with fixed rates, and once with the agent deciding
-after each of days 0 to 59. Writes decisions.jsonl, prints each day's queue
-sorted by value at stake, and ends with room revenue and contribution per
-hotel for both runs, over stay dates 0 to 149 and again over only the hotel
-and stay-date pairs where the agent changed a rate.
+The hotel-market command (also `python -m hotel_market`). It runs the simulation twice with one
+seed. The first run has fixed rates, and in the second the agent decides after each of days 0 to
+59. It writes decisions.jsonl and prints each day's queue sorted by value at stake. It ends with
+room revenue and contribution per hotel for both runs over stay dates 0 to 149. The same table
+follows over only the hotel and stay-date pairs where the agent changed a rate.
 
     hotel-market --seed 7                      both runs
     hotel-market --seed 7 --replay 20          day 20's queue again, from the cache
@@ -30,23 +29,24 @@ and stay-date pairs where the agent changed a rate.
                                                model decide the same queues
     hotel-market bench --seeds 1 20 --template the template and the oracle only, offline
 
-With ANTHROPIC_API_KEY set, the agent asks Claude; otherwise a template
-writes the reasons. --elasticity is true (the default: the agent prices with
-the simulator's own value), fixed:X or learn:X; --cautious applies to every
-learn arm of the command. --customer names the market's file
-(customers/demo.toml by default) and --target overrides its target,
+With ANTHROPIC_API_KEY set, the agent asks Claude. Otherwise a template writes the reasons. The
+option --elasticity is true, fixed:X or learn:X. The default is true, where the agent prices with
+the simulator's own value.
+
+The option --cautious applies to every learn arm of the command. The option --customer names the
+market's file, customers/demo.toml by default. The option --target overrides its target,
 "contribution" or "revenue".
 
-The bench command (bench.py) runs the fixed-rate run once per seed, then one
-agent run per mode and reviewer, each in its own cache folder, and prints one
-table per mode with a row per reviewer, then a ranking over the mismatched modes.
+The bench command (bench.py) runs the fixed-rate run once per seed. It then runs one agent run
+per mode and reviewer, each in its own cache folder. It prints one table per mode with a row per
+reviewer, then a ranking over the mismatched modes.
 
-The two daily commands run the agent one day at a time against the tables
-sql/schema.sql defines (stored.py). run-day plays the simulator to the day
-with the rate changes already stored, writes the day's feeds, runs the agent
-on the tables and writes its rows; running a day twice leaves the tables as
-they were. replay rebuilds a day's plans from the tables alone, with the
-actions the stored decisions record, and checks them against the stored plans.
+The two daily commands run the agent one day at a time against the tables of sql/schema.sql
+(stored.py). The command run-day plays the simulator to the day with the rate changes already
+stored. It writes the day's feeds, runs the agent on the tables and writes its rows. Running a
+day twice leaves the tables as they were. The command replay rebuilds a day's plans from the
+tables alone, with the actions the stored decisions record. It checks them against the stored
+plans.
 """
 
 from __future__ import annotations
@@ -123,8 +123,9 @@ def replay(
     mode: ElasticityMode = TRUE_MODE,
     customer: Customer | None = None,
 ) -> tuple[list[Entry], list[Advice]]:
-    """A day's entries and advice, rebuilt without calling the model: from its
-    cache when there is a client, else from the template."""
+    """A day's entries and advice, rebuilt without a model call. They come from the cache when there
+    is a client, else from the template.
+    """
     customer = customer or demo()
     agent = Agent(seed, cache_dir, client, replay=True, elasticity=mode, customer=customer)
     simulate(seed, deciding(agent), last_day=day, customer=customer)
@@ -149,12 +150,11 @@ def run_days(
 ) -> tuple[list[Entry], list[Advice]]:
     """Days first to last through the stored tables, in one pass of the simulator.
 
-    The simulator stands in for the hotel's feeds: it plays the days before
-    `first` with the rate changes the tables already hold, and on each day from
-    `first` to `last` its position is written to the feed tables as that day's
-    snapshot. A fresh agent then picks up the state the stored decisions left,
-    decides the day from the tables alone, and its flags, plans and decisions
-    are written. Returns the last day's entries and advice.
+    The simulator stands in for the hotel's feeds. It plays the days before `first` with the rate
+    changes the tables already hold. On each day from `first` to `last`, its position is written to
+    the feed tables as that day's snapshot. A fresh agent then picks up the state the stored
+    decisions left and decides the day from the tables alone. Its flags, plans and decisions are
+    written. Returns the last day's entries and advice.
     """
     customer = customer or demo()
     connection = stored.connect(db)
@@ -201,10 +201,9 @@ def replay_day(
     mode: ElasticityMode = TRUE_MODE,
     customer: Customer | None = None,
 ) -> tuple[list[Entry], list[Advice], list[str]]:
-    """A day's entries and advice rebuilt from the stored tables alone, with the
-    actions the stored decisions record, and how the rebuilt plans differ from the
-    stored ones (nothing when they match). Neither the simulator nor the model is
-    involved, and nothing is written."""
+    """A day's entries and advice rebuilt from the stored tables alone, with the actions the stored
+    decisions record. The third value is how the rebuilt plans differ from the stored ones, empty
+    when they match. Neither the simulator nor the model is involved, and nothing is written."""
     customer = customer or demo()
     connection = stored.connect(db, read_only=True)
     try:
@@ -334,9 +333,11 @@ def sweep(
     reviewers: Sequence[Reviewer] = (TEMPLATE,),
 ) -> list[ArmResult]:
     """Seeds first to last: one fixed-rate run per seed, and one agent run per seed, mode and
-    reviewer, each compared with the fixed-rate run. The arms come mode by mode, a reviewer
-    at a time. Each arm has its own cache folder, since the agent is given the reviewer's
-    model, and each seed keeps its entries, its call records and the oracle's labels on it."""
+    reviewer. Each agent run is compared with the fixed-rate run. The arms come mode by mode, a
+    reviewer at a time. Each arm has its own cache folder, because the agent is given the
+    reviewer's model. Each seed keeps its entries, its call records and the oracle's labels on
+    it.
+    """
     customer = customer or demo()
     hotels = customer.hotels
     arms: dict[tuple[ElasticityMode, Reviewer], list[SeedResult]] = {
@@ -378,10 +379,10 @@ def sweep(
 
 
 def _calls(agent: Agent) -> list[dict]:
-    """The arm's call records that count: the calls.jsonl in its cache folder, which every run
-    of the arm appends to, or else what a measured client without a file kept in memory; one
-    record per request, and only a request whose answer the cache holds or that failed
-    (bench.counted)."""
+    """The arm's call records that count. They come from the calls.jsonl in its cache folder, which
+    every run of the arm appends to. Without the file, they are what a measured client kept in
+    memory. bench.counted keeps one record per request. It keeps only a request whose answer the
+    cache holds or that failed."""
     path = agent.cache_dir / "calls.jsonl"
     if path.exists():
         records = [json.loads(line) for line in path.read_text().splitlines() if line]
@@ -397,8 +398,9 @@ def _gain_on(
     hotels: Sequence[Hotel],
     target: str = "contribution",
 ) -> float:
-    """The agent run's gain in the target over the fixed-rate run, on (hotel key, stay day)
-    pairs: contribution, or room revenue under a revenue target."""
+    """The agent run's gain in the target over the fixed-rate run, on (hotel key, stay day) pairs.
+    The target is contribution, or room revenue under a revenue target.
+    """
     measure = Books.contribution if target == "contribution" else Books.room_revenue
     total = 0.0
     for hotel in hotels:
@@ -871,8 +873,9 @@ def _print_run(seed: int, client: Client | None, mode: ElasticityMode, customer:
 
 
 def _queue_lines(day: int, entries: list[Entry], advice: list[Advice]) -> list[str]:
-    """A day's queue as the run prints it: a heading, then one line per queued entry
-    and per advice; nothing when the day has neither."""
+    """A day's queue as the run prints it: a heading, then one line per queued entry and per advice.
+    It is empty when the day has neither.
+    """
     queued = queue([entry for entry in entries if entry.day == day])
     advised = [a for a in advice if a.day == day]
     if not queued and not advised:
@@ -915,8 +918,9 @@ def _print_sweep(
 
 
 def _seed_table(arm: ArmResult) -> list[str]:
-    """One arm, seed by seed, then the mean and range of both measures, with the wins and
-    the accepted plans' estimates against what they earned on the target's line."""
+    """One arm, seed by seed, then the mean and range of both measures. The target's line adds the
+    wins and the accepted plans' estimates against what they earned.
+    """
     lines = [
         f"Elasticity {arm.mode}",
         f"{'seed':>4}{'contribution change':>22}{'revenue change':>18}{'rate changes':>15}",
@@ -947,9 +951,10 @@ def _seed_table(arm: ArmResult) -> list[str]:
 
 
 def _arm_table(arms: list[ArmResult]) -> list[str]:
-    """Several arms side by side: the mean change against the fixed-rate run, its range,
-    the winning seeds, the rate changes, the estimates summed against the results, and
-    for a cautious arm the candidates its band rejected."""
+    """Several arms side by side. Each row holds the mean change against the fixed-rate run, its
+    range, the winning seeds and the rate changes. It also holds the estimates summed against the
+    results and, for a cautious arm, the candidates its band rejected.
+    """
     lines = [
         f"{'elasticity':18}{'mean change':>14}{'mean revenue':>14}{'range':>24}{'wins':>8}"
         f"{'rate changes':>14}{'estimated':>12}{'realised':>12}{'share':>8}"
@@ -969,9 +974,10 @@ def _arm_table(arms: list[ArmResult]) -> list[str]:
 
 
 def _source_table(arms: list[ArmResult]) -> list[str]:
-    """Where each arm's gain came from: the plans the convention and the new flights raised,
-    then every other plan, with the rate changes and the contribution change on the stay
-    dates each group changed, summed over the seeds."""
+    """Where each arm's gain came from. The first group is the plans the convention and the new
+    flights raised, and the second is every other plan. Each group shows its rate changes and the
+    contribution change on the stay dates it changed, summed over the seeds.
+    """
     lines = [
         "Where the gain came from: the plans raised by the convention and the new flights, "
         "then every other plan",
@@ -1074,11 +1080,14 @@ _BENCH_HEADER = (
 
 
 def _bench_table(mode: ElasticityMode, arms: list[ArmResult]) -> list[str]:
-    """One mode's arms, a row per reviewer: the mean realised change and its range, the seeds
-    ahead of the fixed-rate run, the regret against the oracle arm, the recovered share of the
-    oracle's gain over the template's, the accept rate, the decline precision, recall, F1 and
-    dollar-weighted recall, the calls with a bad attempt, and for a model its calls, tokens,
-    median latency and list-price cost."""
+    """One mode's arms, a row per reviewer. Each row holds the mean realised change and its range.
+    It holds the seeds ahead of the fixed-rate run and the regret against the oracle arm.
+
+    It also holds the recovered share of the oracle's gain over the template's and the accept
+    rate. Then come the decline precision, recall, F1 and dollar-weighted recall. The last
+    columns are the calls with a bad attempt. For a model they add its calls, tokens, median
+    latency and list-price cost.
+    """
     oracle = next(arm for arm in arms if arm.reviewer.name == ORACLE.name)
     template = next(arm for arm in arms if arm.reviewer.name == TEMPLATE.name)
     lines = [f"Elasticity {mode}: each reviewer against the fixed-rate run", _BENCH_HEADER]

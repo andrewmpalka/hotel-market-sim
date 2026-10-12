@@ -1,23 +1,22 @@
 """stored.py
 
-The agent's four sources read from stored tables, and the writers that fill
-them. The tables are the ones sql/schema.sql defines, in a DuckDB file, each
-keyed by as_of_day, the day a row was known on: daily bookings, rate shops,
-schedule snapshots and events for the feeds, then flags, plans and decisions
-for what the agent made of them. Day -1 holds the position before the first
-day. A source answering as of a day reads only rows known by that day, so the
-tables keep the simulator's rule: nothing is used before the day it became
-known.
+The agent's four sources read from stored tables, and the writers that fill them. The tables are
+the ones sql/schema.sql defines, in a DuckDB file. Each is keyed by as_of_day, the day a row was
+known on. The feeds are daily bookings, rate shops, schedule snapshots and events. The flags,
+plans and decisions hold what the agent made of them.
 
-write_snapshot() copies one day of any Sources into the feed tables, and
-write_decisions() stores the day's flags, plans and decisions; both delete the
-day's rows first, so writing a day twice leaves the tables as they were.
-state_before() gives an Agent the hold and the advice earlier days left, and
-rate_changes_before() gives a simulator the accepted rates to play back. The
-hotel-market run-day and replay commands (cli.py) drive them.
+Day -1 holds the position before the first day. A source answering as of a day reads only the
+rows known by that day. The tables therefore keep the simulator's rule: nothing is used before
+the day it became known.
 
-This module imports nothing from the simulator: a table-backed run knows the
-market only through the tables and the customer file.
+write_snapshot() copies one day of any Sources into the feed tables. write_decisions() stores the
+day's flags, plans and decisions. Both delete the day's rows first, so writing a day twice leaves
+the tables as they were. state_before() gives an Agent the hold and the advice that earlier days
+left. rate_changes_before() gives a simulator the accepted rates to play back. The hotel-market
+run-day and replay commands (cli.py) drive them.
+
+This module imports nothing from the simulator. A table-backed run knows the market only through
+the tables and the customer file.
 """
 
 from __future__ import annotations
@@ -494,8 +493,8 @@ def stored_days(connection) -> list[int]:
 
 
 def state_before(connection, day: int) -> tuple[dict[tuple[str, int], int], set[tuple[str, str]]]:
-    """What the decisions before a day leave an agent: the stay dates under the hold, by
-    the day of their last accepted change, and the (hotel, event) pairs already advised."""
+    """What the decisions before a day leave an agent. That is the stay dates under the hold, by the
+    day of their last accepted change. It also holds the (hotel, event) pairs already advised."""
     frame = _frame(
         connection,
         "SELECT as_of_day, hotel, new_rates, simulated, event FROM decisions "
@@ -514,8 +513,8 @@ def state_before(connection, day: int) -> tuple[dict[tuple[str, int], int], set[
 
 
 def rate_changes_before(connection, day: int) -> dict[int, dict[tuple[str, int], float]]:
-    """The accepted rate changes of the days before a day, by day then (hotel key, stay
-    day), with the exact rates the plans table keeps."""
+    """The accepted rate changes of the days before a day, by day then (hotel key, stay day). The
+    rates are the exact rates the plans table keeps."""
     frame = _frame(
         connection,
         "SELECT p.as_of_day, p.hotel, p.rates FROM plans p JOIN decisions d "

@@ -2,41 +2,36 @@
 
 What the agent could do about a flag, and what each option is worth.
 
-Every flag (a hotel and a run of stay dates) gets the same candidates: hold,
-raise 5%, raise 10% and lower 5%, plus "lower halfway to the new median"
-when the comp median dropped. Each candidate's rates are clamped to the
-hotel's floor and ceiling, and code estimates the contribution it would earn
-on the rooms still unsold:
+Every flag is a hotel and a run of stay dates. Each gets the same candidates: hold, raise 5%,
+raise 10% and lower 5%. When the comp median dropped, "lower halfway to the new median" joins
+them. Each candidate's rates are clamped to the hotel's floor and ceiling. Code estimates the
+contribution each candidate would earn on the rooms still unsold:
 
     demand                 = remaining expected demand
                              x (rate / comp median) ** -AGENT_ELASTICITY
     estimated bookings     = E[min(N, unsold rooms)], N Poisson with that mean
     estimated contribution = estimated bookings x (rate - cost per occupied room)
 
-The bookings still to come arrive at random, as the simulator draws them,
-and stop when the hotel is full, so a night expected to come close to full
-still sells out fairly often. The estimate counts that.
+The bookings still to come arrive at random, as the simulator draws them, and stop when the hotel
+is full. A night expected to come close to full therefore still sells out fairly often. The
+estimate counts that.
 
-Within a flag, the best candidate is chosen separately for each day of the
-week, so a plan can raise Mondays and hold Tuesdays. Value at stake is what
-the plan earns over holding, summed over the days of the week it changes. A
-plan worth less than the customer's minimum value at stake ($250 for the demo
-market) is held rather than queued. The customer also sets the target: with
-"revenue" the estimate counts the rate alone, without the room cost.
+Within a flag, the best candidate is chosen for each day of the week on its own. A plan can
+therefore raise Mondays and hold Tuesdays. Value at stake is what the plan earns over holding,
+summed over the days of the week it changes. A plan worth less than the customer's minimum value
+at stake is held and not queued. The demo market's minimum is $250. The customer also sets the
+target: with "revenue" the estimate counts the rate alone, without the room cost.
 
-The elasticity in the estimate is the agent's, not the simulator's. In the
-default mode it is ORACLE_ELASTICITY, the simulator's own value handed to the
-agent as an oracle; the agent can also be given a fixed value, or learn one
-from the bookings it has seen (estimate.py). Each entry records the Pricing
-it was estimated with.
+The elasticity in the estimate is the agent's, not the simulator's. In the default mode it is
+ORACLE_ELASTICITY, the simulator's own value handed to the agent as an oracle. The agent can also
+be given a fixed value, or learn one from the bookings it has seen (estimate.py). Each entry
+records the Pricing it was estimated with.
 
-A learned elasticity comes with a standard error, and the cautious rule makes
-the agent respect it: every candidate is also scored at the estimate one
-standard error lower and one higher (the band, clamped to the estimator's
-bounds), and a candidate replaces hold only if it is ahead of hold at the
-estimate and at both ends of the band. The minimum value at stake applies to
-the whole plan, as in every mode. Without the rule, the highest estimate wins
-as before.
+A learned elasticity comes with a standard error, and the cautious rule makes the agent respect
+it. Every candidate is also scored at the estimate one standard error lower and one higher. That
+is the band, clamped to the estimator's bounds. A candidate replaces hold only if it beats hold
+at the estimate and at both ends of the band. The minimum value at stake applies to the whole
+plan, as in every mode. Without the rule, the highest estimate wins as before.
 """
 
 from __future__ import annotations
@@ -176,8 +171,9 @@ class WeekdayGroup:
 
     @property
     def rejected_at_an_end(self) -> list[Candidate]:
-        """Cautious only: the candidates ahead of hold at the estimate that the band
-        rejected, because they fell behind hold at one end of it."""
+        """Cautious only. The candidates ahead of hold at the estimate that the band rejected. They
+        fell behind hold at one end of it.
+        """
         if not self.cautious:
             return []
         return [
@@ -187,9 +183,9 @@ class WeekdayGroup:
 
 @dataclass(frozen=True)
 class Range:
-    """The lowest and highest of a number over a flag's stay dates. Iterating one
-    gives the two ends, so the wording helpers in text.py take it as they take a
-    pair; in JSON it is a named pair, {"lowest": x, "highest": y}."""
+    """The lowest and highest of a number over a flag's stay dates. Iterating one gives the two
+    ends, so the wording helpers in text.py take it as they take a pair. In JSON it is a named
+    pair, {"lowest": x, "highest": y}."""
 
     lowest: float
     highest: float
@@ -226,8 +222,9 @@ class FlagNumbers:
 
 @dataclass
 class Entry:
-    """One flag's entry in the day's queue: the best candidate for each day of
-    the week, which together make the plan, and what became of it."""
+    """One flag's entry in the day's queue. It holds the best candidate for each day of the week,
+    and those together make the plan. It also holds what became of it.
+    """
 
     day: int
     hotel: str  # hotel key
@@ -351,9 +348,9 @@ def lowest_highest(values: Iterable[float], digits: int = 2) -> Range:
 
 
 def expected_bookings(mean: float, unsold: int) -> float:
-    """E[min(N, unsold)] for N Poisson with the given mean: the rooms a stay
-    date can expect to sell when its bookings arrive at random and stop once
-    the hotel is full."""
+    """E[min(N, unsold)] for N Poisson with the given mean. It is the rooms a stay date can expect
+    to sell. Its bookings arrive at random and stop at a full hotel.
+    """
     if mean <= 0 or unsold <= 0:
         return 0.0
     counts = np.arange(unsold)  # 0, 1, ..., unsold - 1: every count that leaves rooms unsold
@@ -424,9 +421,9 @@ def _stay_dates(day: int, hotel: Hotel, rows: pd.DataFrame, customer: Customer) 
 def _candidates(
     hotel: Hotel, stay_dates: list[StayDate], causes: tuple[str, ...], pricing: Pricing, cost: float
 ) -> list[Candidate]:
-    """Hold, the three fixed moves, and lower halfway when the comp median dropped, each
-    estimated at the pricing's elasticity and, under the cautious rule, at both ends of
-    its band. cost is the room cost when the target is contribution, 0 for revenue."""
+    """Hold, the three fixed moves, and lower halfway when the comp median dropped. Each is
+    estimated at the pricing's elasticity and, under the cautious rule, at both ends of its band.
+    The cost is the room cost when the target is contribution, 0 for revenue."""
     options = [
         (name, {s.stay_day: hotel.clamp(factor * s.rate) for s in stay_dates})
         for name, factor in CANDIDATES
@@ -449,9 +446,9 @@ def _candidates(
 
 
 def rescored(group: WeekdayGroup, candidate: Candidate, elasticity: float, cost: float) -> float:
-    """A candidate's estimate made again at another elasticity, from the stay dates the
-    group was built from. cost is the room cost for contribution, 0 for revenue. A grader
-    outside the agent's path uses this to score a plan at the simulator's elasticity."""
+    """A candidate's estimate made again at another elasticity, from the stay dates the group was
+    built from. The cost is the room cost for contribution, 0 for revenue. A grader outside the
+    agent's path uses this to score a plan at the simulator's elasticity."""
     return _estimate(group.stay_dates, candidate.rates, elasticity, cost)
 
 

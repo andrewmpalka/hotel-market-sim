@@ -24,9 +24,9 @@ It reports a problem when:
 - a decision sits outside the two groups the index is built from,
 - kg/index.md differs from what --write-index would write.
 
-A Commit field is information, not evidence. When the git history is present
-and a cited commit is not in it, that is a warning and never a failure,
-because the history may be recreated. tests/test_kg.py runs the same checks.
+A Commit field is information and not evidence. When the git history is present and a cited commit
+is not in it, the checker warns. It never fails on that, because the history may be recreated.
+tests/test_kg.py runs the same checks.
 """
 
 from __future__ import annotations
@@ -244,8 +244,9 @@ def _missing_modules(nodes: list[Node], root: Path) -> list[str]:
 
 
 def _bad_evidence(nodes: list[Node]) -> list[str]:
-    """A [C] node cites tests, and only tests, unless it is a policy node reviewed by a
-    person; an [H] node links to the node that replaced, closed or moved it."""
+    """A [C] node cites tests and only tests, unless it is a policy node that a person reviewed. An
+    [H] node links to the node that replaced, closed or moved it.
+    """
     found = []
     for node in nodes:
         if node.status == "C":
@@ -273,8 +274,9 @@ def _bad_evidence(nodes: list[Node]) -> list[str]:
 
 
 def _bad_fields(nodes: list[Node]) -> list[str]:
-    """Every field line fits in FIELD_LIMIT characters, and a node has at most
-    FIELD_COUNT_LIMIT of them, so that a node stays a few lines of plain facts."""
+    """Every field line fits in FIELD_LIMIT characters. A node has at most FIELD_COUNT_LIMIT fields,
+    so a node stays a few lines of plain facts.
+    """
     found = []
     for node in nodes:
         found += [
@@ -439,8 +441,9 @@ _OPERATORS = {
 
 
 def _evaluate(text: str):
-    """The value a constant is written as in kg/rules.md: a Python literal,
-    arithmetic on literals such as 1 / 3, or date(year, month, day)."""
+    """The value of a constant as kg/rules.md writes it. It is a Python literal, arithmetic on
+    literals such as 1 / 3, or date(year, month, day).
+    """
     try:
         tree = ast.parse(text.strip(), mode="eval")
     except SyntaxError:

@@ -1,29 +1,31 @@
 """estimate.py
 
-The agent learns the price elasticity from the bookings it has seen, instead
-of assuming the simulator's value.
+The agent learns the price elasticity from the bookings it has seen, instead of assuming the
+simulator's value.
 
-Each (stay date, booking day) pair of a hotel is one observation: the rooms
-that day's bookings took and the hotel's rate that day (the bookings feed),
-the competitor median shopped that day (the rate shops), and the baseline, the
-bookings expected at a rate ratio of 1. The baseline is the agent's own
-forecast as of the booking day (forecast.py: normal demand with its weekday
-factor, the seats and any event known by then) times the booking curve's rise
-from the day before. The model is a Poisson regression
-with the log of the baseline as an offset, an intercept that absorbs errors
-in the demand level, and a slope on log(rate / competitor median). The
+Each (stay date, booking day) pair of a hotel is one observation. It holds the rooms that day's
+bookings took and the hotel's rate that day, from the bookings feed. It holds the competitor
+median shopped that day, from the rate shops. It also holds the baseline, the bookings expected
+at a rate ratio of 1.
+
+The baseline is the agent's own forecast as of the booking day. It is multiplied by the booking
+curve's rise from the day before. The forecast (forecast.py) is normal demand with its weekday
+factor, the seats and any event known by then.
+
+The model is a Poisson regression with the log of the baseline as an offset. It has an intercept
+that absorbs errors in the demand level and a slope on log(rate / competitor median). The
 elasticity is the negative of the slope.
 
-A normal prior on the elasticity, centred on the prior the agent is given
-with standard deviation PRIOR_SD, keeps the estimate sensible while the rate
-ratio has barely moved, which is most of the time: with flat rates the ratio
-moves only when a shock moves a competitor median or the agent changes a
-rate. The estimate is clamped to ELASTICITY_MIN to ELASTICITY_MAX.
+A normal prior on the elasticity keeps the estimate sensible while the rate ratio has barely
+moved. The prior is centred on the value the agent is given, with standard deviation PRIOR_SD.
+The ratio has barely moved most of the time. With flat rates it moves only when a shock moves a
+competitor median or the agent changes a rate. The estimate is clamped to ELASTICITY_MIN to
+ELASTICITY_MAX.
 
-Left out: every booking made on or after as_of_day; a stay date's
-observations from the day it sold out, because rooms capped those bookings
-and price did not; and the day-0 preload, which the simulator draws around
-normal demand x curve with no price response at all.
+Three things are left out. The first is every booking made on or after as_of_day. The second is a
+stay date's observations from the day it sold out. Rooms, and not price, capped those bookings.
+The third is the day-0 preload. The simulator draws it around normal demand x curve with no price
+response at all.
 """
 
 from __future__ import annotations
@@ -70,8 +72,8 @@ class Estimate:
 def observations(
     sources: Sources, hotel: Hotel, as_of_day: int, customer: Customer | None = None
 ) -> Observations:
-    """The observations the agent may use on as_of_day: bookings made before that
-    day, inside that day's window, and before the stay date sold out."""
+    """The observations the agent may use on as_of_day. They are the bookings made before that day,
+    inside that day's window, and before the stay date sold out."""
     i = hotel.row
     history = sources.bookings.history(as_of_day)
     rooms = history.taken[:, i, :]
@@ -90,9 +92,9 @@ def observations(
 
 
 def _baselines(sources: Sources, hotel: Hotel, as_of_day: int, customer: Customer) -> np.ndarray:
-    """The bookings expected at a rate ratio of 1, by [booking day, stay day], for the
-    days before as_of_day: the forecast as known on the booking day times the booking
-    curve's rise. Zero outside each day's window."""
+    """The bookings expected at a rate ratio of 1, by [booking day, stay day], for the days before
+    as_of_day. Each is the forecast as known on the booking day times the booking curve's rise. It
+    is zero outside each day's window."""
     curve = customer.curve
     normal = np.array([normal_demand(hotel, stay_day) for stay_day in range(HORIZON_DAYS)])
     baselines = np.zeros((as_of_day, HORIZON_DAYS))
@@ -124,12 +126,11 @@ def estimate_elasticity(
 def fit(data: Observations, prior: float) -> tuple[float, float, float]:
     """The Poisson regression: (intercept, slope, standard error of the slope).
 
-    Maximises the log-likelihood plus the log of the normal prior on the
-    elasticity, -slope ~ N(prior, PRIOR_SD ** 2), by Newton's method. The
-    objective is concave, so every step improves it once it is short enough,
-    and the steps are halved only to guard against overshooting far from the
-    optimum. The standard error is from the curvature at the optimum, prior
-    included, so with no observations it is PRIOR_SD.
+    Maximises the log-likelihood plus the log of the normal prior on the elasticity by Newton's
+    method. The prior is -slope ~ N(prior, PRIOR_SD ** 2). The objective is concave, so every
+    step improves it once the step is short enough. The steps are halved only to guard against
+    overshooting far from the optimum. The standard error comes from the curvature at the
+    optimum, prior included. With no observations it is PRIOR_SD.
     """
     y, x, offset = data.bookings, data.log_ratio, data.log_baseline
     precision = 1 / PRIOR_SD**2

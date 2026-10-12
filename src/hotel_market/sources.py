@@ -5,10 +5,10 @@ interfaces, one per feed a revenue system reads: bookings, competitor rate
 shops, air schedules and events. Every method takes the day it is asked on
 and returns only what was known on that day.
 
-The agent's modules (detect, forecast, estimate, plan, model, agent) read
-data through these interfaces and nothing else; tests/test_sources.py fails
-if one of them imports the simulator. simulated.py implements the four with
-the simulator, and stored.py (module 12) implements them from stored tables.
+The agent's modules (detect, forecast, estimate, plan, model, agent) read data through these
+interfaces and nothing else. tests/test_sources.py fails if one of them imports the simulator.
+simulated.py implements the four with the simulator, and stored.py implements them from stored
+tables.
 """
 
 from __future__ import annotations
@@ -78,13 +78,14 @@ class RateShops(ABC):
 
     @abstractmethod
     def median_history(self, as_of_day: int) -> np.ndarray:
-        """The comp medians shopped before as_of_day, by [shop day, hotel row, stay day];
-        0 where a stay date was not shopped that day."""
+        """The comp medians shopped before as_of_day, by [shop day, hotel row, stay day]. It is 0
+        where a stay date was not shopped that day."""
 
 
 class Schedules(ABC):
-    """The air schedule feed: the seats arriving each day, as filed by a day, and the
-    two changes the agent reads them as."""
+    """The air schedule feed. It gives the seats arriving each day, as filed by a day. It also gives
+    the two changes the agent reads them as.
+    """
 
     @abstractmethod
     def seats(self, as_of_day: int) -> np.ndarray:

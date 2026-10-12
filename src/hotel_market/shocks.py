@@ -4,9 +4,9 @@ The two shocks that are not in schedule.py: a convention, and a rate cut by
 two competitors. The two air shocks, filed on days 20 and 40, live in
 schedule.py.
 
-Each shock has the day it becomes known and the range of stay dates it
-affects. Every lookup takes as_of_day and only sees shocks known on or
-before that day, the same rule schedule.py uses for flights.
+Each shock has the day it becomes known and the range of stay dates it affects. Every lookup
+takes as_of_day and sees only the shocks known on or before that day. schedule.py uses the same
+rule for flights.
 """
 
 from __future__ import annotations

@@ -2,21 +2,19 @@
 
 Generates a synthetic air schedule for one made-up city.
 
-The column names follow Cirium's published schedule data dictionary, so the
-rest of the simulator reads data shaped like a real feed. Every row is
-synthetic: the carriers, flight numbers and the destination airports do not
-exist. This repository contains no Cirium data and has no affiliation with
-Cirium.
+The column names follow Cirium's published schedule data dictionary. The rest of the simulator
+therefore reads data shaped like a real feed. Every row is synthetic: the carriers, flight
+numbers and the destination airports do not exist. This repository contains no Cirium data and
+has no affiliation with Cirium.
 
-The rows hold three traps that give a wrong seat count if the code ignores
-them: codeshare rows that repeat another carrier's seats, a bus link sold
-under a flight number (service type U), and a second airport, QMS, that
-shares the city code QMC. seats_by_day handles all three.
+The rows hold three traps that give a wrong seat count if the code ignores them. The first is
+codeshare rows that repeat another carrier's seats. The second is a bus link sold under a flight
+number, service type U. The third is a second airport, QMS, that shares the city code QMC.
+seats_by_day handles all three.
 
-The table has one row per flight per operating date. A schedule also has
-an "as of" day, because a hotel only knows about a flight after the airline
-has filed it. build_schedule(as_of_day) returns the schedule as it was known
-on that simulation day.
+The table has one row per flight per operating date. A schedule also has an "as of" day. A hotel
+knows about a flight only after the airline has filed it. build_schedule(as_of_day) returns the
+schedule as it was known on that simulation day.
 """
 
 from __future__ import annotations
@@ -259,9 +257,8 @@ def seat_change(as_of_day: int) -> pd.Series:
 def seat_revision(as_of_day: int) -> pd.Series:
     """Fractional change in arriving seats against the schedule known one day earlier.
 
-    This catches a change on the day it is filed. The day-40 cut needs it,
-    because seats on days 70 to 90 stay above the original baseline even
-    after the cut (the day-20 flights are still there).
+    This catches a change on the day it is filed. The day-40 cut needs it. Seats on days 70 to 90
+    stay above the original baseline even after the cut. The day-20 flights are still there.
     """
     before = seats_by_day(build_schedule(as_of_day=as_of_day - 1))
     after = seats_by_day(build_schedule(as_of_day=as_of_day))

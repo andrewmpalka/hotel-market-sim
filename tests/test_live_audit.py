@@ -165,10 +165,10 @@ class NoCalls:
 
 
 def test_the_recorded_live_run_of_seed_7_passes_the_audit(capsys):
-    """The seven requests and answers of one live run of seed 7 with claude-opus-5-5, and
-    the measurements of its calls, are kept as a fixture. The audit on them finds no
-    declined plan, no figure outside its request and no sentence without a request
-    figure; this is the evidence UNK-01, UNK-02 and UNK-09 in kg/ rest on."""
+    """One live run of seed 7 with claude-opus-5-5 is kept as a fixture. It holds the seven requests
+    and answers and the measurements of the calls. The audit on them finds no declined plan, no
+    figure outside its request and no sentence without a request figure. This is the evidence
+    that UNK-01, UNK-02 and UNK-09 in kg/ rest on."""
     audit.audit(FIXTURE)
     out = capsys.readouterr().out
     assert "7 model calls, 7 entries decided, 0 declined." in out
@@ -182,9 +182,9 @@ def test_the_recorded_live_run_of_seed_7_passes_the_audit(capsys):
 
 
 def test_the_recorded_live_run_replays_without_a_key_and_gives_28818(tmp_path):
-    """With the fixture as the cache, the run of seed 7 reads every answer from it, never
-    calls the model, and ends where the live run ended. A change to the request makes
-    the fixture stale, and this test then says to record a live run again."""
+    """With the fixture as the cache, the run of seed 7 reads every answer from it. It never calls
+    the model, and it ends where the live run ended. A change to the request makes the fixture
+    stale. This test then says to record a live run again."""
     shutil.copytree(FIXTURE, tmp_path / "cache" / "seed7", ignore=shutil.ignore_patterns("*.jsonl"))
     fixed, books, agent = run(7, tmp_path / "decisions.jsonl", tmp_path / "cache", NoCalls())
     change = sum(books.contribution(h) - fixed.contribution(h) for h in demo().hotels)

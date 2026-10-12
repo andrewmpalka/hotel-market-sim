@@ -1,16 +1,15 @@
 """demand.py
 
-The simulator's demand: the rooms a hotel sells for a stay date at its
-starting rate, given what is known on as_of_day.
+The simulator's demand. It is the rooms a hotel sells for a stay date at its starting rate. It
+uses what is known on as_of_day.
 
     rooms x base occupancy x day-of-week factor
     x (1 + air share x seat_change for that stay date)
     x (1 + event uplift, from events known by as_of_day)
 
-normal_demand leaves out seats and events. The agent never reads this
-module: its own demand model is forecast.py, which uses the same formula
-from the feeds, the known limit that the agent's demand model is right by
-construction.
+normal_demand leaves out seats and events. The agent never reads this module. Its own demand
+model is forecast.py, which uses the same formula from the feeds. That is the known limit: the
+agent's demand model is right by construction.
 
 Run `python -m hotel_market.demand` to print normal demand as occupancy by day of week.
 """
@@ -47,9 +46,9 @@ def expected_demand(hotel: Hotel, stay_day: int, as_of_day: int) -> float:
 def last_filing(as_of_day: int) -> int:
     """The last day on or before as_of_day when an airline filed a change, or -1 if none.
 
-    The schedule only changes on filing days, so every day has the same seats
-    as the last filing day before it. That lets seat_change and seat_revision,
-    which build two schedules each, run once per filing instead of once a day.
+    The schedule changes only on filing days. Every day therefore has the same seats as the last
+    filing day before it. The functions seat_change and seat_revision build two schedules each,
+    so they run once per filing instead of once a day.
     """
     return max((s.known_day for s in AIR_SHOCKS if s.known_day <= as_of_day), default=-1)
 

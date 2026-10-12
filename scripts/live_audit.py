@@ -7,29 +7,33 @@ One seed with the live model, measured and audited.
     python scripts/live_audit.py --seed 7 --audit-only --elasticity fixed:1.0
                                                        # audit a bench arm's cache (bench.py)
 
-The run is the hotel-market command's run for the seed in the mode given,
-the default mode unless --elasticity says otherwise: both simulations,
-decisions.jsonl and the cache. A Measured client (model.py)
-records each call's tokens, time, stop reason and answering model to
-calls.jsonl. The audit then reads the cache and prints every reason the model
-wrote, every plan it declined, and every number in a reason that does not
-appear in the request the model was answering.
+The run is the hotel-market command's run for the seed in the given mode. The default mode
+applies unless --elasticity says otherwise. It makes both simulations, decisions.jsonl and the
+cache. A Measured client (model.py) records each call's tokens, time, stop reason and answering
+model to calls.jsonl.
 
-Every figure in the request is a display string written by code ("$8,050 more
-than holding", "10.7% to 14.6% below the median", "1,188") that the model is
-told to copy whole, so the audit matches phrases, sentence by sentence: a
-figure in a reason is quoted from its request when a display string holding it
-appears whole in the same sentence, when it is a whole number the request holds
-as it is, such as a day, or a figure inside a name such as "raise 5%", or when
-it is a bare dollar figure in a sentence that carries "more than holding" and
-the request holds "<figure> more than holding", since the prompt lets that
-phrase be written once for several gains. A range written as "12–14%" or "$217
-to $220" counts as its two ends, each with the shared unit. Anything else is
-listed, with its reason, for a person to judge: a sign or a rounding of the
-model's own, one end of a range on its own, a sum, a difference or a figure
-from its own knowledge all show up here. For each reason the audit also prints
-every sentence that holds no figure from the request, so that a person can
-read what the model said on its own account.
+The audit then reads the cache. It prints every reason the model wrote and every plan it
+declined. It also prints every figure in a reason that is not in the request.
+
+Every figure in the request is a display string written by code. Examples are "$8,050 more than
+holding", "10.7% to 14.6% below the median" and "1,188". The model is told to copy each one
+whole, so the audit matches phrases sentence by sentence.
+
+A figure in a reason counts as quoted in three cases. The first case is a display string that
+holds the figure and appears whole in the same sentence. The second case is a whole number that
+the request holds as it is, such as a day. A figure inside a name, such as "raise 5%", also
+counts.
+
+The third case is a bare dollar figure in a sentence with "more than holding". It counts if the
+request holds "<figure> more than holding". The prompt lets that phrase be written once for
+several gains.
+
+A range written as "12–14%" or "$217 to $220" counts as its two ends, each with the shared unit.
+The audit lists every other figure with its reason for a person to judge. These include a sign or
+a rounding of the model's own and one end of a range on its own. A sum, a difference or a figure
+from the model's own knowledge also shows up there. For each reason the audit also prints every
+sentence that holds no figure from the request. A person can then read what the model said on its
+own account.
 """
 
 from __future__ import annotations
@@ -159,9 +163,10 @@ NAME_KEYS = {"name", "plan", "options", "id", "what_changed", "new_event", "mode
 
 
 def quotable(request: dict) -> tuple[set[str], set[str]]:
-    """What a reason may quote from its request: the display strings of its figures,
-    which must appear whole, and the tokens that may stand alone, the whole numbers
-    the request holds as they are (a day, a stay date) and the figures inside names."""
+    """What a reason may quote from its request. The phrases are the display strings of its figures,
+    which must appear whole. The tokens may stand alone. They are the whole numbers the request
+    holds as they are, such as a day. The figures inside names also count.
+    """
     phrases: set[str] = set()
     tokens: set[str] = set()
 
@@ -191,11 +196,10 @@ GAINS = "more than holding"
 
 
 def appears(figure: str, sentence: str, phrases: set[str], tokens: set[str]) -> bool:
-    """Whether a figure written in a sentence is quoted from the request: a token that
-    may stand alone; one of the figures of a display string that appears whole in the
-    sentence (the "7" of "7 days" is not the "7" inside "10.7% below the median"); or a
-    bare dollar figure in a sentence that carries "more than holding", when the request
-    holds "<figure> more than holding"."""
+    """Whether a figure written in a sentence is quoted from the request. A token may stand alone. A
+    figure of a display string counts when the string appears whole in the sentence. The "7" of "7
+    days" is not the "7" inside "10.7% below the median". A bare dollar figure counts in a sentence
+    with "more than holding", if the request holds "<figure> more than holding"."""
     if figure in tokens:
         return True
     if any(figure in figures_in(phrase) and phrase in sentence for phrase in phrases):

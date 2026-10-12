@@ -1,17 +1,16 @@
 """forecast.py
 
-The agent's own demand model: the rooms a hotel expects to sell for a stay
-date at its starting rate, from what the feeds say on a day.
+The agent's own demand model. It is the rooms a hotel expects to sell for a stay date at its
+starting rate. It uses what the feeds say on a day.
 
     rooms x base occupancy x weekday factor
     x (1 + air share x seat change for that stay date)
     x (1 + uplift of every known event that covers the date)
 
-normal_demand leaves out seats and events; pace is measured against it. The
-weekday factors, base occupancy and air share are the hotel's own settings,
-the seat change comes from the schedule feed and the events from the events
-feed. The simulator books with the same formula (demand.py), which is the
-known limit that the agent's demand model is right by construction; the
+normal_demand leaves out seats and events, and pace is measured against it. The weekday factors,
+base occupancy and air share are the hotel's own settings. The seat change comes from the
+schedule feed and the events from the events feed. The simulator books with the same formula
+(demand.py). That is the known limit: the agent's demand model is right by construction. The
 agent never reads demand.py.
 """
 

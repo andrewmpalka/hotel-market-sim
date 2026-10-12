@@ -1,6 +1,6 @@
 # Results
 
-Seeds 1 to 20 in the default mode: the agent run against the fixed-rate run over stay dates 0 to 149, template reasons, candidates scored on contribution with the simulator's elasticity.
+Seeds 1 to 20 in the default mode: the agent run against the fixed-rate run, stay dates 0 to 149. The reasons are the template's, and candidates are scored on contribution with the simulator's elasticity.
 
 | Seed | Contribution change | Revenue change | Rate changes |
 | ---: | ---: | ---: | ---: |
@@ -32,7 +32,7 @@ Seed 7, days 0 to 59: what became of the flags.
 | ---: | ---: | ---: | ---: | ---: | ---: |
 | 113 | 7 | 49 | 57 | 0 | 1 |
 
-Seed 7 over only the 93 hotel and stay-date pairs where the agent changed a rate (pairs per hotel in brackets).
+Seed 7 over only the 93 hotel and stay-date pairs where the agent changed a rate. The pairs per hotel are in brackets.
 
 | Hotel | Revenue, fixed | Revenue, agent | Change | Contribution, fixed | Contribution, agent | Change |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -42,7 +42,7 @@ Seed 7 over only the 93 hotel and stay-date pairs where the agent changed a rate
 | Airport hotel (52) | 989,800 | 965,146 | -24,654 | 659,867 | 665,173 | +5,306 (+0.8%) |
 | All four hotels | 2,629,030 | 2,594,011 | -35,019 | 1,752,687 | 1,781,505 | +28,818 (+1.6%) |
 
-Seeds 1 to 20 per elasticity arm, each against the same fixed-rate runs; Estimated / realised is the accepted plans' estimated gain over holding, summed over the seeds, divided by the realised gain, and Rejected at an end counts a cautious arm's candidates that were ahead of hold at the estimate but behind at one end of the band.
+Seeds 1 to 20 per elasticity arm, each against the same fixed-rate runs. Estimated / realised is the accepted plans' estimated gain over holding, summed over the seeds, over the realised gain. Rejected at an end counts a cautious arm's candidates ahead of hold at the estimate but behind at an end.
 
 | Elasticity | Mean gain per seed | Range | Seeds ahead | Rate changes | Estimated / realised | Rejected at an end |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -54,7 +54,7 @@ Seeds 1 to 20 per elasticity arm, each against the same fixed-rate runs; Estimat
 | learn:2.0 | +$16,258 | +$2,393 to +$34,480 | 20 of 20 | 418 | 5.2 | |
 | learn:2.0 --cautious | +$17,634 | +$5,839 to +$27,585 | 20 of 20 | 240 | 2.5 | 2,681 |
 
-Where each arm's gain came from, summed over the 20 seeds: the plans the convention (day 10) and the new flights (day 20) raised, then every other plan.
+Where each arm's gain came from, summed over the 20 seeds. The first group is the plans the convention (day 10) and the new flights (day 20) raised. The second is every other plan.
 
 | Elasticity | Shock plans | Gain on their stay dates | Other plans | Gain on theirs |
 | --- | ---: | ---: | ---: | ---: |
@@ -66,28 +66,28 @@ Where each arm's gain came from, summed over the 20 seeds: the plans the convent
 | learn:2.0 | 127 | +$294,785 | 291 | +$30,370 |
 | learn:2.0 --cautious | 72 | +$292,857 | 168 | +$59,831 |
 
-The learning agent's day-59 elasticity estimates, as the range over the four hotels of each hotel's mean across the 20 seeds, against a true value of 1.5.
+The learning agent's day-59 elasticity estimates against a true value of 1.5. Each figure is the range over the four hotels of each hotel's mean across the 20 seeds.
 
 | Prior | Day-59 estimate, by hotel |
 | ---: | --- |
 | 1.0 | 1.36 to 1.45 |
 | 2.0 | 1.55 to 1.68 |
 
-The cautious rule with and without a $250 minimum per day of the week, seeds 1 to 20; the band alone is the rule that stayed, and its rejection count includes every candidate ahead of hold at the estimate rather than only those worth $250.
+The cautious rule with and without a $250 minimum per day of the week, seeds 1 to 20. The band alone is the rule that stayed. Its rejection count includes every candidate ahead of hold at the estimate, and not only those worth $250.
 
 | Arm | Band alone: mean gain | Rate changes | Rejected at an end | With a minimum per day of the week: mean gain | Rate changes | Rejected at an end |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | learn:1.0 --cautious | +$25,076 | 299 | 3,294 | +$25,084 | 299 | 1,205 |
 | learn:2.0 --cautious | +$17,634 | 240 | 2,681 | +$17,618 | 229 | 766 |
 
-Seeds 1 to 20 with the simulator's elasticity and the template, each target against the same fixed-rate runs; the last two columns are in the target's own measure.
+Seeds 1 to 20 with the simulator's elasticity and the template, each target against the same fixed-rate runs. The last two columns are in the target's own measure.
 
 | Target | Mean contribution change | Mean revenue change | Seeds ahead on contribution | Rate changes | Accepted plans' estimate | Realised |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | contribution | +$32,899 | -$22,861 | 20 of 20 | 179 | +$681,054 | +$657,979 |
 | revenue | +$461 | +$211,445 | 11 of 20 | 659 | +$4,191,156 | +$4,228,903 |
 
-Four live runs of seed 7 in the default mode with claude-opus-5-5, one per request format, seven calls each, every plan accepted every time; only the last is recorded, under tests/fixtures/live_seed7/. Cost is at list prices of $4 and $20 per million tokens.
+Four live runs of seed 7 in the default mode with claude-opus-5-5, one per request format. Each made seven calls and accepted every plan. Only the last is recorded, under tests/fixtures/live_seed7/. Cost is at list prices of $4 and $20 per million tokens.
 
 | Request format | Input tokens | Cost | Kept |
 | --- | ---: | ---: | --- |
@@ -110,7 +110,7 @@ The recorded live run of seed 7.
 | Prompt cache read or written | none |
 | Contribution change | +$28,818, the template run's |
 
-Seed 7 with fixed rates: occupancy by hotel over stay dates 0 to 59 and over stay dates 140 to 149, with the emptiest of those last ten nights.
+Seed 7 with fixed rates: occupancy by hotel over stay dates 0 to 59 and over 140 to 149. The last column is the emptiest of those last ten nights.
 
 | Hotel | Occupancy, stay dates 0 to 59 | Occupancy, stay dates 140 to 149 | Emptiest night, 140 to 149 |
 | --- | ---: | ---: | ---: |
@@ -119,7 +119,7 @@ Seed 7 with fixed rates: occupancy by hotel over stay dates 0 to 59 and over sta
 | Lifestyle hotel | 76.6% | 77.9% | 57% (stay date 147) |
 | Airport hotel | 83.7% | 91.2% | 79% (stay date 145) |
 
-Seed 7 under earlier designs, before the current estimate; the last row is the current design, and the 20-seed mean is for the same design over seeds 1 to 20.
+Seed 7 under earlier designs, before the current estimate. The last row is the current design. Its 20-seed mean is for the same design over seeds 1 to 20.
 
 | Design | Contribution change, seed 7 | Rate changes | Flags held under the minimum | 20-seed mean |
 | --- | ---: | ---: | ---: | ---: |
@@ -127,7 +127,7 @@ Seed 7 under earlier designs, before the current estimate; the last row is the c
 | Flat rates, a plan per day of the week, the $250 minimum, estimate capped at the unsold rooms | +$22,894 | 10 | 22 | +$27,350 |
 | The same with the exact estimate E[min(N, unsold)] | +$28,818 | 7 | 57 | +$32,899 |
 
-The estimator against known elasticities: seed 7 in learn mode from a prior of 1.5, with the simulator's elasticity set to each true value in turn; the day-59 estimate at each hotel, with its standard error in brackets.
+The estimator against known elasticities: seed 7 in learn mode from a prior of 1.5. The simulator's elasticity is set to each true value in turn. Each cell is the day-59 estimate at that hotel, with its standard error in brackets.
 
 | True elasticity | Downtown convention | Downtown full-service | Lifestyle | Airport |
 | ---: | ---: | ---: | ---: | ---: |
@@ -135,7 +135,7 @@ The estimator against known elasticities: seed 7 in learn mode from a prior of 1
 | 1.5 | 1.56 (0.17) | 1.64 (0.22) | 1.48 (0.22) | 1.50 (0.30) |
 | 2.0 | 1.98 (0.17) | 2.03 (0.21) | 1.64 (0.25) | 1.61 (0.31) |
 
-Spread of the log rate ratio in the estimator's observations, fixed-rate run of seed 7 as of day 59, by hotel.
+Spread of the log rate ratio in the estimator's observations by hotel. The run is the fixed-rate run of seed 7 as of day 59.
 
 | Hotel | Standard deviation of log(rate / comp median) | Observations |
 | --- | ---: | ---: |
@@ -153,7 +153,7 @@ Timings of the stored tables, measured once during development on the developmen
 | Inserting a day's rows one statement at a time (replaced by one frame per day) | 2.5 seconds per 3,000 rows |
 | Reading the events table once per detect row (replaced by one read per day) | 2 seconds a day |
 
-The suite on each Python version, run from a fresh virtual environment on 2026-10-12 with numpy 2.5.4, pandas 3.0.6, duckdb 1.5.6 and anthropic 1.13.0.
+The suite on each Python version, run from a fresh virtual environment on 2026-10-12. The environment had numpy 2.5.4, pandas 3.0.6, duckdb 1.5.6 and anthropic 1.13.0.
 
 | Python | Command | Result |
 | --- | --- | --- |
@@ -162,9 +162,9 @@ The suite on each Python version, run from a fresh virtual environment on 2026-1
 
 ## The benchmark of the reviewers
 
-`hotel-market bench --seeds 1 20`, run on 2026-10-12. For every seed, the command makes the fixed-rate run once. It then makes one agent run per elasticity mode and reviewer. The reviewers are the template, the oracle reviewer, claude-opus-5-5, claude-sonnet-5-5 and claude-haiku-5-5, and each arm has its own cache folder. The live calls were made first, in parallel chunks of seeds: seeds 1 to 3 as one process per model, then seeds 4 to 20 in seven chunks. The command that printed the tables read every folder's cache and made no call. After duplicate records from reruns were dropped, 3,338 calls cost $28.42 at list prices.
+`hotel-market bench --seeds 1 20`, run on 2026-10-12. For every seed, the command makes the fixed-rate run once. It then makes one agent run per elasticity mode and reviewer. The reviewers are the template, the oracle reviewer, claude-opus-5-5, claude-sonnet-5-5 and claude-haiku-5-5, and each arm has its own cache folder. The live calls were made first, in parallel chunks of seeds. Seeds 1 to 3 ran as one process per model, then seeds 4 to 20 in seven chunks. The command that printed the tables read every folder's cache and made no call. After duplicate records from reruns were dropped, 3,338 calls cost $28.42 at list prices.
 
-In every table, mean change and range are the contribution change against the fixed-rate run and ahead counts the seeds where the reviewer beat it. Regret is the oracle arm's mean minus the reviewer's. Recovered is the reviewer's gain over the template as a share of the oracle's. Accept, precision, recall, F1 and $ recall are the decline measures against the oracle's labels, pooled over the seeds. Invalid counts calls with a bad attempt, and calls, tokens, median latency and cost come from the arm's call records at list prices.
+In every table, mean change and range are the contribution change against the fixed-rate run. Ahead counts the seeds where the reviewer beat it. Regret is the oracle arm's mean minus the reviewer's. Recovered is the reviewer's gain over the template as a share of the oracle's. Accept, precision, recall, F1 and $ recall are the decline measures against the oracle's labels, pooled over the seeds. Invalid counts calls with a bad attempt. Calls, tokens, median latency and cost come from the arm's call records at list prices.
 
 Seeds 1 to 20 at a fixed elasticity of 1.0, each reviewer against the fixed-rate run.
 
@@ -206,4 +206,4 @@ The reviewers ranked across the mismatched modes, fixed:1.0 and fixed:2.0, on se
 | 4 | claude-sonnet-5-5 | +8,994 | -13,029 to +39,143 | 32/40 | +17,829 | 0.00 | 1.00 | - | 0.00 | - | 0.00 | 5 | 940 | 2,542,434/190,268 | 2.6 | $6.99 |
 | 5 | claude-haiku-5-5 | +8,994 | -13,029 to +39,143 | 32/40 | +17,829 | 0.00 | 1.00 | - | 0.00 | - | 0.00 | 0 | 940 | 2,523,698/647,264 | 4.0 | $0.58 |
 
-Opus declined 47 plans at a fixed elasticity of 1.0, and the oracle agreed with every one. 36 of the 47 were the day-40 plan to raise 10% on every day of the week on stay dates 70 to 90 after the seat cut. Every declined plan was a raise. At a fixed elasticity of 2.0, Opus declined one plan, a 5% cut on a date ahead of pace. Sonnet and Haiku declined no plan in any mode. Sonnet answered for one entry when the request held two in seven calls across six of its 1,114 requests. A retry fixed five of them at once. The sixth request failed three tries in one run and answered on the rerun, so the table counts it twice.
+Opus declined 47 plans at a fixed elasticity of 1.0, and the oracle agreed with every one. The day-40 raise of 10% on all seven days for stay dates 70 to 90 is 36 of the 47. Every declined plan was a raise. At a fixed elasticity of 2.0, Opus declined one plan, a 5% cut on a date ahead of pace. Sonnet and Haiku declined no plan in any mode. Sonnet answered for one entry when the request held two in seven calls across six of its 1,114 requests. A retry fixed five of them at once. The sixth request failed three tries in one run and answered on the rerun, so the table counts it twice.

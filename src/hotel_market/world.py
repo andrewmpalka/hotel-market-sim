@@ -1,14 +1,12 @@
 """world.py
 
-The types a market is described with, and the calendar the simulation runs
-on. A Hotel carries everything the agent and the simulator need to know about
-it: rooms, starting rate, share of guests arriving by air, share of rooms sold
-on a normal night, demand factors across the week, rate floor and ceiling,
-cost per occupied room and its comp set. The hotels themselves, and the rest
-of a market's settings, come from a customer file (customer.py).
+The types a market is described with, and the calendar the simulation runs on. A Hotel carries
+everything the agent and the simulator need to know about it. That is its rooms, starting rate,
+share of guests arriving by air and rooms sold on a normal night. It also has its demand factors
+across the week, rate floor and ceiling, cost per occupied room and comp set. The hotels
+themselves, and the rest of a market's settings, come from a customer file (customer.py).
 
-Nothing here is random. The seed only matters once competitor rates and
-bookings are drawn.
+Nothing here is random. The seed only matters once competitor rates and bookings are drawn.
 """
 
 from __future__ import annotations
@@ -51,9 +49,9 @@ class Hotel:
 def stay_window(day: int) -> range:
     """The stay dates a hotel looks at on a simulation day: that night and the next 89.
 
-    That night is included because the booking curve reaches 100% at 0 days
-    out, so some rooms are booked on the day of arrival. After day 59 the
-    window stops at stay date 149, the last day of the schedule.
+    That night is included because the booking curve reaches 100% at 0 days out. Some rooms are
+    therefore booked on the day of arrival. After day 59 the window stops at stay date 149, the
+    last day of the schedule.
     """
     return range(day, min(day + LOOKAHEAD_DAYS, HORIZON_DAYS))
 

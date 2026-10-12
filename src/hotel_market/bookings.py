@@ -1,29 +1,27 @@
 """bookings.py
 
-The daily booking loop. For every hotel and stay date the books hold the
+The daily booking loop. For every hotel and stay date, the books hold three things. They are the
 rooms on the books, the room revenue booked and the rate the hotel charges.
 
-Before day 0's bookings, each stay date in the window is loaded with the
-bookings made before the run starts: a draw around
-normal_demand x curve(days out + 1), at the hotel's starting rate. Then on
-each day from 0 to 149, every hotel and stay date in the window gets new
-bookings drawn around
+Before day 0's bookings, each stay date in the window is loaded with the bookings made before the
+run starts. That load is a draw around normal_demand x curve(days out + 1) at the hotel's
+starting rate. Then on each day from 0 to 149, every hotel and stay date in the window gets new
+bookings. They are drawn around
 
     expected_demand x (curve today - curve yesterday)
     x (rate / comp median) ** -ELASTICITY
 
-and capped at the rooms still unsold. Rates can change on days 0 to 59. A
-change applies from the next day, and rates are frozen from day 60.
+and capped at the rooms still unsold. Rates can change on days 0 to 59. A change applies from the
+next day, and rates are frozen from day 60.
 
-Every draw has its own random number, fixed by the seed before the run
-starts, which poisson_draw turns into a Poisson count. Changing one rate
-changes only that stay date's draws, so a fixed-rate run and an agent run
-with the same seed differ only where the agent acted.
+Every draw has its own random number, fixed by the seed before the run starts. The function
+poisson_draw turns it into a Poisson count. A change to one rate changes only that stay date's
+draws. A fixed-rate run and an agent run with the same seed therefore differ only where the agent
+acted.
 
-The books also keep a daily log of what each draw took, at what rate and
-against which competitor median, so that the agent can learn from the
-bookings it has seen (estimate.py) without reading anything it would not
-have known on the day.
+The books also keep a daily log of what each draw took, at what rate and against which competitor
+median. The agent can learn from the bookings it has seen (estimate.py). It reads nothing it did
+not know on the day.
 
 Run `python -m hotel_market.bookings --seed 7` for occupancy and revenue at fixed rates.
 """
@@ -52,11 +50,11 @@ def preload_mean(hotel: Hotel, stay_day: int, customer: Customer | None = None) 
 
 
 def poisson_draw(u: np.ndarray, mean: np.ndarray) -> np.ndarray:
-    """The Poisson count each random number u stands for: the smallest k with
-    P(X <= k) >= u, where X is Poisson with the given mean.
+    """The Poisson count that each random number u stands for. It is the smallest k with P(X <= k)
+    >= u, where X is Poisson with the given mean.
 
-    With u uniform between 0 and 1 this is an exact Poisson draw. A bigger mean
-    never gives a smaller count for the same u.
+        With u uniform between 0 and 1 this is an exact Poisson draw. A bigger mean
+        never gives a smaller count for the same u.
     """
     u = np.asarray(u, dtype=float)
     mean = np.asarray(mean, dtype=float)

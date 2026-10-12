@@ -1,8 +1,7 @@
 """detect.py
 
-What changed, after each day's bookings, for every hotel and stay date in
-the window: the detect numbers, and flags where a number crosses its
-threshold.
+What changed after each day's bookings, for every hotel and stay date in the window. It gives the
+detect numbers and a flag where a number crosses its threshold.
 
     pace gap        rooms on the books - normal_demand x curve(days out)
     seat_change     arriving seats against the no-shock schedule (reason text only)
@@ -11,20 +10,19 @@ threshold.
     median change   the comp median against yesterday's shop
     new event       an event that became known today and covers the date
 
-A stay date is flagged when the pace gap is beyond both a share of the
-hotel's rooms and some standard deviations of booking noise, when
-seat_revision is beyond its threshold either way, when the comp median moved
-beyond its threshold since yesterday, or when an event became known today.
-On a stay date under the hold, a pace gap alone raises no flag. The
-thresholds and the hold period are the customer's settings (customer.py):
-10% of rooms, 3 standard deviations, 5%, 5% and 7 days for the demo market.
-Consecutive flagged stay dates of a hotel with the same causes merge into one
-flag.
+A stay date is flagged in four cases. The first is a pace gap beyond a share of the hotel's rooms
+and some standard deviations of booking noise. The second is a seat_revision beyond its threshold
+either way. The third is a comp median that moved beyond its threshold since yesterday. The
+fourth is an event that became known today.
 
-Everything here is read through the four sources (sources.py); the table
-also carries the forecast's expected demand for each stay date, which is all
-the planner needs. `python -m hotel_market.simulated --seed 7` prints the
-flags of a fixed-rate run.
+On a stay date under the hold, a pace gap alone raises no flag. The thresholds and the hold
+period are the customer's settings (customer.py). For the demo market they are 10% of rooms, 3
+standard deviations, 5%, 5% and 7 days. Consecutive flagged stay dates of a hotel with the same
+causes merge into one flag.
+
+Everything here is read through the four sources (sources.py). The table also carries the
+forecast's expected demand for each stay date, which is all the planner needs. `python -m
+hotel_market.simulated --seed 7` prints the flags of a fixed-rate run.
 """
 
 from __future__ import annotations
@@ -58,8 +56,8 @@ class Flag:
 
 
 def detect_numbers(day: int, sources: Sources, customer: Customer | None = None) -> pd.DataFrame:
-    """The detect numbers for every hotel and stay date in the day's window, one
-    row each, with the causes the stay date is flagged for."""
+    """The detect numbers for every hotel and stay date in the day's window, one row each. Each row
+    carries the causes the stay date is flagged for."""
     customer = customer or demo()
     seats = sources.schedules.seat_change(day)
     revision = sources.schedules.seat_revision(day)
@@ -154,9 +152,10 @@ def _held(
 
 
 def shock_known(hotel: Hotel, stay_day: int, as_of_day: int, sources: Sources) -> bool:
-    """Whether a shock known by as_of_day moves demand or competitor rates for this
-    hotel and stay date: the seats have changed, a known event covers the date, or
-    the comp median shopped today differs from the first shop."""
+    """Whether a shock known by as_of_day moves demand or competitor rates for this hotel and stay
+    date. That is true when the seats have changed or a known event covers the date. It is also
+    true when today's comp median differs from the first shop.
+    """
     return (
         sources.schedules.seat_change(as_of_day)[stay_day] != 0
         or any(e.covers(hotel.key, stay_day) for e in sources.events.known(as_of_day))

@@ -32,8 +32,8 @@ SCHEMA = {"type": "object", "properties": {}}  # any schema will do for the clie
 
 
 class FakeClient:
-    """Stands in for the model: accepts each plan, or gives one choice; with several
-    choices, one per call in turn, the last one repeated."""
+    """Stands in for the model. It accepts each plan, or gives one choice. With several choices, it
+    gives one per call in turn and repeats the last one."""
 
     model = "fake"
 
@@ -86,8 +86,8 @@ def _sdk_error(status):
 
 
 def _sdk(replies):
-    """A fake SDK whose create() takes the next reply from the list: an exception is raised,
-    any other reply is answered as text with 1,200 input tokens."""
+    """A fake SDK whose create() takes the next reply from the list. An exception is raised. Any
+    other reply is answered as text with 1,200 input tokens."""
 
     def create(**kwargs):
         reply = replies.pop(0)

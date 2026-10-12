@@ -2,28 +2,29 @@
 
 A benchmark of the model as a reviewer.
 
-Code computes every candidate and its estimate (plan.py), and the model only
-accepts or declines each queued plan (model.py), so the question a benchmark
-can ask is how well a reviewer declines. In the default mode the plan is scored
-with the simulator's own elasticity and accepting every plan is right, so every
-reviewer ties there. In the modes where the agent prices with a wrong or a
-learned elasticity, a plan is sometimes worth less than holding, and declining
-it is right. The benchmark runs the reviewers in those modes.
+Code computes every candidate and its estimate (plan.py). The model only accepts or declines each
+queued plan (model.py). The question a benchmark can ask is therefore how well a reviewer
+declines.
 
-The oracle reviewer is the ceiling for a reviewer. It grades; it is not an agent. It
-cannot pick a better candidate than the plan, and a single seed's draw can beat
-it. For each queued entry it re-scores the plan and hold with ORACLE_ELASTICITY,
-the simulator's own value, and declines the plan when hold scores at least as
-well. It stands in as the client the agent asks, so its decisions drive a run
-of their own, and it labels the entries of any other run after the fact. Its
-answers are never cached and record the source "oracle", so a later live run in
-the same mode cannot mistake them for the model's. It imports from plan.py and
-agent.py and nothing in the agent's path imports it, so the simulator's
-elasticity never reaches a decision through it; tests/test_sources.py checks
-its imports with the agent's modules.
+In the default mode the plan is scored with the simulator's own elasticity. Accepting every plan
+is then right, and every reviewer ties there. In the modes with a wrong or a learned elasticity,
+a plan is sometimes worth less than holding. Declining it is then right. The benchmark runs the
+reviewers in those modes.
 
-The measures are regret, the accept rate, decline precision, recall, F1, dollar-weighted
-recall and the recovered share, each a function whose docstring gives its formula.
+The oracle reviewer is the ceiling for a reviewer. It grades; it is not an agent. It cannot pick
+a better candidate than the plan, and a single seed's draw can beat it. For each queued entry it
+re-scores the plan and hold with ORACLE_ELASTICITY, the simulator's own value. It declines the
+plan when hold scores at least as well. It stands in as the client the agent asks, so its
+decisions drive a run of their own.
+
+It also labels the entries of any other run after the fact. Its answers are never cached and
+record the source "oracle". A later live run in the same mode therefore cannot mistake them for
+the model's. It imports from plan.py and agent.py, and nothing in the agent's path imports it.
+The simulator's elasticity therefore never reaches a decision through it. tests/test_sources.py
+checks its imports with the agent's modules.
+
+The measures are regret, the accept rate, decline precision, recall, F1, dollar-weighted recall
+and the recovered share. Each is a function whose docstring gives its formula.
 """
 
 from __future__ import annotations
@@ -51,9 +52,9 @@ def key(entry: Entry) -> Key:
 
 
 def oracle_values(entry: Entry, customer: Customer | None = None) -> tuple[float, float]:
-    """(hold, plan): what holding and the plan are worth at ORACLE_ELASTICITY, summed over
-    the days of the week the plan changes. The plan's own estimate may have been made at
-    another elasticity; this is the same candidates scored with the simulator's value."""
+    """(hold, plan): the worth of holding and of the plan at ORACLE_ELASTICITY, summed over the
+    weekdays the plan changes. The plan's own estimate may come from another elasticity. This scores
+    the same candidates with the simulator's value."""
     customer = customer or demo()
     hotel = customer.hotel(entry.hotel)
     cost = hotel.room_cost if customer.scores_contribution() else 0.0
@@ -77,10 +78,10 @@ def oracle_labels(entries: Iterable[Entry], customer: Customer | None = None) ->
 
 
 class OracleReviewer:
-    """The oracle as the client an agent asks: it answers each request from the day's
-    entries, which the agent keeps in agent.today while it asks, and declines a plan when
-    hold scores at least as well at the simulator's elasticity. Its reasons are written
-    by code from the two scores. Nothing it answers is cached."""
+    """The oracle as the client an agent asks. It answers each request from the day's entries, which
+    the agent keeps in agent.today while it asks. It declines a plan when hold scores at least as
+    well at the simulator's elasticity. Code writes its reasons from the two scores. Nothing it
+    answers is cached."""
 
     name = "oracle"
     cached = False
@@ -112,11 +113,11 @@ def _oracle_reason(hold: float, plan: float, choice: str) -> str:
 
 
 class ScriptedClient:
-    """A client for tests and offline runs. It answers a request from `answers`, a dict
-    of request digest to decisions, when the digest is there. Otherwise it declines the
-    entries whose Key is in `declines` and accepts every other plan, with a scripted
-    reason. It plays a model: its answers are cached and record source "model", and the
-    record's model field, "scripted", tells them from a real model's."""
+    """A client for tests and offline runs. It answers a request from `answers`, a dict of request
+    digest to decisions, when the digest is there. Otherwise it declines the entries whose Key is in
+    `declines` and accepts every other plan, with a scripted reason. It plays a model. Its answers
+    are cached and record the source "model". The record's model field, "scripted", tells them from
+    a real model's."""
 
     def __init__(
         self,
@@ -148,11 +149,12 @@ class ScriptedClient:
 
 @dataclass(frozen=True)
 class Reviewer:
-    """One reviewer of the queued plans, as a sweep arm names it: the template, the oracle
-    or a model. `model` is the model the arm asks, None when it asks none; the agent takes
-    it, so the arm's cache folder names it. `make` builds the client once the agent exists,
-    since the oracle reads the agent's entries and a measured client writes its calls beside
-    the agent's cache; None is the template."""
+    """One reviewer of the queued plans, as a sweep arm names it: the template, the oracle or a
+    model. `model` is the model the arm asks, or None when it asks none. The agent takes it, so
+    the arm's cache folder names it. `make` builds the client once the agent exists. The oracle
+    reads the agent's entries, and a measured client writes its calls beside the agent's cache. A
+    make of None is the template.
+    """
 
     name: str
     model: str | None = None
@@ -172,8 +174,9 @@ ORACLE = Reviewer("oracle", make=OracleReviewer)
 
 
 def live(model: str) -> Reviewer:
-    """A model as a reviewer: a measured Claude client whose calls are appended to calls.jsonl
-    in the arm's cache folder, so that a rerun that reads the cache adds nothing to it."""
+    """A model as a reviewer. Its measured Claude client appends its calls to calls.jsonl in the
+    arm's cache folder. A rerun that reads the cache adds nothing to the file.
+    """
     return Reviewer(
         model, model, lambda agent: Measured(ClaudeClient(model), agent.cache_dir / "calls.jsonl")
     )
@@ -191,12 +194,15 @@ PRICES = {
 
 
 def counted(records: Iterable[dict], folder: Path) -> list[dict]:
-    """The call records of an arm that count: one per request digest, and only a digest whose
-    answer is in the arm's cache folder or whose record is marked failed. A digest's records
-    merge into one that takes
-    its outcome, tokens and time from the last record and sums bad_attempt and retries over
-    all of them, so a request that failed in one run and answered in a rerun keeps every bad
-    attempt. A record with no digest, from before the field, is kept as it is."""
+    """The call records of an arm that count. There is one per request digest. A digest counts only
+    when its answer is in the arm's cache folder or its record is marked failed. A digest's
+    records merge into one.
+
+    The merged record takes its outcome, tokens and time from the last record. It sums
+    bad_attempt and retries over all of them. A request that failed in one run and answered in a
+    rerun therefore keeps every bad attempt. A record with no digest, from before the field, is
+    kept as it is.
+    """
     cached = set()
     if folder.exists():
         for path in folder.glob("day*_*.json"):
@@ -237,18 +243,22 @@ def cost(calls: Iterable[dict], model: str) -> float:
 
 
 def regret(oracle_change: float, change: float) -> float:
-    """Regret = the realised target change of the arm that followed the oracle's decisions
-    - the realised target change of the arm under test, on the same seed and mode. Positive
-    when the reviewer left money behind, negative when it beat the oracle."""
+    """Regret = the oracle arm's realised target change - the arm under test's, on the same seed and
+    mode. It is positive when the reviewer left money behind and negative when it beat the
+    oracle.
+    """
     return oracle_change - change
 
 
 def recovered_share(template_change: float, oracle_change: float, change: float) -> float:
     """Recovered share = (the arm's mean realised change - the template's) / (the oracle's - the
-    template's), on the same seeds and mode: how much of the value a reviewer could recover
-    over accepting every plan this one did. 1 is the oracle's, 0 is accept-all's, and a
-    reviewer that lost money against accept-all is below 0. nan when the oracle and the
-    template tie, as in the true mode, since there is nothing to recover."""
+    template's). Both are on the same seeds and mode.
+
+    It is the share of the value a reviewer could recover over accept-all that this one did. The
+    oracle's share is 1 and accept-all's is 0. A reviewer that lost money against accept-all is
+    below 0. It is nan when the oracle and the template tie, as in the true mode. There is then
+    nothing to recover.
+    """
     room = oracle_change - template_change
     if room == 0:
         return math.nan
@@ -292,8 +302,9 @@ def decline_recall(entries: Iterable[Entry], oracle: set[Key]) -> float:
 
 
 def decline_f1(entries: Iterable[Entry], oracle: set[Key]) -> float:
-    """F1 = 2 x precision x recall / (precision + recall). nan when either is nan, 0 when
-    both are 0."""
+    """F1 = 2 x precision x recall / (precision + recall). It is nan when either is nan and 0 when
+    both are 0.
+    """
     precision, recall = decline_precision(entries, oracle), decline_recall(entries, oracle)
     if math.isnan(precision) or math.isnan(recall):
         return math.nan
@@ -305,11 +316,10 @@ def decline_f1(entries: Iterable[Entry], oracle: set[Key]) -> float:
 def dollar_weighted_recall(
     entries: Iterable[Entry], oracle: set[Key], customer: Customer | None = None
 ) -> float:
-    """Dollar-weighted decline recall = the oracle's loss from accepting, summed over the
-    plans both the reviewer and the oracle declined / the same loss summed over every plan
-    the oracle declined. The loss is hold minus plan at ORACLE_ELASTICITY (oracle_values),
-    not the plan's own value at stake. nan when the
-    oracle declined nothing."""
+    """Dollar-weighted decline recall = the loss over the plans both declined / the loss over every
+    plan the oracle declined. The loss is the oracle's loss from accepting a plan: hold minus plan
+    at ORACLE_ELASTICITY (oracle_values). It is not the plan's own value at stake. It is nan when
+    the oracle declined nothing."""
     by_key = {key(e): e for e in reviewed(entries)}
 
     def loss(k: Key) -> float:
@@ -324,10 +334,11 @@ def dollar_weighted_recall(
 
 @dataclass(frozen=True)
 class DeclineCounts:
-    """The counts behind the measures for one run or several: adding two sums the counts, so
-    that an arm's rates are pooled over its seeds rather than averaged. The rates follow
-    accept_rate, decline_precision, decline_recall, decline_f1 and dollar_weighted_recall
-    above, with the same nan rules. of(entries) labels a run with the oracle after the fact."""
+    """The counts behind the measures for one run or several. Adding two sums the counts, so an
+    arm's rates are pooled over its seeds and not averaged. The rates follow accept_rate,
+    decline_precision, decline_recall, decline_f1 and dollar_weighted_recall above. They keep the
+    same nan rules. The method of(entries) labels a run with the oracle after the fact.
+    """
 
     queued: int = 0  # the plans the reviewer saw
     accepted: int = 0
@@ -385,9 +396,11 @@ class DeclineCounts:
 
 
 def invalid_answers(calls: Iterable[dict]) -> int:
-    """How many call records had a bad attempt: an SDK error, a refusal or an answer that failed
-    model._check, whether or not a retry then answered. A Measured client writes the records,
-    and a record merged over several runs by counted() counts each run that had one."""
+    """How many call records had a bad attempt. A bad attempt is an SDK error, a refusal or an
+    answer that failed model._check. It counts whether or not a retry then answered. A Measured
+    client writes the records. A record that counted() merged over several runs counts each run
+    that had one.
+    """
     return sum(int(call.get("bad_attempt", 0)) for call in calls)
 
 

@@ -1,9 +1,9 @@
 """simulated.py
 
-The simulator as the agent's four data sources. Each class answers for a day
-from what the simulator knew on that day: the Books' daily log for bookings
-and the shops the simulator used, and the schedule and event records as of
-that day. deciding() wraps an Agent as the simulator's decide hook.
+The simulator as the agent's four data sources. Each class answers for a day from what the
+simulator knew on that day. The bookings come from the Books' daily log and the rate shops from
+the shops the simulator used. The schedule and event records are as of that day. deciding() wraps
+an Agent as the simulator's decide hook.
 
 Run `python -m hotel_market.simulated --seed 7` to print the flags of a fixed-rate run.
 """
@@ -104,8 +104,8 @@ def simulated_sources(books: Books) -> Sources:
 
 
 def deciding(agent: Agent) -> Decide:
-    """The agent as the simulator's decide hook: after each day's bookings it reads the
-    day through the simulated sources and returns the rate changes for tomorrow."""
+    """The agent as the simulator's decide hook. After each day's bookings it reads the day through
+    the simulated sources and returns the rate changes for tomorrow."""
 
     def decide(day: int, books: Books) -> dict[tuple[str, int], float]:
         return agent.decide(day, simulated_sources(books))

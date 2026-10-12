@@ -1,25 +1,23 @@
 """agent.py
 
-The agent's daily loop. After each day's bookings it reads the detect
-numbers, builds an entry for every flag, queues the plans worth the minimum,
-asks the model (or the template) about each hotel's queue, and returns the
-accepted rate changes. The simulator applies them from the next day, and the
-stay dates they change are then held for 7 days.
+The agent's daily loop. After each day's bookings it reads the detect numbers and builds an entry
+for every flag. It queues the plans worth the minimum and asks the model, or the template, about
+each hotel's queue. It returns the accepted rate changes. The simulator applies them from the
+next day and then holds the changed stay dates for 7 days.
 
-It also gives the one piece of advice it does not simulate: a two-night
-minimum stay on an event's peak night when that night is ahead of pace, once
-per hotel and event.
+It also gives the one piece of advice it does not simulate. That is a two-night minimum stay on
+an event's peak night when that night is ahead of pace. It gives it once per hotel and event.
 
-The elasticity the agent prices with comes from one of three modes. In the
-default mode, true, it is ORACLE_ELASTICITY, the simulator's own value handed
-over as an oracle, so the agent is never wrong about price response. With
-fixed:X it is X for the whole run. With learn:X it starts from the prior X and
-is re-estimated every day
-for every hotel from the bookings made before that day (estimate.py). Every
-entry records the elasticity it was estimated with, and the request carries
-it, so the reason can cite it and a change of mode changes the cache key.
-With --cautious, a learning agent also respects the estimate's standard
-error: a change must beat holding one standard error either side (plan.py).
+The elasticity the agent prices with comes from one of three modes. In the default mode, true, it
+is ORACLE_ELASTICITY, the simulator's own value. The agent is then never wrong about price
+response. With fixed:X it is X for the whole run. With learn:X it starts from the prior X. The
+agent then re-estimates it every day for every hotel from the bookings made before that day
+(estimate.py).
+
+Every entry records the elasticity it was estimated with, and the request carries it. The reason
+can therefore cite it, and a change of mode changes the cache key. With --cautious, a learning
+agent also respects the estimate's standard error. A change must then beat holding one standard
+error either side (plan.py).
 """
 
 from __future__ import annotations
@@ -106,13 +104,13 @@ class Advice:
 
 
 class Agent:
-    """The daily decision: decide(day, sources) runs after each of days 0 to 59 and
-    returns the rate changes to apply from the next day. It reads the day through the
-    four sources and never the simulator; simulated.deciding() wraps it for a run.
+    """The daily decision. decide(day, sources) runs after each of days 0 to 59. It returns the rate
+    changes to apply from the next day. It reads the day through the four sources and never the
+    simulator. simulated.deciding() wraps it for a run.
 
-    `model` names the model the client asks: the client's own name when it has one,
-    else model.MODEL. It goes into the cache folder when it is not the default, and
-    into every cache record.
+    `model` names the model the client asks. It is the client's own name when the client has one,
+    else model.MODEL. It goes into the cache folder when it is not the default, and into every cache
+    record.
     """
 
     def __init__(
@@ -171,8 +169,8 @@ class Agent:
     def resume(
         self, held: Mapping[tuple[str, int], int], advised: Iterable[tuple[str, str]]
     ) -> None:
-        """Pick up the state earlier days left: the stay dates under the hold, by the
-        day of their last accepted change, and the (hotel key, event) pairs already
+        """Pick up the state that earlier days left. That state is the stay dates under the hold, by
+        the day of their last accepted change. It also holds the (hotel key, event) pairs already
         advised. A table-backed run gives each day's agent its state this way."""
         self.held = dict(held)
         self.advised = set(advised)

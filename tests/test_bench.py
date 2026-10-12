@@ -1,5 +1,5 @@
-"""bench.py: the oracle reviewer as a grader, the reviewer measures, the reviewers, the pooled
-counts, the price table and the scripted client."""
+"""bench.py: the oracle reviewer as a grader, the reviewer measures and the reviewers. It also
+covers the pooled counts, the price table and the scripted client."""
 
 import json
 import math
@@ -55,9 +55,9 @@ SEED = 7
 
 
 def _entry(day, first, gain, action=None, plan_rate=133.0, hotel="airport"):
-    """A made-up queued entry worth `gain` over holding by its own estimate, accepted unless
-    action is HOLD. Its one stay date has 10 rooms left against 1,000 rooms of demand, so
-    every candidate sells those 10 and the oracle's loss from the plan is 10 x (140 - rate)."""
+    """A made-up queued entry worth `gain` over holding by its own estimate, accepted unless action
+    is HOLD. Its one stay date has 10 rooms left against 1,000 rooms of demand. Every candidate
+    therefore sells those 10, and the oracle's loss from the plan is 10 x (140 - rate)."""
     group = WeekdayGroup(
         0,
         [

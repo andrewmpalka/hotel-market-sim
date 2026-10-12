@@ -1,18 +1,18 @@
 """model.py
 
-The model call. One call per hotel per day sees that hotel's queued entries,
-picks the plan or hold for each, and writes two or three sentences of reason.
-The request holds every number the model may use, and its answer is checked
-against the options it was given: the model chooses and writes, nothing more.
+The model call. One call per hotel per day sees that hotel's queued entries. It picks the plan or
+hold for each and writes two or three sentences of reason. The request holds every number the
+model may use. The answer is checked against the options in the request, so the model chooses and
+writes and nothing more.
 
-The model's answers are cached under cache/seed<seed>/, one file per day and
-hotel, keyed by a digest of the request, and a rerun reads them first. With no
-client a template accepts each plan and writes a reason from the entry's
-numbers; the template is a function of the request, so it is never cached,
-and nothing here needs an API key. A replay only reads the cache. Each record
-names the model asked, and an agent given another model keeps its answers in
-their own folder (agent.py). A Measured client wraps any client, records every
-call to a calls.jsonl and asks again after an SDK error or an invalid answer.
+The model's answers are cached under cache/seed<seed>/, one file per day and hotel, keyed by a
+digest of the request. A rerun reads them first. With no client, a template accepts each plan and
+writes a reason from the entry's numbers. The template is a function of the request, so it is
+never cached. Nothing here needs an API key. Each record names the model asked, and an agent
+given another model keeps its answers in their own folder (agent.py).
+
+A replay only reads the cache. A Measured client wraps any client. It records every call to a
+calls.jsonl and asks again after an SDK error or an invalid answer.
 """
 
 from __future__ import annotations
@@ -81,11 +81,10 @@ MODE_NAMES = {"true": "assumed"}
 
 
 def schema_for(request: dict) -> dict:
-    """The shape of an answer to this request: one decision per entry, each
-    choosing from the request's own ids and options, and at least as many
-    decisions as entries, so the API cannot return a choice the code would
-    reject or leave an entry out. The API rejects maxItems on an array, so the
-    pairing check in _check() still catches a duplicated id."""
+    """The shape of an answer to this request. Each decision chooses from the request's own ids and
+    options, and there are at least as many decisions as entries. The API therefore cannot return
+    a choice the code would reject or leave an entry out. The API rejects maxItems on an array,
+    so the pairing check in _check() still catches a duplicated id."""
     entries = request["entries"]
     options = sorted({option for entry in entries for option in entry["options"]})
     return {
@@ -112,11 +111,11 @@ def schema_for(request: dict) -> dict:
 
 
 class Client(Protocol):
-    """Whatever answers a request. Two optional attributes shape how ask() treats the
-    answers: name, the source a decision records ("model" when absent), and cached,
-    whether the answers are kept in the cache (True when absent). An uncached client,
-    such as the oracle grader in bench.py, answers like the template: nothing is
-    written, and nothing of the model's is read."""
+    """Whatever answers a request. Two optional attributes shape how ask() treats the answers. The
+    attribute name is the source a decision records, "model" when absent. The attribute cached
+    says whether the answers are kept in the cache, True when absent. An uncached client, such as
+    the oracle grader in bench.py, answers like the template. Nothing is written, and nothing of
+    the model's is read."""
 
     def complete(self, system: str, prompt: str, schema: dict) -> str:
         """Send one request and return the model's JSON text."""
@@ -201,16 +200,16 @@ def _sdk_error(error: BaseException) -> bool:
 class Measured:
     """Wraps any client, records each call and asks again after a bad attempt.
 
-    One record per call holds the request's day, hotel and digest, the model
-    asked and the model that answered, the input and output tokens, the wall
-    time, the stop reason, the retries made, whether any attempt was bad and
-    whether the request failed in the end. A bad attempt is an SDK error, asked
-    again after a backoff; an invalid answer, asked again at once; or a refusal,
-    which the API has already re-run on the fallback model, so it is not asked
-    again. When the retries run out the record is written and then the error is
-    raised. The records are kept in `calls` and appended to a calls.jsonl
-    when a path is given, so that an arm's calls sit beside its cache. The
-    client's model, name and cached flag pass through.
+    One record per call holds the request's day, hotel and digest, the model asked and the model
+    that answered. It also holds the input and output tokens, the wall time, the stop reason and
+    the retries made. It flags whether any attempt was bad and whether the request failed in the
+    end. A bad attempt is an SDK error, an invalid answer or a refusal. An SDK error is asked
+    again after a backoff, and an invalid answer at once. A refusal is not asked again, because
+    the API has already re-run it on the fallback model.
+
+    When the retries run out, the record is written and then the error is raised. The records are
+    kept in `calls`. They are also appended to a calls.jsonl when a path is given, so an arm's
+    calls sit beside its cache. The client's model, name and cached flag pass through.
     """
 
     def __init__(
@@ -315,8 +314,8 @@ def _answer_text(blocks: list) -> str:
 def request_for(day: int, hotel: Hotel, entries: list[Entry]) -> dict:
     """What the model sees for one hotel's queue. Every number in it comes from code.
 
-    The entries of one hotel on one day share their pricing, so the request
-    carries it once, and a change to the elasticity changes the request's digest.
+    The entries of one hotel on one day share their pricing, so the request carries it once. A
+    change to the elasticity changes the request's digest.
     """
     pricing = {entry.pricing for entry in entries}
     targets = {entry.target for entry in entries}
@@ -345,8 +344,8 @@ def _days(value: float) -> str:
 
 
 def _pricing_request(pricing: Pricing) -> dict:
-    """The pricing as the model sees it: every number a display string, and the default
-    mode named "assumed" rather than the command line's "true" (MODE_NAMES)."""
+    """The pricing as the model sees it. Every number is a display string. The default mode is named
+    "assumed" and not the command line's "true" (MODE_NAMES)."""
     request = {
         "elasticity": number(pricing.elasticity),
         "mode": MODE_NAMES.get(pricing.mode, pricing.mode),
@@ -378,9 +377,9 @@ def _entry_request(entry: Entry) -> dict:
 
 
 def _numbers_request(numbers: FlagNumbers) -> dict:
-    """The flag's numbers as display strings: a signed quantity reads as a phrase with
-    its direction in words, and a range as one phrase (text.py), so that the model
-    copies a phrase that already reads correctly."""
+    """The flag's numbers as display strings. A signed quantity reads as a phrase with its direction
+    in words, and a range as one phrase (text.py). The model then copies a phrase that already
+    reads correctly."""
     return {
         "days_out": span(numbers.days_out, _days),
         "rooms_on_books": rooms(numbers.rooms_on_books),
@@ -416,9 +415,9 @@ def _weekday_request(group: WeekdayGroup) -> dict:
 
 
 def _band_request(candidate: Candidate, group: WeekdayGroup) -> dict:
-    """Cautious only: the estimate, and its value over hold, at the band's low and
-    high elasticity, so that all three values the rule used reach the model. Named
-    by the end of the band, since the low elasticity can give the higher estimate."""
+    """Cautious only. The estimate, and its value over hold, at each end of the band. All three
+    values the rule used then reach the model. Each is named by the end of the band, because the
+    low elasticity can give the higher estimate."""
     if candidate.band is None:
         return {}
     low, high = candidate.band
@@ -444,14 +443,14 @@ def ask(
 ) -> dict:
     """The decisions for one hotel's queue on one day.
 
-    Without a client the template answers, and nothing is cached: the template
-    is a function of the request. An uncached client (its cached flag is false)
-    is treated the same way, and its decisions record its name as their source.
-    With any other client, the model's cached answer is read first. A cached
-    answer written for a different request raises rather than answering the
-    wrong question, and a replay never calls the model: it reads the cache or
-    raises. A new record names `model`, the model the client asks, so a cache
-    that holds several models' answers tells them apart.
+    Without a client the template answers, and nothing is cached, because the template is a
+    function of the request. An uncached client, one whose cached flag is false, is treated the
+    same way. Its decisions record its name as their source. With any other client, the model's
+    cached answer is read first.
+
+    A cached answer written for a different request raises instead of answering the wrong
+    question. A replay never calls the model: it reads the cache or raises. A new record names
+    `model`, the model the client asks, so a cache with several models' answers tells them apart.
     """
     if client is None:
         return {"source": "template", "decisions": template_decisions(request)}
@@ -489,8 +488,8 @@ def request_digest(request: dict) -> str:
 def _read_cache(path: Path, digest: str) -> dict | None:
     """The model's cached answer to this request, or None when there is none.
 
-    A file from before template answers stopped being cached is not the
-    model's answer; it is ignored, and overwritten by one.
+    A file from before template answers stopped being cached is not the model's answer. It is
+    ignored and overwritten by one.
     """
     if not path.exists():
         return None
@@ -567,7 +566,7 @@ def _elasticity_text(elasticity: dict) -> str:
 
 
 def _what_changed(causes: list[str], numbers: dict) -> str:
-    """The causes as clauses with their phrases: "seats are up 17.0% to 21.6% against
+    """The causes as clauses with their phrases. An example is "seats are up 17.0% to 21.6% against
     yesterday's schedule and a convention was announced"."""
     clauses = []
     for cause in causes:
