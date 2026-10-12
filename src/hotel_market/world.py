@@ -1,0 +1,63 @@
+"""world.py
+
+The types a market is described with, and the calendar the simulation runs
+on. A Hotel carries everything the agent and the simulator need to know about
+it: rooms, starting rate, share of guests arriving by air, share of rooms sold
+on a normal night, demand factors across the week, rate floor and ceiling,
+cost per occupied room and its comp set. The hotels themselves, and the rest
+of a market's settings, come from a customer file (customer.py).
+
+Nothing here is random. The seed only matters once competitor rates and
+bookings are drawn.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import timedelta
+
+from hotel_market.schedule import HORIZON_DAYS, SIM_START
+
+SIM_DAYS = 60  # the agent decides on days 0 to 59; bookings run on to day 149
+LOOKAHEAD_DAYS = 90  # stay dates each hotel looks at on each simulation day
+
+
+@dataclass(frozen=True)
+class Competitor:
+    name: str
+    base_rate: float  # before event and noise adjustments
+
+
+@dataclass(frozen=True)
+class Hotel:
+    key: str  # short id for lookups and file names
+    name: str
+    rooms: int
+    start_rate: float
+    air_share: float  # share of guests who arrive by air
+    base_occupancy: float  # share of rooms sold on a normal night
+    weekday_factors: tuple[float, ...]  # demand factors, Monday to Sunday
+    competitors: tuple[Competitor, ...]
+    floor: float  # the lowest rate the hotel will set
+    ceiling: float  # the highest
+    room_cost: float  # cost to service one occupied room: housekeeping, supplies, commissions
+    row: int  # the hotel's row in every array indexed by hotel
+
+    def clamp(self, rate: float) -> float:
+        """Keep a proposed rate between the hotel's floor and ceiling."""
+        return min(max(rate, self.floor), self.ceiling)
+
+
+def stay_window(day: int) -> range:
+    """The stay dates a hotel looks at on a simulation day: that night and the next 89.
+
+    That night is included because the booking curve reaches 100% at 0 days
+    out, so some rooms are booked on the day of arrival. After day 59 the
+    window stops at stay date 149, the last day of the schedule.
+    """
+    return range(day, min(day + LOOKAHEAD_DAYS, HORIZON_DAYS))
+
+
+def weekday(day: int) -> int:
+    """Day of the week of a simulation day. Monday is 0, as in schedule.py."""
+    return (SIM_START + timedelta(days=day)).weekday()

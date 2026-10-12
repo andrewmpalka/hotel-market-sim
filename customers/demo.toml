@@ -1,0 +1,95 @@
+# The demo market: four hotels of one brand in the made-up city QMC. Every
+# number is synthetic. This file is everything specific to the market; the
+# constants that describe the simulator itself stay in the code.
+
+name = "demo"
+# What the agent scores candidates on: "contribution" (room revenue minus the
+# cost of servicing every room sold) or "revenue".
+target = "contribution"
+
+[limits]
+floor_share = 0.70     # the rate floor as a share of the start rate
+ceiling_share = 1.40   # the rate ceiling as a share of the start rate
+cost_share = 0.3333333333333333  # the cost to service an occupied room, as a share of the start rate
+
+[detect]
+pace_share = 0.10       # a pace gap counts when it is beyond this share of the hotel's rooms
+pace_noise_sd = 3       # ... and beyond this many standard deviations of booking noise
+seat_threshold = 0.05   # a seat revision of this much either way raises a flag
+median_threshold = 0.05 # a comp median that moved this much since yesterday raises a flag
+hold_days = 7           # an action accepted on day d holds its stay dates on days d+1 to d+hold_days
+
+[agent]
+min_value_at_stake = 250  # a plan worth less than this over holding is held, not queued
+
+# The booking curve: the share of final bookings normally on the books, by
+# days before arrival, linear in between.
+[booking_curve]
+days_out = [0, 7, 30, 60, 90]
+share = [1.00, 0.70, 0.40, 0.20, 0.00]
+
+# Each hotel: its rooms, start rate, share of guests arriving by air, share of
+# rooms sold on a normal night, demand factors Monday to Sunday, and its four
+# competitors, each at an offset from the hotel's start rate. The offsets are
+# symmetric, so every comp set's median starts at the hotel's own rate.
+
+[[hotels]]
+key = "convention"
+name = "Downtown convention hotel"
+rooms = 400
+start_rate = 220
+air_share = 0.60
+base_occupancy = 0.75
+weekday_factors = [0.95, 1.10, 1.10, 1.05, 0.90, 0.95, 0.80]
+competitors = [
+    { name = "convention comp 1", offset = -0.08 },
+    { name = "convention comp 2", offset = -0.03 },
+    { name = "convention comp 3", offset = 0.03 },
+    { name = "convention comp 4", offset = 0.08 },
+]
+
+[[hotels]]
+key = "full-service"
+name = "Downtown full-service hotel"
+rooms = 250
+start_rate = 190
+air_share = 0.45
+base_occupancy = 0.75
+weekday_factors = [0.95, 1.10, 1.10, 1.05, 0.90, 0.95, 0.80]
+competitors = [
+    { name = "full-service comp 1", offset = -0.08 },
+    { name = "full-service comp 2", offset = -0.03 },
+    { name = "full-service comp 3", offset = 0.03 },
+    { name = "full-service comp 4", offset = 0.08 },
+]
+
+[[hotels]]
+key = "lifestyle"
+name = "Lifestyle hotel"
+rooms = 120
+start_rate = 240
+air_share = 0.50
+base_occupancy = 0.75
+weekday_factors = [0.85, 0.85, 0.90, 1.00, 1.20, 1.25, 0.90]
+competitors = [
+    { name = "lifestyle comp 1", offset = -0.08 },
+    { name = "lifestyle comp 2", offset = -0.03 },
+    { name = "lifestyle comp 3", offset = 0.03 },
+    { name = "lifestyle comp 4", offset = 0.08 },
+]
+
+# 0.85 is a scenario choice: at 0.75 the new flights never fill the airport hotel.
+[[hotels]]
+key = "airport"
+name = "Airport hotel"
+rooms = 150
+start_rate = 140
+air_share = 0.80
+base_occupancy = 0.85
+weekday_factors = [1.05, 0.90, 1.00, 1.05, 1.00, 0.85, 1.05]
+competitors = [
+    { name = "airport comp 1", offset = -0.08 },
+    { name = "airport comp 2", offset = -0.03 },
+    { name = "airport comp 3", offset = 0.03 },
+    { name = "airport comp 4", offset = 0.08 },
+]
