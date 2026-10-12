@@ -1,0 +1,168 @@
+"""scripts/live_audit.py: the audit of the model's reasons against their requests."""
+
+import importlib.util
+import json
+import shutil
+import sys
+from pathlib import Path
+
+import pytest
+
+from hotel_market.cli import run
+from hotel_market.customer import demo
+from hotel_market.detect import flags
+from hotel_market.model import request_for, template_decisions
+from hotel_market.plan import HOLD, entry_for
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def _load():
+    spec = importlib.util.spec_from_file_location("live_audit", ROOT / "scripts" / "live_audit.py")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+audit = _load()
+
+
+def test_a_range_in_a_reason_is_read_as_its_two_ends():
+    assert audit.figures_in("about 12–14% below the median") == ["12%", "14%"]
+    assert audit.figures_in("$217 to 220, stays 45-48") == ["$217", "$220", "45", "48"]
+    assert audit.figures_in("our rate sits 14.6% below the median") == ["14.6%"]
+    assert audit.figures_in("a sign of the model's own: -14.6% below") == ["-14.6%"]
+    # Two figures with different units are not a range: each stays as written.
+    assert audit.figures_in("raising 10% to $242 on Thu") == ["10%", "$242"]
+    assert audit.figures_in("rose +15.0% to $217–$220") == ["+15.0%", "$217", "$220"]
+    # Punctuation after a figure is not part of it; thousands commas are.
+    assert audit.figures_in("1,188 rooms, $8,050, and 12674 rooms.") == ["1,188", "$8,050", "12674"]
+
+
+def test_the_requests_display_strings_and_whole_numbers_are_what_a_reason_may_quote(day10):
+    _, table = day10
+    hotel = demo().hotel("convention")
+    entries = [entry_for(10, f, table) for f in flags(10, table) if f.hotel == "convention"]
+    request = request_for(10, hotel, entries)
+    phrases, tokens = audit.quotable(request)
+    assert {"$8,050 more than holding", "10.7% to 14.6% below the median", "up 15.0%"} <= phrases
+    assert {"1,188", "$220", "$242", "45 to 48", "1.5"} <= phrases
+    assert {"10", "5%", "10%", "45", "48"} <= tokens  # the day, and the figures inside names
+    assert "8052.54" not in phrases | tokens  # raw values are not for quoting
+    # A phrase must appear whole: a sign, a cut or one end of a range on its own is not a
+    # quotation.
+    assert audit.appears("14.6%", "we sit 10.7% to 14.6% below the median", phrases, tokens)
+    assert not audit.appears("14.6%", "our rate sits 14.6% below the median", phrases, tokens)
+    assert not audit.appears("-14.6%", "we sit 10.7% to -14.6% below the median", phrases, tokens)
+    assert not audit.appears("$8,050", "the plan adds $8,050 in contribution", phrases, tokens)
+    assert audit.appears("10%", "we recommend raising 10% to $242", phrases, tokens)
+    # The template copies the display strings whole, so every figure it quotes is known.
+    [decision] = template_decisions(request)
+    reason = decision["reason"]
+    assert all(audit.appears(f, reason, phrases, tokens) for f in audit.figures_in(reason))
+    assert audit.sentences_without_figures(reason, phrases, tokens) == []
+
+
+def test_a_sentence_that_lists_several_gains_may_write_more_than_holding_once():
+    phrases = {"$280 more than holding", "$60 more than holding", "$340 more than holding"}
+    phrases |= {"$120 less than holding"}
+    listed = "Tuesday adds $280 and Wednesday $60, $340 more than holding in all."
+    assert audit.stray_figures(listed, phrases, set()) == []
+    assert audit.sentences_without_figures(listed, phrases, set()) == []
+    # Without the phrase in the sentence, the bare gains are the model's own figures.
+    assert audit.stray_figures("Tuesday adds $280 and Wednesday $60.", phrases, set()) == [
+        "$280",
+        "$60",
+    ]
+    # The phrase vouches only for a gain the request holds as "more than holding".
+    assert audit.stray_figures("Monday is $120, more than holding.", phrases, set()) == ["$120"]
+    # It vouches within its own sentence, not the whole reason.
+    assert audit.stray_figures(
+        "The plan is $340 more than holding. We like the $340.", phrases, set()
+    ) == ["$340"]
+
+
+def test_sentences_without_a_request_figure_are_listed():
+    phrases, tokens = {"$8,050 more than holding", "1,188"}, set()
+    reason = (
+        "We recommend the plan. It adds $8,050 more than holding on 1,188 rooms. "
+        "Demand looks strong to us. It adds $8,050 in contribution."
+    )
+    assert audit.sentences_without_figures(reason, phrases, tokens) == [
+        "We recommend the plan.",
+        "Demand looks strong to us.",
+        "It adds $8,050 in contribution.",
+    ]
+
+
+def test_the_audit_reads_a_cache_and_reports_what_is_not_in_the_request(tmp_path, capsys, day10):
+    _, table = day10
+    hotel = demo().hotel("convention")
+    entries = [entry_for(10, f, table) for f in flags(10, table) if f.hotel == "convention"]
+    request = request_for(10, hotel, entries)
+    [decision] = template_decisions(request)
+    decision["reason"] += " Risk looks low, and 7 days of hold follow."
+    cache = tmp_path / "cache" / "seed7"
+    cache.mkdir(parents=True)
+    (cache / "day010_convention.json").write_text(
+        json.dumps(
+            {"request_digest": "x", "request": request, "source": "model", "decisions": [decision]}
+        )
+    )
+    audit.audit(cache)
+    out = capsys.readouterr().out
+    assert "1 model calls, 1 entries decided, 0 declined." in out
+    assert "1 figures in reasons do not appear in their request." in out
+    assert "Not in the request: 7" in out
+    assert "No request figure: Risk looks low, and 7 days of hold follow." in out
+    with pytest.raises(SystemExit):
+        audit.audit(tmp_path / "nothing")
+
+
+# ---- the recorded live run ------------------------------------------------------
+
+FIXTURE = ROOT / "tests" / "fixtures" / "live_seed7"
+
+
+class NoCalls:
+    def complete(self, system, prompt, schema):
+        raise AssertionError("the model was called: the recorded run does not cover this request")
+
+
+def test_the_recorded_live_run_of_seed_7_passes_the_audit(capsys):
+    """The seven requests and answers of one live run of seed 7 with claude-opus-5-5, and
+    the measurements of its calls, are kept as a fixture. The audit on them finds no
+    declined plan, no figure outside its request and no sentence without a request
+    figure; this is the evidence UNK-01, UNK-02 and UNK-09 in kg/ rest on."""
+    audit.audit(FIXTURE)
+    out = capsys.readouterr().out
+    assert "7 model calls, 7 entries decided, 0 declined." in out
+    assert "0 figures in reasons do not appear in their request." in out
+    assert "0 sentences hold no figure from the request." in out
+    calls = [json.loads(line) for line in (FIXTURE / "calls.jsonl").read_text().splitlines()]
+    assert len(calls) == 7
+    assert {c["stop_reason"] for c in calls} == {"end_turn"}
+    assert {c["model"] for c in calls} == {"claude-opus-5-5"}
+    assert not any(c["fallback"] for c in calls)
+
+
+def test_the_recorded_live_run_replays_without_a_key_and_gives_28818(tmp_path):
+    """With the fixture as the cache, the run of seed 7 reads every answer from it, never
+    calls the model, and ends where the live run ended. A change to the request makes
+    the fixture stale, and this test then says to record a live run again."""
+    shutil.copytree(FIXTURE, tmp_path / "cache" / "seed7", ignore=shutil.ignore_patterns("*.jsonl"))
+    fixed, books, agent = run(7, tmp_path / "decisions.jsonl", tmp_path / "cache", NoCalls())
+    change = sum(books.contribution(h) - fixed.contribution(h) for h in demo().hotels)
+    assert change == pytest.approx(28818, abs=1)
+    decided = [e for e in agent.entries if e.queued]
+    assert len(decided) == 7 and all(e.reason_source == "model" for e in decided)
+    assert all(e.action != HOLD for e in decided)
+    recorded = {
+        (r["request"]["day"], r["request"]["hotel"]["name"], d["id"]): d["reason"]
+        for p in sorted(FIXTURE.glob("day*_*.json"))
+        for r in [json.loads(p.read_text())]
+        for d in r["decisions"]
+    }
+    names = {hotel.key: hotel.name for hotel in demo().hotels}
+    assert {(e.day, names[e.hotel], e.id): e.reason for e in decided} == recorded

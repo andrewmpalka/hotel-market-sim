@@ -1,0 +1,92 @@
+{
+  "request_digest": "9de4f0f47b7bd9ead099d3a4ed5c5eb4a58c039cdfe0a551d61cd50774699fec",
+  "request": {
+    "day": 27,
+    "hotel": {
+      "name": "Downtown full-service hotel",
+      "rooms": "250",
+      "floor": "$133",
+      "ceiling": "$266",
+      "cost_per_occupied_room": "$63"
+    },
+    "elasticity": {
+      "elasticity": "1.5",
+      "mode": "assumed",
+      "standard_error": null,
+      "prior": null,
+      "observations": null
+    },
+    "entries": [
+      {
+        "id": "46-46",
+        "stay_dates": "46",
+        "what_changed": [
+          "ahead of pace"
+        ],
+        "numbers": {
+          "days_out": "19",
+          "rooms_on_books": "136",
+          "unsold_rooms": "114",
+          "remaining_demand": "104",
+          "pace_gap": "44 rooms ahead of pace",
+          "seat_change": "unchanged",
+          "seat_revision": "unchanged",
+          "rate": "$209",
+          "comp_median": "$220",
+          "rate_vs_median": "5.2% below the median",
+          "median_change": "unchanged",
+          "new_event": null
+        },
+        "by_day_of_week": [
+          {
+            "day": "Fri",
+            "stay_dates": [
+              46
+            ],
+            "candidates": [
+              {
+                "name": "hold",
+                "rates": "$209",
+                "estimated_contribution": "$15,880",
+                "versus_hold": "the same as holding"
+              },
+              {
+                "name": "raise 5%",
+                "rates": "$219",
+                "estimated_contribution": "$16,180",
+                "versus_hold": "$300 more than holding"
+              },
+              {
+                "name": "raise 10%",
+                "rates": "$230",
+                "estimated_contribution": "$16,220",
+                "versus_hold": "$340 more than holding"
+              },
+              {
+                "name": "lower 5%",
+                "rates": "$199",
+                "estimated_contribution": "$15,200",
+                "versus_hold": "$680 less than holding"
+              }
+            ],
+            "best": "raise 10%"
+          }
+        ],
+        "plan": "raise 10% on Fri",
+        "value_at_stake": "$340 more than holding",
+        "options": [
+          "raise 10% on Fri",
+          "hold"
+        ]
+      }
+    ]
+  },
+  "source": "model",
+  "decisions": [
+    {
+      "id": "46-46",
+      "choice": "raise 10% on Fri",
+      "reason": "Friday stay date 46 is now 44 rooms ahead of pace, with our $209 rate 5.2% below the median. We recommend raising the rate 10% to $230 on Friday. That is the best of the candidates compared, estimated at $340 more than holding."
+    }
+  ]
+}

@@ -1,0 +1,192 @@
+{
+  "request_digest": "a98daa891c29d879adc23f9ba96794e087d141c71e4bdb49cb3bd2c016bfdf86",
+  "request": {
+    "day": 10,
+    "hotel": {
+      "name": "Downtown convention hotel",
+      "rooms": "400",
+      "floor": "$154",
+      "ceiling": "$308",
+      "cost_per_occupied_room": "$73"
+    },
+    "elasticity": {
+      "elasticity": "1.5",
+      "mode": "assumed",
+      "standard_error": null,
+      "prior": null,
+      "observations": null
+    },
+    "entries": [
+      {
+        "id": "45-48",
+        "stay_dates": "45 to 48",
+        "what_changed": [
+          "comp median up",
+          "event announced"
+        ],
+        "numbers": {
+          "days_out": "35 to 38",
+          "rooms_on_books": "412",
+          "unsold_rooms": "1,188",
+          "remaining_demand": "963",
+          "pace_gap": "15 rooms ahead of pace",
+          "seat_change": "unchanged",
+          "seat_revision": "unchanged",
+          "rate": "$220",
+          "comp_median": "$246 to $258",
+          "rate_vs_median": "10.7% to 14.6% below the median",
+          "median_change": "up 15.0%",
+          "new_event": "Convention"
+        },
+        "by_day_of_week": [
+          {
+            "day": "Thu",
+            "stay_dates": [
+              45
+            ],
+            "candidates": [
+              {
+                "name": "hold",
+                "rates": "$220",
+                "estimated_contribution": "$42,090",
+                "versus_hold": "the same as holding"
+              },
+              {
+                "name": "raise 5%",
+                "rates": "$231",
+                "estimated_contribution": "$45,200",
+                "versus_hold": "$3,110 more than holding"
+              },
+              {
+                "name": "raise 10%",
+                "rates": "$242",
+                "estimated_contribution": "$47,860",
+                "versus_hold": "$5,770 more than holding"
+              },
+              {
+                "name": "lower 5%",
+                "rates": "$209",
+                "estimated_contribution": "$38,940",
+                "versus_hold": "$3,160 less than holding"
+              }
+            ],
+            "best": "raise 10%"
+          },
+          {
+            "day": "Fri",
+            "stay_dates": [
+              46
+            ],
+            "candidates": [
+              {
+                "name": "hold",
+                "rates": "$220",
+                "estimated_contribution": "$42,190",
+                "versus_hold": "the same as holding"
+              },
+              {
+                "name": "raise 5%",
+                "rates": "$231",
+                "estimated_contribution": "$42,780",
+                "versus_hold": "$590 more than holding"
+              },
+              {
+                "name": "raise 10%",
+                "rates": "$242",
+                "estimated_contribution": "$42,750",
+                "versus_hold": "$560 more than holding"
+              },
+              {
+                "name": "lower 5%",
+                "rates": "$209",
+                "estimated_contribution": "$40,120",
+                "versus_hold": "$2,070 less than holding"
+              }
+            ],
+            "best": "raise 5%"
+          },
+          {
+            "day": "Sat",
+            "stay_dates": [
+              47
+            ],
+            "candidates": [
+              {
+                "name": "hold",
+                "rates": "$220",
+                "estimated_contribution": "$41,790",
+                "versus_hold": "the same as holding"
+              },
+              {
+                "name": "raise 5%",
+                "rates": "$231",
+                "estimated_contribution": "$43,230",
+                "versus_hold": "$1,440 more than holding"
+              },
+              {
+                "name": "raise 10%",
+                "rates": "$242",
+                "estimated_contribution": "$43,480",
+                "versus_hold": "$1,690 more than holding"
+              },
+              {
+                "name": "lower 5%",
+                "rates": "$209",
+                "estimated_contribution": "$39,050",
+                "versus_hold": "$2,740 less than holding"
+              }
+            ],
+            "best": "raise 10%"
+          },
+          {
+            "day": "Sun",
+            "stay_dates": [
+              48
+            ],
+            "candidates": [
+              {
+                "name": "hold",
+                "rates": "$220",
+                "estimated_contribution": "$36,780",
+                "versus_hold": "the same as holding"
+              },
+              {
+                "name": "raise 5%",
+                "rates": "$231",
+                "estimated_contribution": "$36,740",
+                "versus_hold": "$30 less than holding"
+              },
+              {
+                "name": "raise 10%",
+                "rates": "$242",
+                "estimated_contribution": "$36,660",
+                "versus_hold": "$120 less than holding"
+              },
+              {
+                "name": "lower 5%",
+                "rates": "$209",
+                "estimated_contribution": "$36,740",
+                "versus_hold": "$40 less than holding"
+              }
+            ],
+            "best": "hold"
+          }
+        ],
+        "plan": "raise 5% on Fri; raise 10% on Thu, Sat",
+        "value_at_stake": "$8,050 more than holding",
+        "options": [
+          "raise 5% on Fri; raise 10% on Thu, Sat",
+          "hold"
+        ]
+      }
+    ]
+  },
+  "source": "model",
+  "decisions": [
+    {
+      "id": "45-48",
+      "choice": "raise 5% on Fri; raise 10% on Thu, Sat",
+      "reason": "A convention has been announced for stay dates 45 to 48 and the competitor median is up 15.0%, leaving our $220 rate 10.7% to 14.6% below the median while we are 15 rooms ahead of pace. We recommend raising 10% on Thursday and Saturday and 5% on Friday, while holding Sunday, where every change came out below holding. The estimates show $5,770 on Thursday, $590 on Friday and $1,690 on Saturday, $8,050 more than holding in all, under an assumed elasticity of 1.5."
+    }
+  ]
+}
