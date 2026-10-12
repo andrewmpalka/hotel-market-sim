@@ -178,9 +178,9 @@ bookings.
 - The $250 minimum applies to a whole plan, so a small change on one day of the
   week can ride inside a plan that clears the minimum on its other days.
 - The air schedule files two changes by default and, with `--churn`, weekly
-  revisions below the threshold that raised no seat flag on seeds 1 to 20. A
-  second scenario holds an upgauge and a frequency cut. A real feed revises in
-  more ways than these (docs/schedule-feed.md).
+  revisions held under the threshold by construction. A second scenario holds
+  an upgauge and a frequency cut. A real feed revises in more ways than these,
+  and its rows carry an arrival time (docs/schedule-feed.md).
 - By default competitors never react and the market has no price response of
   its own, so `--react` makes each competitor move half of a hotel's change
   three days after it takes effect, and `--market-elasticity E` makes the

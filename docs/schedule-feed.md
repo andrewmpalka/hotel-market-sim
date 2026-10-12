@@ -9,7 +9,9 @@ then gives the departure and arrival stations with their country, state and city
 local departure time, the equipment subtype code, the seats in three cabins and the distance.
 The column names follow Cirium's published schedule data dictionary, so the code reads data
 shaped like a real feed. The repository holds no Cirium data and has no affiliation with
-Cirium.
+Cirium. The row carries a departure time and no arrival time, which is a limit of this model and
+not of a feed, because an airport hotel's demand turns on the arrival hour; FRK-10 in the graph
+holds that column.
 
 The simulator uses a small part of the table. It groups rows by arrival city, because the city
 code covers both of the city's airports. It keeps the rows whose service type is scheduled
@@ -48,11 +50,14 @@ seat, which test_a_time_change_moves_departures_and_no_seat holds. The regional 
 carrier is not a wet lease, which test_a_regional_operating_carrier_is_not_a_wet_lease holds.
 
 A real feed also revises every week, and most revisions change nothing a hotel should act on.
-The churn stands for that. With it on, the airline files a one-day equipment swap and a
-departure-time change each week, drawn from the seed, and each stays under the five per cent
-threshold the detector uses. A detector that fired on any revision would fire on every one of
-them. The test test_the_churn_files_weekly_revisions_below_the_threshold holds the revisions
-under the threshold, and test_a_detector_that_fires_on_any_revision_is_caught_by_the_churn
-holds that the flags with a seat cause fall on the same two days with the churn as without
+The churn stands for that. With it on, the airline files an equipment swap of two to three
+weeks and a departure-time change for a fortnight each week, drawn from the seed, and each
+stays under the five per cent threshold the detector uses, because a day moves at most 96 seats
+against a threshold of 212. The churn stays under the threshold by construction, so the absence
+of seat flags is not a finding. The finding is that the detector keys on the day-over-day seat
+revision and not on the fact of a filing. The test
+test_the_churn_files_weekly_revisions_below_the_threshold holds the revisions under the
+threshold, and test_a_detector_that_fires_on_any_revision_is_caught_by_the_churn pins the
+finding by holding the flags with a seat cause to the same two days with the churn as without
 it. On seeds 1 to 20 the churn added 160 filing days and raised no seat flag, which the table
 under "The air schedule's filings" in docs/results.md records.

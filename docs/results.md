@@ -326,14 +326,14 @@ By default the market has no price response of its own, so a raise that every ho
 
 ## The air schedule's filings
 
-`hotel-market --seeds 1 20 --churn` and `hotel-market --seeds 1 20`, run on 2026-10-12, then `hotel-market --seeds 1 20 --scenario upgauge`. With `--churn` the airline files weekly revisions drawn from the seed on days 7 to 56: a one-day equipment swap between codes within 30 seats of each other and a departure-time change for a fortnight, each under the 5% threshold. The scenario option replaces the default's two filings with another list. The upgauge scenario files an upgauge of the MSP route to 738s on day 15 and a cut of the ORD route to two daily flights on day 35. Filings counts the days the airline filed something through day 59, summed over the seeds, and seat flags the flags with a seat cause.
+`hotel-market --seeds 1 20 --churn` and `hotel-market --seeds 1 20`, run on 2026-10-12, then `hotel-market --seeds 1 20 --scenario upgauge`. With `--churn` the airline files weekly revisions drawn from the seed on days 7 to 56: an equipment swap of two to three weeks between codes within 24 seats a flight of each other, and a departure-time change for a fortnight. A day then moves at most 96 seats against a threshold of 212. The scenario option replaces the default's two filings with another list. The upgauge scenario files an upgauge of the MSP route to 738s on day 15 and a cut of the ORD route to two daily flights on day 35. Filings counts the days the airline filed something through day 59, summed over the seeds, and seat flags the flags with a seat cause.
 
 Seeds 1 to 20 with the churn, the default and the upgauge scenario, the template in the true mode, each against the fixed-rate run.
 
 | Arm | Mean change | Range | Ahead | Filings | Seat flags | Rate changes |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | default | +32,899 | +13,479 to +52,809 | 20/20 | 40 | 173 | 179 |
-| default with the churn | +33,017 | +13,206 to +53,038 | 20/20 | 200 | 173 | 179 |
+| default with the churn | +34,974 | +15,179 to +53,131 | 20/20 | 200 | 173 | 184 |
 | upgauge | +21,083 | +4,178 to +36,862 | 20/20 | 40 | 182 | 177 |
 
-The churn adds 160 filing days over the 20 seeds and raises no seat flag, because every revision stays under the threshold. A detector that fired on any revision would have fired on each of them. The one-day swaps move a few seats, so the gain moves by $118 a seed. The upgauge scenario earns less than the default, because its two filings move fewer seats than the default's new flights and suspension.
+The churn adds 160 filing days over the 20 seeds and raises no seat flag. That is by construction, because every revision stays under the threshold, so the absence of seat flags is not a finding. The finding is that the detector keys on the day-over-day seat revision and not on the fact of a filing. The test test_a_detector_that_fires_on_any_revision_is_caught_by_the_churn pins it by holding the seat flags to the same two days with the churn as without. The block swaps move seats for two to three weeks at a time, so the gain moves by $2,075 a seed. The upgauge scenario earns less than the default, because its two filings move fewer seats than the default's new flights and suspension.

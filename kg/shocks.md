@@ -57,7 +57,7 @@ on ([[RUL-03]]).
 ### SHK-07 [C] The churn
 - Known on day: 7, 14 and every seventh day through 56, with --churn ([[DEC-53]], [[RUL-91]])
 - Stay dates: one to six weeks after each filing, drawn from the seed on [[RUL-90]]
-- Effect: each filing swaps one route's equipment for one day, between codes within 30 seats ([[RUL-93]]). It also shifts another route's departures for a fortnight ([[RUL-92]]). The largest seat move is under 3%.
+- Effect: each filing swaps one route's equipment for two to three weeks ([[RUL-95]]), between codes within 24 seats a flight ([[RUL-93]]). It also shifts another route's departures for a fortnight ([[RUL-92]]).
 - File: src/hotel_market/schedule.py
-- Flags: none. The revision stays under [[RUL-64]], so the threshold holds it out. A detector that fired on any revision would fire eight more times a seed ([[RES-28]]).
+- Flags: none, by construction: a day moves at most 96 seats against a threshold of 212 ([[RUL-64]]). The finding is that the detector keys on the day-over-day revision and not on a filing ([[RES-28]]).
 - Evidence: test_the_churn_files_weekly_revisions_below_the_threshold, test_a_detector_that_fires_on_any_revision_is_caught_by_the_churn

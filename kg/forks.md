@@ -66,3 +66,9 @@ it. None of these is in progress.
 - Known: at 0.5 with the reaction on, the cautious learn arm changes 702 stay dates twice within 14 days ([[RES-26]]). Its rate changes are 784. That is the arm anyone would run, and the flag lifts the hold, so it raises again ([[DEC-51]]).
 - Needs: the hotel's own change days per stay date among detect.py's inputs, and a rule for the window. The oracle already scores the followed median ([[DEC-52]]), so the arm would measure the flag alone.
 - Links: [[DEC-51]], [[DEC-52]], [[RUL-65]], [[RUL-84]], [[RUL-85]], [[RES-24]], [[RES-26]]
+
+### FRK-10 [O] An arrival time column
+- Choice: whether each row should carry PASSENGER_ARRIVAL_TIME_LOCAL. It would come from the departure time, a block time from the distance and the origin's time-zone offset.
+- Known: the rows carry a departure time only ([[DAT-01]]). An airport hotel's demand turns on the arrival hour. The feed page should not claim a departure-only row is the feed's shape.
+- Needs: a block time per distance band and a time-zone offset per origin station on the Route ([[DAT-03]]). build_schedule would write the column. Nothing in the simulator reads it yet.
+- Links: [[DAT-01]], [[DAT-03]], [[MOD-01]], [[DEC-35]], [[UNK-05]]

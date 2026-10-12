@@ -248,8 +248,9 @@ here for the rest.
 
 ### RES-28 [C] The churn on seeds 1 to 20
 - Ran: `hotel-market --seeds 1 20 --churn` and `hotel-market --seeds 1 20`, then `hotel-market --seeds 1 20 --scenario upgauge`, on 2026-10-12.
-- Result: with the churn the agent raises 173 seat flags over the 20 seeds, the same as without it. The filing days are 200 against 40. It changes 179 rates in both runs.
-- Gain: the churn's one-day swaps move a few seats, so the gain is +$33,017 a seed against +$32,899 ([[RES-01]]). The upgauge scenario earns +$21,083 with 182 seat flags and 177 changes.
+- Result: with the churn the agent raises 173 seat flags over the 20 seeds, the same as without it. The filing days are 200 against 40. It changes 184 rates against 179.
+- Gain: the churn's block swaps move seats for weeks, so the gain is +$34,974 a seed against +$32,899 ([[RES-01]]). The upgauge scenario earns +$21,083 with 182 seat flags and 177 changes.
+- Finding: the churn stays under the threshold by construction, so the equal flag count is no finding. The finding is that the detector keys on the day-over-day seat revision, which the churn test pins.
 - Table: docs/results.md, "Seeds 1 to 20 with the churn"
 - Evidence: test_the_churn_and_the_upgauge_runs_pin_their_headline
 - Links: [[DEC-53]], [[SHK-05]], [[SHK-06]], [[SHK-07]], [[RES-01]]

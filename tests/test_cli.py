@@ -624,8 +624,8 @@ def test_the_churn_and_the_upgauge_runs_pin_their_headline(tmp_path):
     """The template arms with the churn and with the upgauge scenario end where the recorded
     runs ended, so the filings table stays pinned."""
     [churned] = sweep(1, 20, tmp_path / "cache", churn=True)
-    assert statistics.mean(churned.changes) == pytest.approx(33017, abs=1)
-    assert (churned.filings, churned.seat_flags, churned.rate_changes) == (200, 173, 179)
+    assert statistics.mean(churned.changes) == pytest.approx(34974, abs=1)
+    assert (churned.filings, churned.seat_flags, churned.rate_changes) == (200, 173, 184)
     [upgauged] = sweep(1, 20, tmp_path / "cache", scenario=UPGAUGE_SCENARIO)
     assert statistics.mean(upgauged.changes) == pytest.approx(21083, abs=1)
     assert (upgauged.filings, upgauged.seat_flags, upgauged.rate_changes) == (40, 182, 177)

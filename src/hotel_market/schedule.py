@@ -23,8 +23,8 @@ date range. A "time" change shifts a route's departure times and moves no seat. 
 named list of shocks. AIR_SHOCKS is the default scenario, and SCENARIOS holds the others.
 
 With --churn the airline also files weekly revisions drawn from the seed, below the detect
-threshold: a departure-time change for a fortnight and a one-day equipment swap (churn). A
-detector that fires on any revision fires on them; the threshold detector does not.
+threshold: a departure-time change for a fortnight and an equipment swap of two to three weeks
+(churn). A detector that fires on any revision fires on them; the threshold detector does not.
 
 A row's marketing carrier sells the flight and its operating carrier flies it. Where the two
 differ on an operating row, a regional airline flies the route for the marketing carrier under
@@ -189,28 +189,30 @@ SCENARIOS = {DEFAULT_SCENARIO.name: DEFAULT_SCENARIO, UPGAUGE_SCENARIO.name: UPG
 CHURN_STREAM = 3
 CHURN_WEEKS = 8
 CHURN_SHIFTS = (-30, -15, 15, 30)  # the departure-time changes, in minutes
+CHURN_BLOCK = (14, 21)  # a swap lasts this many days: two to three weeks
 # One-day equipment swaps between codes of nearly the same size: at most 30 seats on a day.
 SWAPS = {"738": "321", "321": "738", "320": "32N", "32N": "320"}
 
 
 def churn(seed: int) -> tuple[Shock, ...]:
     """The weekly revisions a seed files, each below the detect threshold. On each filing day the
-    airline swaps one route's equipment for one day, one to six weeks out, and shifts another
-    route's departures for a fortnight. A swap moves at most 30 seats a flight, so at most 120 on
-    a day of 4,244, under 3%."""
+    airline swaps one route's equipment for two to three weeks, starting one to six weeks out,
+    and shifts another route's departures for a fortnight. A swap moves at most 24 seats a
+    flight and 96 on a day, against a threshold of 212 on a day of 4,244."""
     rng = np.random.default_rng([seed, CHURN_STREAM])
     swappable = [r for r in BASE_ROUTES if r.equipment in SWAPS]
     found = []
     for week in range(1, CHURN_WEEKS + 1):
         filed = 7 * week
         route = swappable[int(rng.integers(len(swappable)))]
-        day = filed + int(rng.integers(7, 43))
+        start = filed + int(rng.integers(7, 43))
+        length = int(rng.integers(CHURN_BLOCK[0], CHURN_BLOCK[1] + 1))
         found.append(
             Shock(
                 filed,
                 "equipment",
-                day,
-                day,
+                start,
+                start + length - 1,
                 origin=route.origin,
                 marketing=route.marketing,
                 equipment=SWAPS[route.equipment],

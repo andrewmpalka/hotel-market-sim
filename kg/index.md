@@ -77,6 +77,7 @@ it differs from what that would write. `README.md` is the legend.
 - RUL-90 [C] CHURN_STREAM — src/hotel_market/schedule.py
 - RUL-91 [C] CHURN_WEEKS — src/hotel_market/schedule.py
 - RUL-92 [C] CHURN_SHIFTS — src/hotel_market/schedule.py
+- RUL-95 [C] CHURN_BLOCK — src/hotel_market/schedule.py
 - RUL-12 [C] SIM_DAYS — src/hotel_market/world.py
 - RUL-13 [C] LOOKAHEAD_DAYS — src/hotel_market/world.py
 - RUL-14 [H] FLOOR_SHARE — kg/rules.md
@@ -278,6 +279,7 @@ it differs from what that would write. `README.md` is the legend.
 - FRK-07 [O] Reviewers from other providers — kg/forks.md
 - FRK-08 [O] A market response as the default — kg/forks.md
 - FRK-09 [O] A comp move that follows our own change as a flag cause — kg/forks.md
+- FRK-10 [O] An arrival time column — kg/forks.md
 
 ## Unknowns (`unknowns.md`)
 

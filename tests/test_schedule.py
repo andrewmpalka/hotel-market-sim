@@ -8,6 +8,7 @@ import pytest
 from hotel_market.customer import demo
 from hotel_market.schedule import (
     AIR_SHOCKS,
+    CHURN_BLOCK,
     DEFAULT_SCENARIO,
     HORIZON_DAYS,
     KINDS,
@@ -157,6 +158,11 @@ def test_the_churn_files_weekly_revisions_below_the_threshold():
     assert len(filed) == 16 and churn(7) == filed and churn(8) != filed
     assert sorted({s.known_day for s in filed}) == [7, 14, 21, 28, 35, 42, 49, 56]
     assert {s.kind for s in filed} == {"equipment", "time"}
+    # A swap lasts two to three weeks and starts one to six weeks out.
+    assert CHURN_BLOCK == (14, 21)
+    for swap in (s for s in filed if s.kind == "equipment"):
+        assert 14 <= swap.end_day - swap.start_day + 1 <= 21
+        assert 7 <= swap.start_day - swap.known_day <= 42
     churned = with_churn(DEFAULT_SCENARIO, 7)
     assert churned.name == "default+churn" and churned.shocks[:2] == tuple(AIR_SHOCKS)
     moved = 0
@@ -165,6 +171,11 @@ def test_the_churn_files_weekly_revisions_below_the_threshold():
             continue
         revision = seat_revision(day, churned)
         assert revision.abs().max() < demo().seat_threshold
+        # At most 24 seats a flight on four flights: 96 on a day, against a threshold of 212.
+        seats = seats_by_day(build_schedule(day, churned)) - seats_by_day(
+            build_schedule(day - 1, churned)
+        )
+        assert seats.abs().max() <= 96
         moved += int((revision != 0).any())
     assert moved > 0  # a detector that fires on any revision fires on the churn
 

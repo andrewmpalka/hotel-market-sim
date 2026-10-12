@@ -117,11 +117,18 @@ marked [H], with one line that names the node it moved to.
 - Meaning: the departure-time changes the churn draws from, in minutes ([[SHK-07]]). A time change moves no seat.
 - Evidence: test_the_churn_files_weekly_revisions_below_the_threshold, test_a_time_change_moves_departures_and_no_seat
 
+### RUL-95 [C] CHURN_BLOCK
+- Value: (14, 21)
+- File: src/hotel_market/schedule.py
+- Kind: parameter
+- Meaning: the days a churn swap lasts, drawn per filing: two to three weeks, starting one to six weeks out ([[SHK-07]]).
+- Evidence: test_the_churn_files_weekly_revisions_below_the_threshold
+
 ### RUL-93 [C] SWAPS
 - Value: {"738": "321", "321": "738", "320": "32N", "32N": "320"}
 - File: src/hotel_market/schedule.py
 - Kind: label
-- Meaning: the one-day equipment swaps the churn draws, between codes within 30 seats of each other ([[RUL-11]], [[SHK-07]]).
+- Meaning: the equipment swaps the churn draws, between codes within 24 seats a flight of each other ([[RUL-11]], [[SHK-07]]). A day moves at most 96 seats, against a threshold of 212.
 - Evidence: test_the_churn_files_weekly_revisions_below_the_threshold
 
 ## world.py
