@@ -1,0 +1,10 @@
+# Keep the build context to the source: no git history, environments or run outputs.
+.git
+.venv
+cache
+decisions.jsonl
+schedule.csv
+__pycache__
+*.egg-info
+.pytest_cache
+.ruff_cache
