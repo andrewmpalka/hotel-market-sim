@@ -81,6 +81,8 @@ def load(path: Path | str) -> Customer:
     )
     if len({hotel.key for hotel in hotels}) != len(hotels):
         raise ValueError(f"{path}: hotel keys must be unique")
+    if len({hotel.name for hotel in hotels}) != len(hotels):  # a request names its hotel
+        raise ValueError(f"{path}: hotel names must be unique")
     return Customer(
         name=data["name"],
         target=data["target"],

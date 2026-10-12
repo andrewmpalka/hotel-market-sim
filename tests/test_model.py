@@ -9,6 +9,7 @@ import pytest
 from hotel_market.customer import demo
 from hotel_market.detect import flags
 from hotel_market.model import (
+    BACKOFF_SECONDS,
     MODEL,
     RETRIES,
     SYSTEM,
@@ -69,6 +70,44 @@ class Refusing:
     def complete(self, system, prompt, schema):
         self.calls += 1
         raise ModelRefused("the model declined")
+
+
+def _sdk_error(status):
+    """One of the SDK's own status errors, as a rate limit (429) or an overload (529) arrives."""
+    import anthropic
+
+    try:
+        import httpx2 as httpx  # the SDK's HTTP client; earlier SDKs use httpx
+    except ImportError:
+        import httpx
+    response = httpx.Response(status, request=httpx.Request("POST", "https://api.anthropic.com"))
+    error = anthropic.RateLimitError if status == 429 else anthropic.InternalServerError
+    return error("the API said no", response=response, body=None)
+
+
+def _sdk(replies):
+    """A fake SDK whose create() takes the next reply from the list: an exception is raised,
+    any other reply is answered as text with 1,200 input tokens."""
+
+    def create(**kwargs):
+        reply = replies.pop(0)
+        if isinstance(reply, BaseException):
+            raise reply
+        return SimpleNamespace(
+            model="claude-opus-5-5-20260901",
+            usage=SimpleNamespace(
+                input_tokens=1200,
+                output_tokens=300,
+                cache_creation_input_tokens=0,
+                cache_read_input_tokens=0,
+            ),
+            stop_reason="end_turn",
+            stop_details=None,
+            content=[SimpleNamespace(type="text", text=reply)],
+            _request_id="req_1",
+        )
+
+    return SimpleNamespace(beta=SimpleNamespace(messages=SimpleNamespace(create=create)))
 
 
 class NoCalls:
@@ -241,7 +280,8 @@ def test_a_measured_client_records_one_call(convention_request, tmp_path):
     assert json.loads(text)["decisions"][0]["choice"] == request["entries"][0]["plan"]
     [record] = client.calls
     assert record["asked"] == "fake" and record["model"] == "fake"  # the wrapped client's own
-    assert record["retries"] == 0 and record["invalid"] is False
+    assert record["retries"] == 0 and record["bad_attempt"] is False and record["failed"] is False
+    assert record["error"] is None
     assert record["input_tokens"] == record["output_tokens"] == 0  # a fake client has no usage
     assert record["stop_reason"] is None and record["fallback"] is False
     assert 0 <= record["seconds"] < 1
@@ -270,20 +310,109 @@ def test_a_measured_client_retries_a_bad_answer_and_counts_it(convention_request
     assert json.loads(text)["decisions"][0]["choice"] == request["entries"][0]["plan"]
     assert len(wrapped.calls) == 2
     [record] = client.calls
-    assert record["retries"] == 1 and record["invalid"] is True
-    # A refusal on every attempt is raised after RETRIES more tries, and still recorded.
+    assert record["retries"] == 1 and record["bad_attempt"] is True and record["failed"] is False
+    assert record["error"] == "ValueError"
+    # A refusal has already been re-run on the fallback model by the API, so it is not asked
+    # again: the request fails at once, and the record says so.
     refusing = Refusing()
     client = Measured(refusing, tmp_path / "calls.jsonl")
     with pytest.raises(ModelRefused):
         client.complete(SYSTEM, json.dumps(request), schema_for(request))
-    assert refusing.calls == RETRIES + 1 == 3
+    assert refusing.calls == 1
     [record] = client.calls
-    assert record["retries"] == RETRIES and record["invalid"] is True
+    assert record["retries"] == 0 and record["bad_attempt"] is True and record["failed"] is True
+    assert record["error"] == "ModelRefused"
     assert len((tmp_path / "calls.jsonl").read_text().splitlines()) == 2
     # Through ask(), nothing is cached for a call that never got a valid answer.
     with pytest.raises(ModelRefused):
         ask(request, tmp_path / "r.json", Measured(Refusing()))
     assert not (tmp_path / "r.json").exists()
+    # An answer that never becomes valid is given up after RETRIES more tries.
+    stubborn = FakeClient("raise 50%")
+    with pytest.raises(ValueError):
+        Measured(stubborn).complete(SYSTEM, json.dumps(request), schema_for(request))
+    assert len(stubborn.calls) == RETRIES + 1 == 3
+
+
+def test_a_call_record_names_its_day_hotel_and_request_digest(convention_request, tmp_path):
+    request, _ = convention_request
+    client = Measured(FakeClient())
+    client.complete(SYSTEM, json.dumps(request), schema_for(request))
+    [record] = client.calls
+    assert (record["day"], record["hotel"]) == (10, "Downtown convention hotel")
+    assert record["request_digest"] == request_digest(request)
+    # The same digest keys the cache record, so a call is joined to the answer it produced.
+    cached = ask(request, tmp_path / "day010_convention.json", FakeClient())
+    assert cached["request_digest"] == record["request_digest"]
+
+
+def test_a_measured_client_retries_an_sdk_error_after_a_backoff(
+    convention_request, tmp_path, monkeypatch
+):
+    request, _ = convention_request
+    waits = []
+    monkeypatch.setattr("time.sleep", waits.append)
+    answer = FakeClient().complete(SYSTEM, json.dumps(request), {})
+    sdk = _sdk([answer, _sdk_error(429), answer])
+    client = Measured(ClaudeClient(sdk=sdk), tmp_path / "calls.jsonl")
+    client.complete(SYSTEM, json.dumps(request), schema_for(request))  # a clean first call
+    client.complete(SYSTEM, json.dumps(request), schema_for(request))  # rate limited, then not
+    first, second = client.calls
+    assert first["retries"] == 0 and first["bad_attempt"] is False
+    assert second["retries"] == 1 and second["bad_attempt"] is True and second["failed"] is False
+    assert second["error"] == "RateLimitError" and second["stop_reason"] == "end_turn"
+    # The failed attempt left nothing to count: the tokens are one answer's, not two.
+    assert second["input_tokens"] == 1200 and second["model"] == "claude-opus-5-5-20260901"
+    assert waits == [BACKOFF_SECONDS]
+    # The SDK's errors are matched by class name, so model.py never imports the SDK.
+
+    class APIConnectionError(Exception):
+        pass
+
+    class Flaky(FakeClient):
+        def complete(self, system, prompt, schema):
+            if not self.calls:
+                self.calls.append(None)
+                raise APIConnectionError("no route to the API")
+            return super().complete(system, prompt, schema)
+
+    client = Measured(Flaky(), backoff=0)
+    client.complete(SYSTEM, json.dumps(request), schema_for(request))
+    [record] = client.calls
+    assert record["retries"] == 1 and record["error"] == "APIConnectionError"
+    assert record["failed"] is False and waits == [BACKOFF_SECONDS, 0]
+
+
+def test_a_request_that_fails_past_retries_still_leaves_a_record(
+    convention_request, tmp_path, monkeypatch
+):
+    import anthropic
+
+    request, _ = convention_request
+    waits = []
+    monkeypatch.setattr("time.sleep", waits.append)
+    overloaded = _sdk([_sdk_error(529) for _ in range(RETRIES + 1)])
+    client = Measured(ClaudeClient(sdk=overloaded), tmp_path / "calls.jsonl")
+    with pytest.raises(anthropic.InternalServerError):
+        client.complete(SYSTEM, json.dumps(request), schema_for(request))
+    [record] = client.calls
+    assert record["failed"] is True and record["bad_attempt"] is True
+    assert record["retries"] == RETRIES and record["error"] == "InternalServerError"
+    assert record["input_tokens"] == 0 and record["request_id"] is None
+    assert [json.loads(line) for line in (tmp_path / "calls.jsonl").read_text().splitlines()] == [
+        record
+    ]
+    assert waits == [BACKOFF_SECONDS, 2 * BACKOFF_SECONDS]
+    # An error that is neither the SDK's nor a bad answer is a bug: raised at once, no record.
+
+    class Broken:
+        def complete(self, system, prompt, schema):
+            raise RuntimeError("a bug in the client")
+
+    client = Measured(Broken())
+    with pytest.raises(RuntimeError):
+        client.complete(SYSTEM, json.dumps(request), schema_for(request))
+    assert client.calls == []
 
 
 def test_a_measured_claude_client_records_its_usage(convention_request):

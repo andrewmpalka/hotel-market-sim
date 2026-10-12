@@ -96,6 +96,7 @@ it differs from what that would write. `README.md` is the legend.
 - RUL-43 [C] CANDIDATES — src/hotel_market/plan.py
 - RUL-54 [C] BAND_STANDARD_ERRORS — src/hotel_market/plan.py
 - RUL-76 [C] RETRIES — src/hotel_market/model.py
+- RUL-77 [C] BACKOFF_SECONDS — src/hotel_market/model.py
 - RUL-50 [C] PRIOR_SD — src/hotel_market/estimate.py
 - RUL-51 [C] ELASTICITY_MIN — src/hotel_market/estimate.py
 - RUL-52 [C] ELASTICITY_MAX — src/hotel_market/estimate.py
@@ -112,7 +113,7 @@ it differs from what that would write. `README.md` is the legend.
 - RUL-67 [C] min_value_at_stake — customers/demo.toml
 - RUL-68 [C] days_out — customers/demo.toml
 - RUL-69 [C] share — customers/demo.toml
-- Labels: RUL-06, RUL-07, RUL-08, RUL-09, RUL-10, RUL-31, RUL-32, RUL-33, RUL-34, RUL-35, RUL-36, RUL-37, RUL-38, RUL-41, RUL-42, RUL-44, RUL-45, RUL-49, RUL-46, RUL-47, RUL-75, RUL-48, RUL-55, RUL-74, RUL-72, RUL-73, RUL-70, RUL-71, RUL-57
+- Labels: RUL-06, RUL-07, RUL-08, RUL-09, RUL-10, RUL-31, RUL-32, RUL-33, RUL-34, RUL-35, RUL-36, RUL-37, RUL-38, RUL-41, RUL-42, RUL-44, RUL-45, RUL-49, RUL-46, RUL-47, RUL-75, RUL-78, RUL-48, RUL-55, RUL-74, RUL-72, RUL-73, RUL-70, RUL-71, RUL-57
 
 ## Shocks (`shocks.md`)
 

@@ -82,8 +82,8 @@ which is also the order in which they depend on each other.
 ### MOD-09 [C] model.py
 - File: src/hotel_market/model.py
 - Owns: the model call: the request the model sees ([[DAT-16]]) and the system prompt ([[RUL-47]]). It builds the answer schema from the request's own options ([[DEC-34]]) and checks the answer against them.
-- Holds: the cache ([[DAT-17]], [[DEC-23]], [[DEC-25]]), the Claude client with its refusal fallback and the template, which needs no key. Measured wraps any client, records each call ([[DAT-30]]) and retries a bad answer ([[RUL-76]]).
-- Names: MODEL ([[RUL-46]]) and MODE_NAMES ([[RUL-75]]). Every figure in the request is a display string from [[MOD-11]] ([[DEC-44]]). A client's name is the source its decisions record; an uncached client is never cached ([[DEC-25]]).
+- Holds: the cache ([[DAT-17]], [[DEC-23]], [[DEC-25]]), the Claude client with its refusal fallback and the template, which needs no key. Measured wraps any client, records each call ([[DAT-30]]) and retries it after an error.
+- Names: MODEL ([[RUL-46]]), MODE_NAMES ([[RUL-75]]) and, for Measured, RETRIES, BACKOFF_SECONDS and SDK_ERRORS ([[RUL-76]], [[RUL-77]], [[RUL-78]]). Every figure in the request is a display string from [[MOD-11]] ([[DEC-44]]).
 - Reads: [[MOD-02]], [[MOD-07]], [[MOD-08]], [[MOD-11]]
 - Writes: [[DAT-16]], [[DAT-17]], [[DAT-30]]
 - Tests: tests/test_model.py
@@ -187,11 +187,11 @@ which is also the order in which they depend on each other.
 - File: src/hotel_market/customer.py
 - Owns: everything specific to one market, read from its customer file ([[DEC-41]]). load(path) turns the TOML into a Customer ([[DAT-27]]): hotels ([[DAT-04]]), limits, thresholds, hold, minimum, curve ([[CON-01]]) and target ([[RUL-58]]).
 - Default: demo() is the demo market, loaded once and the default wherever no customer is given. demo_path() finds it through CUSTOMER_VARIABLE ([[RUL-71]]), the working directory or the repository root.
-- Checks: load() refuses a target outside TARGETS ([[RUL-70]]) and a repeated hotel key. Both sides read the file, the simulator to make the market and the agent to know its hotels and settings.
+- Checks: load() refuses a target outside TARGETS ([[RUL-70]]), a repeated hotel key and a repeated hotel name, which [[MOD-23]] matches on. Both sides read the file: the simulator makes the market and the agent learns its hotels.
 - Reads: [[MOD-02]] for the Hotel and Competitor types
 - Writes: [[DAT-27]], [[DAT-04]]
 - Tests: tests/test_customer.py
-- Evidence: test_the_demo_file_describes_the_market_in_claude_md, test_a_customer_file_with_a_bad_target_or_repeated_key_is_refused, test_without_a_customer_the_demo_market_is_the_default
+- Evidence: test_the_demo_file_describes_the_market_in_claude_md, test_a_customer_file_with_a_bad_target_or_repeated_key_or_name_is_refused, test_without_a_customer_the_demo_market_is_the_default
 
 ### MOD-21 [C] stored.py
 - File: src/hotel_market/stored.py
@@ -217,7 +217,7 @@ which is also the order in which they depend on each other.
 - File: src/hotel_market/bench.py
 - Owns: the benchmark of the model as a reviewer ([[DEC-47]]). The oracle reviewer re-scores each queued plan and hold at ORACLE_ELASTICITY ([[RUL-56]]). It declines the plan when hold scores at least as well.
 - Measures: regret ([[MEA-06]]), the accept rate ([[MEA-07]]), decline precision ([[MEA-08]]), decline recall ([[MEA-09]]), their F1 ([[MEA-10]]) and dollar-weighted recall ([[MEA-11]]). Each function's docstring gives its formula.
-- Counts: invalid_answers() and retries() sum the flags of the call records a Measured client writes ([[DAT-30]]).
+- Counts: invalid_answers() counts the call records with a bad attempt and failed_requests() those with no answer. retries() sums the retries ([[DAT-30]]).
 - Scripted: ScriptedClient answers from a dict of request digest to decisions. Otherwise it declines the keys it is given and accepts the rest. It plays a model, so its answers are cached under the model name scripted ([[DEC-23]]).
 - Reads: [[MOD-08]] (the entries and rescored()), [[MOD-09]] (request_digest()), [[MOD-10]] (the day's entries in agent.today), [[MOD-11]], [[MOD-20]]; never the simulator, and nothing in the agent's path imports it
 - Tests: tests/test_bench.py

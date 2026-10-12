@@ -254,7 +254,7 @@ the plans, the model's request and answer, and what the command writes.
 ### DAT-29 [C] The recorded live run
 - File: tests/fixtures/live_seed7/
 - Fields: the seven cache records ([[DAT-17]]) of one live run of seed 7 in the default mode with claude-opus-5-5. The files day010_convention.json to day034_convention.json each hold the request, its digest and the model's decisions.
-- Calls: calls.jsonl, one line per call, as [[MOD-22]] wrote it before [[DAT-30]]. A line holds the input and output tokens, cache tokens, seconds, stop reason, answering model and request id. It has no asked, retries or invalid field.
+- Calls: calls.jsonl, one line per call, as [[MOD-22]] wrote it before [[DAT-30]]. A line holds the tokens, seconds, stop reason, answering model and request id. It lacks the fields [[DAT-30]] added later.
 - Origin: copied from the run's cache/seed7/ and calls.jsonl on the day of the run. It was the fourth live run of the seed, made after each range became one phrase ([[DEC-44]], [[RES-08]]).
 - Stale: a change to the request makes the fixture stale, and the replay test then says to record a run again.
 - Written by: scripts/live_audit.py's live run, then copied by hand
@@ -263,9 +263,10 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-30 [C] The call record
 - File: src/hotel_market/model.py
-- Where: calls.jsonl, one line per call to a Measured client, at the path its maker gives. scripts/live_audit.py writes it beside cache/ ([[MOD-22]]). The recorded run keeps one ([[DAT-29]]).
-- Fields: asked (the model asked), model (the model that answered), input_tokens, output_tokens, cache_creation_input_tokens, cache_read_input_tokens, seconds, stop_reason, fallback, request_id, retries and invalid.
-- Retries: a call that got a refusal or an invalid answer is asked again, RETRIES times at most ([[RUL-76]]). Its tokens and seconds sum over the attempts, retries counts them and invalid is true.
-- Written by: [[MOD-09]], Measured.complete(), which also keeps the records in memory as calls
-- Read by: [[MOD-22]] for the token, time and cost totals; [[MOD-23]] for invalid_answers() and retries()
-- Evidence: test_a_measured_client_records_one_call, test_a_measured_client_retries_a_bad_answer_and_counts_it, test_a_measured_claude_client_records_its_usage
+- Where: calls.jsonl, one line per call to a Measured client, at the path its maker gives. live_audit.py replaces its file each run ([[MOD-22]]); the bench appends to its own. request_digest joins a line to its cache record ([[DAT-17]]).
+- Fields: day, hotel (the request's hotel name) and request_digest. asked is the model asked and model the one that answered. Then input_tokens, output_tokens, both cache token counts, seconds, stop_reason, fallback and request_id.
+- Flags: retries counts the attempts after the first. bad_attempt is true when any attempt ended without a valid answer. failed is true when the request ended without one. error names the last error's class, or is null.
+- Retries: an SDK error ([[RUL-78]]) is asked again after a backoff ([[RUL-77]]) and an invalid answer at once. RETRIES bounds them ([[RUL-76]]). A refusal is not asked again: the API ran the fallback. The record lands before the raise.
+- Written by: [[MOD-09]], Measured.complete(), which also keeps the records in memory as calls. The tokens and seconds sum over the attempts.
+- Read by: [[MOD-22]] for the token, time and cost totals; [[MOD-23]] for invalid_answers(), failed_requests() and retries()
+- Evidence: test_a_measured_client_records_one_call, test_a_call_record_names_its_day_hotel_and_request_digest, test_a_measured_client_retries_an_sdk_error_after_a_backoff, test_a_request_that_fails_past_retries_still_leaves_a_record

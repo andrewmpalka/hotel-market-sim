@@ -40,7 +40,7 @@ def test_the_demo_file_describes_the_market_in_claude_md():
     assert load(ROOT / DEMO_FILE) == DEMO
 
 
-def test_a_customer_file_with_a_bad_target_or_repeated_key_is_refused(tmp_path):
+def test_a_customer_file_with_a_bad_target_or_repeated_key_or_name_is_refused(tmp_path):
     text = (ROOT / DEMO_FILE).read_text()
     bad_target = tmp_path / "bad_target.toml"
     bad_target.write_text(text.replace('target = "contribution"', 'target = "profit"'))
@@ -48,8 +48,13 @@ def test_a_customer_file_with_a_bad_target_or_repeated_key_is_refused(tmp_path):
         load(bad_target)
     repeated = tmp_path / "repeated.toml"
     repeated.write_text(text.replace('key = "airport"', 'key = "lifestyle"'))
-    with pytest.raises(ValueError, match="unique"):
+    with pytest.raises(ValueError, match="keys must be unique"):
         load(repeated)
+    # A request names its hotel, and the oracle and the scripted client match on the name.
+    same_name = tmp_path / "same_name.toml"
+    same_name.write_text(text.replace('name = "Airport hotel"', 'name = "Lifestyle hotel"'))
+    with pytest.raises(ValueError, match="names must be unique"):
+        load(same_name)
 
 
 def test_the_revenue_target_scores_candidates_on_the_rate_alone(day10, tmp_path):

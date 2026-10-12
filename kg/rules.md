@@ -328,8 +328,22 @@ marked [H], with one line that names the node it moved to.
 - Value: 2
 - File: src/hotel_market/model.py
 - Kind: parameter
-- Meaning: how many times a Measured client asks again after a refusal or an invalid answer. The third failure raises. Each attempt counts in the call record ([[DAT-30]]).
+- Meaning: how many times a Measured client asks again after an SDK error or an invalid answer. A refusal is not asked again. The last failure raises, and the call record still lands ([[DAT-30]]).
 - Evidence: test_a_measured_client_retries_a_bad_answer_and_counts_it
+
+### RUL-77 [C] BACKOFF_SECONDS
+- Value: 2.0
+- File: src/hotel_market/model.py
+- Kind: parameter
+- Meaning: the wait before a Measured client asks again after an SDK error. It doubles on each retry: 2 s, then 4 s. The SDK has already retried the call itself. An invalid answer is asked again at once ([[DAT-30]]).
+- Evidence: test_a_request_that_fails_past_retries_still_leaves_a_record
+
+### RUL-78 [C] SDK_ERRORS
+- Value: ("APIStatusError", "APIConnectionError")
+- File: src/hotel_market/model.py
+- Kind: label
+- Meaning: the anthropic error classes a Measured client asks again, matched by class name so that model.py imports without the SDK. A status error is a rate limit or an overload; a connection error is a request that never arrived.
+- Evidence: test_a_measured_client_retries_an_sdk_error_after_a_backoff
 
 ## agent.py
 
@@ -409,7 +423,7 @@ marked [H], with one line that names the node it moved to.
 - File: src/hotel_market/customer.py
 - Kind: label
 - Meaning: what a customer file may name as its target ([[RUL-58]]). load() refuses any other value, and --target offers the same two.
-- Evidence: test_a_customer_file_with_a_bad_target_or_repeated_key_is_refused, test_a_revenue_target_arm_counts_wins_and_earnings_in_revenue
+- Evidence: test_a_customer_file_with_a_bad_target_or_repeated_key_or_name_is_refused, test_a_revenue_target_arm_counts_wins_and_earnings_in_revenue
 
 ### RUL-71 [C] CUSTOMER_VARIABLE
 - Value: "HOTEL_MARKET_CUSTOMER"

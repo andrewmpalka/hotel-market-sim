@@ -227,9 +227,15 @@ def dollar_weighted_recall(
 
 
 def invalid_answers(calls: Iterable[dict]) -> int:
-    """How many call records are flagged invalid: the answer failed model._check, or the SDK
-    refused. A measured client writes the records; see model.Measured."""
-    return sum(1 for call in calls if call.get("invalid"))
+    """How many call records had a bad attempt: an SDK error, a refusal or an answer that failed
+    model._check, whether or not a retry then answered. A Measured client writes the records."""
+    return sum(1 for call in calls if call.get("bad_attempt"))
+
+
+def failed_requests(calls: Iterable[dict]) -> int:
+    """How many call records ended without an answer: the retries ran out, or the model refused.
+    The agent's run stops at the first of these, so an arm with one has no result."""
+    return sum(1 for call in calls if call.get("failed"))
 
 
 def retries(calls: Iterable[dict]) -> int:

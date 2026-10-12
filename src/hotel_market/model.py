@@ -142,6 +142,7 @@ class ClaudeClient:
         self.last: dict | None = None  # what the last call returned, for a Measured wrapper
 
     def complete(self, system: str, prompt: str, schema: dict) -> str:
+        self.last = None  # a failed attempt leaves nothing for the wrapper to count
         response = self.sdk.beta.messages.create(
             model=self.model,
             max_tokens=16000,
@@ -171,25 +172,52 @@ class ClaudeClient:
         return _answer_text(list(response.content))
 
 
-RETRIES = 2  # how many times a Measured client asks again after a refusal or an invalid answer
+RETRIES = 2  # how many times a Measured client asks again after an SDK error or an invalid answer
+BACKOFF_SECONDS = 2.0  # the wait before it asks again after an SDK error; it doubles on each retry
+# The anthropic errors a Measured client asks again, by class name so that this module imports
+# without the SDK: a status error (a rate limit, an overload) or a connection error. The SDK has
+# retried each of them itself before it raises.
+SDK_ERRORS = ("APIStatusError", "APIConnectionError")
+_INVALID = (
+    ValueError,
+    KeyError,
+    TypeError,
+)  # not JSON, no decisions, or a choice outside the options
+
+
+def _sdk_error(error: BaseException) -> bool:
+    return any(cls.__name__ in SDK_ERRORS for cls in type(error).__mro__)
 
 
 class Measured:
-    """Wraps any client, records each call and asks again after a bad answer.
+    """Wraps any client, records each call and asks again after a bad attempt.
 
-    One record per call holds the model asked and the model that answered, the
-    input and output tokens, the wall time, the stop reason, the retries made and
-    whether any attempt was invalid: a refusal, or an answer that failed _check.
-    The records are kept in `calls` and appended to a calls.jsonl when a path is
-    given, so that an arm's calls sit beside its cache. The client's model, name
-    and cached flag pass through, so a measured oracle stays uncached and an
-    agent still finds the model's name for its cache folder.
+    One record per call holds the request's day, hotel and digest, the model
+    asked and the model that answered, the input and output tokens, the wall
+    time, the stop reason, the retries made, whether any attempt was bad and
+    whether the request failed in the end. A bad attempt is an SDK error, asked
+    again after a backoff; an invalid answer, asked again at once; or a refusal,
+    which the API has already re-run on the fallback model, so it is not asked
+    again. When the retries run out the record is written and then the error is
+    raised, so that a rate limit or an overload never ends a run with no record
+    of the call. The records are kept in `calls` and appended to a calls.jsonl
+    when a path is given, so that an arm's calls sit beside its cache. The
+    client's model, name and cached flag pass through, so a measured oracle
+    stays uncached and an agent still finds the model's name for its cache
+    folder.
     """
 
-    def __init__(self, client: Client, path: Path | None = None, retries: int = RETRIES):
+    def __init__(
+        self,
+        client: Client,
+        path: Path | None = None,
+        retries: int = RETRIES,
+        backoff: float = BACKOFF_SECONDS,
+    ):
         self.client = client
         self.path = Path(path) if path is not None else None
         self.retries = retries
+        self.backoff = backoff
         self.calls: list[dict] = []
         self.model = getattr(client, "model", getattr(client, "name", None))
         if hasattr(client, "name"):
@@ -200,6 +228,9 @@ class Measured:
     def complete(self, system: str, prompt: str, schema: dict) -> str:
         request = json.loads(prompt)
         record = {
+            "day": request["day"],
+            "hotel": request["hotel"]["name"],
+            "request_digest": request_digest(request),
             "asked": self.model,
             "model": self.model,
             "input_tokens": 0,
@@ -211,7 +242,9 @@ class Measured:
             "fallback": False,
             "request_id": None,
             "retries": 0,
-            "invalid": False,
+            "bad_attempt": False,
+            "failed": False,
+            "error": None,
         }
         attempts = 0
         while True:
@@ -221,14 +254,22 @@ class Measured:
                 text = self.client.complete(system, prompt, schema)
                 _check(json.loads(text)["decisions"], request)
                 error = None
-            except (ModelRefused, ValueError, KeyError, TypeError) as failure:
+            except Exception as failure:
+                if not (isinstance(failure, (ModelRefused, *_INVALID)) or _sdk_error(failure)):
+                    raise
                 error = failure
             record["seconds"] += time.perf_counter() - start
             self._add_usage(record)
-            if error is None or attempts > self.retries:
+            if error is None:
                 break
+            record["bad_attempt"] = True
+            record["error"] = type(error).__name__
+            if isinstance(error, ModelRefused) or attempts > self.retries:
+                break
+            if _sdk_error(error):
+                time.sleep(self.backoff * 2 ** (attempts - 1))
         record["retries"] = attempts - 1
-        record["invalid"] = error is not None or attempts > 1
+        record["failed"] = error is not None
         record["seconds"] = round(record["seconds"], 2)
         self.calls.append(record)
         if self.path is not None:

@@ -15,6 +15,7 @@ from hotel_market.bench import (
     decline_recall,
     declined,
     dollar_weighted_recall,
+    failed_requests,
     invalid_answers,
     key,
     oracle_declines,
@@ -121,9 +122,14 @@ def test_the_measures_are_nan_when_nobody_declined():
     assert decline_f1([A], {key(B)}) == 0.0  # both declined something, nothing in common
 
 
-def test_invalid_answers_and_retries_are_counted():
-    calls = [{"retries": 2, "invalid": False}, {"retries": 0, "invalid": True}, {}]
-    assert invalid_answers(calls) == 1 and retries(calls) == 2
+def test_bad_attempts_failed_requests_and_retries_are_counted():
+    calls = [
+        {"retries": 2, "bad_attempt": True, "failed": False},  # answered on the third try
+        {"retries": 0, "bad_attempt": True, "failed": True},  # a refusal: never answered
+        {"retries": 0, "bad_attempt": False, "failed": False},
+        {},  # a record from before the flags
+    ]
+    assert invalid_answers(calls) == 2 and failed_requests(calls) == 1 and retries(calls) == 2
 
 
 @pytest.fixture(scope="module")
@@ -231,8 +237,8 @@ def test_a_scripted_client_declines_chosen_plans_and_is_read_back(fixed_mode_run
     assert {e.reason_source for e in agent.entries if e.queued} == {"model"}
     # One call record per cache file, each a valid first answer, in memory and in the file.
     assert len(client.calls) == len(records)
-    assert {(c["asked"], c["retries"], c["invalid"]) for c in client.calls} == {
-        ("scripted", 0, False)
+    assert {(c["asked"], c["retries"], c["bad_attempt"], c["failed"]) for c in client.calls} == {
+        ("scripted", 0, False, False)
     }
     lines = (tmp_path / "cache" / "calls.jsonl").read_text().splitlines()
     assert [json.loads(line) for line in lines] == client.calls
