@@ -336,4 +336,62 @@ Seeds 1 to 20 with the churn, the default and the upgauge scenario, the template
 | default with the churn | +34,974 | +15,179 to +53,131 | 20/20 | 200 | 173 | 184 |
 | upgauge | +21,083 | +4,178 to +36,862 | 20/20 | 40 | 182 | 177 |
 
-The churn adds 160 filing days over the 20 seeds and raises no seat flag. That is by construction, because every revision stays under the threshold, so the absence of seat flags is not a finding. The finding is that the detector keys on the day-over-day seat revision and not on the fact of a filing. The test test_a_detector_that_fires_on_any_revision_is_caught_by_the_churn pins it by holding the seat flags to the same two days with the churn as without. The block swaps move seats for two to three weeks at a time, so the gain moves by $2,075 a seed. The upgauge scenario earns less than the default, because its two filings move fewer seats than the default's new flights and suspension.
+The churn adds 160 filing days over the 20 seeds and raises no seat flag. That is by construction, because every revision stays under the threshold, so the absence of seat flags is not a finding. The finding is that the detector keys on the day-over-day seat revision and not on the fact of a filing. The test test_a_detector_that_fires_on_any_revision_is_caught_by_the_churn pins it by holding the seat flags to the same two days with the churn as without. The block swaps move seats for two to three weeks at a time, so the gain moves by $2,075 a seed and the agent makes five more rate changes with no extra seat flag. The churn therefore reached the agent's decisions through the seat change in its demand forecast and not through the detector. That is the designed path, because DEC-04 keeps the seat change for the forecast and the revision for the flag, and this is the first run where the two paths visibly part. The upgauge scenario earns less than the default, because its two filings move fewer seats than the default's new flights and suspension.
+
+## The intercept fed back
+
+`hotel-market bench --seeds 1 20 --template --demand-bias B --elasticity learn:1.0 --level` and the same command with `--level --cautious`, at B = 0.9, 1.0 and 1.1, run on 2026-10-12, then the same two arms and a plain `learn:1.0` with `--react --market-elasticity 0.5`. With `--level` a learning agent scales its demand forecast, the pace baseline included, by the demand level its fit found, which is exp(intercept), once the fit has 500 observations and clamped to 0.5 to 2.0 as the elasticity is clamped. The plain learn rows repeat the demand-bias tables and the market table. Day-59 level is the factor each hotel scaled its forecast by on day 59, as the range over the hotels of each hotel's mean across the seeds.
+
+Seeds 1 to 20 at a demand bias of 0.9, the learning agent with and without the fitted level fed back, the template and the oracle, each against the fixed-rate run at the same bias.
+
+| Mode | Reviewer | Mean change | Range | Ahead | Rate changes | Accept | Day-59 estimate | Day-59 level |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | --- | --- |
+| learn:1.0 | template | -14,376 | -36,881 to -237 | 0/20 | 484 | 1.00 | 1.36 to 1.46 | - |
+| learn:1.0 | oracle | +2,654 | -4,343 to +10,199 | 17/20 | 69 | 0.05 | 1.05 to 1.24 | - |
+| learn:1.0 --cautious | template | -4,280 | -19,310 to +9,584 | 6/20 | 284 | 1.00 | 1.26 to 1.48 | - |
+| learn:1.0 --cautious | oracle | +2,748 | -4,541 to +10,419 | 14/20 | 82 | 0.10 | 1.10 to 1.31 | - |
+| learn:1.0 --level | template | -15,244 | -35,251 to +146 | 1/20 | 373 | 1.00 | 1.36 to 1.45 | 0.89 to 0.90 |
+| learn:1.0 --level | oracle | +3,087 | -292 to +8,637 | 19/20 | 83 | 0.06 | 1.08 to 1.39 | 0.90 to 0.90 |
+| learn:1.0 --level --cautious | template | -3,348 | -14,362 to +12,177 | 5/20 | 252 | 1.00 | 1.27 to 1.44 | 0.90 to 0.90 |
+| learn:1.0 --level --cautious | oracle | +3,512 | +130 to +10,391 | 20/20 | 87 | 0.12 | 1.08 to 1.40 | 0.90 to 0.90 |
+
+Seeds 1 to 20 at the default demand bias of 1.0, the same arms.
+
+| Mode | Reviewer | Mean change | Range | Ahead | Rate changes | Accept | Day-59 estimate | Day-59 level |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | --- | --- |
+| learn:1.0 | template | +14,141 | -6,839 to +45,818 | 16/20 | 373 | 1.00 | 1.36 to 1.45 | - |
+| learn:1.0 | oracle | +30,828 | +13,813 to +54,182 | 20/20 | 188 | 0.21 | 1.22 to 1.38 | - |
+| learn:1.0 --cautious | template | +25,076 | +8,406 to +53,535 | 20/20 | 299 | 1.00 | 1.28 to 1.43 | - |
+| learn:1.0 --cautious | oracle | +31,042 | +12,679 to +55,153 | 20/20 | 201 | 0.34 | 1.25 to 1.35 | - |
+| learn:1.0 --level | template | +14,097 | -6,962 to +48,409 | 15/20 | 378 | 1.00 | 1.36 to 1.45 | 0.99 to 1.00 |
+| learn:1.0 --level | oracle | +30,729 | +13,711 to +53,916 | 20/20 | 190 | 0.21 | 1.22 to 1.38 | 0.99 to 1.00 |
+| learn:1.0 --level --cautious | template | +24,317 | +3,408 to +54,167 | 20/20 | 306 | 1.00 | 1.28 to 1.43 | 0.99 to 1.00 |
+| learn:1.0 --level --cautious | oracle | +31,026 | +13,045 to +55,478 | 20/20 | 205 | 0.35 | 1.25 to 1.36 | 0.99 to 1.00 |
+
+Seeds 1 to 20 at a demand bias of 1.1, the same arms.
+
+| Mode | Reviewer | Mean change | Range | Ahead | Rate changes | Accept | Day-59 estimate | Day-59 level |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | --- | --- |
+| learn:1.0 | template | +98,401 | +62,387 to +150,804 | 20/20 | 898 | 1.00 | 1.39 to 1.49 | - |
+| learn:1.0 | oracle | +107,393 | +67,292 to +165,267 | 20/20 | 604 | 0.32 | 1.37 to 1.46 | - |
+| learn:1.0 --cautious | template | +105,522 | +68,692 to +154,130 | 20/20 | 839 | 1.00 | 1.29 to 1.46 | - |
+| learn:1.0 --cautious | oracle | +107,714 | +70,497 to +157,310 | 20/20 | 662 | 0.48 | 1.29 to 1.44 | - |
+| learn:1.0 --level | template | +95,731 | +57,267 to +154,634 | 20/20 | 553 | 1.00 | 1.38 to 1.49 | 1.09 to 1.10 |
+| learn:1.0 --level | oracle | +99,916 | +60,448 to +151,233 | 20/20 | 411 | 0.51 | 1.37 to 1.47 | 1.09 to 1.10 |
+| learn:1.0 --level --cautious | template | +103,121 | +66,053 to +142,889 | 20/20 | 458 | 1.00 | 1.31 to 1.43 | 1.09 to 1.10 |
+| learn:1.0 --level --cautious | oracle | +104,079 | +66,871 to +142,889 | 20/20 | 406 | 0.77 | 1.31 to 1.43 | 1.09 to 1.10 |
+
+Seeds 1 to 20 with the reaction on at a market elasticity of 0.5, the same arms.
+
+| Mode | Reviewer | Mean change | Range | Ahead | Rate changes | Accept | Day-59 estimate | Day-59 level |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | --- | --- |
+| learn:1.0 | template | +399,538 | +269,949 to +551,229 | 20/20 | 2257 | 1.00 | 1.37 to 1.47 | - |
+| learn:1.0 | oracle | +421,571 | +288,947 to +551,229 | 20/20 | 2104 | 0.91 | 1.37 to 1.48 | - |
+| learn:1.0 --cautious | template | +198,089 | +77,536 to +336,986 | 20/20 | 784 | 1.00 | 1.22 to 1.42 | - |
+| learn:1.0 --cautious | oracle | +198,488 | +77,536 to +336,986 | 20/20 | 780 | 0.99 | 1.22 to 1.42 | - |
+| learn:1.0 --level | template | +399,596 | +284,402 to +551,028 | 20/20 | 2265 | 1.00 | 1.37 to 1.47 | 0.99 to 1.00 |
+| learn:1.0 --level | oracle | +421,471 | +290,560 to +551,028 | 20/20 | 2115 | 0.91 | 1.37 to 1.49 | 0.99 to 1.00 |
+| learn:1.0 --level --cautious | template | +202,454 | +77,767 to +337,631 | 20/20 | 771 | 1.00 | 1.23 to 1.43 | 0.99 to 1.00 |
+| learn:1.0 --level --cautious | oracle | +202,853 | +77,767 to +337,631 | 20/20 | 767 | 0.99 | 1.23 to 1.43 | 0.99 to 1.00 |
+
+The level is learned at once and exactly. By day 10 the factor is 0.90 at a bias of 0.9, 1.10 at 1.1 and 1.00 in the reacting market, and it stays there. It halves the flags at 0.9, from 3,230 to 1,537 over the 20 seeds, because the pace baseline no longer expects rooms that never come. The gain at 0.9 does not recover. Accepting every plan earns -$15,244 a seed with the level against -$14,376 without it, and the cautious arm -$3,348 against -$4,280. The level fixes the forecast, and the loss at 0.9 is the prior elasticity's, which prices the convention and new-flight raises as cheaper than they are in a market with a tenth less demand. The oracle's ceiling on the same candidates rises only from +$2,654 to +$3,087, and the true mode's correct elasticity earns +$1,913 there, so there was little to recover. At 1.0 the level is 0.99 to 1.00, and the arms lose $44 and $759 a seed to its noise. At 1.1 they lose $2,670 and $2,401, because the corrected pace baseline removes raises on dates the start rates underprice, and those raises paid. With the reaction on at 0.5 the level is 1.00 and changes little: $58 and $4,365 a seed. The plain learner in that market changes 2,257 rates and earns +$399,538 a seed, the ratchet at its fullest, which FRK-09 holds.

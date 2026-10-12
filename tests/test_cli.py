@@ -699,6 +699,19 @@ def test_the_command_and_the_bench_take_a_demand_bias(monkeypatch, capsys):
     assert "The air schedule's filings through day 59" in out
     with pytest.raises(SystemExit):
         main(["--seeds", "1", "3", "--scenario", "bogus"])
+    # --level sets the level flag on every learn arm, on the sweep and on the bench, and prints
+    # the factor table for those arms.
+    main(["--seeds", "1", "3", "--elasticity", "true", "--elasticity", "learn:1.0", "--level"])
+    out = capsys.readouterr().out
+    assert "learn:1 level" in out and "the factor each hotel scaled its forecast by" in out
+    main(["bench", "--seeds", "1", "3", "--template", "--elasticity", "learn:1.0", "--level"])
+    out = capsys.readouterr().out
+    assert "Elasticity learn:1 level: each reviewer" in out
+    assert "Elasticity learn:1 level, oracle: the factor each hotel scaled" in out
+    with pytest.raises(SystemExit):
+        main(["--seeds", "1", "3", "--level"])
+    with pytest.raises(SystemExit):
+        main(["bench", "--seeds", "1", "3", "--template", "--elasticity", "fixed:1.0", "--level"])
     for argv in (
         ["--seeds", "1", "3", "--demand-bias", "0"],
         ["bench", "--seeds", "1", "3", "--template", "--demand-bias", "-1"],
@@ -799,6 +812,21 @@ def test_the_market_elasticity_runs_pin_their_headline(tmp_path):
         [arm] = sweep(1, 20, tmp_path / "cache", react=True, market_elasticity=market)
         assert statistics.mean(arm.changes) == pytest.approx(mean, abs=1)
         assert arm.repeat_changes == twice
+
+
+@pytest.mark.slow
+def test_the_level_runs_pin_their_headline(tmp_path):
+    """The level arms at a demand bias of 0.9 and 1.1 end where the recorded runs ended, so the
+    level tables stay pinned."""
+    level = ElasticityMode("learn", 1.0, level=True)
+    cautious = ElasticityMode("learn", 1.0, cautious=True, level=True)
+    for bias, (plain_mean, cautious_mean) in ((0.9, (-15244, -3348)), (1.1, (95731, 103121))):
+        arms = sweep(1, 20, tmp_path / "cache", [level, cautious], demand_bias=bias)
+        by_mode = {str(arm.mode): arm for arm in arms}
+        assert statistics.mean(by_mode["learn:1 level"].changes) == pytest.approx(plain_mean, abs=1)
+        assert statistics.mean(by_mode["learn:1 cautious level"].changes) == pytest.approx(
+            cautious_mean, abs=1
+        )
 
 
 def test_a_learn_run_keeps_its_own_cache_and_says_where_its_estimates_ended(tmp_path):

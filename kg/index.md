@@ -112,6 +112,9 @@ it differs from what that would write. `README.md` is the legend.
 - RUL-50 [C] PRIOR_SD — src/hotel_market/estimate.py
 - RUL-51 [C] ELASTICITY_MIN — src/hotel_market/estimate.py
 - RUL-52 [C] ELASTICITY_MAX — src/hotel_market/estimate.py
+- RUL-96 [C] LEVEL_OBSERVATIONS — src/hotel_market/estimate.py
+- RUL-97 [C] LEVEL_MIN — src/hotel_market/estimate.py
+- RUL-98 [C] LEVEL_MAX — src/hotel_market/estimate.py
 - RUL-53 [C] REPORT_DAYS — src/hotel_market/cli.py
 - RUL-81 [C] BENCH_MODES — src/hotel_market/cli.py
 - RUL-85 [C] REPEAT_WINDOW — src/hotel_market/cli.py
@@ -217,6 +220,7 @@ it differs from what that would write. `README.md` is the legend.
 - DEC-51 [C] Competitors can follow the hotel's rate changes, as an opt-in arm — kg/decisions.md
 - DEC-52 [C] The share elasticity alone made a matched raise free, so the market can answer the comp median's level — kg/decisions.md
 - DEC-53 [C] The air schedule's filings are a named scenario, and the churn files what a feed files — kg/decisions.md
+- DEC-54 [C] A learning agent can feed the fitted demand level back into its forecast — kg/decisions.md
 
 ### Engineering
 
@@ -267,6 +271,10 @@ it differs from what that would write. `README.md` is the legend.
 - RES-26 [C] The market elasticity with the reaction on, seeds 1 to 20 — kg/results.md
 - RES-27 [C] The day-30 competitor cut on seed 7 at a market elasticity of 0.0 and 0.5 — kg/results.md
 - RES-28 [C] The churn on seeds 1 to 20 — kg/results.md
+- RES-29 [C] The fitted level fed back at a demand bias of 0.9 — kg/results.md
+- RES-30 [C] The fitted level fed back at the default demand bias — kg/results.md
+- RES-31 [C] The fitted level fed back at a demand bias of 1.1 — kg/results.md
+- RES-32 [C] The fitted level fed back with the reaction on at a market elasticity of 0.5 — kg/results.md
 
 ## Open forks (`forks.md`)
 

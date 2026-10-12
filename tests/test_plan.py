@@ -421,3 +421,16 @@ def test_the_grader_scores_a_raise_against_the_median_the_reaction_moves(day10):
     # Competitors following half of a raise make it worth more. A market that answers the
     # median's level takes some of that back at 1.0, and at 2.0 more than all of it.
     assert followed > answered > base > cut_back
+
+
+def test_the_plan_record_carries_the_level_and_the_request_only_a_set_one(day10):
+    _, table = day10
+    airport = DEMO.hotel("airport")
+    flag = Flag(10, "airport", 40, 46, (AHEAD,))
+    learned = Pricing(1.2, "learn", standard_error=0.3, prior=1.0, observations=600)
+    plain = entry_for(10, flag, table, learned)
+    scaled = entry_for(10, flag, table, replace(learned, level=0.9))
+    assert plain.to_json()["elasticity"]["level"] == 1.0
+    assert scaled.to_json()["elasticity"]["level"] == 0.9
+    assert "level" not in request_for(10, airport, [plain])["elasticity"]
+    assert request_for(10, airport, [scaled])["elasticity"]["level"] == "0.9"

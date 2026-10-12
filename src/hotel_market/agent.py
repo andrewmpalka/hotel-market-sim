@@ -17,7 +17,9 @@ agent then re-estimates it every day for every hotel from the bookings made befo
 Every entry records the elasticity it was estimated with, and the request carries it. The reason
 can therefore cite it, and a change of mode changes the cache key. With --cautious, a learning
 agent also respects the estimate's standard error. A change must then beat holding one standard
-error either side (plan.py).
+error either side (plan.py). With --level, a learning agent also feeds the fit's intercept back.
+It scales its forecast, the pace baseline included, by the fitted demand level once the fit has
+enough observations (estimate.level_factor), and every plan record carries the factor.
 """
 
 from __future__ import annotations
@@ -28,7 +30,7 @@ from pathlib import Path
 
 from hotel_market.customer import Customer, demo
 from hotel_market.detect import AHEAD, detect_numbers, flags
-from hotel_market.estimate import Estimate, estimate_elasticity
+from hotel_market.estimate import Estimate, estimate_elasticity, level_factor
 from hotel_market.forecast import ORACLE_MARKET_ELASTICITY, peak_night
 from hotel_market.model import MODEL, Client, ask, request_for
 from hotel_market.plan import (
@@ -53,6 +55,7 @@ class ElasticityMode:
     kind: str  # one of MODES
     value: float  # ORACLE_ELASTICITY for true, the value for fixed, the prior for learn
     cautious: bool = False  # learn only: the cautious rule in plan.py
+    level: bool = False  # learn only: the forecast is scaled by the fitted demand level
 
     @classmethod
     def parse(cls, text: str) -> ElasticityMode:
@@ -72,7 +75,11 @@ class ElasticityMode:
 
     def __str__(self) -> str:
         text = self.kind if self.kind == "true" else f"{self.kind}:{self.value:g}"
-        return f"{text} cautious" if self.cautious else text
+        if self.cautious:
+            text += " cautious"
+        if self.level:
+            text += " level"
+        return text
 
 
 TRUE_MODE = ElasticityMode("true", ORACLE_ELASTICITY)
@@ -162,8 +169,9 @@ class Agent:
     def plans_for(self, day: int, sources: Sources) -> list[Entry]:
         """Every flag's entry for the day, with its plan, before anything is asked."""
         customer = self.customer
-        table = detect_numbers(day, sources, customer, self.market_elasticity)
         pricing = {hotel.key: self._pricing(day, hotel, sources) for hotel in customer.hotels}
+        levels = {key: p.level for key, p in pricing.items()}
+        table = detect_numbers(day, sources, customer, self.market_elasticity, levels)
         return [
             entry_for(day, flag, table, pricing[flag.hotel], customer)
             for flag in flags(day, table, self.held, customer)
@@ -197,6 +205,7 @@ class Agent:
                 observations=estimate.observations,
                 cautious=mode.cautious,
                 market_elasticity=market,
+                level=level_factor(estimate) if mode.level else 1.0,
             )
         if mode.kind == "fixed":
             return Pricing(mode.value, "fixed", market_elasticity=market)

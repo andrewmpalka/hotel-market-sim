@@ -164,7 +164,11 @@ bookings.
   estimate says. At 1.1 it earns +$112,082 a seed, because the start rates were
   set for a smaller market. The learning agent's day-59 elasticity stays at
   1.26 to 1.49 at both biases, so the level error lands in the estimator's
-  intercept as designed (docs/results.md).
+  intercept as designed. With `--level` the agent feeds that intercept back
+  into its forecast and learns the level by day 10, but the gain at 0.9 does
+  not recover, because the loss there is the prior elasticity's, which prices
+  a raise as cheaper than it is in a market with a tenth less demand
+  (docs/results.md).
 - By default the agent is handed the simulator's elasticity of 1.5;
   `--elasticity fixed:X` and `learn:X` take it away.
 - Demand moves by the hotel's share of guests arriving by air times the change

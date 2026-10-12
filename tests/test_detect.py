@@ -204,3 +204,24 @@ def test_a_detector_that_fires_on_any_revision_is_caught_by_the_churn():
     revisions = SimulatedSchedules(with_churn(DEFAULT_SCENARIO, 7))
     moved = [day for day in range(7, 57, 7) if any(revisions.seat_revision(day).values())]
     assert moved
+
+
+def test_a_level_scales_one_hotels_pace_baseline_and_expected_demand(day10):
+    from hotel_market.bookings import simulate
+    from hotel_market.detect import detect_numbers
+    from hotel_market.simulated import simulated_sources
+
+    sources = simulated_sources(simulate(7, last_day=10))
+    plain = detect_numbers(10, sources, DEMO)
+    scaled = detect_numbers(10, sources, DEMO, levels={"airport": 0.9})
+    airport, others = plain["hotel"] == "airport", plain["hotel"] != "airport"
+    assert scaled.loc[airport, "expected_demand"].to_numpy() == pytest.approx(
+        0.9 * plain.loc[airport, "expected_demand"].to_numpy()
+    )
+    # The pace gap is rooms minus the scaled baseline, so it rises by a tenth of the baseline.
+    baseline = plain.loc[airport, "rooms"].to_numpy() - plain.loc[airport, "pace_gap"].to_numpy()
+    assert scaled.loc[airport, "pace_gap"].to_numpy() == pytest.approx(
+        plain.loc[airport, "pace_gap"].to_numpy() + 0.1 * baseline
+    )
+    for column in ("expected_demand", "pace_gap", "pace_threshold"):
+        assert (scaled.loc[others, column].to_numpy() == plain.loc[others, column].to_numpy()).all()

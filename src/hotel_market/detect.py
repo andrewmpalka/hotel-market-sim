@@ -60,11 +60,14 @@ def detect_numbers(
     sources: Sources,
     customer: Customer | None = None,
     market_elasticity: float = ORACLE_MARKET_ELASTICITY,
+    levels: Mapping[str, float] | None = None,
 ) -> pd.DataFrame:
     """The detect numbers for every hotel and stay date in the day's window, one row each. Each row
     carries the causes the stay date is flagged for. The market elasticity goes into the expected
-    demand (forecast.py)."""
+    demand (forecast.py). levels maps a hotel key to the factor a --level agent scales its
+    forecast by today; it scales the pace baseline and the expected demand alike."""
     customer = customer or demo()
+    levels = levels or {}
     seats = sources.schedules.seat_change(day)
     revision = sources.schedules.seat_revision(day)
     announced = [e for e in sources.events.known(day) if e.known_day == day]
@@ -73,8 +76,9 @@ def detect_numbers(
     rows = []
     for hotel in customer.hotels:
         i = hotel.row
+        level = levels.get(hotel.key, 1.0)
         for stay_day in stay_window(day):
-            on_pace = normal_demand(hotel, stay_day) * customer.curve(stay_day - day)
+            on_pace = normal_demand(hotel, stay_day) * customer.curve(stay_day - day) * level
             median = sources.shops.median(day, hotel, stay_day)
             row = {
                 "day": day,
@@ -86,9 +90,8 @@ def detect_numbers(
                 "pace_threshold": max(
                     customer.pace_share * hotel.rooms, customer.pace_noise_sd * math.sqrt(on_pace)
                 ),
-                "expected_demand": expected_demand(
-                    hotel, stay_day, day, sources, market_elasticity
-                ),
+                "expected_demand": level
+                * expected_demand(hotel, stay_day, day, sources, market_elasticity),
                 "seat_change": seats[stay_day],
                 "seat_revision": revision[stay_day],
                 "rate": float(rates[i, stay_day]),

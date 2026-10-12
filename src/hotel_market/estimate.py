@@ -16,7 +16,9 @@ term, the market's answer to a moved median reads as price response, and the fit
 
 The model is a Poisson regression with the log of the baseline as an offset. It has an intercept
 that absorbs errors in the demand level and a slope on log(rate / competitor median). The
-elasticity is the negative of the slope.
+elasticity is the negative of the slope. A learn:X --level agent feeds the intercept back: it
+scales its forecast by exp(intercept) once the fit has enough observations (level_factor). The
+baseline stays unscaled, so the intercept keeps measuring the level against the raw forecast.
 
 A normal prior on the elasticity keeps the estimate sensible while the rate ratio has barely
 moved. The prior is centred on the value the agent is given, with standard deviation PRIOR_SD.
@@ -44,6 +46,11 @@ from hotel_market.world import HORIZON_DAYS, Hotel, stay_window
 PRIOR_SD = 0.5  # the standard deviation of the normal prior on the elasticity
 ELASTICITY_MIN = 0.5  # the estimate is clamped to this range
 ELASTICITY_MAX = 3.0
+# With --level the agent scales its forecast by exp(intercept), the fitted demand level against
+# the baseline, once the fit has this many observations, clamped to this range.
+LEVEL_OBSERVATIONS = 500
+LEVEL_MIN = 0.5
+LEVEL_MAX = 2.0
 
 
 @dataclass(frozen=True)
@@ -69,6 +76,15 @@ class Estimate:
     observations: int
     prior: float
     intercept: float  # log of the demand level against the baseline; 0 when the baseline is right
+
+
+def level_factor(estimate: Estimate) -> float:
+    """The factor a --level agent scales its forecast by: exp(intercept), clamped to LEVEL_MIN
+    to LEVEL_MAX. It is 1 until the fit has LEVEL_OBSERVATIONS observations, as the elasticity
+    is held near its prior until the data say otherwise."""
+    if estimate.observations < LEVEL_OBSERVATIONS:
+        return 1.0
+    return min(max(float(np.exp(estimate.intercept)), LEVEL_MIN), LEVEL_MAX)
 
 
 def observations(

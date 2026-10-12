@@ -10,10 +10,15 @@ from hotel_market.customer import demo
 from hotel_market.estimate import (
     ELASTICITY_MAX,
     ELASTICITY_MIN,
+    LEVEL_MAX,
+    LEVEL_MIN,
+    LEVEL_OBSERVATIONS,
     PRIOR_SD,
+    Estimate,
     Observations,
     estimate_elasticity,
     fit,
+    level_factor,
     observations,
 )
 from hotel_market.forecast import expected_demand
@@ -202,3 +207,11 @@ def test_the_estimate_is_clamped_to_the_range(monkeypatch, fixed):
         monkeypatch.setattr(estimate, "observations", lambda *args, true=true: _made_up(true))
         found = estimate_elasticity(simulated_sources(fixed), DEMO.hotels[0], 59, PRIOR)
         assert found.elasticity == limit and found.standard_error > 0
+
+
+def test_the_level_factor_is_the_fitted_level_once_the_fit_has_enough_observations():
+    assert (LEVEL_OBSERVATIONS, LEVEL_MIN, LEVEL_MAX) == (500, 0.5, 2.0)
+    assert level_factor(Estimate(1.5, 0.2, 499, 1.0, -0.1)) == 1.0  # too few observations
+    assert level_factor(Estimate(1.5, 0.2, 500, 1.0, -0.1)) == pytest.approx(np.exp(-0.1))
+    assert level_factor(Estimate(1.5, 0.2, 5000, 1.0, 1.0)) == LEVEL_MAX  # clamped
+    assert level_factor(Estimate(1.5, 0.2, 5000, 1.0, -2.0)) == LEVEL_MIN

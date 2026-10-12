@@ -465,6 +465,27 @@ marked [H], with one line that names the node it moved to.
 - Meaning: the learned elasticity is clamped to at most this.
 - Evidence: test_the_estimate_is_clamped_to_the_range
 
+### RUL-96 [C] LEVEL_OBSERVATIONS
+- Value: 500
+- File: src/hotel_market/estimate.py
+- Kind: parameter
+- Meaning: the observations a --level agent's fit needs before it scales its forecast by the fitted level ([[DEC-54]]). Until then the factor is 1, as the prior holds the elasticity.
+- Evidence: test_the_level_factor_is_the_fitted_level_once_the_fit_has_enough_observations
+
+### RUL-97 [C] LEVEL_MIN
+- Value: 0.5
+- File: src/hotel_market/estimate.py
+- Kind: parameter
+- Meaning: the fitted level factor is clamped to at least this, as [[RUL-51]] clamps the elasticity ([[DEC-54]]).
+- Evidence: test_the_level_factor_is_the_fitted_level_once_the_fit_has_enough_observations
+
+### RUL-98 [C] LEVEL_MAX
+- Value: 2.0
+- File: src/hotel_market/estimate.py
+- Kind: parameter
+- Meaning: the fitted level factor is clamped to at most this, as [[RUL-52]] clamps the elasticity ([[DEC-54]]).
+- Evidence: test_the_level_factor_is_the_fitted_level_once_the_fit_has_enough_observations
+
 ## cli.py
 
 ### RUL-53 [C] REPORT_DAYS

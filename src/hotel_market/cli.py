@@ -19,6 +19,9 @@ follows over only the hotel and stay-date pairs where the agent changed a rate.
                                                the learning agent acts only where a
                                                change beats holding one standard
                                                error either side of its estimate
+    hotel-market --seeds 1 20 --elasticity learn:1.0 --level
+                                               the learning agent also scales its
+                                               forecast by the fitted demand level
     hotel-market run-day --seed 7 --as-of 20   store day 20's feeds in hotel_market.duckdb,
                                                run the agent on the tables and store its
                                                flags, plans and decisions
@@ -45,8 +48,8 @@ With ANTHROPIC_API_KEY set, the agent asks Claude. Otherwise a template writes t
 option --elasticity is true, fixed:X or learn:X. The default is true, where the agent prices with
 the simulator's own value.
 
-The option --cautious applies to every learn arm of the command. The option --customer names the
-market's file, customers/demo.toml by default. The option --target overrides its target,
+The options --cautious and --level apply to every learn arm of the command. The option
+--customer names the market's file, customers/demo.toml by default. --target overrides its target,
 "contribution" or "revenue". The option --demand-bias multiplies the simulator's demand in both
 runs. The agent never receives it, and a biased run keeps its cache in a folder of its own. The
 bench tells its oracle the bias, so the oracle stays the simulator's truth. The option --react
@@ -100,7 +103,7 @@ from hotel_market.bookings import Books, simulate
 from hotel_market.customer import TARGETS, Customer, demo, demo_path, load
 from hotel_market.demand import DEMAND_BIAS, MARKET_ELASTICITY
 from hotel_market.detect import MEDIAN_DOWN, MEDIAN_UP, NEW_EVENT, PACE, SEATS_CUT, SEATS_UP
-from hotel_market.estimate import Estimate
+from hotel_market.estimate import Estimate, level_factor
 from hotel_market.model import MODELS, ClaudeClient, Client
 from hotel_market.plan import DAY_NAMES, HOLD, Entry, Pricing
 from hotel_market.schedule import DEFAULT_SCENARIO, HORIZON_DAYS, SCENARIOS, Scenario
@@ -862,6 +865,14 @@ def _mode_text(agent: Agent) -> str:
             if mode.cautious
             else ""
         )
+        if mode.level:
+            levels = ", ".join(
+                f"{h.key} {level_factor(agent.estimates[(last, h.key)]):.2f}"
+                for h in agent.customer.hotels
+            )
+            rule += (
+                f", and scaling its forecast by the fitted demand level ({levels} on day {last})"
+            )
         return (
             f"The agent learned its elasticity from the bookings, starting from {mode.value:g}"
             f"{rule}; on day {last} its estimates were {ended}."
@@ -946,6 +957,12 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         help="in learn mode, change a rate only where the change beats holding one standard "
         "error either side of the estimate",
     )
+    parser.add_argument(
+        "--level",
+        action="store_true",
+        help="in learn mode, scale the demand forecast by the fitted demand level once the fit "
+        "has enough observations",
+    )
     _add_world_options(parser)
     _add_customer_options(parser)
     args = parser.parse_args(argv)
@@ -957,14 +974,24 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         parser.error("--replay needs --seed")
     if args.replay is not None and not 0 <= args.replay < SIM_DAYS:
         parser.error(f"--replay: the agent decides on days 0 to {SIM_DAYS - 1}")
-    args.modes = args.elasticity or [TRUE_MODE]
-    if args.cautious:
-        if not any(mode.kind == "learn" for mode in args.modes):
-            parser.error("--cautious applies to learn:X")
-        args.modes = [
-            replace(mode, cautious=True) if mode.kind == "learn" else mode for mode in args.modes
-        ]
+    args.modes = _learn_flags(parser, args.elasticity or [TRUE_MODE], args.cautious, args.level)
     return args
+
+
+def _learn_flags(
+    parser: argparse.ArgumentParser, modes: list[ElasticityMode], cautious: bool, level: bool
+) -> list[ElasticityMode]:
+    """The modes with --cautious and --level set on every learn mode. Either flag without a learn
+    mode is an error."""
+    for flag, name in ((cautious, "--cautious"), (level, "--level")):
+        if flag and not any(mode.kind == "learn" for mode in modes):
+            parser.error(f"{name} applies to learn:X")
+    return [
+        replace(mode, cautious=mode.cautious or cautious, level=mode.level or level)
+        if mode.kind == "learn"
+        else mode
+        for mode in modes
+    ]
 
 
 def _add_world_options(parser: argparse.ArgumentParser) -> None:
@@ -1103,15 +1130,16 @@ def _parse_daily_args(argv: list[str]) -> argparse.Namespace:
         subparser.add_argument(
             "--cautious", action="store_true", help="in learn mode, the cautious rule"
         )
+        subparser.add_argument(
+            "--level", action="store_true", help="in learn mode, the fitted demand level fed back"
+        )
         _add_customer_options(subparser)
     args = parser.parse_args(argv)
     if not 0 <= args.as_of < SIM_DAYS:
         parser.error(f"--as-of: the agent decides on days 0 to {SIM_DAYS - 1}")
     if args.command == "run-day" and args.first is not None and not 0 <= args.first <= args.as_of:
         parser.error("--from: a day from 0 to --as-of")
-    if args.cautious and args.elasticity.kind != "learn":
-        parser.error("--cautious applies to learn:X")
-    args.mode = replace(args.elasticity, cautious=True) if args.cautious else args.elasticity
+    [args.mode] = _learn_flags(parser, [args.elasticity], args.cautious, args.level)
     return args
 
 
@@ -1259,6 +1287,9 @@ def _print_sweep(
         if arm.mode.kind == "learn":
             print()
             print("\n".join(_estimate_table(arm, customer.hotels)))
+        if arm.mode.level:
+            print()
+            print("\n".join(_level_table(arm, customer.hotels)))
 
 
 def _world_suffix(
@@ -1456,6 +1487,11 @@ def _parse_bench_args(argv: list[str]) -> argparse.Namespace:
         action="store_true",
         help="in every learn mode run, the cautious rule, as the sweep applies it",
     )
+    parser.add_argument(
+        "--level",
+        action="store_true",
+        help="in every learn mode run, the fitted demand level fed back, as the sweep applies it",
+    )
     _add_world_options(parser)
     _add_customer_options(parser)
     args = parser.parse_args(argv)
@@ -1463,13 +1499,8 @@ def _parse_bench_args(argv: list[str]) -> argparse.Namespace:
         parser.error("--seeds: FIRST must not be after LAST")
     if args.template and args.model:
         parser.error("--template runs no model; drop --model")
-    args.modes = args.elasticity or [ElasticityMode.parse(text) for text in BENCH_MODES]
-    if args.cautious:
-        if not any(mode.kind == "learn" for mode in args.modes):
-            parser.error("--cautious applies to learn:X")
-        args.modes = [
-            replace(mode, cautious=True) if mode.kind == "learn" else mode for mode in args.modes
-        ]
+    modes = args.elasticity or [ElasticityMode.parse(text) for text in BENCH_MODES]
+    args.modes = _learn_flags(parser, modes, args.cautious, args.level)
     args.models = [] if args.template else args.model or list(MODELS)
     if args.models and not os.environ.get("ANTHROPIC_API_KEY"):
         parser.error(
@@ -1507,6 +1538,9 @@ def _print_bench(
             for arm in in_mode:
                 print()
                 print("\n".join(_estimate_table(arm, customer.hotels, named=True)))
+                if mode.level:
+                    print()
+                    print("\n".join(_level_table(arm, customer.hotels, named=True)))
     if react:
         print()
         print("\n".join(_reaction_table(arms, named=True, market_elasticity=market_elasticity)))
@@ -1605,6 +1639,26 @@ def _tokens(calls: list[dict]) -> str:
 def _cost(calls: list[dict], model: str | None) -> str:
     dollars = cost(calls, model or "")
     return "n/a" if math.isnan(dollars) else f"${dollars:.2f}"
+
+
+def _level_table(arm: ArmResult, hotels: Sequence[Hotel], named: bool = False) -> list[str]:
+    """A level arm's forecast factor per hotel on the report days, as mean (lowest to highest)
+    across the seeds: exp(intercept) once the fit has enough observations, else 1."""
+    reviewer = f", {arm.reviewer.name}" if named else ""
+    lines = [
+        f"Elasticity {arm.mode}{reviewer}: the factor each hotel scaled its forecast by, mean "
+        f"(lowest to highest) across the seeds",
+        f"{'day':>4}" + "".join(f"{h.key:>20}" for h in hotels),
+    ]
+    for day in REPORT_DAYS:
+        if not all((day, h.key) in r.estimates for r in arm.seeds for h in hotels):
+            continue
+        cells = []
+        for hotel in hotels:
+            values = [level_factor(r.estimates[(day, hotel.key)]) for r in arm.seeds]
+            cells.append(f"{statistics.mean(values):.2f} ({min(values):.2f} to {max(values):.2f})")
+        lines.append(f"{day:>4}" + "".join(f"{cell:>20}" for cell in cells))
+    return lines
 
 
 def _estimate_table(arm: ArmResult, hotels: Sequence[Hotel], named: bool = False) -> list[str]:

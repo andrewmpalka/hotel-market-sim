@@ -9,6 +9,7 @@ from hotel_market.agent import MIN_STAY, Agent, ElasticityMode
 from hotel_market.bookings import Books, simulate
 from hotel_market.customer import demo
 from hotel_market.detect import AHEAD
+from hotel_market.estimate import level_factor
 from hotel_market.model import MODEL
 from hotel_market.plan import HOLD, TRUE_PRICING, Pricing
 from hotel_market.schedule import HORIZON_DAYS
@@ -213,3 +214,24 @@ def test_a_cautious_agent_records_the_band_and_what_it_rejected(tmp_path):
         assert line["elasticity"]["cautious"] is True
         assert set(line["elasticity"]["band"]) == {"lowest", "highest"}
     assert sum(e.rejected_at_an_end for e in agent.entries) > 0
+
+
+def test_a_level_agent_scales_its_forecast_by_the_fitted_demand_level(tmp_path):
+    mode = ElasticityMode("learn", 1.0, level=True)
+    assert str(mode) == "learn:1 level"
+    assert str(ElasticityMode("learn", 1.0, cautious=True, level=True)) == "learn:1 cautious level"
+    agent = Agent(SEED, tmp_path / "cache", elasticity=mode)
+    assert agent.cache_dir.name == "seed7-learn-1-level"
+    simulate(SEED, deciding(agent), demand_bias=0.9)
+    # Until the fit has enough observations the factor is 1. By day 59 it sits near the bias of
+    # 0.9 at every hotel, and every plan record carries the day's factor.
+    early = [e for e in agent.entries if e.day <= 5]
+    assert early and all(e.pricing.level == 1.0 for e in early)
+    for hotel in DEMO.hotels:
+        assert 0.85 <= level_factor(agent.estimates[(59, hotel.key)]) <= 0.95
+    late = [e for e in agent.entries if e.day >= 30]
+    assert late and all(0.8 <= e.pricing.level < 1.0 for e in late)
+    assert all("level" in line["elasticity"] for line in agent.log if "elasticity" in line)
+    plain = Agent(SEED, tmp_path / "plain", elasticity=ElasticityMode("learn", 1.0))
+    simulate(SEED, deciding(plain), last_day=20, demand_bias=0.9)
+    assert plain.entries and all(e.pricing.level == 1.0 for e in plain.entries)

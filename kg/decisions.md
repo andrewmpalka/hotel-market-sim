@@ -335,6 +335,14 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: test_the_churn_files_weekly_revisions_below_the_threshold, test_a_detector_that_fires_on_any_revision_is_caught_by_the_churn, test_a_scenario_and_the_churn_go_to_both_runs
 - Links: [[DAT-03]], [[SHK-05]], [[SHK-06]], [[SHK-07]], [[RUL-89]], [[RES-28]], [[DEC-04]], [[UNK-05]]
 
+### DEC-54 [C] A learning agent can feed the fitted demand level back into its forecast
+- Decided: learn:X --level scales the agent's forecast, the pace baseline included, by exp(intercept) ([[RUL-96]] to [[RUL-98]]). The factor is 1 until the fit has enough observations. Every plan record carries it ([[DAT-21]]).
+- Baseline: the estimator's baseline stays unscaled, so the intercept keeps measuring the level against the raw forecast ([[MOD-16]]). The factor therefore does not compound.
+- Reason: the intercept absorbed a demand-level error and the agent discarded it ([[DEC-38]]). At a bias of 0.9 the plain learner lost money ([[RES-21]]). The arm asks whether the level fed back recovers that, and what it costs at 1.0.
+- Measured: the level is learned by day 10 in every world ([[RES-29]] to [[RES-32]]). The gain at 0.9 does not recover: accept-all earns -$15,244 a seed with it.
+- Evidence: test_a_level_agent_scales_its_forecast_by_the_fitted_demand_level, test_a_level_scales_one_hotels_pace_baseline_and_expected_demand, test_the_level_factor_is_the_fitted_level_once_the_fit_has_enough_observations
+- Links: [[DEC-38]], [[DEC-50]], [[DEC-52]], [[RUL-96]], [[RUL-97]], [[RUL-98]], [[RES-29]], [[RES-30]], [[RES-31]], [[RES-32]], [[UNK-07]], [[UNK-08]]
+
 ## Engineering
 
 ### DEC-23 [C] The cache is keyed by seed, day and hotel, and each file records a digest of its request

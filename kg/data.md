@@ -154,7 +154,7 @@ the plans, the model's request and answer, and what the command writes.
 ### DAT-18 [C] A decisions.jsonl line
 - File: src/hotel_market/plan.py
 - Made by: Entry.to_json() in [[MOD-08]] and Advice.to_json() in [[MOD-10]]. [[MOD-12]] writes one line per entry and advice, by day, entries before advice.
-- Entry line: day, hotel, stays [first, last], causes and numbers ([[DAT-13]], its ranges as named pairs). elasticity is the pricing, with the mode as the command line names it and market_elasticity ([[RUL-88]]).
+- Entry line: day, hotel, stays [first, last], causes and numbers ([[DAT-13]], its ranges as named pairs). elasticity is the pricing, with the mode as the command line names it, market_elasticity ([[RUL-88]]) and level ([[DEC-54]]).
 - More: by_weekday, plan, value_at_stake, queued, action, new_rates (null when held), reason and simulated true. reason_source is "code", "template", "model" or a client's name. The line holds raw numbers, not the request's display strings.
 - By weekday: weekday, stays and the candidates with name, rates as a named pair, estimate, best and gain. Under the cautious rule a candidate's band is named by its ends, and the line adds rejected_at_an_end. A revenue target adds target.
 - Advice line: day, hotel, stays, causes, event, action, value_at_stake null, reason and simulated false.
@@ -181,7 +181,7 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-21 [C] Pricing
 - File: src/hotel_market/plan.py
-- Fields: Pricing(elasticity, mode, standard_error, prior, observations, cautious, market_elasticity), frozen: the elasticity a day's estimates assume and where it came from. mode is one of [[RUL-49]].
+- Fields: Pricing(elasticity, mode, standard_error, prior, observations, cautious, market_elasticity, level), frozen. It holds the elasticity a day's estimates assume and its source ([[RUL-49]]). level is the --level factor ([[DEC-54]]).
 - Learn: standard_error, prior and observations are set in learn mode only. cautious turns on the rule in [[CON-11]]. band is then the elasticities [[RUL-54]] standard errors around the estimate, clamped to [[RUL-51]] and [[RUL-52]].
 - Default: TRUE_PRICING is ORACLE_ELASTICITY ([[RUL-56]]) in mode "true". to_json() is the log line's elasticity field, with the band as a named pair. cautious and band appear only when the rule is on.
 - Request: [[MOD-09]] builds the request's elasticity field from the same record. Every number is a display string, and the mode is named for the model ([[RUL-75]]). market_elasticity reaches the request only when set ([[DEC-52]]).
@@ -191,8 +191,8 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-22 [C] ElasticityMode
 - File: src/hotel_market/agent.py
-- Fields: ElasticityMode(kind, value, cautious), frozen, parsed from "true", "fixed:X" or "learn:X" and printed back the same way. A learn mode under the cautious rule prints " cautious" after it.
-- Meaning: kind is one of [[RUL-49]]. value is ORACLE_ELASTICITY ([[RUL-56]]) for true, the fixed value, or the prior for learn. --cautious sets cautious on every learn mode of the command, and TRUE_MODE is the default.
+- Fields: ElasticityMode(kind, value, cautious, level), frozen, parsed from "true", "fixed:X" or "learn:X" and printed back the same way. A learn mode prints " cautious" and " level" after it for its flags.
+- Meaning: kind is one of [[RUL-49]]. value is ORACLE_ELASTICITY ([[RUL-56]]) for true, the fixed value, or the prior for learn. --cautious and --level set their flags on every learn mode ([[DEC-54]]). TRUE_MODE is the default.
 - Written by: [[MOD-12]] from the --elasticity and --cautious options
 - Read by: [[MOD-10]] (which pricing to give each day, and which cache folder to use), [[MOD-12]] (the arms of a sweep)
 - Evidence: test_elasticity_modes_parse_and_print, test_a_mode_that_is_not_true_fixed_or_learn_is_rejected, test_a_cautious_agent_records_the_band_and_what_it_rejected

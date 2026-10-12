@@ -96,7 +96,7 @@ which is also the order in which they depend on each other.
 - File: src/hotel_market/agent.py
 - Owns: the daily decision, decide(day, sources): detect numbers, flags, entries and the queue of plans worth the minimum. It makes one model or template call per hotel and records the accepted changes, their hold and the log ([[DAT-18]]).
 - Also: the minimum-stay advice ([[DAT-15]], [[DEC-10]]), named by MIN_STAY ([[RUL-48]]). decide() keeps the day's entries in agent.today for the oracle ([[MOD-23]]). Agent(model=) names the model and its cache folder ([[DEC-23]]).
-- Modes: the elasticity modes ([[DAT-22]]): true, fixed:X or learn:X. In learn mode it re-estimates every hotel's elasticity every day ([[MOD-16]], [[DEC-38]]). It passes the cautious flag into each day's pricing ([[CON-11]]).
+- Modes: the elasticity modes ([[DAT-22]]): true, fixed:X or learn:X. In learn mode it re-estimates every hotel's elasticity every day ([[MOD-16]], [[DEC-38]]). It passes the cautious and level flags into each day's pricing ([[CON-11]]).
 - Resume: plans_for() builds a day's entries and advice_for() the advice. resume() picks up the hold and the advice that earlier days left. That is how a table-backed run gives each day's agent its state ([[MOD-21]], [[DEC-42]]).
 - Reads: [[MOD-02]], [[MOD-07]], [[MOD-08]], [[MOD-09]], [[MOD-16]], [[MOD-17]], [[MOD-18]], [[MOD-20]]; never the simulator, which wraps it with deciding() ([[MOD-19]])
 - Tests: tests/test_agent.py
@@ -154,7 +154,7 @@ which is also the order in which they depend on each other.
 - Observations: one per stay date and booking day, from the sources' booking and shop histories ([[DAT-26]]). They are bookings made before the day, inside the day's window and before the stay date sold out. The opening rooms never count.
 - Holds: PRIOR_SD ([[RUL-50]]), ELASTICITY_MIN ([[RUL-51]]) and ELASTICITY_MAX ([[RUL-52]]). The baseline comes from the agent's own forecast ([[MOD-18]]), with the run's market term ([[DEC-52]]).
 - Reads: [[MOD-02]], [[MOD-17]] (the sources), [[MOD-18]] (the forecast), [[MOD-20]] (the booking curve); never the simulator ([[DEC-40]])
-- Writes: [[DAT-23]]
+- Writes: [[DAT-23]]; level_factor() turns an Estimate's intercept into the --level factor ([[DEC-54]])
 - Tests: tests/test_estimate.py
 - Evidence: test_the_day_59_estimate_recovers_the_simulators_elasticity, test_the_estimate_uses_no_booking_made_on_or_after_as_of_day, test_observations_stop_on_the_day_a_stay_date_sells_out
 

@@ -254,3 +254,36 @@ here for the rest.
 - Table: docs/results.md, "Seeds 1 to 20 with the churn"
 - Evidence: test_the_churn_and_the_upgauge_runs_pin_their_headline
 - Links: [[DEC-53]], [[SHK-05]], [[SHK-06]], [[SHK-07]], [[RES-01]]
+
+### RES-29 [C] The fitted level fed back at a demand bias of 0.9
+- Ran: `hotel-market bench --seeds 1 20 --template --demand-bias 0.9 --elasticity learn:1.0 --level` and the same with `--level --cautious`, on 2026-10-12. The plain learn arms are [[RES-21]]'s.
+- Result: the level is 0.90 by day 10 at every hotel. Accept-all earns -$15,244 a seed with it against -$14,376 without, and the cautious arm -$3,348 against -$4,280. The gain does not recover.
+- Why: the level fixes the forecast, and the flags fall from 3,230 to 1,537. The loss is the prior elasticity's. It prices the shock raises as cheaper than they are with a tenth less demand.
+- Ceiling: the oracle earns +$3,087 and +$3,512 a seed on the level arms' candidates. On the plain arms' it earns +$2,654 and +$2,748. The true mode earns +$1,913 there ([[RES-21]]), so there was little to recover.
+- Table: docs/results.md, "Seeds 1 to 20 at a demand bias of 0.9, the learning agent with and without the fitted level"
+- Evidence: test_the_level_runs_pin_their_headline
+- Links: [[DEC-54]], [[RES-21]], [[RES-30]], [[RES-31]], [[RES-32]], [[UNK-07]], [[UNK-08]]
+
+### RES-30 [C] The fitted level fed back at the default demand bias
+- Ran: the two commands of [[RES-29]] with `--demand-bias 1.0`, on 2026-10-12. The plain learn arms are [[RES-23]]'s.
+- Result: the level is 0.99 to 1.00 by hotel on day 59. Accept-all earns +$14,097 a seed against +$14,141 without the level, and the cautious arm +$24,317 against +$25,076.
+- Cost: the arms lose $44 and $759 a seed to the level's noise. The oracle's ceiling stays at +$30,729 and +$31,026.
+- Table: docs/results.md, "Seeds 1 to 20 at the default demand bias of 1.0, the same arms"
+- Evidence: test_the_default_mode_still_gives_a_20_seed_mean_of_32899
+- Links: [[DEC-54]], [[RES-23]], [[RES-29]], [[RES-31]], [[RES-32]]
+
+### RES-31 [C] The fitted level fed back at a demand bias of 1.1
+- Ran: the two commands of [[RES-29]] with `--demand-bias 1.1`, on 2026-10-12. The plain learn arms are [[RES-22]]'s.
+- Result: the level is 1.10 by day 10. Accept-all earns +$95,731 a seed against +$98,401 without the level, and the cautious arm +$103,121 against +$105,522.
+- Why: the corrected pace baseline removes raises on dates the start rates underprice: 553 changes against 898. Those raises paid ([[RES-22]]).
+- Table: docs/results.md, "Seeds 1 to 20 at a demand bias of 1.1, the same arms"
+- Evidence: test_the_level_runs_pin_their_headline
+- Links: [[DEC-54]], [[RES-22]], [[RES-29]], [[RES-30]], [[RES-32]]
+
+### RES-32 [C] The fitted level fed back with the reaction on at a market elasticity of 0.5
+- Ran: `hotel-market bench --seeds 1 20 --template --react --market-elasticity 0.5 --elasticity learn:1.0`, then with `--level` and with `--level --cautious`, on 2026-10-12. The cautious plain arm is [[RES-26]]'s rerun.
+- Result: the level is 1.00 by day 10 and changes little. Accept-all earns +$399,596 a seed with it against +$399,538 without, and the cautious arm +$202,454 against +$198,089.
+- Ratchet: the plain learner changes 2,257 rates and the oracle, told the reaction, accepts 91% of them. That is the ratchet at its fullest, which [[FRK-09]] holds.
+- Table: docs/results.md, "Seeds 1 to 20 with the reaction on at a market elasticity of 0.5, the same arms"
+- Evidence: test_the_level_runs_pin_their_headline
+- Links: [[DEC-54]], [[DEC-52]], [[RES-26]], [[RES-29]], [[FRK-09]]

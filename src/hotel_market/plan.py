@@ -75,6 +75,7 @@ class Pricing:
     observations: int | None = None  # learn only: the (stay date, booking day) pairs used
     cautious: bool = False  # learn only: a change must also beat hold across the band
     market_elasticity: float = ORACLE_MARKET_ELASTICITY  # the run's market price response
+    level: float = 1.0  # learn --level only: the factor the forecast was scaled by today
 
     @property
     def band(self) -> tuple[float, float] | None:
@@ -89,7 +90,7 @@ class Pricing:
 
     def to_json(self) -> dict:
         """The elasticity field of a log line. The cautious fields appear only when the rule is on,
-        so a record without it reads as before. market_elasticity is always there."""
+        so a record without it reads as before. market_elasticity and level are always there."""
         record = asdict(self)
         if self.cautious:
             record["band"] = Range(*self.band).to_json()

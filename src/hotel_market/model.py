@@ -75,7 +75,9 @@ standard error. When that field says cautious, each candidate also shows its \
 estimate at the low and the high end of the elasticity band, and the plan \
 changes a rate only where the change beats holding at both ends. When that \
 field has a market_elasticity, the market's demand falls as the comp median \
-rises by that power, and the estimates already count it."""
+rises by that power, and the estimates already count it. When it has a level, \
+the agent scaled its demand forecast by that factor, learned from the \
+bookings, and the estimates already count it."""
 
 # The mode the model sees for the default pricing. The command-line option is "true",
 # the simulator's own value; to the model it is a value the agent was given.
@@ -361,6 +363,8 @@ def _pricing_request(pricing: Pricing) -> dict:
     if pricing.market_elasticity:
         # Only when set, so the default request and its digest stay as they were.
         request["market_elasticity"] = number(pricing.market_elasticity)
+    if pricing.level != 1.0:
+        request["level"] = number(pricing.level)  # the factor the forecast was scaled by
     return request
 
 
@@ -566,6 +570,8 @@ def _elasticity_text(elasticity: dict) -> str:
                 f" Each change also beats holding with the elasticity at both ends of "
                 f"the band {elasticity['band']}."
             )
+        if elasticity.get("level"):
+            text += f" The demand forecast is scaled by {elasticity['level']}, learned too."
         return text
     return ""
 
