@@ -16,6 +16,7 @@ from hotel_market.estimate import (
     fit,
     observations,
 )
+from hotel_market.forecast import expected_demand
 from hotel_market.simulated import deciding, simulated_sources
 from hotel_market.world import stay_window
 
@@ -67,6 +68,51 @@ def test_the_day_59_estimate_recovers_the_simulators_elasticity(learned):
             assert found.observations > 5000
             assert abs(found.elasticity - true) <= TOLERANCE_SE * found.standard_error
             assert found.standard_error < PRIOR_SD  # the bookings taught it something
+
+
+@pytest.fixture(scope="module")
+def answered(tmp_path_factory):
+    """A seed-7 learn:1.5 run with competitors reacting and a market elasticity of 1.0, the
+    agent told the value."""
+    cache = tmp_path_factory.mktemp("cache")
+    agent = Agent(SEED, cache, elasticity=ElasticityMode("learn", PRIOR), market_elasticity=1.0)
+    return simulate(SEED, deciding(agent), react=True, market_elasticity=1.0)
+
+
+def test_the_day_59_estimate_recovers_the_elasticity_under_a_market_response(answered):
+    # With the market's answer in the baseline, the fit lands on the truth as it does at zero.
+    # Without it, the market's answer to a moved median reads as price response, and the
+    # estimates drift: up where the hotel's own raises moved the median, down on the convention
+    # nights, where the competitors' raise did.
+    sources = simulated_sources(answered)
+    error_with_term = error_without = 0.0
+    for hotel in DEMO.hotels:
+        found = estimate_elasticity(sources, hotel, 59, PRIOR, market_elasticity=1.0)
+        assert found.observations > 5000
+        assert abs(found.elasticity - bookings.ELASTICITY) <= TOLERANCE_SE * found.standard_error
+        error_with_term += abs(found.elasticity - bookings.ELASTICITY) / found.standard_error
+        plain = estimate_elasticity(sources, hotel, 59, PRIOR)
+        error_without += abs(plain.elasticity - bookings.ELASTICITY) / plain.standard_error
+    assert error_without > 2 * error_with_term
+
+
+def test_the_baseline_is_the_forecast_with_the_market_term_times_the_curves_rise(answered):
+    sources = simulated_sources(answered)
+    hotel = DEMO.hotel("convention")
+    data = observations(sources, hotel, 59, market_elasticity=1.0)
+    for k in range(0, len(data), 997):
+        day, stay = int(data.booking_days[k]), int(data.stay_days[k])
+        rise = DEMO.curve(stay - day) - DEMO.curve(stay - day + 1)
+        forecast = expected_demand(hotel, stay, day, sources, 1.0) * rise
+        assert np.exp(data.log_baseline[k]) == pytest.approx(forecast)
+    # At a market elasticity of 0 the baseline is the plain forecast, as before.
+    plain = observations(sources, hotel, 59)
+    k = 5
+    day, stay = int(plain.booking_days[k]), int(plain.stay_days[k])
+    rise = DEMO.curve(stay - day) - DEMO.curve(stay - day + 1)
+    assert np.exp(plain.log_baseline[k]) == pytest.approx(
+        expected_demand(hotel, stay, day, sources) * rise
+    )
 
 
 def test_the_estimate_uses_no_booking_made_on_or_after_as_of_day(fixed):

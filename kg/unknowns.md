@@ -53,7 +53,7 @@ and a RES node records the run. A claim that no test can confirm stays [U].
 - Error: the standard error says how little the data pin it down. It is 0.12 to 0.31 on day 59 when the agent has been changing rates. When it has not, it is 0.4 to 0.5, the prior's own width.
 - Cost: what a wrong value costs, and what learning wins back, is measured ([[RES-03]], [[RES-04]], [[RES-05]]). That closed [[FRK-02]].
 - Not settled: whether a real market's bookings obey one elasticity at all ([[UNK-14]]). The same one across stay dates, days out and guest segments is less likely still.
-- Measured: the estimator's baseline is the simulator's demand formula, so a constant level error lands in the intercept ([[DEC-50]]). At a demand bias of 0.9 or 1.1 the day-59 estimates stay at 1.26 to 1.49 ([[RES-21]], [[RES-22]]).
+- Measured: a constant level error lands in the intercept ([[DEC-50]]). At a demand bias of 0.9 or 1.1 the day-59 estimates stay at 1.26 to 1.49 ([[RES-21]], [[RES-22]]). The baseline must carry the market term ([[RES-26]]).
 - Best guess: between 1 and 2 at a real hotel, different by hotel and by distance to arrival. It is not recoverable from a run in which the hotel's own rate barely moves. The estimate needs the rate to move to learn anything.
 - Resolves when: never within this repository.
 

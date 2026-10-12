@@ -294,7 +294,7 @@ With the reaction on, the default mode earns 3.4 times its gain without it, +$11
 
 `hotel-market bench --seeds 1 20 --template --react --market-elasticity E --elasticity true` and the same command with `--elasticity learn:1.0 --cautious`, run on 2026-10-12 at E = 0.0, 0.5 and 1.0. The option multiplies expected demand by the comp median as shopped that day over its starting level for that stay date, to the power of minus E. The starting level is the median with no shock and no reaction. The agent is told E and every plan record carries it. The oracle re-scores each plan with E and with the share of a change the competitors follow, so it is the ceiling again. The columns are those of the reaction table, and oracle gap is the oracle arm's mean change minus accept-all's.
 
-Seeds 1 to 20 with the reaction on at a market elasticity of 0.0, 0.5 and 1.0, the template and the oracle in the true mode and the cautious learning mode, each against the fixed-rate run.
+Seeds 1 to 20 with the reaction on at a market elasticity of 0.0, 0.5 and 1.0, the template and the oracle in the true mode and the cautious learning mode, each against the fixed-rate run. The cautious rows at 0.5 and 1.0 come from a rerun after the estimator's baseline gained the market term.
 
 | Market elasticity | Mode | Reviewer | Mean change | Range | Ahead | Rate changes | Median flags | Own changes | Changed twice | Oracle gap | Day-59 estimate |
 | ---: | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
@@ -304,12 +304,12 @@ Seeds 1 to 20 with the reaction on at a market elasticity of 0.0, 0.5 and 1.0, t
 | 0.0 | learn:1.0 --cautious | oracle | +299,545 | +124,847 to +528,068 | 20/20 | 888 | 1363 | 1303 | 734 | - | 1.23 to 1.42 |
 | 0.5 | true | template | +72,229 | +51,792 to +92,918 | 20/20 | 207 | 505 | 445 | 46 | +0 | - |
 | 0.5 | true | oracle | +72,229 | +51,792 to +92,918 | 20/20 | 207 | 505 | 445 | 46 | - | - |
-| 0.5 | learn:1.0 --cautious | template | +256,903 | +119,901 to +354,190 | 20/20 | 1093 | 1661 | 1601 | 1035 | +683 | 1.32 to 1.51 |
-| 0.5 | learn:1.0 --cautious | oracle | +257,586 | +119,901 to +354,190 | 20/20 | 1086 | 1661 | 1601 | 1035 | - | 1.32 to 1.51 |
+| 0.5 | learn:1.0 --cautious | template | +198,089 | +77,536 to +336,986 | 20/20 | 784 | 1378 | 1318 | 702 | +400 | 1.22 to 1.42 |
+| 0.5 | learn:1.0 --cautious | oracle | +198,488 | +77,536 to +336,986 | 20/20 | 780 | 1378 | 1318 | 702 | - | 1.22 to 1.42 |
 | 1.0 | true | template | +43,584 | +29,018 to +58,908 | 20/20 | 161 | 489 | 429 | 25 | +0 | - |
 | 1.0 | true | oracle | +43,584 | +29,018 to +58,908 | 20/20 | 161 | 489 | 429 | 25 | - | - |
-| 1.0 | learn:1.0 --cautious | template | +149,400 | +89,012 to +171,529 | 20/20 | 1259 | 2004 | 1944 | 1322 | +665 | 1.45 to 1.70 |
-| 1.0 | learn:1.0 --cautious | oracle | +150,065 | +88,544 to +174,501 | 20/20 | 1233 | 2004 | 1944 | 1321 | - | 1.45 to 1.70 |
+| 1.0 | learn:1.0 --cautious | template | +99,883 | +43,857 to +153,820 | 20/20 | 696 | 1332 | 1272 | 646 | +709 | 1.23 to 1.42 |
+| 1.0 | learn:1.0 --cautious | oracle | +100,592 | +43,857 to +153,820 | 20/20 | 692 | 1332 | 1272 | 646 | - | 1.23 to 1.41 |
 
 Seed 7 at a market elasticity of 0.0 and 0.5 with no reaction: the full-service hotel's rate, its comp median before and after the day-30 cut, and the rooms it sold on the cut's stay dates, 37 to 39, by day 39.
 
@@ -322,4 +322,4 @@ Seed 7 at a market elasticity of 0.0 and 0.5 with no reaction: the full-service 
 | 0.5 | 38 | 190.00 | 191.80 | 173.46 | 206 |
 | 0.5 | 39 | 190.00 | 185.57 | 167.51 | 165 |
 
-With the reaction on, the market elasticity sets how much of the ratchet is real. At 0.0 a raise the competitors follow costs no rooms, so the default mode earns +$111,272 a seed, and the oracle, now told the reaction, accepts almost every plan and beats accept-all by $676 a seed in the cautious arm. At 0.5 the market's demand falls as the median rises, so the gain falls to +$72,229 with 207 rate changes. At 1.0 it is +$43,584 with 161, still above the +$32,899 without the reaction, because a followed raise still costs fewer rooms than one the competitors ignore. The cautious learning arm's day-59 estimates rise with the elasticity, from 1.23 to 1.41 by hotel at 0.0 to 1.45 to 1.70 at 1.0. The estimator's baseline carries no market term, so it reads the market's answer to a followed raise as price response. On the day-30 cut the cheaper market draws more demand at 0.5, so the full-service hotel sells one to four more rooms on each of the three stay dates than at 0.0.
+The market table shows two different things. The first is a price effect that is correct. Competitors that follow half of a raise lower the hotel's effective own-price elasticity below 1.5, because its rate against the median moves only half as far as its rate. A raise therefore pays more in that world than it does against competitors that never move, and the gain that remains at a market elasticity of 1.0, +$43,584 a seed against +$32,899 with no reaction, is the agent's correct response to it. The second is a fault. The competitors' answer to the hotel's own change arrives three days later, the detector reads it as news, the hold lifts, and the agent raises again on the same dates. Its measure is the stay dates changed twice within 14 days, which the market term cut from 97 to 25 and did not remove. FRK-09 is the open question for the rest, whether a comp move that follows our own change should count as a flag cause at all. The oracle, told the reaction, accepts almost every plan at 0.0 and beats accept-all by $400 to $709 a seed in the cautious arm. That arm's day-59 estimates stay at 1.22 to 1.42 by hotel at every value, because the estimator's baseline carries the market term. In the first run of this table it did not, and the estimates drifted to 1.45 to 1.70 at 1.0, because the market's answer to a moved median read as price response. On the day-30 cut the cheaper market draws more demand at 0.5, so the full-service hotel sells one to four more rooms on each of the three stay dates than at 0.0.

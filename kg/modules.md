@@ -152,7 +152,7 @@ which is also the order in which they depend on each other.
 - File: src/hotel_market/estimate.py
 - Owns: the agent's own estimate of the elasticity ([[CON-06]], [[DEC-38]]). It gathers the observations it may use on a day. It fits a Poisson regression with the log baseline as an offset and a normal prior, and clamps the result.
 - Observations: one per stay date and booking day, from the sources' booking and shop histories ([[DAT-26]]). They are bookings made before the day, inside the day's window and before the stay date sold out. The opening rooms never count.
-- Holds: PRIOR_SD ([[RUL-50]]), ELASTICITY_MIN ([[RUL-51]]) and ELASTICITY_MAX ([[RUL-52]]). The baseline comes from the agent's own forecast ([[MOD-18]]).
+- Holds: PRIOR_SD ([[RUL-50]]), ELASTICITY_MIN ([[RUL-51]]) and ELASTICITY_MAX ([[RUL-52]]). The baseline comes from the agent's own forecast ([[MOD-18]]), with the run's market term ([[DEC-52]]).
 - Reads: [[MOD-02]], [[MOD-17]] (the sources), [[MOD-18]] (the forecast), [[MOD-20]] (the booking curve); never the simulator ([[DEC-40]])
 - Writes: [[DAT-23]]
 - Tests: tests/test_estimate.py

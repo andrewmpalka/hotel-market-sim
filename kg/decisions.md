@@ -235,7 +235,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 ### DEC-38 [C] The agent can learn its elasticity from the bookings; the default stays the simulator's value
 - Decided: --elasticity picks where the agent's elasticity comes from ([[RUL-49]], [[DAT-22]]). The default, true, is the oracle value ([[RUL-56]]).
 - Modes: a fixed:X mode uses X for the whole run. A learn:X mode starts from the prior X and re-estimates every hotel every day ([[MOD-16]]). Every entry, request and log line records the elasticity, its error and its mode ([[DAT-21]]).
-- Estimator: a Poisson regression of the bookings on log(rate / median), with the log baseline as an offset. An intercept absorbs the demand level, a prior of width [[RUL-50]] holds the slope, and [[RUL-51]] to [[RUL-52]] clamps it.
+- Estimator: a Poisson regression of the bookings on log(rate / median). The offset is the forecast's log baseline with the market term ([[DEC-52]]). An intercept absorbs the level, and [[RUL-50]] to [[RUL-52]] hold and clamp the slope.
 - Observations: a stay date's observations stop on the day it sells out. The day-0 preload is never an observation, because the simulator draws it with no price response.
 - Reason: with the agent's elasticity equal to the simulator's, the agent was never wrong about price response. The question was what being wrong costs and how much learning wins back ([[FRK-02]], [[UNK-07]]).
 - Measured: a wrong value costs about three quarters of the gain ([[RES-03]]). Learning wins back about a quarter of the loss ([[RES-04]], [[RES-10]]).

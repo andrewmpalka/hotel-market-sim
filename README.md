@@ -182,9 +182,14 @@ bookings.
   Books' own log, and `--market-elasticity E` makes the market's demand fall by
   the comp median over its starting level to the power of E, with the agent
   told E. With the reaction on, the default run earns +$111,272 a seed at an E
-  of 0.0, +$72,229 at 0.5 and +$43,584 at 1.0, against +$32,899 with neither,
-  and the stay dates changed twice within 14 days fall from 97 to 46 and 25.
-  The oracle is told both settings, so it is the ceiling again
+  of 0.0, +$72,229 at 0.5 and +$43,584 at 1.0, against +$32,899 with neither.
+  Part of that gain is correct. Competitors that follow half of a raise lower
+  the hotel's effective own-price elasticity below 1.5, so a raise pays more
+  in that world and the agent is right to take it. The fault is the loop in
+  which the competitors' answer to our own change is read as news and the
+  hold lifts, and its measure is the stay dates changed twice within 14 days,
+  which the term cut from 97 to 25. FRK-09 holds the open question for the
+  rest. The oracle is told both settings, so it is the ceiling again
   (docs/results.md).
 - There is one rate per hotel and stay date, with no room types, group blocks,
   cancellations or no-shows.

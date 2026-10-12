@@ -10,7 +10,9 @@ at a rate ratio of 1.
 
 The baseline is the agent's own forecast as of the booking day. It is multiplied by the booking
 curve's rise from the day before. The forecast (forecast.py) is normal demand with its weekday
-factor, the seats and any event known by then.
+factor, the seats and any event known by then. Under a market elasticity it also carries the
+market's answer to that day's comp median, so the estimator and the forecast agree. Without the
+term, the market's answer to a moved median reads as price response, and the fit drifts.
 
 The model is a Poisson regression with the log of the baseline as an offset. It has an intercept
 that absorbs errors in the demand level and a slope on log(rate / competitor median). The
@@ -35,7 +37,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from hotel_market.customer import Customer, demo
-from hotel_market.forecast import event_uplift, normal_demand
+from hotel_market.forecast import ORACLE_MARKET_ELASTICITY, event_uplift, normal_demand
 from hotel_market.sources import Sources
 from hotel_market.world import HORIZON_DAYS, Hotel, stay_window
 
@@ -70,10 +72,15 @@ class Estimate:
 
 
 def observations(
-    sources: Sources, hotel: Hotel, as_of_day: int, customer: Customer | None = None
+    sources: Sources,
+    hotel: Hotel,
+    as_of_day: int,
+    customer: Customer | None = None,
+    market_elasticity: float = ORACLE_MARKET_ELASTICITY,
 ) -> Observations:
     """The observations the agent may use on as_of_day. They are the bookings made before that day,
-    inside that day's window, and before the stay date sold out."""
+    inside that day's window, and before the stay date sold out. The market elasticity is the
+    run's, and the baseline carries its term."""
     i = hotel.row
     history = sources.bookings.history(as_of_day)
     rooms = history.taken[:, i, :]
@@ -87,14 +94,23 @@ def observations(
         booking_days=booking_days,
         bookings=rooms[keep],
         log_ratio=np.log(rates[keep] / medians[keep]),
-        log_baseline=np.log(_baselines(sources, hotel, as_of_day, customer or demo())[keep]),
+        log_baseline=np.log(
+            _baselines(sources, hotel, as_of_day, customer or demo(), market_elasticity)[keep]
+        ),
     )
 
 
-def _baselines(sources: Sources, hotel: Hotel, as_of_day: int, customer: Customer) -> np.ndarray:
+def _baselines(
+    sources: Sources,
+    hotel: Hotel,
+    as_of_day: int,
+    customer: Customer,
+    market_elasticity: float = ORACLE_MARKET_ELASTICITY,
+) -> np.ndarray:
     """The bookings expected at a rate ratio of 1, by [booking day, stay day], for the days before
-    as_of_day. Each is the forecast as known on the booking day times the booking curve's rise. It
-    is zero outside each day's window."""
+    as_of_day. Each is the forecast as known on the booking day (forecast.expected_demand, with
+    the market term at that day's comp median) times the booking curve's rise. It is zero outside
+    each day's window."""
     curve = customer.curve
     normal = np.array([normal_demand(hotel, stay_day) for stay_day in range(HORIZON_DAYS)])
     baselines = np.zeros((as_of_day, HORIZON_DAYS))
@@ -105,14 +121,29 @@ def _baselines(sources: Sources, hotel: Hotel, as_of_day: int, customer: Custome
         uplift = 1 + np.array([event_uplift(hotel, s, day, sources) for s in stays])
         rise = curve(stays - day) - curve(stays - day + 1)
         baselines[day, stays] = normal[stays] * seat_factor * uplift * rise
+    if market_elasticity:
+        # The comp medians shopped on each booking day, over each stay date's starting level,
+        # where the day's window shopped the date; the forecast uses the same ratio.
+        medians = sources.shops.median_history(as_of_day)[:, hotel.row, :]
+        first = np.array([sources.shops.first_median(hotel, s) for s in range(HORIZON_DAYS)])
+        ratio = np.ones_like(baselines)
+        shopped = medians > 0
+        ratio[shopped] = (medians / first[None, :])[shopped]
+        baselines *= ratio**-market_elasticity
     return baselines
 
 
 def estimate_elasticity(
-    sources: Sources, hotel: Hotel, as_of_day: int, prior: float, customer: Customer | None = None
+    sources: Sources,
+    hotel: Hotel,
+    as_of_day: int,
+    prior: float,
+    customer: Customer | None = None,
+    market_elasticity: float = ORACLE_MARKET_ELASTICITY,
 ) -> Estimate:
-    """The hotel's elasticity as of a day, from the bookings made before it."""
-    data = observations(sources, hotel, as_of_day, customer)
+    """The hotel's elasticity as of a day, from the bookings made before it, with the run's market
+    elasticity in the baseline."""
+    data = observations(sources, hotel, as_of_day, customer, market_elasticity)
     intercept, slope, standard_error = fit(data, prior)
     return Estimate(
         elasticity=min(max(-slope, ELASTICITY_MIN), ELASTICITY_MAX),

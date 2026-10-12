@@ -231,9 +231,9 @@ here for the rest.
 ### RES-26 [C] The market elasticity with the reaction on, seeds 1 to 20
 - Ran: `hotel-market bench --seeds 1 20 --template --react --market-elasticity E --elasticity true` at E = 0.0, 0.5 and 1.0, on 2026-10-12. The same command with `--elasticity learn:1.0 --cautious` ran the cautious arms.
 - Result: the true mode earns +$111,272 a seed at 0.0, +$72,229 at 0.5 and +$43,584 at 1.0. Every arm is ahead in 20 of 20. Its rate changes fall from 298 to 207 and 161. The dates changed twice within 14 days fall from 97 to 46 and 25.
-- Cautious: the cautious learn arm earns +$298,869, +$256,903 and +$149,400 accepting all. Its changes rise with the elasticity, from 890 to 1,259. The dates changed twice rise too, from 734 to 1,322.
-- Oracle: told the reaction and the value, the oracle is the ceiling again. It beats accepting all by $665 to $683 a seed in the cautious arm. In the true mode it accepts every plan and ties.
-- Estimates: the cautious arm's day-59 estimates rise with the elasticity. They are 1.23 to 1.41 by hotel at 0.0 and 1.45 to 1.70 at 1.0. The estimator's baseline carries no market term ([[UNK-07]]).
+- Cautious: the cautious learn arm earns +$298,869, +$198,089 and +$99,883 accepting all. Its changes fall with the elasticity, from 890 to 696, and the dates changed twice from 734 to 646.
+- Oracle: told the reaction and the value, the oracle is the ceiling again. It beats accepting all by $400 to $709 a seed in the cautious arm. In the true mode it accepts every plan and ties.
+- Estimates: the cautious arms at 0.5 and 1.0 were rerun with the market term in the estimator's baseline. Their day-59 estimates then stay at 1.22 to 1.42 by hotel. Without the term they drifted to 1.45 to 1.70 at 1.0 ([[UNK-07]]).
 - Table: docs/results.md, "Seeds 1 to 20 with the reaction on at a market elasticity"
 - Evidence: test_the_market_elasticity_runs_pin_their_headline
 - Links: [[DEC-52]], [[DEC-51]], [[RES-24]], [[RES-27]], [[UNK-07]], [[UNK-11]], [[UNK-15]]
