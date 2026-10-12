@@ -1,6 +1,10 @@
 # Hotel market simulator
 
-<!-- GAP 1 of 3: what this is. Write it here, in your own words. -->
+Four hotels of one brand share a simulated market. It has daily bookings,
+competitor rate shops, one event and two air schedule changes. An agent flags
+changes, and code scores rate options. A model picks plan or hold and explains
+it. Schedule columns follow Cirium's published data dictionary. Every row is
+synthetic. The repository has no Cirium data or affiliation.
 
 ## Install and run
 
@@ -63,7 +67,11 @@ Seed 7: room revenue and contribution per hotel, the fixed-rate run against the 
 
 The tables of every experiment: [docs/results.md](docs/results.md).
 
-<!-- GAP 2 of 3: what the results mean. Write it here, in your own words. -->
+In all 20 seeds, contribution rises and room revenue falls. The convention and
+new flights produce 96% of the gain. An agent learning price response keeps 43%
+to 76% of the gain. Its starting value and the cautious rule set the share. The
+agent uses the simulator's demand formula, so the numbers test the machinery and
+are not a forecast.
 
 ## Known limits
 
@@ -90,7 +98,9 @@ The tables of every experiment: [docs/results.md](docs/results.md).
   plans, not the model's judgement.
 - The live model has been measured on one seed in the default mode, where it
   accepted every plan; whether it ever declines one is not known.
-- The container image has not been built, and the suite has run on Python 3.11
-  and 3.12 only.
+- The container image has not been built, and the suite has run on Python 3.11,
+  3.12 and 3.13 only.
 
-<!-- GAP 3 of 3: what I would build next. Write it here, in your own words. -->
+The next version puts each hotel's past rate changes and their outcomes into the
+model request. It reprices when data arrives during the day. Its simulated
+competitors react to rate changes.
