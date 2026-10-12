@@ -181,6 +181,8 @@ it differs from what that would write. `README.md` is the legend.
 - DEC-39 [C] The cautious rule: a learning agent changes a rate only where the change beats holding across its band — kg/decisions.md
 - DEC-43 [C] One minimum rule: the cautious rule tests the band alone, and the minimum applies to the plan as in every mode — kg/decisions.md
 - DEC-44 [C] The request carries a display string in place of every figure, with its direction in words and each range as one phrase, and the prompt tells the model to copy the phrases whole and state only what the entry shows — kg/decisions.md
+- DEC-45 [T] Each model request carries the hotel's past decisions and their outcomes — kg/decisions.md
+- DEC-46 [T] The agent reprices when data arrives during the day — kg/decisions.md
 
 ### Engineering
 
@@ -224,6 +226,7 @@ it differs from what that would write. `README.md` is the legend.
 - FRK-03 [O] A length-of-stay model — kg/forks.md
 - FRK-04 [O] Swapping the model for a locally hosted one — kg/forks.md
 - FRK-05 [O] Deliberate price tests, to learn the elasticity faster — kg/forks.md
+- FRK-06 [O] A read-only dashboard over the stored tables — kg/forks.md
 
 ## Unknowns (`unknowns.md`)
 
@@ -237,3 +240,7 @@ it differs from what that would write. `README.md` is the legend.
 - UNK-08 [U] Whether the measured gains say anything about a real hotel — kg/unknowns.md
 - UNK-09 [C] What a live run costs and how long it takes — kg/unknowns.md
 - UNK-10 [U] Whether sql/schema.sql runs on a cloud warehouse as written — kg/unknowns.md
+- UNK-11 [U] How competitors react to a rate change, and what that does to the revenue-target result — kg/unknowns.md
+- UNK-12 [U] The effect of cancellations, no-shows, groups and room types — kg/unknowns.md
+- UNK-13 [U] Whether a 5% cut is enough: the largest cut on the menu is 5% — kg/unknowns.md
+- UNK-14 [U] The bias in an elasticity estimate when a real hotel changes its rate in response to demand — kg/unknowns.md

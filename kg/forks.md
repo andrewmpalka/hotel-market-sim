@@ -23,7 +23,7 @@ it. None of these is in progress.
 - Known: the Books hold rooms per stay date with no link between nights ([[DAT-07]]). The minimum stay is recorded as advice marked not simulated ([[DAT-15]]).
 - Needs: a distribution of lengths and bookings that take rooms on several nights. It also needs a rule for turning a one-night request away on a two-night minimum.
 - To decide it: write the booking draw for multi-night stays first and check that the fixed-rate occupancies stay within 60% to 90%. The one-random-number-per-draw rule ([[DEC-22]]) must survive it.
-- Links: [[DEC-10]], [[MOD-06]]
+- Links: [[DEC-10]], [[MOD-06]], [[UNK-12]]
 
 ### FRK-04 [O] Swapping the model for a locally hosted one
 - Choice: whether the decisions could come from a model run on the owner's machine instead of the hosted one ([[RUL-46]]).
@@ -41,3 +41,9 @@ it. None of these is in progress.
 - Owner: the owner's choice was to record this and leave the agent alone.
 - To decide it: add a candidate kind "test" for nights far from selling out, allowed while the standard error is high. Mark those changes in the log. Then measure the day-20 standard error and the gain against the cautious arms.
 - Links: [[DEC-38]], [[DEC-39]], [[DEC-43]], [[MOD-16]], [[CON-06]], [[CON-11]], [[UNK-07]]
+
+### FRK-06 [O] A read-only dashboard over the stored tables
+- Choice: whether to add a read-only view over the stored tables ([[DAT-28]]): the queue, the decisions and the feeds by day.
+- Known: the tables already hold every flag, plan and decision with the day it was known on. replay rebuilds a day from them alone ([[DEC-42]]), and a view would read and never write.
+- To decide it: pick a reader, such as a notebook, a static page or DuckDB's own tools. Keep the rule that nothing reads a day before it is written.
+- Links: [[DAT-28]], [[MOD-21]], [[DEC-42]]

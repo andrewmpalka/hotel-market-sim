@@ -50,7 +50,7 @@ and a RES node records the run. A claim that no test can confirm stays [U].
 - Settled: inside this simulator the agent can recover a value it is not told ([[DEC-38]], [[MOD-16]], [[RES-10]]). From a prior of 1.0 or 2.0, its day-59 estimates land at 1.36 to 1.68 by hotel ([[RES-04]]).
 - Error: the standard error says how little the data pin it down. It is 0.12 to 0.31 on day 59 when the agent has been changing rates. When it has not, it is 0.4 to 0.5, the prior's own width.
 - Cost: what a wrong value costs, and what learning wins back, is measured ([[RES-03]], [[RES-04]], [[RES-05]]). That closed [[FRK-02]].
-- Not settled: whether a real market's bookings obey one elasticity at all. The same one across stay dates, days out and guest segments is less likely still.
+- Not settled: whether a real market's bookings obey one elasticity at all ([[UNK-14]]). The same one across stay dates, days out and guest segments is less likely still.
 - Baseline: the estimator takes the simulator's own demand formula as its baseline. A real baseline error lands in the intercept only if it is a constant factor.
 - Best guess: between 1 and 2 at a real hotel, different by hotel and by distance to arrival. It is not recoverable from a run in which the hotel's own rate barely moves. The estimate needs the rate to move to learn anything.
 - Resolves when: never within this repository.
@@ -74,3 +74,27 @@ and a RES node records the run. A claim that no test can confirm stays [U].
 - Best guess: the changes its head lists are the only ones, the type names and the PRIMARY KEY clauses first among them. The row writers in [[MOD-21]] would need each warehouse's own client.
 - Resolves when: someone runs the file on one of them.
 - Links: [[DAT-28]], [[MOD-21]], [[DEC-42]]
+
+### UNK-11 [U] How competitors react to a rate change, and what that does to the revenue-target result
+- Unknown: the simulator's competitors never react ([[CON-03]]). The revenue target's gain ([[RES-07]]) comes from cuts that real competitors might match.
+- Best guess: a matched cut gives back most of the revenue gain. The contribution target's raises are less exposed, because a competitor need not follow a raise.
+- Resolves when: never within this repository; a reaction rule would be another modelling choice.
+- Links: [[CON-03]], [[DEC-41]], [[RES-07]], [[UNK-05]]
+
+### UNK-12 [U] The effect of cancellations, no-shows, groups and room types
+- Unknown: the simulator has none of these ([[DAT-07]]). Every booking stays, every room is the same, and the estimate assumes clean Poisson noise ([[CON-09]]).
+- Best guess: real nights sell out less predictably. The chance of a sell-out is then harder to know, and the estimates would be noisier than here.
+- Resolves when: never within this repository; [[FRK-03]] is the first step.
+- Links: [[DAT-07]], [[CON-09]], [[FRK-03]], [[DEC-21]]
+
+### UNK-13 [U] Whether a 5% cut is enough: the largest cut on the menu is 5%
+- Unknown: the candidates cut by at most 5% ([[RUL-43]]), or halfway to a fallen median ([[RUL-42]]). Whether a larger cut ever pays is not measured.
+- Best guess: on this market a larger cut rarely pays at an elasticity of 1.5. A cut sells more rooms, and those rooms cost about as much to service as they bring in ([[RES-07]]).
+- Resolves when: a run with a 10% cut on the menu is compared with the default on seeds 1 to 20.
+- Links: [[RUL-43]], [[RUL-42]], [[DEC-13]], [[RES-07]]
+
+### UNK-14 [U] The bias in an elasticity estimate when a real hotel changes its rate in response to demand
+- Unknown: the estimator ([[MOD-16]]) reads the rate as given. A real hotel raises its rate when demand is strong. High rates then come with high bookings, and the slope reads too flat.
+- Best guess: the bias pulls a real estimate toward zero. The simulator does not show it, because its agent changes rates only on flags.
+- Resolves when: never within this repository; a real estimate would need an instrument or a controlled test ([[FRK-05]]).
+- Links: [[MOD-16]], [[UNK-07]], [[FRK-05]], [[DEC-38]]

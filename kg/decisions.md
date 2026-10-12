@@ -272,6 +272,20 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Measured: the fourth run copied every phrase and every range whole in 21,148 input tokens ([[RES-08]], [[DAT-29]]). No figure fell outside its request, and no sentence lacked a request figure.
 - Evidence: test_every_figure_in_the_request_is_a_display_string, test_a_range_is_one_phrase_and_the_single_value_when_both_ends_read_the_same, test_the_recorded_live_run_of_seed_7_passes_the_audit
 
+### DEC-45 [T] Each model request carries the hotel's past decisions and their outcomes
+- Decided: the request for a hotel's queue will carry the hotel's earlier decisions and what each earned. The model can then weigh a plan against what the last ones did.
+- Replaces: nothing built; today the model sees only the day's entries ([[DAT-16]]).
+- Reason: a revenue manager judges a recommendation against the last ones, and the model cannot.
+- Needs: a record of each accepted plan's realised gain on its stay dates. The changed-pairs comparison already computes that per run ([[RES-02]]). The request and the cache digest need a place for it ([[DEC-23]]).
+- Links: [[DAT-16]], [[MOD-09]], [[MOD-10]], [[DEC-44]]
+
+### DEC-46 [T] The agent reprices when data arrives during the day
+- Decided: the agent will run again within a day when a feed delivers new data.
+- Replaces: nothing built; today decide(day, sources) runs once per day ([[MOD-10]]).
+- Reason: a real feed arrives through the day, and a rate decided in the morning is stale by the afternoon.
+- Needs: a clock finer than as_of_day in the sources ([[DAT-25]]) and the stored tables ([[DAT-28]]). The hold needs a rule within a day ([[CON-10]]).
+- Links: [[MOD-10]], [[DAT-25]], [[DAT-28]], [[DEC-42]]
+
 ## Engineering
 
 ### DEC-23 [C] The cache is keyed by seed, day and hotel, and each file records a digest of its request
