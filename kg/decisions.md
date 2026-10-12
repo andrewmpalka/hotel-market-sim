@@ -207,7 +207,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 ### DEC-35 [C] Every number is synthetic, and the schedule's columns follow a published data dictionary
 - Decided: the city, airports, airlines, flights, hotels, competitors and bookings are invented. The schedule table's column names follow Cirium's published schedule data dictionary. The code therefore reads data shaped like a real feed.
 - Policy: the repository holds no Cirium data and has no affiliation with Cirium. It names no real hotel brand or employer anywhere.
-- Replaces: nothing.
+- Replaces: a schedule whose IS_WETLEASE was set wherever the carriers differed. A differing operating carrier is capacity purchase, so the flag is now False on every row. The carrier pair expresses the arrangement ([[MOD-01]]).
 - Reason: the project tests whether the loop works and not a market. Data shaped like a real feed makes the counting traps real traps without any real rows.
 - Commit: e134523
 - Kind: policy

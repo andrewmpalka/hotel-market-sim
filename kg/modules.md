@@ -9,6 +9,7 @@ which is also the order in which they depend on each other.
 - File: src/hotel_market/schedule.py
 - Owns: the synthetic air schedule as known on a day (build_schedule) and the seats arriving each day (seats_by_day). It also gives the seat change against the no-shock schedule and against the day before.
 - Holds: both air shocks ([[SHK-02]], [[SHK-04]]) and the three counting traps: codeshare rows, the type U bus and the second airport. Its column names and signatures do not change.
+- Carriers: where the operating carrier differs from the marketing carrier, a regional flies the route under capacity purchase. IS_WETLEASE is False on every row, because a wet lease is a separate arrangement ([[DEC-35]]).
 - Reads: nothing in the package
 - Writes: [[DAT-01]], [[DAT-02]], [[DAT-03]]
 - Tests: tests/test_schedule.py

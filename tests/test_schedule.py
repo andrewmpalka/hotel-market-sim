@@ -78,3 +78,18 @@ def test_summing_with_type_u_rows_counts_the_bus(rows, baseline):
 def test_every_row_arrives_in_the_market_country_and_state(rows):
     assert (rows["ARRIVAL_COUNTRY_CODE_IATA"] == MARKET_COUNTRY).all()
     assert (rows["ARRIVAL_STATE_PROVINCE_CODE_IATA"] == MARKET_STATE).all()
+
+
+def test_a_regional_operating_carrier_is_not_a_wet_lease(rows):
+    # XR flies the E75 routes for XB and XA under capacity purchase. The carrier pair shows
+    # that, and the wet-lease flag stays off, because a wet lease is a separate arrangement.
+    operating = rows[~rows["IS_CODESHARE"]]
+    regional = operating[operating["MARKETING_CARRIER_IATA"] != operating["OPERATING_CARRIER_IATA"]]
+    assert set(regional["OPERATING_CARRIER_IATA"]) == {"XR"}
+    assert set(regional["MARKETING_CARRIER_IATA"]) == {"XA", "XB"}
+    assert set(regional["EQUIPMENT_SUBTYPE_CODE_IATA"]) == {"E75"}
+    assert not rows["IS_WETLEASE"].any()
+    # On a codeshare row the pair differs too: the partner sells seats on the operator's flight.
+    codeshare = rows[rows["IS_CODESHARE"]]
+    assert set(codeshare["MARKETING_CARRIER_IATA"]) == {"XP"}
+    assert set(codeshare["OPERATING_CARRIER_IATA"]) == {"XA", "XB"}

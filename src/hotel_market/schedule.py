@@ -15,6 +15,14 @@ seats_by_day handles all three.
 The table has one row per flight per operating date. A schedule also has an "as of" day. A hotel
 knows about a flight only after the airline has filed it. build_schedule(as_of_day) returns the
 schedule as it was known on that simulation day.
+
+A row's marketing carrier sells the flight and its operating carrier flies it. Where the two
+differ on an operating row, a regional airline flies the route for the marketing carrier under
+a capacity-purchase agreement. XR does that for XB and XA on the E75 routes. On a codeshare row
+the marketing carrier is the partner that sells seats on the operating carrier's flight. A wet
+lease is a third arrangement, in which an airline rents another's aircraft and crew. No route
+here is one, so IS_WETLEASE is False on every row. The columns modelled here carry no field for
+the arrangement, so the carrier pair expresses it.
 """
 
 from __future__ import annotations
@@ -179,7 +187,8 @@ def build_schedule(as_of_day: int = HORIZON_DAYS) -> pd.DataFrame:
                             if route.codeshare_partner
                             else None
                         ),
-                        "IS_WETLEASE": route.marketing != route.operating,
+                        # A differing operating carrier is capacity purchase, never a wet lease.
+                        "IS_WETLEASE": False,
                         "SERVICE_TYPE_IATA": route.service_type,
                         "EFFECTIVE_DATE": SIM_START + timedelta(days=first_day),
                         "DISCONTINUE_DATE": SIM_START + timedelta(days=last_day),
