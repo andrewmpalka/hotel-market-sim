@@ -7,16 +7,17 @@ the plans, the model's request and answer, and what the command writes.
 ### DAT-01 [C] The schedule table
 - File: src/hotel_market/schedule.py
 - Made by: build_schedule(as_of_day), one row per flight per operating date, as the schedule was known on that simulation day.
-- Columns: EXPANDED_ID, OPERATING_DATE_LOCAL, FLIGHT_NUMBER, the marketing and operating carriers, IS_CODESHARE, CODESHARE_INFO, IS_WETLEASE, SERVICE_TYPE_IATA, EFFECTIVE_DATE, DISCONTINUE_DATE and IS_OPERATING_MONDAY to IS_OPERATING_SUNDAY.
+- Columns: EXPANDED_ID, OPERATING_DATE_LOCAL, FLIGHT_NUMBER, the marketing and operating carriers, IS_CODESHARE, CODESHARE_INFO, IS_WETLEASE, SERVICE_TYPE_IATA, EFFECTIVE_DATE, DISCONTINUE_DATE and the seven IS_OPERATING_ day flags.
 - More columns: the departure and arrival station, country, state and city codes, PASSENGER_DEPARTURE_TIME_LOCAL, EQUIPMENT_SUBTYPE_CODE_IATA, the seats in three classes and FLIGHT_DISTANCE.
 - Source: the column names follow Cirium's published schedule data dictionary ([[DEC-35]]). Every row is synthetic, and the carrier codes are invented.
-- Traps: codeshare rows repeat an operating row's seats, the type U row is a bus sold under a flight number, and the SLC flights land at QMS, the city's second airport. seats_by_day drops the first two and groups arrivals by city.
+- Traps: codeshare rows repeat an operating row's seats, and the type U row is a bus sold under a flight number. The SLC flights land at QMS, the city's second airport. seats_by_day drops the first two and groups arrivals by city.
 - Read by: [[MOD-01]] only; the rest of the package reads [[DAT-02]]
 - Evidence: test_summing_by_arrival_station_misses_the_second_airport, test_summing_with_type_u_rows_counts_the_bus
 
 ### DAT-02 [C] Seats by day, seat change and seat revision
 - File: src/hotel_market/schedule.py
-- Made by: seats_by_day(schedule), a Series of arriving seats per simulation day 0 to 149. seat_change(as_of_day) is the fractional change against the schedule with no shocks, and seat_revision(as_of_day) the change against the schedule known one day earlier.
+- Made by: seats_by_day(schedule), a Series of arriving seats per simulation day 0 to 149.
+- Changes: seat_change(as_of_day) is the fractional change against the schedule with no shocks. seat_revision(as_of_day) is the change against the schedule known one day earlier.
 - Values: 4,244 seats on a normal day and 3,326 on Tuesdays and Saturdays before any shock. seat_change(21) is +17% for day 55.
 - Read by: [[MOD-04]] (seat_change, cached once per filing day), [[MOD-07]] (seat_revision, zero except on filing days)
 - Evidence: test_normal_day_has_4244_seats, test_tuesdays_and_saturdays_have_3326_seats, test_known_seat_revision_matches_the_schedule
@@ -32,15 +33,16 @@ the plans, the model's request and answer, and what the command writes.
 ### DAT-04 [C] Hotel, Competitor and the customer's hotels
 - File: src/hotel_market/world.py
 - Fields: Hotel(key, name, rooms, start_rate, air_share, base_occupancy, weekday_factors, competitors, floor, ceiling, room_cost, row) with clamp(), and Competitor(name, base_rate).
-- Built by: [[MOD-20]] from the customer file ([[DAT-27]]). Floor, ceiling and room_cost are the file's shares of the start rate ([[RUL-59]] to [[RUL-61]]), each competitor's base rate is the start rate at the file's offset, and row is the hotel's place in the file.
-- Values: convention 400 rooms at $220, air share 0.60, base occupancy 0.75; full-service 250 at $190, 0.45, 0.75; lifestyle 120 at $240, 0.50, 0.75; airport 150 at $140, 0.80, 0.85 ([[DEC-14]]).
-- Comp sets: each hotel has four competitors at -8%, -3%, +3% and +8% of its start rate, so its comp median starts level with its own rate ([[CON-03]]). The weekday factors are the demo file's day-of-week table.
+- Built by: [[MOD-20]] from the customer file ([[DAT-27]]). Floor, ceiling and room_cost are the file's shares of the start rate ([[RUL-59]] to [[RUL-61]]).
+- Offsets: each competitor's base rate is the start rate at its offset. row is the hotel's place in the file and in every array indexed by hotel.
+- Values: convention: 400 rooms, $220, air share 0.60, base occupancy 0.75. Full-service: 250, $190, 0.45, 0.75. Lifestyle: 120, $240, 0.50, 0.75. Airport: 150, $140, 0.80, 0.85 ([[DEC-14]]).
+- Comp sets: each hotel has four competitors at -8%, -3%, +3% and +8% of its start rate ([[CON-03]]). Its comp median therefore starts level with its own rate, and the weekday factors are the demo file's day-of-week table.
 - Read by: every module after [[MOD-02]]; Customer.hotels lists the hotels and Customer.hotel(key) finds one
 - Evidence: test_hotels_match_the_table, test_each_hotel_has_four_competitors_within_10_percent_of_its_rate, test_day_of_week_factors_match_the_table
 
 ### DAT-05 [C] Event and RateCut
 - File: src/hotel_market/shocks.py
-- Fields: Event(name, known_day, start_day, end_day, hotels, uplift, comp_rate_raise) with covers(hotel_key, stay_day), defined at the boundary in [[MOD-17]] so that the agent and the simulator share it.
+- Fields: Event(name, known_day, start_day, end_day, hotels, uplift, comp_rate_raise) with covers(hotel_key, stay_day). It is defined at the boundary in [[MOD-17]], so the agent and the simulator share it.
 - Cut: RateCut(known_day, start_day, end_day, hotel, competitors, cut) with covers(hotel_key, competitor, stay_day), the simulator's alone.
 - Held in: EVENTS ([[SHK-01]]) and RATE_CUTS ([[SHK-03]])
 - Read by: [[MOD-04]], [[MOD-05]], [[MOD-19]], which hands the events to the agent through [[DAT-25]]
@@ -48,16 +50,16 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-06 [C] The rate shop
 - File: src/hotel_market/shops.py
-- Made by: comp_rates(shop_day, hotel, stay_day, seed), a dict of competitor name to rate as seen on the shop day, and comp_median(...), the median of those four.
+- Made by: comp_rates(shop_day, hotel, stay_day, seed), a dict of competitor name to rate as seen on the shop day. comp_median(...) is the median of those four.
 - Noise: one read-only array per seed, shape (hotels, competitors, stay dates), drawn on the seed's noise stream [[RUL-20]].
 - Read by: [[MOD-06]] (bookings scale with rate over comp median), [[MOD-07]] (rate against median, median change since yesterday), [[MOD-08]] (estimates)
 - Evidence: test_comp_median_moves_only_when_a_shock_becomes_known, test_hotel_starts_level_with_its_comp_median
 
 ### DAT-07 [C] Books
 - File: src/hotel_market/bookings.py
-- Fields: rooms (int, hotels x stay dates), revenue (float, same shape) and rates (float, same shape, starting at each hotel's start rate).
-- Draws: the random numbers for every draw of the run: one per hotel and stay date for the preload, one per day, hotel and stay date for the loop ([[DEC-22]]).
-- Log: daily_rooms, daily_rates and daily_medians, shape (days, hotels, stay dates), zero outside the day's window, plus preload, the rooms loaded before day 0. [[MOD-19]] serves the agent from the log as of any day.
+- Fields: rooms (int, hotels x stay dates), revenue (float, same shape) and rates (float, same shape). Rates start at each hotel's start rate.
+- Draws: the random numbers for every draw of the run ([[DEC-22]]). The preload has one per hotel and stay date, and the loop one per day, hotel and stay date.
+- Log: daily_rooms, daily_rates and daily_medians, shape (days, hotels, stay dates), zero outside the day's window. preload holds the rooms loaded before day 0, and [[MOD-19]] serves the agent from the log as of any day.
 - Methods: book(day), set_rates(changes), and the measures occupancy, average_rate, revpar, room_revenue and contribution over a range of stay dates ([[MEA-01]] to [[MEA-05]]).
 - Written by: [[MOD-06]]; the agent's rate changes arrive through set_rates after each day's bookings
 - Read by: [[MOD-19]], [[MOD-12]]
@@ -73,7 +75,7 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-09 [C] Flag
 - File: src/hotel_market/detect.py
-- Fields: Flag(day, hotel, first_stay, last_stay, causes), frozen. Consecutive stay dates of a hotel with the same causes make one flag, and a pace cause alone is dropped on a stay date under the hold.
+- Fields: Flag(day, hotel, first_stay, last_stay, causes), frozen. Consecutive stay dates of a hotel with the same causes make one flag. A pace cause alone is dropped on a stay date under the hold.
 - Written by: [[MOD-07]]
 - Read by: [[MOD-08]], [[MOD-10]]
 - Evidence: test_consecutive_stay_dates_with_the_same_causes_merge_into_one_flag
@@ -105,18 +107,18 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-13 [C] FlagNumbers and Range
 - File: src/hotel_market/plan.py
-- Fields: FlagNumbers(days_out, rooms_on_books, unsold_rooms, remaining_demand, pace_gap, seat_change, seat_revision, rate, comp_median, rate_vs_median, median_change, new_event), the detect numbers over a flag's stay dates, rounded.
+- Fields: FlagNumbers holds the detect numbers over a flag's stay dates, rounded.
+- Names: days_out, rooms_on_books, unsold_rooms, remaining_demand, pace_gap, seat_change, seat_revision, rate, comp_median, rate_vs_median, median_change and new_event.
 - Range: the six numbers that vary across the stay dates, and days_out, are each a Range(lowest, highest), frozen. It iterates as its two ends for the wording helpers, and lowest_highest() makes one.
-- Written as: the named pair {"lowest": x, "highest": y} in the log line and the stored tables, and one phrase in the model request ([[DAT-16]], [[DEC-44]]).
-- Band: band_json() writes a candidate's two band estimates as {"at_low_elasticity", "at_high_elasticity"}, named by the end of the band, because the low elasticity can give the higher estimate.
-- Written by: [[MOD-08]]
-- Read by: [[MOD-09]] (in the request and the template reason), [[MOD-12]] (the printed entry)
+- Written as: the named pair {"lowest": x, "highest": y} in the log line and the stored tables. The model request carries it as one phrase ([[DAT-16]], [[DEC-44]]).
+- Band: band_json() writes a candidate's two band estimates as {"at_low_elasticity", "at_high_elasticity"}, named by the end of the band. The low elasticity can give the higher estimate.
+- Used by: written by [[MOD-08]]; read by [[MOD-09]] (the request and the template reason) and [[MOD-12]] (the printed entry)
 - Evidence: test_the_request_holds_each_entrys_plan_and_hold_as_its_only_options, test_every_figure_in_the_request_is_a_display_string, test_without_a_client_the_template_accepts_the_plan_and_quotes_the_numbers
 
 ### DAT-14 [C] Entry
 - File: src/hotel_market/plan.py
 - Fields: Entry(day, hotel, first_stay, last_stay, causes, numbers, weekdays, action, reason, reason_source, pricing, minimum, target), one per flag.
-- Derived: id "first-last", changed_weekdays, plan (the changes in words), value_at_stake (summed over the days that change), queued (value at stake >= the minimum [[RUL-67]]), new_rates, current_rates and rejected_at_an_end.
+- Derived: id "first-last", changed_weekdays, plan (the changes in words) and value_at_stake, summed over the days that change. queued means value at stake >= the minimum [[RUL-67]]; new_rates, current_rates and rejected_at_an_end follow.
 - JSON: to_json() adds target only when it is not contribution, so that a line for the demo market reads as before. pricing ([[DAT-21]]) is the elasticity every estimate assumed, and target ([[RUL-58]]) is what the estimates counted.
 - Written by: [[MOD-08]]; [[MOD-10]] sets action, reason and reason_source and gives the pricing
 - Read by: [[MOD-09]], [[MOD-10]], [[MOD-12]]
@@ -131,12 +133,12 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-16 [C] The model request
 - File: src/hotel_market/model.py
-- Made by: request_for(day, hotel, entries): day; hotel (name, rooms, floor, ceiling, cost_per_occupied_room); elasticity, the entries' shared pricing ([[DAT-21]]); target, only when it is revenue ([[RUL-58]]); and the entries.
-- Entry: id, stay_dates, what_changed, numbers ([[DAT-13]]), by_day_of_week (day, stay_dates, candidates with rates, estimated_contribution and versus_hold, best), plan, value_at_stake and options [plan, "hold"]. Under the cautious rule each candidate also carries its band values.
-- Figures: every figure is a display string from [[MOD-11]] in place of the raw number ([[DEC-44]]), and every number in it comes from code ([[RUL-01]]). The mode reads "assumed" for the default pricing ([[RUL-75]]).
+- Made by: request_for(day, hotel, entries) writes day, hotel (name, rooms, floor, ceiling, cost_per_occupied_room) and elasticity, the shared pricing ([[DAT-21]]). It adds target only when it is revenue ([[RUL-58]]), then the entries.
+- Entry: id, stay_dates, what_changed, numbers ([[DAT-13]]), by_day_of_week, plan, value_at_stake and options [plan, "hold"].
+- Weekday: day, stay_dates, best and the candidates with rates, estimated_contribution and versus_hold. Under the cautious rule each candidate also carries its band values.
+- Figures: every figure is a display string from [[MOD-11]] in place of the raw number ([[DEC-44]]). Every number in it comes from code ([[RUL-01]]), and the mode reads "assumed" for the default pricing ([[RUL-75]]).
 - Digest: a change of elasticity or target changes the request, and the sorted-keys JSON is digested for the cache key ([[DEC-23]]).
-- Written by: [[MOD-09]]
-- Read by: the model, the template, and [[MOD-09]]'s check of the answer
+- Used by: written by [[MOD-09]], and read by the model, the template and [[MOD-09]]'s check of the answer
 - Evidence: test_the_request_holds_each_entrys_plan_and_hold_as_its_only_options, test_every_figure_in_the_request_is_a_display_string, test_the_request_carries_the_elasticity_and_its_digest_changes_with_it
 
 ### DAT-17 [C] The cache record
@@ -151,18 +153,18 @@ the plans, the model's request and answer, and what the command writes.
 ### DAT-18 [C] A decisions.jsonl line
 - File: src/hotel_market/plan.py
 - Made by: Entry.to_json() in [[MOD-08]] and Advice.to_json() in [[MOD-10]]. [[MOD-12]] writes one line per entry and advice, by day, entries before advice.
-- Entry line: day, hotel, stays [first, last], causes, numbers ([[DAT-13]], its ranges as named pairs), elasticity (the pricing, with the mode as the command line names it), by_weekday, plan, value_at_stake, queued, action, new_rates (null when held), reason, reason_source and simulated true.
-- By weekday: weekday, stays and the candidates with name, rates as a named pair, estimate, best and gain. Under the cautious rule a candidate's band is named by its ends, and the line adds rejected_at_an_end; a revenue target adds target.
-- Raw: the line holds raw numbers, not the request's display strings. reason_source is "code", "template" or "model".
+- Entry line: day, hotel, stays [first, last], causes and numbers ([[DAT-13]], its ranges as named pairs). elasticity is the pricing, with the mode as the command line names it.
+- More: by_weekday, plan, value_at_stake, queued, action, new_rates (null when held), reason, reason_source ("code", "template" or "model") and simulated true. The line holds raw numbers, not the request's display strings.
+- By weekday: weekday, stays and the candidates with name, rates as a named pair, estimate, best and gain. Under the cautious rule a candidate's band is named by its ends, and the line adds rejected_at_an_end. A revenue target adds target.
 - Advice line: day, hotel, stays, causes, event, action, value_at_stake null, reason and simulated false.
 - Read by: nothing in the package; it is the record a person reads
 - Evidence: test_decisions_jsonl_has_one_line_per_flag_and_advice, test_the_log_lists_every_entry_and_advice_in_order
 
 ### DAT-19 [C] SeedResult
 - File: src/hotel_market/cli.py
-- Fields: SeedResult(seed, contribution_change, revenue_change, rate_changes, estimated, estimates, rejected_at_an_end, shock_changes, shock_gain, other_changes, other_gain), frozen: one seed of a sweep over stay dates 0 to 149.
-- Meaning: estimated is what the accepted plans were estimated to earn over holding, and estimates maps (day, hotel key) to the learned Estimate ([[DAT-23]]) in learn mode. rejected_at_an_end counts the candidates the cautious band rejected.
-- Shocks: the shock fields are the plans whose causes include one of [[RUL-55]] and the target's change on the stay dates they changed. The other fields are the same for every other plan, on the stay dates only those changed.
+- Fields: SeedResult(seed, contribution_change, revenue_change, rate_changes, estimated, estimates, rejected_at_an_end, shock_changes, shock_gain, other_changes, other_gain), frozen. It is one seed of a sweep over stay dates 0 to 149.
+- Meaning: estimated is what the accepted plans were estimated to earn over holding. estimates maps (day, hotel key) to the learned Estimate ([[DAT-23]]) in learn mode. rejected_at_an_end counts the candidates the cautious band rejected.
+- Shocks: the shock fields count the plans whose causes include one of [[RUL-55]] and the target's change on their stay dates. The other fields do the same for every other plan, on the stay dates only those changed.
 - Written by: [[MOD-12]] (sweep)
 - Read by: [[MOD-12]] through [[DAT-24]] (the seeds table, the arm table and the estimate table)
 - Evidence: test_the_sweep_gives_each_seeds_change_over_the_fixed_run, test_a_sweep_counts_the_shock_plans_apart_from_the_other_plans, test_the_seeds_command_prints_each_seed_and_the_mean_and_range
@@ -178,16 +180,16 @@ the plans, the model's request and answer, and what the command writes.
 ### DAT-21 [C] Pricing
 - File: src/hotel_market/plan.py
 - Fields: Pricing(elasticity, mode, standard_error, prior, observations, cautious), frozen: the elasticity a day's estimates assume and where it came from. mode is one of [[RUL-49]].
-- Learn: standard_error, prior and observations are set in learn mode only. cautious turns on the rule in [[CON-11]], and band is then the elasticities [[RUL-54]] standard errors either side of the estimate, clamped to [[RUL-51]] and [[RUL-52]].
-- Default: TRUE_PRICING is ORACLE_ELASTICITY ([[RUL-56]]) in mode "true". to_json() is the log line's elasticity field, with the band as a named pair; cautious and band appear only when the rule is on.
-- Request: [[MOD-09]] builds the request's elasticity field from the same record, every number a display string and the mode named for the model ([[RUL-75]]).
+- Learn: standard_error, prior and observations are set in learn mode only. cautious turns on the rule in [[CON-11]]. band is then the elasticities [[RUL-54]] standard errors around the estimate, clamped to [[RUL-51]] and [[RUL-52]].
+- Default: TRUE_PRICING is ORACLE_ELASTICITY ([[RUL-56]]) in mode "true". to_json() is the log line's elasticity field, with the band as a named pair. cautious and band appear only when the rule is on.
+- Request: [[MOD-09]] builds the request's elasticity field from the same record. Every number is a display string, and the mode is named for the model ([[RUL-75]]).
 - Written by: [[MOD-10]], once per hotel and day
 - Read by: [[MOD-08]] (the estimate), [[MOD-09]] (the request and the template's sentence), [[MOD-12]] (the printed entry)
 - Evidence: test_each_mode_records_the_elasticity_its_plans_assume, test_the_template_cites_a_fixed_or_learned_elasticity, test_the_cautious_rule_scores_each_candidate_one_standard_error_either_side
 
 ### DAT-22 [C] ElasticityMode
 - File: src/hotel_market/agent.py
-- Fields: ElasticityMode(kind, value, cautious), frozen, parsed from "true", "fixed:X" or "learn:X" and printed back the same way, with " cautious" after a learn mode under the cautious rule.
+- Fields: ElasticityMode(kind, value, cautious), frozen, parsed from "true", "fixed:X" or "learn:X" and printed back the same way. A learn mode under the cautious rule prints " cautious" after it.
 - Meaning: kind is one of [[RUL-49]]. value is ORACLE_ELASTICITY ([[RUL-56]]) for true, the fixed value, or the prior for learn. --cautious sets cautious on every learn mode of the command, and TRUE_MODE is the default.
 - Written by: [[MOD-12]] from the --elasticity and --cautious options
 - Read by: [[MOD-10]] (which pricing to give each day, and which cache folder to use), [[MOD-12]] (the arms of a sweep)
@@ -197,7 +199,7 @@ the plans, the model's request and answer, and what the command writes.
 - File: src/hotel_market/estimate.py
 - Fields: Observations(stay_days, booking_days, bookings, log_ratio, log_baseline), frozen arrays with one row per (stay date, booking day) the estimate may use.
 - Estimate: Estimate(elasticity, standard_error, observations, prior, intercept), frozen, what the fit says as of a day. The elasticity is clamped to [[RUL-51]] to [[RUL-52]].
-- Error: the standard error comes from the curvature of the fit with the prior included, so it is PRIOR_SD ([[RUL-50]]) with no observations.
+- Error: the standard error comes from the curvature of the fit with the prior included. With no observations it is PRIOR_SD ([[RUL-50]]).
 - Written by: [[MOD-16]]
 - Read by: [[MOD-10]] (the day's Pricing, and the record of every estimate), [[MOD-12]] (the estimate table of a sweep)
 - Evidence: test_with_no_observations_the_estimate_is_the_prior, test_the_fit_recovers_a_known_elasticity_from_made_up_bookings, test_the_estimate_is_clamped_to_the_range
@@ -205,7 +207,8 @@ the plans, the model's request and answer, and what the command writes.
 ### DAT-24 [C] ArmResult
 - File: src/hotel_market/cli.py
 - Fields: ArmResult(mode, seeds, target), frozen: one elasticity mode over the seeds of a sweep.
-- Derived: changes (contribution), revenue_changes, target_changes, wins (seeds where the agent run earned more of the target), rate_changes, estimated and realised (summed over the seeds), rejected_at_an_end, the shock and other changes and gains ([[RUL-55]]), and estimates_on(day).
+- Derived: changes (contribution), revenue_changes, target_changes and wins, the seeds where the agent run earned more of the target.
+- Sums: rate_changes, estimated and realised (summed over the seeds), rejected_at_an_end, the shock and other changes and gains ([[RUL-55]]), and estimates_on(day).
 - Printed: a sweep with one mode prints the seeds table, and with several it prints one row per arm. Either way it prints where the gain came from, and an estimate table for each learn arm on REPORT_DAYS ([[RUL-53]]).
 - Written by: [[MOD-12]] (sweep)
 - Read by: [[MOD-12]]
@@ -213,17 +216,17 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-25 [C] The four sources
 - File: src/hotel_market/sources.py
-- Bookings: on_books(as_of_day) by [hotel row, stay day] after that day's bookings, rates(as_of_day) for each hotel's rate in force that day, and history(as_of_day), a [[DAT-26]].
+- Bookings: on_books(as_of_day) by [hotel row, stay day] after that day's bookings, and rates(as_of_day), each hotel's rate in force that day. history(as_of_day) is a [[DAT-26]].
 - RateShops: competitor_rates(shop_day, hotel, stay_day), median(...), the median of those rates, and median_history(as_of_day) by [shop day, hotel row, stay day].
 - Schedules: seats(as_of_day), the arriving seats by stay day as filed by the day. From them the interface computes seat_change(as_of_day) against the first schedule known and seat_revision(as_of_day) against the day before.
-- Events: known(as_of_day). Sources(bookings, shops, schedules, events) bundles one of each, and every method returns only what was known on the day it is asked on ([[RUL-03]]).
+- Events: known(as_of_day). Sources(bookings, shops, schedules, events) bundles one of each. Every method returns only what was known on the day it is asked on ([[RUL-03]]).
 - Written by: [[MOD-19]], the simulator's implementation, and [[MOD-21]], the one over the stored tables ([[DAT-28]])
 - Read by: [[MOD-07]], [[MOD-18]], [[MOD-16]], [[MOD-10]]; nothing on the agent's side reads anything else ([[DEC-40]])
 - Evidence: test_the_agent_reads_only_through_the_interfaces, test_the_simulated_sources_answer_as_of_the_day, test_the_stored_sources_answer_as_the_simulated_ones_do
 
 ### DAT-26 [C] BookingHistory
 - File: src/hotel_market/sources.py
-- Fields: BookingHistory(taken, rates, opening), frozen: the rooms each day's bookings took and the rate in force each day, by [day, hotel row, stay day] for the days before the one asked about.
+- Fields: BookingHistory(taken, rates, opening), frozen. taken holds the rooms each day's bookings took, and rates the rate in force each day. Both are by [day, hotel row, stay day] for the days before the one asked about.
 - Values: zero outside each day's window; opening is the rooms on the books before day 0 by [hotel row, stay day]. With the shop history it is what the estimator learns from.
 - Written by: [[MOD-19]] from the Books' daily log ([[DAT-07]])
 - Read by: [[MOD-16]]
@@ -232,7 +235,7 @@ the plans, the model's request and answer, and what the command writes.
 ### DAT-27 [C] Customer
 - File: src/hotel_market/customer.py
 - Fields: Customer(name, target, hotels, floor_share, ceiling_share, cost_share, pace_share, pace_noise_sd, seat_threshold, median_threshold, hold_days, min_value_at_stake, curve_days_out, curve_share), frozen.
-- Methods: hotel(key) finds a hotel ([[DAT-04]]), curve(days_out) is the booking curve ([[CON-01]]), linear between the pinned points, and scores_contribution() says whether the target is contribution ([[RUL-58]]).
+- Methods: hotel(key) finds a hotel ([[DAT-04]]), and curve(days_out) is the booking curve ([[CON-01]]), linear between the pinned points. scores_contribution() says whether the target is contribution ([[RUL-58]]).
 - Settings: one market's description and settings, read from its TOML file by load(path) ([[MOD-20]]). The demo market's settings are the nodes [[RUL-57]] to [[RUL-69]].
 - Written by: [[MOD-20]]; demo() holds the demo market, the default wherever no customer is given
 - Read by: [[MOD-05]], [[MOD-06]], [[MOD-07]], [[MOD-08]], [[MOD-10]], [[MOD-12]], [[MOD-16]], [[MOD-19]]
@@ -240,20 +243,19 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-28 [C] The stored tables
 - File: sql/schema.sql
-- Tables: seven, each keyed by as_of_day, the day a row was known on, with day -1 ([[RUL-73]]) for the position before the first day.
-- Feeds: daily_bookings (as_of_day, hotel, stay_day, rooms_taken, rooms_on_books, rate), one row per hotel and night in the window; rate_shops (as_of_day, hotel, stay_day, competitor, rate), every night from the shop day to the end of the schedule.
-- More feeds: schedule_snapshots (as_of_day, stay_day, seats), counted the way seats_by_day counts, and events (as_of_day, name, known_day, start_day, end_day, hotels, uplift, comp_rate_raise), one row per known event per day.
-- Output: flags (as_of_day, hotel, first_stay, last_stay, causes); plans, one row per candidate with its exact rates, estimate, versus_hold, band and is_best; and decisions, one row per entry and advice with the decisions.jsonl line in record.
-- Warehouse: the file's head lists the statements a cloud warehouse would change: the type names, PRIMARY KEY enforcement, the JSON text columns and the transaction.
-- Written by: [[MOD-21]]'s write_snapshot (from any sources) and write_decisions (from an agent's entries and advice), driven by run-day in [[MOD-12]]; a day's rows are deleted and written again ([[DEC-42]])
-- Read by: [[MOD-21]]'s four sources and its readers of a run, for run-day's playback and replay in [[MOD-12]]
+- Tables: seven, each keyed by as_of_day, the day a row was known on. Day -1 ([[RUL-73]]) holds the position before the first day.
+- Feeds: daily_bookings (as_of_day, hotel, stay_day, rooms_taken, rooms_on_books, rate) has a row per hotel and night in the window. rate_shops (as_of_day, hotel, stay_day, competitor, rate) runs from the shop day to the schedule's end.
+- More feeds: schedule_snapshots (as_of_day, stay_day, seats) is counted the way seats_by_day counts. events (as_of_day, name, known_day, start_day, end_day, hotels, uplift, comp_rate_raise) has one row per known event per day.
+- Output: flags (as_of_day, hotel, first_stay, last_stay, causes). plans has one row per candidate with its exact rates, estimate, versus_hold, band and is_best. decisions has one row per entry and advice, with the log line in record.
+- Warehouse: the file's head lists the statements a cloud warehouse would change. They are the type names, PRIMARY KEY enforcement, the JSON text columns and the transaction.
+- Used by: [[MOD-21]] writes them with write_snapshot and write_decisions, driven by run-day in [[MOD-12]], deleting a day's rows first ([[DEC-42]]). Its four sources and run readers read them back for run-day's playback and replay.
 - Evidence: test_the_schema_is_seven_tables_each_keyed_by_as_of_day, test_a_60_day_run_through_the_tables_gives_the_same_decisions_file, test_running_a_day_twice_leaves_the_tables_unchanged
 
 ### DAT-29 [C] The recorded live run
 - File: tests/fixtures/live_seed7/
-- Fields: the seven cache records ([[DAT-17]]) of one live run of seed 7 in the default mode with claude-opus-5-5, day010_convention.json to day034_convention.json, each with the request, its digest and the model's decisions.
-- Calls: calls.jsonl, one line per call with its input and output tokens, cache tokens, seconds, stop reason, answering model and request id, as [[MOD-22]] writes it.
-- Origin: copied from the run's cache/seed7/ and calls.jsonl on the day of the run, the fourth live run of the seed, made after each range became one phrase ([[DEC-44]], [[RES-08]]).
+- Fields: the seven cache records ([[DAT-17]]) of one live run of seed 7 in the default mode with claude-opus-5-5. The files day010_convention.json to day034_convention.json each hold the request, its digest and the model's decisions.
+- Calls: calls.jsonl, one line per call, as [[MOD-22]] writes it. A line holds the input and output tokens, cache tokens, seconds, stop reason, answering model and request id.
+- Origin: copied from the run's cache/seed7/ and calls.jsonl on the day of the run. It was the fourth live run of the seed, made after each range became one phrase ([[DEC-44]], [[RES-08]]).
 - Stale: a change to the request makes the fixture stale, and the replay test then says to record a run again.
 - Written by: scripts/live_audit.py's live run, then copied by hand
 - Read by: tests/test_live_audit.py. The audit on it finds no declined plan, no figure outside its request and no sentence without a request figure. With it as the cache, seed 7 replays without a key and ends at +$28,818 ([[RES-09]]).

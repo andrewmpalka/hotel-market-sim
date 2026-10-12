@@ -13,9 +13,9 @@ decisions ([[DEC-01]] onwards) keep at most one headline figure each and link
 here for the rest.
 
 ### RES-01 [C] The default agent on seeds 1 to 20
-- Ran: `hotel-market --seeds 1 20`, the agent against the fixed-rate run on each seed, template reasons, the simulator's elasticity, stay dates 0 to 149.
-- Result: the agent run earns +$32,899 more contribution a seed, from +$13,479 to +$52,809, and is ahead in 20 of 20 seeds.
-- Detail: room revenue falls $22,861 a seed; the agent changes 179 rates in all; the accepted plans' estimates sum to 1.04 times the realised gain ($681,054 against $657,979).
+- Ran: `hotel-market --seeds 1 20`: the agent against the fixed-rate run on each seed, with template reasons and the simulator's elasticity. The runs cover stay dates 0 to 149.
+- Result: the agent run earns +$32,899 more contribution a seed, from +$13,479 to +$52,809. It is ahead in 20 of 20 seeds.
+- Detail: room revenue falls $22,861 a seed, and the agent changes 179 rates in all. The accepted plans' estimates sum to 1.04 times the realised gain ($681,054 against $657,979).
 - Table: docs/results.md, "Seeds 1 to 20 in the default mode"
 - Evidence: test_the_default_mode_still_gives_a_20_seed_mean_of_32899
 - Links: [[DEC-21]], [[DEC-36]], [[DEC-38]], [[MEA-05]], [[RES-02]], [[RES-06]]
@@ -23,58 +23,58 @@ here for the rest.
 ### RES-02 [C] Seed 7 in the default mode
 - Ran: `hotel-market --seed 7 --template`, both runs of seed 7 with template reasons in the default mode.
 - Result: the agent run earns +$28,818 of contribution (+0.2%) and $35,019 less room revenue than the fixed-rate run.
-- Flags: 113 flags on days 0 to 59; 7 change a rate, 49 are held because no change beats hold, and 57 are held under the $250 minimum, the day-40 take-back at the airport hotel ($132) among them.
-- Pairs: the 93 hotel-nights the agent changed carry the whole gain, +1.6% on them; the other 507 book identically in both runs.
-- Fixed rates: occupancy over stay dates 0 to 59 is 75.7%, 76.0%, 76.6% and 83.7% by hotel; stay dates 140 to 149 end 78% to 91% full, and the emptiest of those nights is 57% full.
+- Flags: 113 flags on days 0 to 59. 7 change a rate, 49 are held because no change beats hold, and 57 are held under the $250 minimum. The day-40 take-back at the airport hotel ($132) is one of the 57.
+- Pairs: the 93 hotel-nights the agent changed carry the whole gain, +1.6% on them. The other 507 book identically in both runs.
+- Fixed rates: occupancy over stay dates 0 to 59 is 75.7%, 76.0%, 76.6% and 83.7% by hotel. Stay dates 140 to 149 end 78% to 91% full, and the emptiest of those nights is 57% full.
 - Table: docs/results.md, "Seed 7, days 0 to 59", "Seed 7 over only the 93", "Seed 7 with fixed rates"
 - Evidence: test_the_default_mode_still_gives_28818_on_seed_7, test_every_other_pair_books_the_same_in_both_runs, test_fixed_rate_occupancy_is_between_60_and_90_percent_for_stay_dates_0_to_59
 - Links: [[DEC-05]], [[DEC-12]], [[DEC-17]], [[DEC-22]], [[SHK-04]], [[DAT-20]], [[MOD-12]], [[RES-01]]
 
 ### RES-03 [O] A wrong elasticity, fixed:1.0 and fixed:2.0, on seeds 1 to 20
 - Ran: `hotel-market --seeds 1 20 --elasticity true --elasticity fixed:1.0 --elasticity fixed:2.0`, each arm against the same fixed-rate runs, template reasons.
-- Result: fixed:1.0 earns +$8,438 a seed, ahead in 14 of 20, with 515 rate changes; fixed:2.0 earns +$9,551, ahead in 18 of 20, with 486.
-- Detail: a wrong value loses about three quarters of the true arm's gain; the accepted plans' estimates are 38.7 and 13.0 times the realised gain.
+- Result: fixed:1.0 earns +$8,438 a seed, ahead in 14 of 20, with 515 rate changes. fixed:2.0 earns +$9,551, ahead in 18 of 20, with 486.
+- Detail: a wrong value loses about three quarters of the true arm's gain. The accepted plans' estimates are 38.7 and 13.0 times the realised gain.
 - Table: docs/results.md, "Seeds 1 to 20 per elasticity arm"
 - Links: [[DEC-38]], [[CON-06]], [[RES-01]], [[RES-04]], [[RES-06]], [[UNK-07]]
 
 ### RES-04 [O] A learned elasticity, learn:1.0 and learn:2.0, on seeds 1 to 20
 - Ran: `hotel-market --seeds 1 20 --elasticity learn:1.0 --elasticity learn:2.0`, each arm against the same fixed-rate runs, template reasons.
-- Result: learn:1.0 earns +$14,141 a seed, ahead in 16 of 20, with 373 rate changes; learn:2.0 earns +$16,258, ahead in 20 of 20, with 418.
-- Detail: learning wins back about a quarter of what a wrong value loses; the accepted plans' estimates are 18.3 and 5.2 times the realised gain.
-- Estimates: by day 59 the per-hotel means reach 1.36 to 1.45 from a prior of 1.0 and 1.55 to 1.68 from 2.0; on days 10 and 20 they still sit near the prior.
+- Result: learn:1.0 earns +$14,141 a seed, ahead in 16 of 20, with 373 rate changes. learn:2.0 earns +$16,258, ahead in 20 of 20, with 418.
+- Detail: learning wins back about a quarter of what a wrong value loses. The accepted plans' estimates are 18.3 and 5.2 times the realised gain.
+- Estimates: by day 59 the per-hotel means reach 1.36 to 1.45 from a prior of 1.0. From 2.0 they reach 1.55 to 1.68, and on days 10 and 20 they still sit near the prior.
 - Checked: test_plain_learn_mode_gives_the_same_results_as_before pins seed 7 of the learn:1.0 arm at +$2,931 and 17 rate changes.
 - Table: docs/results.md, "Seeds 1 to 20 per elasticity arm", "The learning agent's day-59 elasticity estimates"
 - Links: [[DEC-38]], [[MOD-16]], [[RES-03]], [[RES-05]], [[RES-10]], [[UNK-07]]
 
 ### RES-05 [O] The cautious rule on seeds 1 to 20
 - Ran: `hotel-market --seeds 1 20 --elasticity learn:1.0 --elasticity learn:2.0 --cautious`, each arm against the same fixed-rate runs, template reasons.
-- Result: learn:1.0 cautious earns +$25,076 a seed (+$8,406 to +$53,535), ahead in 20 of 20, with 299 changes; learn:2.0 cautious earns +$17,634 (+$5,839 to +$27,585), 20 of 20, with 240.
-- Detail: the rule keeps 76% of the true arm's gain from a prior of 1.0 against 43% without it, and 54% from 2.0 against 49%; the estimates are 7.7 and 2.5 times the gain.
-- Rejected: 3,294 and 2,681 candidates beat hold at the estimate but lost at one end of the band; from 1.0 most rejections are raises at the high end, from 2.0 cuts at the low end.
-- Minimum: the band alone and the band with a $250 minimum per day of the week differ by $8 and $16 a seed, so the band does the work ([[DEC-43]]).
+- Result: learn:1.0 cautious earns +$25,076 a seed (+$8,406 to +$53,535), ahead in 20 of 20, with 299 changes. learn:2.0 cautious earns +$17,634 (+$5,839 to +$27,585), 20 of 20, with 240.
+- Detail: from a prior of 1.0 the rule keeps 76% of the true arm's gain, against 43% without it. From 2.0 it keeps 54% against 49%, and the estimates are 7.7 and 2.5 times the gain.
+- Rejected: 3,294 and 2,681 candidates beat hold at the estimate but lost at one end of the band. From 1.0 most rejections are raises at the high end, and from 2.0 cuts at the low end.
+- Minimum: a per-weekday $250 minimum on top of the band moves the means by $8 and $16 a seed. The band does the work ([[DEC-43]]).
 - Table: docs/results.md, "Seeds 1 to 20 per elasticity arm", "The cautious rule with and without"
 - Links: [[DEC-39]], [[DEC-43]], [[CON-11]], [[RES-04]], [[RES-06]], [[RES-13]]
 
 ### RES-06 [O] Where the gain came from, by arm
-- Ran: every sweep of seeds 1 to 20 reports the plans the convention (day 10) and the new flights (day 20) raised apart from every other plan ([[RUL-55]]).
-- Result: in the true arm 97 shock plans earn +$632,532 over the 20 seeds and 82 other plans earn +$25,447, so the shock plans give 96% of the gain.
-- Detail: in every arm nearly all of the gain sits in the shock plans; the hundreds of other changes a wrong elasticity provokes earn almost nothing.
+- Ran: every sweep of seeds 1 to 20 reports the shock plans apart from every other plan ([[RUL-55]]). The shock plans are those the convention (day 10) and the new flights (day 20) raised.
+- Result: in the true arm 97 shock plans earn +$632,532 over the 20 seeds, and 82 other plans earn +$25,447. The shock plans therefore give 96% of the gain.
+- Detail: in every arm nearly all of the gain sits in the shock plans. The hundreds of other changes a wrong elasticity provokes earn almost nothing.
 - Table: docs/results.md, "Where each arm's gain came from"
 - Links: [[DAT-24]], [[RUL-55]], [[SHK-01]], [[SHK-02]], [[RES-01]], [[RES-03]], [[RES-04]], [[RES-05]]
 
 ### RES-07 [O] The revenue target on seeds 1 to 20
-- Ran: `hotel-market --seeds 1 20 --target revenue`, the simulator's elasticity and the template, against the same fixed-rate runs as the contribution target.
-- Result: the revenue target earns +$211,445 of room revenue a seed, ahead in 20 of 20 and about 1% of the fixed-rate revenue, and +$461 of contribution, ahead in 11 of 20.
-- Detail: it changes 659 rates against the contribution target's 179; on seed 7, 65 of its 85 changed days of the week are 5% cuts, and the raises sit on nights that sell out.
-- Estimates: the accepted plans' estimates sum to 0.99 of the realised revenue gain ($4,191,156 against $4,228,903); $4,144,589 of it comes from the 130 shock plans, where the agent cut rates.
+- Ran: `hotel-market --seeds 1 20 --target revenue`, with the simulator's elasticity and the template. The arm runs against the same fixed-rate runs as the contribution target.
+- Result: the revenue target earns +$211,445 of room revenue a seed, ahead in 20 of 20. That is about 1% of the fixed-rate revenue. It earns +$461 of contribution, ahead in 11 of 20.
+- Detail: it changes 659 rates against the contribution target's 179. On seed 7, 65 of its 85 changed days of the week are 5% cuts. The raises sit on nights that sell out.
+- Estimates: the accepted plans' estimates sum to 0.99 of the realised revenue gain ($4,191,156 against $4,228,903). $4,144,589 of the gain comes from the 130 shock plans, where the agent cut rates.
 - Table: docs/results.md, "Seeds 1 to 20 with the simulator's elasticity and the template, each target"
 - Links: [[DEC-41]], [[RUL-58]], [[FRK-01]], [[CON-07]], [[MEA-04]], [[RES-01]]
 
 ### RES-08 [C] Four live runs of seed 7, one per request format
 - Ran: `python scripts/live_audit.py --seed 7` four times with claude-opus-5-5, the request format changing between the runs ([[DEC-44]]).
-- Result: each run makes the same 7 calls as the template run, and the model accepts all 7 plans every time, 28 of 28, so contribution ends at +$28,818 each time.
-- Tokens: the input was 20,329 tokens with bare numbers, 37,107 with a raw value beside each display string, 24,219 with display strings and named-pair ranges, and 21,148 with each range as one phrase.
-- Reasons: the first run wrote figures its own way and added claims the entry does not make; the second put direction words on signs; the third joined range ends with its own words; the fourth copied every phrase whole.
+- Result: each run makes the same 7 calls as the template run. The model accepts all 7 plans every time, 28 of 28, so contribution ends at +$28,818 each time.
+- Tokens: the input was 20,329 tokens with bare numbers and 37,107 with a raw value beside each display string. It was 24,219 with display strings and named-pair ranges, and 21,148 with each range as one phrase.
+- Reasons: the first run wrote figures its own way and added claims the entry does not make. The second put direction words on signs, and the third joined range ends with its own words. The fourth copied every phrase whole.
 - Kept: only the fourth run is recorded, as [[DAT-29]]; the first three are quoted from the session that made them.
 - Table: docs/results.md, "Four live runs of seed 7"
 - Evidence: test_the_recorded_live_run_of_seed_7_passes_the_audit, test_the_recorded_live_run_replays_without_a_key_and_gives_28818
@@ -82,62 +82,62 @@ here for the rest.
 
 ### RES-09 [C] The recorded live run of seed 7, measured
 - Ran: the fourth live run of [[RES-08]]; its cache and its calls.jsonl are kept as [[DAT-29]].
-- Result: the 7 calls used 21,148 input tokens (1,744 to 3,923 a call) and 1,713 output tokens (124 to 524), and cost $0.12 at list prices of $4 and $20 per million tokens.
-- Time: the model took 32 s in all, 2.9 to 7.4 s a call with a median of 3.5 s, inside a run of 37 s with both simulations; no prompt cache was read or written.
-- Calls: every call ended with the stop reason end_turn; none was refused and none fell back to another model; every answer parsed and named the entry's id and an allowed choice.
+- Result: the 7 calls used 21,148 input tokens (1,744 to 3,923 a call) and 1,713 output tokens (124 to 524). They cost $0.12 at list prices of $4 and $20 per million tokens.
+- Time: the model took 32 s in all, 2.9 to 7.4 s a call with a median of 3.5 s. The whole run with both simulations took 37 s, and no prompt cache was read or written.
+- Calls: every call ended with the stop reason end_turn. None was refused and none fell back to another model. Every answer parsed and named the entry's id and an allowed choice.
 - Table: docs/results.md, "The recorded live run of seed 7"
 - Evidence: test_the_recorded_live_run_of_seed_7_passes_the_audit
 - Links: [[UNK-09]], [[UNK-02]], [[DAT-29]], [[MOD-22]], [[RUL-46]]
 
 ### RES-10 [C] The estimator against known elasticities
-- Ran: seed 7 in learn:1.5 mode with the simulator's ELASTICITY set to 1.0, 1.5 and 2.0 in turn; each hotel's day-59 estimate is compared with the truth.
+- Ran: seed 7 in learn:1.5 mode with the simulator's ELASTICITY set to 1.0, 1.5 and 2.0 in turn. Each hotel's day-59 estimate is compared with the truth.
 - Result: every estimate lands within 1.6 standard errors of the truth on seeds 7 and 3, where the test allows three.
 - Detail: on seed 7 the standard errors are 0.16 to 0.31 and each hotel has about 5,300 observations by day 59.
-- Variation: in a fixed-rate run the log rate ratio of the observations has a standard deviation of 0.011 to 0.027 by hotel, so the agent's own rate changes supply most of the usable variation.
-- Alone: on seed 7 those changes are 12% of the lifestyle and 37% of the airport observations; without them the bookings would pin the elasticity near 0.2 at the downtown hotels and 0.9 to 1.2 at the other two.
+- Variation: in a fixed-rate run the observations' log rate ratio has a standard deviation of 0.011 to 0.027 by hotel. The agent's own rate changes therefore supply most of the usable variation.
+- Alone: on seed 7 those changes are 12% of the lifestyle and 37% of the airport observations. Without them the bookings would pin the elasticity near 0.2 downtown and 0.9 to 1.2 at the other two hotels.
 - Table: docs/results.md, "The estimator against known elasticities", "Spread of the log rate ratio"
 - Evidence: test_the_day_59_estimate_recovers_the_simulators_elasticity, test_the_prior_holds_the_estimate_when_the_ratio_never_moves
 - Links: [[MOD-16]], [[DEC-38]], [[FRK-05]], [[UNK-07]], [[RES-04]]
 
 ### RES-11 [H] Seed 7 under the first agent designs
-- Ran: seed 7 with the first full agent: weekday rate factors, one candidate for all of a flag's stay dates, no minimum, and expected bookings capped at the unsold rooms.
-- Result: +$26,420 of contribution with 23 rate changes, several worth under $10, 8 of which lost money; the lifestyle hotel gained +$12,514, mostly on Fridays and Saturdays.
-- Detail: one stay date, the full-service hotel's 46, was changed five times across days 10 to 44, each time after its hold had expired.
-- Then: with flat rates, a plan per day of the week and the $250 minimum, the gain fell to +$22,894 and the lifestyle hotel's to +$5,832, with 10 changes and 22 flags held under the minimum.
+- Ran: seed 7 with the first full agent. It had weekday rate factors, one candidate for all of a flag's stay dates and no minimum. Expected bookings were capped at the unsold rooms.
+- Result: +$26,420 of contribution with 23 rate changes, several worth under $10, 8 of which lost money. The lifestyle hotel gained +$12,514, mostly on Fridays and Saturdays.
+- Detail: one stay date, the full-service hotel's 46, was changed five times across days 10 to 44. Each change came after its hold had expired.
+- Then: with flat rates, a plan per day of the week and the $250 minimum, the gain fell to +$22,894. The lifestyle hotel's fell to +$5,832, with 10 changes and 22 flags held under the minimum.
 - Replaced by: [[RES-12]]
 - Table: docs/results.md, "Seed 7 under earlier designs"
 - Links: [[DEC-06]], [[DEC-15]], [[DEC-16]], [[DEC-17]], [[DEC-18]], [[DEC-19]]
 
 ### RES-12 [H] Seed 7 and seeds 1 to 20 with the capped estimate
 - Ran: the agent with its estimated bookings capped at the unsold rooms ([[DEC-20]]), before E[min(N, unsold)].
-- Result: seed 7 earned +$22,894 and the 20-seed mean was +$27,350, ahead in 20 of 20 seeds both before and after the change.
-- Detail: the cap understated the day-20 airport plan by about half ($3,849 against $8,012 with booking noise counted), overstated the three biggest convention plans by $356 to $575 each, and held the 97%-full Wednesdays and Fridays.
-- Then: with the exact estimate seed 7 went to +$28,818 and the mean to +$32,899; the day-20 airport plan raises every night but Saturday and is worth $10,627.
+- Result: seed 7 earned +$22,894 and the 20-seed mean was +$27,350. The agent was ahead in 20 of 20 seeds both before and after the change.
+- Detail: the cap understated the day-20 airport plan by about half ($3,849 against $8,012 with booking noise counted). It overstated the three biggest convention plans by $356 to $575 each, and held the 97%-full Wednesdays and Fridays.
+- Then: with the exact estimate seed 7 went to +$28,818 and the mean to +$32,899. The day-20 airport plan raises every night but Saturday and is worth $10,627.
 - Replaced by: [[RES-01]]
 - Table: docs/results.md, "Seed 7 under earlier designs"
 - Links: [[DEC-19]], [[DEC-20]], [[DEC-21]], [[RES-02]]
 
 ### RES-13 [H] The cautious rule as first built
-- Ran: `hotel-market --seeds 1 20 --elasticity learn:1.0 --elasticity learn:2.0 --cautious` with the first rule, which also asked each day of the week to be worth $250 on its own.
-- Result: learn:1.0 cautious earned +$25,084 a seed with 299 changes and 1,205 candidates rejected at an end; learn:2.0 cautious earned +$17,618 with 229 changes and 766 rejected.
-- Detail: a diagnostic of the band alone gave +$25,076 and +$17,634 on the same seeds, so the per-day minimum did almost nothing and [[DEC-43]] removed it.
-- Rejections: on seeds 1, 2 and 7, 151 of 159 rejections from a prior of 1.0 were raises at the high end and 65 of 108 from 2.0 were cuts at the low end; the rule held 294 and 393 days of the week that plain mode changed.
-- Gain: from 1.0 the shock plans earned $487,235 of $501,683 from 103 changes; from 2.0 they earned $290,380, and the rule cut the other plans from 291 to 158 while their take rose from $30,370 to $61,983.
+- Ran: `hotel-market --seeds 1 20 --elasticity learn:1.0 --elasticity learn:2.0 --cautious` with the first rule. That rule also asked each day of the week to be worth $250 on its own.
+- Result: learn:1.0 cautious earned +$25,084 a seed with 299 changes and 1,205 candidates rejected at an end. learn:2.0 cautious earned +$17,618 with 229 changes and 766 rejected.
+- Detail: a diagnostic of the band alone gave +$25,076 and +$17,634 on the same seeds. The per-day minimum did almost nothing, so [[DEC-43]] removed it.
+- Rejections: on seeds 1, 2 and 7, 151 of 159 rejections from a prior of 1.0 were high-end raises. From 2.0, 65 of 108 were cuts at the low end. The rule held 294 and 393 days of the week that plain mode changed.
+- Gain: from 1.0 the shock plans earned $487,235 of $501,683 from 103 changes. From 2.0 they earned $290,380. The rule cut the other plans from 291 to 158, while their take rose from $30,370 to $61,983.
 - Replaced by: [[RES-05]]
 - Table: docs/results.md, "The cautious rule with and without"
 - Links: [[DEC-39]], [[DEC-43]], [[CON-11]]
 
 ### RES-14 [O] The stored tables' timings
-- Ran: `hotel-market run-day --seed 7 --as-of 59 --from 0` through a DuckDB file, and the tests that drive it, timed during development.
-- Result: the 60-day run through the tables takes about 6 seconds; one day on its own takes under a second, most of it the simulator's playback.
-- Detail: inserting rows one statement at a time took 2.5 seconds per 3,000 rows, so a day's rows go in as one frame; reading the events table once per detect row made a day take 2 seconds, so each source reads a day once.
-- Versions: the schema ran on DuckDB 1.2 and 1.5; it was read against the documentation of BigQuery, Snowflake and Redshift and not run on them ([[UNK-10]]).
+- Ran: `hotel-market run-day --seed 7 --as-of 59 --from 0` through a DuckDB file, timed during development. The tests that drive it were timed too.
+- Result: the 60-day run through the tables takes about 6 seconds. One day on its own takes under a second, most of it the simulator's playback.
+- Detail: inserting rows one statement at a time took 2.5 seconds per 3,000 rows. A day's rows therefore go in as one frame. Reading the events table once per detect row made a day take 2 seconds. Each source now reads a day once.
+- Versions: the schema ran on DuckDB 1.2 and 1.5. It was read against the documentation of BigQuery, Snowflake and Redshift and not run on them ([[UNK-10]]).
 - Table: docs/results.md, "Timings of the stored tables"
 - Links: [[DEC-42]], [[MOD-21]], [[DAT-28]], [[UNK-10]]
 
 ### RES-15 [O] The suite on each Python version
-- Ran: `python -m pytest --slow` from a fresh virtual environment on Python 3.12.6 and on 3.13.7, with numpy 2.5.4, pandas 3.0.6, duckdb 1.5.6 and anthropic 1.13.0, on 2026-10-12.
+- Ran: `python -m pytest --slow` from a fresh virtual environment on Python 3.12.6 and on 3.13.7, on 2026-10-12. The environments had numpy 2.5.4, pandas 3.0.6, duckdb 1.5.6 and anthropic 1.13.0.
 - Result: 235 tests passed on both versions, the slow 20-seed check included; the suite had run on Python 3.11 before.
-- Detail: the package was also installed and run against numpy 1.26 and pandas 2.2, the lower bounds in pyproject.toml, and a seed-7 run then reproduced decisions.jsonl byte for byte ([[DEC-28]]).
+- Detail: the package was also installed and run against numpy 1.26 and pandas 2.2, the lower bounds in pyproject.toml. A seed-7 run then reproduced decisions.jsonl byte for byte ([[DEC-28]]).
 - Table: docs/results.md, "The suite on each Python version"
 - Links: [[UNK-04]], [[DEC-28]], [[DEC-30]]

@@ -21,12 +21,12 @@ marked [H], with one line that names the node it moved to.
 
 ### RUL-02 [C] Every run takes a seed
 - Statement: two runs with the same seed and settings produce the same bookings and the same decisions.jsonl.
-- Draws: every random number comes from the seed before the run starts: competitor noise on stream [[RUL-20]], bookings on stream [[RUL-22]], one number per draw ([[DEC-22]]).
+- Draws: every random number comes from the seed before the run starts, one number per draw ([[DEC-22]]). Competitor noise uses stream [[RUL-20]] and bookings stream [[RUL-22]].
 - Where: [[MOD-05]], [[MOD-06]]
 - Evidence: test_same_seed_gives_the_same_books_and_another_seed_does_not, test_two_runs_with_the_same_seed_write_identical_decisions_files, test_rates_depend_only_on_the_seed
 
 ### RUL-03 [C] Nothing is used before the day it becomes known
-- Statement: every lookup takes the day it is made on. A flight counts from the day the airline files it, an event from the day it is announced, and a competitor's rate from the day it is shopped.
+- Statement: every lookup takes the day it is made on. A flight counts from the day the airline files it, and an event from the day it is announced. A competitor's rate counts from the day it is shopped.
 - Peak: the convention's peak night is computed from what is known on the day it is announced ([[DEC-02]], [[DEC-09]]).
 - Where: [[MOD-01]] (build_schedule(as_of_day)), [[MOD-03]] (events_as_of, rate_cuts_as_of), [[MOD-04]], [[MOD-05]], [[MOD-07]]
 - Evidence: test_nothing_changes_demand_before_day_10, test_shock_known_follows_what_is_known_on_the_day, test_peak_night_uses_what_is_known_on_the_day_the_event_becomes_known
@@ -135,7 +135,7 @@ marked [H], with one line that names the node it moved to.
 - Value: 0.03
 - File: src/hotel_market/shops.py
 - Kind: parameter
-- Meaning: each competitor's rate is off its base by up to 3% either way, drawn once per competitor and stay date ([[DEC-37]]).
+- Meaning: each competitor's rate is off its base by up to 3% either way. The noise is drawn once per competitor and stay date ([[DEC-37]]).
 - Evidence: test_competitor_rates_are_base_rate_x_noise_with_no_weekly_pattern
 
 ### RUL-20 [C] NOISE_STREAM
@@ -243,7 +243,7 @@ marked [H], with one line that names the node it moved to.
 - Value: 1.5
 - File: src/hotel_market/plan.py
 - Kind: parameter
-- Meaning: the elasticity the default mode prices with: the simulator's own value ([[RUL-21]]) handed to the agent as an oracle, which a real hotel does not have ([[DEC-40]]).
+- Meaning: the elasticity the default mode prices with. It is the simulator's own value ([[RUL-21]]), handed to the agent as an oracle ([[DEC-40]]). A real hotel does not have one.
 - Modes: the other modes replace it with a fixed value or a learned one ([[DEC-38]], [[RUL-49]]).
 - Evidence: test_elasticity_modes_parse_and_print, test_the_default_mode_still_gives_28818_on_seed_7
 
@@ -289,14 +289,14 @@ marked [H], with one line that names the node it moved to.
 - Value: ("true", "fixed", "learn")
 - File: src/hotel_market/plan.py
 - Kind: label
-- Meaning: where the agent's elasticity comes from: the simulator's own value, a fixed value, or one learned from the bookings ([[DAT-22]], [[DEC-38]]). The model sees the first as "assumed" ([[RUL-75]]).
+- Meaning: where the agent's elasticity comes from: the simulator's own value, a fixed value, or a learned one ([[DAT-22]], [[DEC-38]]). The model sees the first as "assumed" ([[RUL-75]]).
 - Evidence: test_elasticity_modes_parse_and_print, test_a_mode_that_is_not_true_fixed_or_learn_is_rejected
 
 ### RUL-54 [C] BAND_STANDARD_ERRORS
 - Value: 1
 - File: src/hotel_market/plan.py
 - Kind: parameter
-- Meaning: under the cautious rule ([[CON-11]], [[DEC-39]]) every candidate is also scored at the estimate this many standard errors lower and higher, clamped to [[RUL-51]] and [[RUL-52]].
+- Meaning: under the cautious rule ([[CON-11]], [[DEC-39]]) every candidate is also scored this many standard errors below and above the estimate. The band is clamped to [[RUL-51]] and [[RUL-52]].
 - Evidence: test_the_cautious_rule_scores_each_candidate_one_standard_error_either_side
 
 ## model.py
@@ -311,10 +311,10 @@ marked [H], with one line that names the node it moved to.
 ### RUL-47 [C] SYSTEM
 - File: src/hotel_market/model.py
 - Kind: label
-- Meaning: the system prompt. It tells the model what an entry is, that code picked the best candidate for each day of the week, and that it chooses the plan or "hold" for each entry.
-- Writing: the model writes as "we", states only what the entry shows, and makes no claim about price sensitivity or risk the entry does not contain ([[DEC-44]]).
-- Figures: every figure is written as a report writes it, with its direction in words. The model copies the phrases whole, with no sign, direction word or rounding of its own, and quotes no end of a range alone.
-- Allowed: "more than holding" may be written once in a sentence that lists several gains, and an event's name is written in lower case inside a sentence. The prompt also explains the modes "assumed", "fixed" and "learn".
+- Meaning: the system prompt. It tells the model what an entry is. Code picked the best candidate for each day of the week. The model chooses the plan or "hold" for each entry.
+- Writing: the model writes as "we" and states only what the entry shows. It makes no claim about price sensitivity or risk that the entry does not contain ([[DEC-44]]).
+- Figures: every figure is written as a report writes it, with its direction in words. The model copies the phrases whole, with no sign, direction word or rounding of its own. It quotes no end of a range alone.
+- Allowed: "more than holding" may be written once in a sentence that lists several gains. An event's name is written in lower case inside a sentence. The prompt also explains the modes "assumed", "fixed" and "learn".
 - Evidence: test_the_system_prompt_tells_the_model_how_to_choose_and_write
 
 ### RUL-75 [C] MODE_NAMES
@@ -392,7 +392,7 @@ marked [H], with one line that names the node it moved to.
 - Value: -1
 - File: src/hotel_market/stored.py
 - Kind: label
-- Meaning: the as_of_day of the position before the first day: the rooms already on the books, the first rate shop and the first schedule. It is a key for those rows, which run-day writes with day 0.
+- Meaning: the as_of_day of the position before the first day. That is the rooms already on the books, the first rate shop and the first schedule. It is a key for those rows, which run-day writes with day 0.
 - Evidence: test_the_daily_commands_run_a_day_and_replay_it, test_the_stored_sources_answer_as_the_simulated_ones_do
 
 ## customer.py

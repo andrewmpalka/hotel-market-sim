@@ -7,7 +7,7 @@ which is also the order in which they depend on each other.
 
 ### MOD-01 [C] schedule.py
 - File: src/hotel_market/schedule.py
-- Owns: the synthetic air schedule as known on a day (build_schedule), the seats arriving each day (seats_by_day), and the seat change against the no-shock schedule and against the day before.
+- Owns: the synthetic air schedule as known on a day (build_schedule) and the seats arriving each day (seats_by_day). It also gives the seat change against the no-shock schedule and against the day before.
 - Holds: both air shocks ([[SHK-02]], [[SHK-04]]) and the three counting traps: codeshare rows, the type U bus and the second airport. Its column names and signatures do not change.
 - Reads: nothing in the package
 - Writes: [[DAT-01]], [[DAT-02]], [[DAT-03]]
@@ -16,7 +16,7 @@ which is also the order in which they depend on each other.
 
 ### MOD-02 [C] world.py
 - File: src/hotel_market/world.py
-- Owns: the types a market is described with: Hotel and Competitor ([[DAT-04]]). A Hotel carries its rooms, start rate, air share, base occupancy, weekday factors, comp set, floor, ceiling, room cost and array row.
+- Owns: the types a market is described with: Hotel and Competitor ([[DAT-04]]). A Hotel carries its rooms, start rate, air share, base occupancy and weekday factors. It also carries its comp set, floor, ceiling, room cost and array row.
 - Holds: the calendar: SIM_DAYS ([[RUL-12]]), the 90-day window ([[RUL-13]]) and weekday. The hotels themselves come from the customer file ([[MOD-20]], [[DEC-41]]). Nothing here is random or secret.
 - Reads: [[MOD-01]] for SIM_START and HORIZON_DAYS
 - Writes: [[DAT-04]]
@@ -25,7 +25,7 @@ which is also the order in which they depend on each other.
 
 ### MOD-03 [C] shocks.py
 - File: src/hotel_market/shocks.py
-- Owns: the two shocks that are not in the schedule, the convention ([[SHK-01]]) and the competitor rate cut ([[SHK-03]]), as Event and RateCut records ([[DAT-05]]).
+- Owns: the two shocks that are not in the schedule: the convention ([[SHK-01]]) and the competitor rate cut ([[SHK-03]]). They are Event and RateCut records ([[DAT-05]]).
 - Lookups: events_as_of, event_uplift, comp_rate_raise and rate_cut, each as of a day. The Event type itself lives at the boundary ([[MOD-17]]), so both sides share it.
 - Reads: [[MOD-17]] for the Event type
 - Writes: [[DAT-05]]
@@ -34,8 +34,8 @@ which is also the order in which they depend on each other.
 
 ### MOD-04 [C] demand.py
 - File: src/hotel_market/demand.py
-- Owns: the simulator's demand per hotel and stay date as known on a day: rooms x base occupancy x weekday factor x seats x events. Also normal demand without seats or events.
-- Holds: the per-filing cache of seat changes (last_filing, known_seat_change). The agent never reads this module; its own demand model is [[MOD-18]], which matches it by construction for the demo market.
+- Owns: the simulator's demand per hotel and stay date as known on a day. The formula is rooms x base occupancy x weekday factor x seats x events. Normal demand leaves out seats and events.
+- Holds: the per-filing cache of seat changes (last_filing, known_seat_change). The agent never reads this module. Its own demand model is [[MOD-18]], which matches it by construction for the demo market.
 - Reads: [[MOD-01]], [[MOD-02]], [[MOD-03]], [[MOD-20]]
 - Writes: nothing stored; the functions are pure functions of what is known on a day
 - Tests: tests/test_demand.py
@@ -43,8 +43,8 @@ which is also the order in which they depend on each other.
 
 ### MOD-05 [C] shops.py
 - File: src/hotel_market/shops.py
-- Owns: the rate shop: each competitor's rate for a stay date as seen on a shop day, and the comp median ([[DAT-06]]).
-- Holds: NOISE ([[RUL-19]]) and NOISE_STREAM ([[RUL-20]]). Rates are flat across the week ([[DEC-16]]), and the noise is drawn once per competitor and stay date from the seed ([[DEC-37]]).
+- Owns: the rate shop: each competitor's rate for a stay date as seen on a shop day, and their median ([[DAT-06]]).
+- Holds: NOISE ([[RUL-19]]) and NOISE_STREAM ([[RUL-20]]). Rates are flat across the week ([[DEC-16]]). The noise is drawn once per competitor and stay date from the seed ([[DEC-37]]).
 - Reads: [[MOD-01]], [[MOD-02]], [[MOD-03]], [[MOD-20]]
 - Writes: [[DAT-06]]
 - Tests: tests/test_shops.py
@@ -52,8 +52,8 @@ which is also the order in which they depend on each other.
 
 ### MOD-06 [C] bookings.py
 - File: src/hotel_market/bookings.py
-- Owns: the day-0 preload ([[DEC-03]]), the Poisson quantile draw with one random number per draw ([[DEC-22]]), the Books ([[DAT-07]]) and simulate(), the loop over days 0 to 149.
-- Holds: the five measures [[MEA-01]] to [[MEA-05]] as Books methods, and the daily log of what each draw took, at what rate and against which median. ELASTICITY ([[RUL-21]]) and BOOKING_STREAM ([[RUL-22]]) live here.
+- Owns: the day-0 preload ([[DEC-03]]) and the Poisson quantile draw with one random number per draw ([[DEC-22]]). It also owns the Books ([[DAT-07]]) and simulate(), the loop over days 0 to 149.
+- Holds: the five measures [[MEA-01]] to [[MEA-05]] as Books methods. The daily log records what each draw took, at what rate and against which median. ELASTICITY ([[RUL-21]]) and BOOKING_STREAM ([[RUL-22]]) live here.
 - Calls: the agent after each of days 0 to 59 ([[DEC-05]]); the estimator learns from the log ([[MOD-16]]).
 - Reads: [[MOD-01]], [[MOD-02]], [[MOD-04]], [[MOD-05]], [[MOD-20]]
 - Writes: [[DAT-07]]
@@ -62,7 +62,7 @@ which is also the order in which they depend on each other.
 
 ### MOD-07 [C] detect.py
 - File: src/hotel_market/detect.py
-- Owns: the detect numbers for every hotel and stay date after a day's bookings ([[DAT-08]]), the causes each stay date is flagged for, and the flags that merge consecutive stay dates with the same causes ([[DAT-09]]).
+- Owns: the detect numbers for every hotel and stay date after a day's bookings ([[DAT-08]]). It assigns each stay date its causes and merges consecutive stay dates with the same causes into flags ([[DAT-09]]).
 - Holds: the hold on pace flags ([[DEC-06]]) and the cause labels ([[RUL-31]] to [[RUL-38]]). The thresholds and the hold period come from the customer ([[RUL-62]] to [[RUL-66]]).
 - Reads: [[MOD-02]], [[MOD-17]] (the sources), [[MOD-18]] (the forecast), [[MOD-20]]; never the simulator ([[DEC-40]])
 - Writes: [[DAT-08]], [[DAT-09]]
@@ -71,19 +71,18 @@ which is also the order in which they depend on each other.
 
 ### MOD-08 [C] plan.py
 - File: src/hotel_market/plan.py
-- Owns: what the agent could do about a flag and what each option is worth: the candidates ([[DAT-11]]) for each day of the week ([[DAT-12]]), their estimates, the flag's numbers ([[DAT-13]]) and the Entry ([[DAT-14]]).
-- Estimate: E[min(N, unsold)] bookings ([[DEC-21]]) times the margin, or the rate under a revenue target ([[RUL-58]]), summed over a flag's stay dates. The elasticity comes from a Pricing record ([[DAT-21]]).
-- Cautious: under the cautious rule ([[CON-11]], [[DEC-39]]) each estimate is made again at both ends of the pricing's band, and a change must beat hold at all three.
+- Owns: what the agent could do about a flag and what each option is worth. It builds each weekday's candidates ([[DAT-11]], [[DAT-12]]) and their estimates, the flag's numbers ([[DAT-13]]) and the Entry ([[DAT-14]]).
+- Estimate: E[min(N, unsold)] bookings ([[DEC-21]]) on each StayDate ([[DAT-10]]) times the margin, summed over the flag. Under a revenue target the rate replaces the margin ([[RUL-58]]). The elasticity comes from a Pricing ([[DAT-21]]).
+- Cautious: under the cautious rule ([[CON-11]], [[DEC-39]]) each estimate is made again at both ends of the pricing's band. A change must beat hold at all three.
 - Holds: ORACLE_ELASTICITY ([[RUL-56]]), MODES ([[RUL-49]]), BAND_STANDARD_ERRORS ([[RUL-54]]), the candidate names and factors ([[RUL-41]] to [[RUL-45]]). The minimum ([[RUL-67]]) and the target come from the customer.
 - Reads: [[MOD-02]], [[MOD-07]], [[MOD-16]] (the estimator's bounds), [[MOD-20]]; never the simulator ([[DEC-40]])
-- Writes: [[DAT-10]], [[DAT-11]], [[DAT-12]], [[DAT-13]], [[DAT-14]]
 - Tests: tests/test_plan.py
 - Evidence: test_estimate_is_expected_contribution_on_the_unsold_rooms, test_a_plan_lists_its_changes_by_day_of_week, test_under_the_cautious_rule_a_candidate_that_loses_at_one_end_is_held
 
 ### MOD-09 [C] model.py
 - File: src/hotel_market/model.py
-- Owns: the model call: the request the model sees ([[DAT-16]]), the system prompt ([[RUL-47]]), the answer schema built from the request's own options ([[DEC-34]]), and the check of the answer against those options.
-- Holds: the cache of the model's answers ([[DAT-17]], [[DEC-23]], [[DEC-25]]), the template that answers without an API key from the request's display strings, and the Claude client with its refusal fallback.
+- Owns: the model call: the request the model sees ([[DAT-16]]) and the system prompt ([[RUL-47]]). It builds the answer schema from the request's own options ([[DEC-34]]) and checks the answer against them.
+- Holds: the cache of the model's answers ([[DAT-17]], [[DEC-23]], [[DEC-25]]) and the Claude client with its refusal fallback. The template answers without an API key from the request's display strings.
 - Names: MODEL ([[RUL-46]]) and MODE_NAMES ([[RUL-75]]). Every figure in the request is a display string from [[MOD-11]] ([[DEC-44]]).
 - Reads: [[MOD-02]], [[MOD-07]], [[MOD-08]], [[MOD-11]]
 - Writes: [[DAT-16]], [[DAT-17]]
@@ -92,20 +91,19 @@ which is also the order in which they depend on each other.
 
 ### MOD-10 [C] agent.py
 - File: src/hotel_market/agent.py
-- Owns: the daily decision, decide(day, sources): detect numbers to flags to entries, the queue of plans worth the minimum, one model or template call per hotel, the accepted rate changes with their hold, and the log.
+- Owns: the daily decision, decide(day, sources): detect numbers, flags, entries and the queue of plans worth the minimum. It makes one model or template call per hotel and records the accepted changes, their hold and the log ([[DAT-18]]).
 - Advice: the minimum-stay advice ([[DAT-15]], [[DEC-10]]), named by MIN_STAY ([[RUL-48]]).
-- Modes: the elasticity modes ([[DAT-22]]): true, fixed:X or learn:X. In learn mode it re-estimates every hotel's elasticity every day ([[MOD-16]], [[DEC-38]]) and passes the cautious flag into each day's pricing ([[CON-11]]).
-- Resume: plans_for() builds a day's entries, advice_for() the advice, and resume() picks up the hold and the advice earlier days left, which is how a table-backed run gives each day's agent its state ([[MOD-21]], [[DEC-42]]).
+- Modes: the elasticity modes ([[DAT-22]]): true, fixed:X or learn:X. In learn mode it re-estimates every hotel's elasticity every day ([[MOD-16]], [[DEC-38]]). It passes the cautious flag into each day's pricing ([[CON-11]]).
+- Resume: plans_for() builds a day's entries and advice_for() the advice. resume() picks up the hold and the advice that earlier days left. That is how a table-backed run gives each day's agent its state ([[MOD-21]], [[DEC-42]]).
 - Reads: [[MOD-02]], [[MOD-07]], [[MOD-08]], [[MOD-09]], [[MOD-16]], [[MOD-17]], [[MOD-18]], [[MOD-20]]; never the simulator, which wraps it with deciding() ([[MOD-19]])
-- Writes: [[DAT-15]], [[DAT-18]]
 - Tests: tests/test_agent.py
 - Evidence: test_accepted_rates_apply_and_hold_those_stay_dates_for_7_days, test_a_model_that_declines_changes_no_rate, test_each_mode_records_the_elasticity_its_plans_assume
 
 ### MOD-11 [C] text.py
 - File: src/hotel_market/text.py
-- Owns: the wording the template reasons and the printed reports share, so that a number reads the same wherever it appears: stay_range, money_range, percent_range, pace_text and capitalize_first.
+- Owns: the wording the template reasons and the printed reports share, so that a number reads the same wherever it appears. The shared helpers are stay_range, money_range, percent_range, pace_text and capitalize_first.
 - Strings: the display strings the request carries in place of every figure ([[DEC-44]]): dollars, tens_of_dollars, percent_change, against_median, versus_holding, rooms and number.
-- Ranges: span, money_range, percent_change_range and against_median_range write a range as one phrase, and the single value when both ends read the same. A signed quantity reads with its direction in words.
+- Ranges: span, money_range, percent_change_range and against_median_range write a range as one phrase. They write the single value when both ends read the same. A signed quantity reads with its direction in words.
 - Reads: nothing in the package
 - Writes: nothing
 - Tests: tests/test_text.py; tests/test_model.py and tests/test_cli.py exercise it through the reasons and the reports
@@ -113,12 +111,11 @@ which is also the order in which they depend on each other.
 
 ### MOD-12 [C] cli.py
 - File: src/hotel_market/cli.py
-- Owns: the hotel-market command: the fixed-rate and agent runs, decisions.jsonl ([[DAT-18]]), the replay of a day, the printed queues and the summary tables ([[DAT-20]]), and the argument checks.
-- Sweep: the sweep over seeds ([[DAT-19]]) with one arm per --elasticity mode ([[DAT-24]]) and --cautious on the learn arms, with the arm, source and estimate tables. --customer and --target name the market and its target ([[MOD-20]], [[DEC-41]]).
-- Daily: run_days() plays the simulator to a day with the stored rate changes, writes the feeds, runs a fresh agent on the tables ([[MOD-21]]) and writes its output. replay_day() rebuilds a day's plans from the tables and checks them ([[DEC-42]]).
+- Owns: the hotel-market command: the fixed-rate and agent runs, decisions.jsonl ([[DAT-18]]) and the replay of a day. It prints the queues and the summary tables ([[DAT-20]]) and checks the arguments.
+- Sweep: the sweep over seeds ([[DAT-19]]), one arm per --elasticity mode ([[DAT-24]]), with --cautious on the learn arms. It prints the arm, source and estimate tables. --customer and --target name the market and its target ([[DEC-41]]).
+- Daily: run_days() plays the simulator to a day with the stored changes and writes the feeds. A fresh agent then runs on the tables ([[MOD-21]]). replay_day() rebuilds a day's plans from the tables and checks them ([[DEC-42]]).
 - Holds: REPORT_DAYS ([[RUL-53]]), SHOCK_PLAN_CAUSES ([[RUL-55]]), DAILY_COMMANDS ([[RUL-74]]) and DEFAULT_DB, the file the daily commands keep the tables in.
 - Reads: [[MOD-01]], [[MOD-02]], [[MOD-06]], [[MOD-08]], [[MOD-09]], [[MOD-10]], [[MOD-11]], [[MOD-16]], [[MOD-19]], [[MOD-20]], [[MOD-21]]
-- Writes: [[DAT-18]], [[DAT-19]], [[DAT-20]]
 - Tests: tests/test_cli.py
 - Evidence: test_two_runs_with_the_same_seed_write_identical_decisions_files, test_the_summary_compares_both_runs_on_the_changed_pairs, test_the_daily_commands_run_a_day_and_replay_it
 
@@ -140,9 +137,9 @@ which is also the order in which they depend on each other.
 
 ### MOD-15 [C] kg_check.py
 - File: kg_check.py
-- Owns: the checks that this graph agrees with the code: links resolve, every source file has a MOD node, every [C] node cites tests that exist or is a reviewed policy node, and every [H] node links to its replacement.
-- Checks: every constant's value and kind match the code, every customer setting has a node, every measure's function exists, every RES node names a table in docs/results.md, and the index is the one it writes with --write-index.
-- Limits: a field line has at most 240 characters and a node at most 8 fields. A commit named in a Commit field is looked up when the history is present and reported as a warning, never a failure.
+- Owns: the checks that this graph agrees with the code. Links resolve, every source file has a MOD node, and every [H] node links to its replacement. Every [C] node cites tests that exist or is a reviewed policy node.
+- Checks: every constant's value and kind match the code, and every customer setting has a node. Every measure's function exists, and every RES node names a table in docs/results.md. The index is the one it writes with --write-index.
+- Limits: a field line has at most 240 characters and a node at most 8 fields. A commit named in a Commit field is looked up when the history is present. A miss is a warning, never a failure.
 - Reads: the package modules, to read the constants' values
 - Writes: kg/index.md with --write-index; otherwise nothing. It prints the problems and exits 1 when there are any
 - Tests: tests/test_kg.py
@@ -150,8 +147,8 @@ which is also the order in which they depend on each other.
 
 ### MOD-16 [C] estimate.py
 - File: src/hotel_market/estimate.py
-- Owns: the agent's own estimate of the elasticity ([[CON-06]], [[DEC-38]]): the observations it may use on a day, the Poisson regression with the log baseline as an offset and the normal prior, and the clamp.
-- Observations: one per stay date and booking day, from the booking history and the shop history of the sources ([[DAT-26]]): bookings made before the day, inside the day's window and before the stay date sold out, never the opening rooms.
+- Owns: the agent's own estimate of the elasticity ([[CON-06]], [[DEC-38]]). It gathers the observations it may use on a day. It fits a Poisson regression with the log baseline as an offset and a normal prior, and clamps the result.
+- Observations: one per stay date and booking day, from the sources' booking and shop histories ([[DAT-26]]). They are bookings made before the day, inside the day's window and before the stay date sold out. The opening rooms never count.
 - Holds: PRIOR_SD ([[RUL-50]]), ELASTICITY_MIN ([[RUL-51]]) and ELASTICITY_MAX ([[RUL-52]]). The baseline comes from the agent's own forecast ([[MOD-18]]).
 - Reads: [[MOD-02]], [[MOD-17]] (the sources), [[MOD-18]] (the forecast), [[MOD-20]] (the booking curve); never the simulator ([[DEC-40]])
 - Writes: [[DAT-23]]
@@ -160,9 +157,9 @@ which is also the order in which they depend on each other.
 
 ### MOD-17 [C] sources.py
 - File: src/hotel_market/sources.py
-- Owns: the boundary between the agent and its data: the four interfaces ([[DAT-25]]) for bookings, competitor rate shops, air schedules and events, the Event type ([[DAT-05]]), the BookingHistory record ([[DAT-26]]) and the Sources bundle.
+- Owns: the boundary between the agent and its data: the four interfaces ([[DAT-25]]) for bookings, rate shops, air schedules and events. It also holds the Event type ([[DAT-05]]), BookingHistory ([[DAT-26]]) and the Sources bundle.
 - Rule: every method takes the day it is asked on and returns only what was known then. The module holds no data and no truth ([[DEC-40]]).
-- Seats: the schedule interface asks an implementation only for the seats arriving each day as filed, and computes the seat change and the seat revision itself (seat_fraction), so every implementation counts the same way ([[DEC-42]]).
+- Seats: the schedule interface asks an implementation only for the seats arriving each day as filed. It computes the seat change and the seat revision itself (seat_fraction), so every implementation counts the same way ([[DEC-42]]).
 - Reads: [[MOD-02]] for the Hotel type
 - Writes: nothing
 - Tests: tests/test_sources.py
@@ -170,8 +167,8 @@ which is also the order in which they depend on each other.
 
 ### MOD-18 [C] forecast.py
 - File: src/hotel_market/forecast.py
-- Owns: the agent's own demand model: normal demand (rooms x base occupancy x weekday factor), expected demand as of a day from the schedule and event feeds, the event uplift, and an event's peak night ([[DEC-09]]).
-- Limit: it uses the same formula as the simulator's [[MOD-04]], which is the known limit that the agent's demand model is right by construction. A test holds the two equal for the demo market.
+- Owns: the agent's own demand model. Normal demand is rooms x base occupancy x weekday factor. Expected demand adds the schedule and event feeds as of a day. It also gives the event uplift and an event's peak night ([[DEC-09]]).
+- Limit: it uses the same formula as the simulator's [[MOD-04]]. That is the known limit that the agent's demand model is right by construction. A test holds the two equal for the demo market.
 - Reads: [[MOD-02]] (the hotels' settings, the calendar), [[MOD-17]] (the sources)
 - Writes: nothing stored
 - Tests: tests/test_forecast.py
@@ -179,8 +176,8 @@ which is also the order in which they depend on each other.
 
 ### MOD-19 [C] simulated.py
 - File: src/hotel_market/simulated.py
-- Owns: the simulator as the agent's four sources ([[DEC-40]]): SimulatedBookings over the Books' daily log ([[DAT-07]]), SimulatedRateShops from the seed and the logged medians, SimulatedSchedules over the schedule as filed, and SimulatedEvents.
-- Hooks: deciding() wraps an Agent as the simulator's decide hook, and watch() is the fixed-rate run that records every day's flags.
+- Owns: the simulator as the agent's four sources ([[DEC-40]]). SimulatedBookings reads the Books' daily log ([[DAT-07]]), and SimulatedRateShops the seed and the logged medians.
+- Also: SimulatedSchedules reads the schedule as filed, and SimulatedEvents the events. deciding() wraps an Agent as the simulator's decide hook, and watch() is the fixed-rate run that records every day's flags.
 - Reads: [[MOD-01]], [[MOD-02]], [[MOD-03]], [[MOD-04]], [[MOD-05]], [[MOD-06]], [[MOD-07]], [[MOD-10]], [[MOD-17]], [[MOD-20]]
 - Writes: [[DAT-25]], as their implementation
 - Tests: tests/test_sources.py, tests/test_detect.py
@@ -188,10 +185,9 @@ which is also the order in which they depend on each other.
 
 ### MOD-20 [C] customer.py
 - File: src/hotel_market/customer.py
-- Owns: everything specific to one market, read from its customer file ([[DEC-41]]): load(path) turns the TOML into a Customer ([[DAT-27]]) with its hotels ([[DAT-04]]), limits, thresholds, hold period, minimum, booking curve ([[CON-01]]) and target ([[RUL-58]]).
-- Checks: load() refuses a target outside TARGETS ([[RUL-70]]) and a repeated hotel key.
+- Owns: everything specific to one market, read from its customer file ([[DEC-41]]). load(path) turns the TOML into a Customer ([[DAT-27]]): hotels ([[DAT-04]]), limits, thresholds, hold, minimum, curve ([[CON-01]]) and target ([[RUL-58]]).
 - Default: demo() is the demo market, loaded once and the default wherever no customer is given. demo_path() finds it through CUSTOMER_VARIABLE ([[RUL-71]]), the working directory or the repository root.
-- Sides: both sides read the file, the simulator to make the market and the agent to know its hotels and settings.
+- Checks: load() refuses a target outside TARGETS ([[RUL-70]]) and a repeated hotel key. Both sides read the file, the simulator to make the market and the agent to know its hotels and settings.
 - Reads: [[MOD-02]] for the Hotel and Competitor types
 - Writes: [[DAT-27]], [[DAT-04]]
 - Tests: tests/test_customer.py
@@ -199,22 +195,20 @@ which is also the order in which they depend on each other.
 
 ### MOD-21 [C] stored.py
 - File: src/hotel_market/stored.py
-- Owns: the four sources read from stored tables ([[DAT-28]], [[DEC-42]]): StoredBookings, StoredRateShops, StoredSchedules and StoredEvents, each answering as of the day asked.
-- Writers: connect() opens the DuckDB file and creates the tables from sql/schema.sql. write_snapshot() copies one day of any Sources into the feed tables, and write_decisions() stores a day's flags, plans and decisions, each deleting the day's rows first in one transaction.
-- Readers: state_before() gives an agent its hold and advice, rate_changes_before() gives the simulator its playback, and decided_on(), records_on(), decisions_file() and plan_differences() read a run back.
-- Holds: TABLES ([[RUL-72]]) and OPENING_DAY ([[RUL-73]]). It imports nothing from the simulator and is one of the modules the import test covers.
+- Owns: the four sources read from stored tables ([[DAT-28]], [[DEC-42]]), the second implementation of [[DAT-25]]: StoredBookings, StoredRateShops, StoredSchedules and StoredEvents. Each answers as of the day asked.
+- Writers: write_snapshot() copies one day of any Sources into the feed tables. write_decisions() stores a day's flags, plans and decisions. Each writer deletes the day's rows first, in one transaction.
+- Readers: state_before() gives an agent its hold and advice, and rate_changes_before() gives the simulator its playback. decided_on(), records_on(), decisions_file() and plan_differences() read a run back.
+- Holds: TABLES ([[RUL-72]]) and OPENING_DAY ([[RUL-73]]). connect() opens the DuckDB file and creates the tables from sql/schema.sql. It imports nothing from the simulator and is one of the modules the import test covers.
 - Reads: [[MOD-02]], [[MOD-08]] (the Entry, for the plan and decision rows), [[MOD-17]] (the interfaces), [[MOD-20]]; never the simulator ([[DEC-40]])
-- Writes: [[DAT-28]]; [[DAT-25]] as their second implementation
 - Tests: tests/test_stored.py
 - Evidence: test_a_60_day_run_through_the_tables_gives_the_same_decisions_file, test_the_stored_sources_answer_as_the_simulated_ones_do, test_replaying_a_past_day_reproduces_its_plans_exactly
 
 ### MOD-22 [C] scripts/live_audit.py
 - File: scripts/live_audit.py
-- Owns: the measured live run and its audit, outside the package. A Recorder stands in for the SDK and notes each call's tokens, time, stop reason and answering model, so that ClaudeClient's request stays the one in [[MOD-09]].
-- Run: live_run() is the command's run for a seed with that client. It also writes calls.jsonl and sends the anthropic-workspace-id header when ANTHROPIC_WORKSPACE_ID is set.
-- Audit: audit() reads the cache ([[DAT-17]]) and prints every reason, every declined plan, every figure in a reason that is not quoted from its request, every sentence without a request figure, and the token, time and cost totals.
-- Quoted: a figure is quoted when a display string holding it appears whole in the same sentence, when the request holds it as a whole number or inside a name, or when "more than holding" vouches for a bare dollar gain in that sentence.
+- Owns: the measured live run and its audit, outside the package. A Recorder stands in for the SDK and notes each call's tokens, time, stop reason and answering model.
+- Run: live_run() is the command's run for a seed with that client ([[MOD-12]]), so ClaudeClient's request stays the one in [[MOD-09]]. It also writes calls.jsonl and sends the workspace header when ANTHROPIC_WORKSPACE_ID is set.
+- Audit: audit() reads the cache ([[DAT-17]]) and prints each reason and declined plan. It lists each figure in a reason that its request does not hold, and each sentence with no request figure. It ends with the token, time and cost totals.
+- Quoted: a figure is quoted when a display string holding it appears whole in the same sentence. It is also quoted as a whole number or inside a name the request holds. "More than holding" in a sentence vouches for a bare dollar gain.
 - Ranges: a range such as "12–14%" counts as its two ends. Figures with different units stay apart, and one end of a request range on its own is not a quotation. The recorded run it audits is [[DAT-29]].
-- Reads: [[MOD-09]] (ClaudeClient, HOLD), [[MOD-12]] (run, summary)
 - Tests: tests/test_live_audit.py, on made-up reasons and on the recorded run
 - Evidence: test_a_range_in_a_reason_is_read_as_its_two_ends, test_a_sentence_that_lists_several_gains_may_write_more_than_holding_once, test_the_recorded_live_run_of_seed_7_passes_the_audit

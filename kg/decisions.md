@@ -235,7 +235,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 ### DEC-38 [C] The agent can learn its elasticity from the bookings; the default stays the simulator's value
 - Decided: --elasticity picks where the agent's elasticity comes from ([[RUL-49]], [[DAT-22]]). The default, true, is the oracle value ([[RUL-56]]).
 - Modes: a fixed:X mode uses X for the whole run. A learn:X mode starts from the prior X and re-estimates every hotel every day ([[MOD-16]]). Every entry, request and log line records the elasticity, its error and its mode ([[DAT-21]]).
-- Estimator: a Poisson regression of the bookings on log(rate / median), with the log of the agent's baseline as an offset. An intercept absorbs the demand level, a prior of width [[RUL-50]] holds the slope, and [[RUL-51]] to [[RUL-52]] clamps it.
+- Estimator: a Poisson regression of the bookings on log(rate / median), with the log baseline as an offset. An intercept absorbs the demand level, a prior of width [[RUL-50]] holds the slope, and [[RUL-51]] to [[RUL-52]] clamps it.
 - Observations: a stay date's observations stop on the day it sells out. The day-0 preload is never an observation, because the simulator draws it with no price response.
 - Reason: with the agent's elasticity equal to the simulator's, the agent was never wrong about price response. The question was what being wrong costs and how much learning wins back ([[FRK-02]], [[UNK-07]]).
 - Measured: a wrong value costs about three quarters of the gain ([[RES-03]]). Learning wins back about a quarter of the loss ([[RES-04]], [[RES-10]]).
@@ -368,7 +368,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 ### DEC-40 [C] The agent reads data only through four interfaces; the simulator is one implementation
 - Decided: sources.py ([[MOD-17]]) defines Bookings, RateShops, Schedules and Events ([[DAT-25]]). Every method takes the day it is asked on and returns only what was known then.
 - Boundary: the modules detect, forecast, estimate, plan, model and agent read data through them and import none of the simulator's modules. A test reads their imports and fails if one does.
-- Detail: the agent's own demand model is forecast.py ([[MOD-18]]), held equal to demand.py by a test. The simulator implements the four in simulated.py ([[MOD-19]]), and ORACLE_ELASTICITY ([[RUL-56]]) names the default elasticity an oracle.
+- Detail: the agent's own demand model is forecast.py ([[MOD-18]]), held equal to demand.py by a test. The simulator implements the four in simulated.py ([[MOD-19]]). ORACLE_ELASTICITY ([[RUL-56]]) names the default elasticity an oracle.
 - Replaces: [[DEC-26]], and the agent's direct reads of the simulator: detect_numbers(day, books), estimate_elasticity(books, ...) and the peak night in demand.py.
 - Reason: a repository that can be pointed at a hotel's own data needs one place where the data comes in. With the line drawn, what the agent may know is the list of methods in sources.py.
 - Measured: the default run is unchanged ([[RES-02]]). Seed 7's decisions file is byte for byte the one before the boundary, and the estimator's inputs are bitwise identical.
