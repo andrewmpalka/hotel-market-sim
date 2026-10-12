@@ -95,7 +95,14 @@ line.
 kg/ is a map of this repository for agents. Read kg/index.md before opening
 source files and follow the [[ID]] links to the nodes you need; kg/README.md
 is the legend. Update the graph in the same commit as the code: a change to
-code and the change to its nodes go together, a [C] claim cites a test, a
-Commit line names a commit of this history, and python kg_check.py
---write-index rewrites kg/index.md from the nodes. python kg_check.py and
-tests/test_kg.py fail when the graph and the code disagree.
+code and the change to its nodes go together, a [C] claim cites a test that
+fails when the claim is false, and a Commit line names a commit of this
+history. Every node is Simplified Technical English: one fact a line, no
+sentence over 20 words, active voice, present tense, a field line of at most
+240 characters and a node of at most 8 fields. Measured figures live in RES
+nodes in kg/results.md, one per experiment with its command and its table in
+docs/results.md; a decision keeps one headline figure and links to its RES
+node. A claim no test can confirm is a policy node, with Kind: policy and
+Evidence: review. python kg_check.py --write-index rewrites kg/index.md from
+the nodes, and python kg_check.py and tests/test_kg.py fail when the graph
+and the code disagree.
