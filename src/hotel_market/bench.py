@@ -44,6 +44,7 @@ import json
 import math
 from collections.abc import Callable, Iterable
 from dataclasses import astuple, dataclass
+from pathlib import Path
 
 from hotel_market.agent import Agent
 from hotel_market.customer import Customer, demo
@@ -202,6 +203,28 @@ PRICES = {
 }
 
 
+def counted(records: Iterable[dict], folder: Path) -> list[dict]:
+    """The call records of an arm that count: the last record per request digest, and only
+    a digest whose answer is in the arm's cache folder or whose record is marked failed. The
+    file is appended across runs while the cache can be deleted, so without this a rerun
+    after a deleted cache would count a call's tokens and cost twice. A record with no
+    digest, from before the field, is kept as it is."""
+    cached = set()
+    if folder.exists():
+        for path in folder.glob("day*_*.json"):
+            cached.add(json.loads(path.read_text()).get("request_digest"))
+    undigested, last = [], {}
+    for record in records:
+        digest = record.get("request_digest")
+        if digest is None:
+            undigested.append(record)
+        else:
+            last[digest] = record
+    return undigested + [
+        r for r in last.values() if r.get("failed") or r["request_digest"] in cached
+    ]
+
+
 def cost(calls: Iterable[dict], model: str) -> float:
     """The list-price cost of the calls in dollars at the model's PRICES. Every attempt's input
     and output tokens count, since each was paid for. nan for a model not in the table."""
@@ -222,6 +245,18 @@ def regret(oracle_change: float, change: float) -> float:
     - the realised target change of the arm under test, on the same seed and mode. Positive
     when the reviewer left money behind, negative when it beat the oracle."""
     return oracle_change - change
+
+
+def recovered_share(template_change: float, oracle_change: float, change: float) -> float:
+    """Recovered share = (the arm's mean realised change - the template's) / (the oracle's - the
+    template's), on the same seeds and mode: how much of the value a reviewer could recover
+    over accepting every plan this one did. 1 is the oracle's, 0 is accept-all's, and a
+    reviewer that lost money against accept-all is below 0. nan when the oracle and the
+    template tie, as in the true mode, since there is nothing to recover."""
+    room = oracle_change - template_change
+    if room == 0:
+        return math.nan
+    return (change - template_change) / room
 
 
 def reviewed(entries: Iterable[Entry]) -> list[Entry]:

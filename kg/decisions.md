@@ -423,9 +423,10 @@ design keeps its node, marked [H], and names the decision that replaced it.
 
 ### DEC-48 [C] The bench is one sweep with a reviewer per arm
 - Decided: sweep() takes reviewers ([[DAT-32]]) as well as modes. An arm is one mode and one reviewer over the seeds; the fixed-rate run is made once per seed. The bench command runs the template, the oracle and each model in every mode.
-- Detail: each arm keeps its own cache folder ([[DEC-23]]), so a rerun reads the cache. A model's calls.jsonl grows only with new calls. Each seed keeps its entries, call records and decline counts ([[DAT-19]]).
+- Detail: each arm keeps its own cache folder ([[DEC-23]]), so a rerun reads the cache. The report keeps the last call record per request digest. It counts one only when its cache file is present or it failed.
 - Replaces: nothing built.
 - Reason: one sweep keeps one definition of the change against the fixed-rate run. The bench's template row is then the --seeds sweep's figure. A second loop would drift from it.
 - Modes: the default modes are BENCH_MODES ([[RUL-81]]), two mismatched and the true one. The ranking pools the mismatched modes, since the true mode cannot separate reviewers ([[DEC-47]]).
-- Evidence: test_a_sweep_with_reviewers_keeps_each_arms_entries_calls_and_counts, test_the_bench_command_prints_its_tables
+- Commit: e15c32d
+- Evidence: test_a_sweep_with_reviewers_keeps_each_arms_entries_calls_and_counts, test_the_bench_command_prints_its_tables, test_a_duplicate_call_record_is_counted_once
 - Links: [[MOD-12]], [[MOD-23]], [[DAT-19]], [[DAT-24]], [[DAT-32]], [[DEC-47]]

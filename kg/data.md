@@ -264,7 +264,7 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-30 [C] The call record
 - File: src/hotel_market/model.py
-- Where: calls.jsonl, one line per call to a Measured client, at the path its maker gives. live_audit.py replaces its file each run ([[MOD-22]]); the bench appends to its own. request_digest joins a line to its cache record ([[DAT-17]]).
+- Where: calls.jsonl, one line per call to a Measured client, at the path its maker gives. live_audit.py replaces its file each run ([[MOD-22]]); the bench appends to its own. counted() keeps the last record per digest ([[DAT-17]]).
 - Fields: day, hotel (the request's hotel name) and request_digest. asked is the model asked and model the one that answered. Then input_tokens, output_tokens, both cache token counts, seconds, stop_reason, fallback and request_id.
 - Flags: retries counts the attempts after the first. bad_attempt is true when any attempt ended without a valid answer. failed is true when the request ended without one. error names the last error's class, or is null.
 - Retries: an SDK error ([[RUL-78]]) is asked again after a backoff ([[RUL-77]]) and an invalid answer at once. RETRIES bounds them ([[RUL-76]]). A refusal is not asked again: the API ran the fallback. The record lands before the raise.

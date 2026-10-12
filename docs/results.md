@@ -159,3 +159,50 @@ The suite on each Python version, run from a fresh virtual environment on 2026-1
 | --- | --- | --- |
 | 3.12.6 | `python -m pytest --slow` | 235 passed |
 | 3.13.7 | `python -m pytest --slow` | 235 passed |
+
+## The benchmark of the reviewers
+
+`hotel-market bench --seeds 1 20`, run on 2026-10-12. For every seed the command makes the fixed-rate run once, then one agent run per elasticity mode and reviewer: the template, the oracle reviewer and each of claude-opus-5-5, claude-sonnet-5-5 and claude-haiku-5-5, each arm in its own cache folder. The live calls were made first, in parallel chunks of seeds (seeds 1 to 3 as one process per model, then seeds 4 to 20 in seven chunks), and the command that printed the tables read every folder's cache and made no call. The 3,338 calls that count cost $28.42 at list prices. Regret is the oracle arm's mean change minus the reviewer's, the recovered share is the reviewer's gain over the template as a share of the oracle's, and the decline rates are pooled over the seeds against the oracle's labels.
+
+Seeds 1 to 20 at a fixed elasticity of 1.0, each reviewer against the fixed-rate run: the mean and range of the contribution change, the seeds ahead of the fixed-rate run, the regret against the oracle arm, the share of the oracle's gain over accept-all that the reviewer recovered, the accept rate, the decline precision, recall, F1 and dollar-weighted recall against the oracle's labels, the calls with a bad attempt, and for a model its calls, tokens, median latency and cost at list prices.
+
+| Reviewer | Mean change | Range | Ahead | Regret | Recovered | Accept | Precision | Recall | F1 | $ recall | Invalid | Calls | Tokens in/out | Median s | Cost |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| template | +8,438 | -13,029 to +39,143 | 14/20 | +22,150 | 0.00 | 1.00 | - | 0.00 | - | 0.00 | - | - | - | - | - |
+| oracle | +30,588 | +12,725 to +54,182 | 20/20 | +0 | 1.00 | 0.15 | 1.00 | 1.00 | 1.00 | 1.00 | - | - | - | - | - |
+| claude-opus-5-5 | +14,584 | -6,058 to +42,551 | 17/20 | +16,004 | 0.28 | 0.91 | 1.00 | 0.14 | 0.24 | 0.25 | 0 | 479 | 1,259,730/156,252 | 4.8 | $8.16 |
+| claude-sonnet-5-5 | +8,438 | -13,029 to +39,143 | 14/20 | +22,150 | 0.00 | 1.00 | - | 0.00 | - | 0.00 | 3 | 484 | 1,279,944/94,336 | 2.5 | $3.50 |
+| claude-haiku-5-5 | +8,438 | -13,029 to +39,143 | 14/20 | +22,150 | 0.00 | 1.00 | - | 0.00 | - | 0.00 | 0 | 484 | 1,268,430/324,033 | 3.9 | $0.29 |
+
+Seeds 1 to 20 at a fixed elasticity of 2.0, each reviewer against the fixed-rate run: the mean and range of the contribution change, the seeds ahead of the fixed-rate run, the regret against the oracle arm, the share of the oracle's gain over accept-all that the reviewer recovered, the accept rate, the decline precision, recall, F1 and dollar-weighted recall against the oracle's labels, the calls with a bad attempt, and for a model its calls, tokens, median latency and cost at list prices.
+
+| Reviewer | Mean change | Range | Ahead | Regret | Recovered | Accept | Precision | Recall | F1 | $ recall | Invalid | Calls | Tokens in/out | Median s | Cost |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| template | +9,551 | -6,734 to +25,474 | 18/20 | +13,507 | 0.00 | 1.00 | - | 0.00 | - | 0.00 | - | - | - | - | - |
+| oracle | +23,058 | +9,869 to +37,962 | 20/20 | +0 | 1.00 | 0.29 | 1.00 | 1.00 | 1.00 | 1.00 | - | - | - | - | - |
+| claude-opus-5-5 | +9,557 | -6,734 to +25,474 | 18/20 | +13,501 | 0.00 | 1.00 | 1.00 | 0.00 | 0.01 | 0.00 | 0 | 457 | 1,257,011/170,296 | 5.6 | $8.43 |
+| claude-sonnet-5-5 | +9,551 | -6,734 to +25,474 | 18/20 | +13,507 | 0.00 | 1.00 | - | 0.00 | - | 0.00 | 2 | 456 | 1,262,490/95,932 | 2.8 | $3.48 |
+| claude-haiku-5-5 | +9,551 | -6,734 to +25,474 | 18/20 | +13,507 | 0.00 | 1.00 | - | 0.00 | - | 0.00 | 0 | 456 | 1,255,268/323,231 | 4.0 | $0.29 |
+
+Seeds 1 to 20 in the true mode, each reviewer against the fixed-rate run: the mean and range of the contribution change, the seeds ahead of the fixed-rate run, the regret against the oracle arm, the share of the oracle's gain over accept-all that the reviewer recovered, the accept rate, the decline precision, recall, F1 and dollar-weighted recall against the oracle's labels, the calls with a bad attempt, and for a model its calls, tokens, median latency and cost at list prices.
+
+| Reviewer | Mean change | Range | Ahead | Regret | Recovered | Accept | Precision | Recall | F1 | $ recall | Invalid | Calls | Tokens in/out | Median s | Cost |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| template | +32,899 | +13,479 to +52,809 | 20/20 | +0 | - | 1.00 | - | - | - | - | - | - | - | - | - |
+| oracle | +32,899 | +13,479 to +52,809 | 20/20 | +0 | - | 1.00 | - | - | - | - | - | - | - | - | - |
+| claude-opus-5-5 | +32,899 | +13,479 to +52,809 | 20/20 | +0 | - | 1.00 | - | - | - | - | 0 | 174 | 477,553/46,137 | 4.3 | $2.83 |
+| claude-sonnet-5-5 | +32,899 | +13,479 to +52,809 | 20/20 | +0 | - | 1.00 | - | - | - | - | 1 | 174 | 482,097/34,791 | 2.5 | $1.31 |
+| claude-haiku-5-5 | +32,899 | +13,479 to +52,809 | 20/20 | +0 | - | 1.00 | - | - | - | - | 0 | 174 | 477,553/125,061 | 4.2 | $0.11 |
+
+The reviewers ranked across the mismatched modes, fixed:1.0 and fixed:2.0, on seeds 1 to 20: the mean and range of the contribution change, the seeds ahead of the fixed-rate run, the regret against the oracle arm, the share of the oracle's gain over accept-all that the reviewer recovered, the accept rate, the decline precision, recall, F1 and dollar-weighted recall against the oracle's labels, the calls with a bad attempt, and for a model its calls, tokens, median latency and cost at list prices.
+
+| Rank | Reviewer | Mean change | Range | Ahead | Regret | Recovered | Accept | Precision | Recall | F1 | $ recall | Invalid | Calls | Tokens in/out | Median s | Cost |
+| ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | oracle | +26,823 | +9,869 to +54,182 | 40/40 | +0 | 1.00 | 0.20 | 1.00 | 1.00 | 1.00 | 1.00 | - | - | - | - | - |
+| 2 | claude-opus-5-5 | +12,071 | -6,734 to +42,551 | 35/40 | +14,752 | 0.17 | 0.95 | 1.00 | 0.08 | 0.15 | 0.14 | 0 | 936 | 2,516,741/326,548 | 5.2 | $16.60 |
+| 3 | template | +8,994 | -13,029 to +39,143 | 32/40 | +17,829 | 0.00 | 1.00 | - | 0.00 | - | 0.00 | - | - | - | - | - |
+| 4 | claude-sonnet-5-5 | +8,994 | -13,029 to +39,143 | 32/40 | +17,829 | 0.00 | 1.00 | - | 0.00 | - | 0.00 | 5 | 940 | 2,542,434/190,268 | 2.6 | $6.99 |
+| 5 | claude-haiku-5-5 | +8,994 | -13,029 to +39,143 | 32/40 | +17,829 | 0.00 | 1.00 | - | 0.00 | - | 0.00 | 0 | 940 | 2,523,698/647,264 | 4.0 | $0.58 |
+
+Opus declined 47 plans at a fixed elasticity of 1.0, 36 of them the day-40 plan to raise 10% on every day of the week on stay dates 70 to 90 after the seat cut, and every declined plan was a raise; the oracle agreed with every one. At 2.0 it declined one plan, a 5% cut on a date ahead of pace. Sonnet and Haiku declined nothing in any mode. In 7 of its 1,114 requests Sonnet answered for one entry when the request held two; a retry answered 6 of them and the seventh answered on a rerun after three invalid tries.
+

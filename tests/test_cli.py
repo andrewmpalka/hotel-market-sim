@@ -8,7 +8,7 @@ from dataclasses import replace
 import numpy as np
 import pytest
 
-from hotel_market.agent import MIN_STAY, TRUE_MODE, ElasticityMode
+from hotel_market.agent import MIN_STAY, TRUE_MODE, Agent, ElasticityMode
 from hotel_market.bench import (
     ORACLE,
     TEMPLATE,
@@ -22,6 +22,7 @@ from hotel_market.bench import (
     dollar_weighted_recall,
     key,
     oracle_labels,
+    recovered_share,
 )
 from hotel_market.cli import (
     BENCH_MODES,
@@ -29,6 +30,7 @@ from hotel_market.cli import (
     SHOCK_PLAN_CAUSES,
     ArmResult,
     SeedResult,
+    _calls,
     _gain_on,
     changed_stays,
     format_entry,
@@ -442,6 +444,10 @@ def test_the_bench_command_prints_its_tables(bench_arms, monkeypatch, capsys):
 
     def expected(arm, live_columns):
         mean = statistics.mean(arm.changes)
+        oracle_mean, template_mean = (
+            statistics.mean(oracle.changes),
+            statistics.mean(template.changes),
+        )
         counts = arm.counts
         rate = lambda value: "-" if math.isnan(value) else f"{value:.2f}"  # noqa: E731
         return [
@@ -451,7 +457,8 @@ def test_the_bench_command_prints_its_tables(bench_arms, monkeypatch, capsys):
             "to",
             f"{max(arm.changes):+,.0f}",
             f"{arm.wins}/2",
-            f"{statistics.mean(oracle.changes) - mean:+,.0f}",
+            f"{oracle_mean - mean:+,.0f}",
+            rate(recovered_share(template_mean, oracle_mean, mean)),
             rate(counts.accept_rate),
             rate(counts.precision),
             rate(counts.recall),
@@ -461,8 +468,12 @@ def test_the_bench_command_prints_its_tables(bench_arms, monkeypatch, capsys):
 
     assert rows["template"] == expected(template, ["-", "-", "-", "-", "-"])
     assert rows["oracle"] == expected(oracle, ["-", "-", "-", "-", "-"])
-    assert rows["oracle"][6] == "+0" and rows["oracle"][8:12] == ["1.00", "1.00", "1.00", "1.00"]
-    assert rows["template"][8] == "-" and rows["template"][9] == "0.00"  # no decline: no precision
+    # regret, recovered share, then precision, recall, F1 and $ recall: the oracle is its own
+    # reference, and the template recovers nothing and declines nothing.
+    assert rows["oracle"][6:8] == ["+0", "1.00"]
+    assert rows["oracle"][9:13] == ["1.00", "1.00", "1.00", "1.00"]
+    assert rows["template"][7] == "0.00" and rows["template"][9] == "-"
+    assert rows["template"][10] == "0.00"
     # The scripted model is live: its calls, tokens, median latency and cost are printed; its
     # model is not in the price table, so the cost is n/a.
     calls = len(scripted.calls)
@@ -475,6 +486,20 @@ def test_the_bench_command_prints_its_tables(bench_arms, monkeypatch, capsys):
         [str(rank), arm.reviewer.name] for rank, arm in enumerate(by_change, 1)
     ]
     assert ranked[0][2:] == rows[ranked[0][1]][1:]
+
+
+def test_an_arms_call_records_are_read_from_its_folder_and_counted_once(tmp_path):
+    agent = Agent(SEED, tmp_path, elasticity=FIXED_1, model="scripted")
+    assert _calls(agent) == []  # no file, no client: nothing
+    agent.cache_dir.mkdir(parents=True)
+    (agent.cache_dir / "day010_convention.json").write_text(json.dumps({"request_digest": "a"}))
+    lines = [
+        {"request_digest": "a", "input_tokens": 1000, "output_tokens": 100},
+        {"request_digest": "a", "input_tokens": 1200, "output_tokens": 120},
+        {"request_digest": "b", "input_tokens": 1000, "output_tokens": 100},
+    ]
+    (agent.cache_dir / "calls.jsonl").write_text("".join(json.dumps(c) + "\n" for c in lines))
+    assert _calls(agent) == [lines[1]]
 
 
 @pytest.mark.parametrize(

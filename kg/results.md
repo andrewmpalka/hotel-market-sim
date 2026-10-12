@@ -141,3 +141,34 @@ here for the rest.
 - Detail: the package was also installed and run against numpy 1.26 and pandas 2.2, the lower bounds in pyproject.toml. A seed-7 run then reproduced decisions.jsonl byte for byte ([[DEC-28]]).
 - Table: docs/results.md, "The suite on each Python version"
 - Links: [[UNK-04]], [[DEC-28]], [[DEC-30]]
+
+### RES-16 [O] The reviewers at fixed:1.0 on seeds 1 to 20
+- Ran: `hotel-market bench --seeds 1 20` on 2026-10-12. Each seed has the fixed-rate run, then the template, the oracle and each of the three models in each mode. The run read every arm's cache and made no call.
+- Detail: the live calls were made first, in parallel chunks of seeds. Seeds 1 to 3 ran as one process per model, then seeds 4 to 20 in seven chunks. Each arm's cache folder holds its calls.jsonl.
+- Result: the template earns +$8,438 a seed and the oracle +$30,588 while accepting 15% of the plans. Opus earns +$14,584, ahead in 17 of 20, with a recovered share of 0.28. Sonnet and Haiku accept every plan and tie with the template.
+- Declines: Opus declines 47 plans with precision 1.00 and recall 0.14. 36 of them are the day-40 raise on stay dates 70 to 90 after the seat cut. Its regret against the oracle is $16,004 a seed.
+- Gap: the oracle's +$30,588 at fixed:1.0 stands next to the true mode's +$32,899 ([[RES-01]]). The $22,150 a seed between the template and the oracle is the value a reviewer can recover.
+- Table: docs/results.md, "Seeds 1 to 20 at a fixed elasticity of 1.0"
+- Links: [[DEC-47]], [[DEC-48]], [[MEA-12]], [[RES-01]], [[RES-03]], [[RES-19]], [[UNK-01]]
+
+### RES-17 [O] The reviewers at fixed:2.0 on seeds 1 to 20
+- Ran: the same command as [[RES-16]], the fixed:2.0 arms.
+- Result: the template earns +$9,551 a seed and the oracle +$23,058 while accepting 29% of the plans. Opus earns +$9,557 with one decline, which the oracle shares, so its recall is 0.00. Sonnet and Haiku tie with the template.
+- Declines: Opus's one decline holds a 5% cut worth $340 on a date ahead of pace, on seed 4, day 53. The oracle declines 71% of the plans in this mode, most of them cuts.
+- Table: docs/results.md, "Seeds 1 to 20 at a fixed elasticity of 2.0"
+- Links: [[RES-16]], [[RES-03]], [[DEC-47]], [[UNK-01]]
+
+### RES-18 [O] The reviewers in the true mode on seeds 1 to 20
+- Ran: the same command as [[RES-16]], the true-mode arms.
+- Result: every reviewer earns +$32,899 a seed, ahead in 20 of 20, the figure of [[RES-01]]. No model declines a plan, so the mode cannot separate them ([[DEC-47]]).
+- Calls: 174 calls a model. Opus costs $2.83, Sonnet $1.31 and Haiku $0.11 at list prices, with median latencies of 4.3, 2.5 and 4.2 s. Sonnet gives one invalid answer, which a retry fixes ([[UNK-02]]).
+- Table: docs/results.md, "Seeds 1 to 20 in the true mode"
+- Links: [[RES-01]], [[RES-16]], [[DEC-47]], [[UNK-01]], [[UNK-02]], [[UNK-09]]
+
+### RES-19 [O] The reviewers ranked across the mismatched modes
+- Ran: the same command as [[RES-16]]; the ranking pools the fixed:1.0 and fixed:2.0 arms, 40 per reviewer.
+- Result: the oracle earns +$26,823 a seed. Opus earns +$12,071, a recovered share of 0.17, with precision 1.00 and recall 0.08. The template, Sonnet and Haiku earn +$8,994, since the two models accept every plan.
+- Cost: over the two modes Opus makes 936 calls for $16.60, Sonnet 940 for $6.99 and Haiku 940 for $0.58. The whole benchmark's 3,338 calls cost $28.42 at list prices ([[RUL-80]]).
+- Table: docs/results.md, "The reviewers ranked across the mismatched modes"
+- Links: [[RES-16]], [[RES-17]], [[DEC-48]], [[MEA-12]], [[UNK-09]]
+

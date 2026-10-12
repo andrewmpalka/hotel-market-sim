@@ -153,6 +153,7 @@ it differs from what that would write. `README.md` is the legend.
 - MEA-09 [C] Decline recall — kg/measures.md
 - MEA-10 [C] Decline F1 — kg/measures.md
 - MEA-11 [C] Dollar-weighted decline recall — kg/measures.md
+- MEA-12 [C] Recovered share — kg/measures.md
 
 ## Sources (`sources.md`)
 
@@ -234,6 +235,10 @@ it differs from what that would write. `README.md` is the legend.
 - RES-13 [H] The cautious rule as first built — kg/results.md
 - RES-14 [O] The stored tables' timings — kg/results.md
 - RES-15 [O] The suite on each Python version — kg/results.md
+- RES-16 [O] The reviewers at fixed:1.0 on seeds 1 to 20 — kg/results.md
+- RES-17 [O] The reviewers at fixed:2.0 on seeds 1 to 20 — kg/results.md
+- RES-18 [O] The reviewers in the true mode on seeds 1 to 20 — kg/results.md
+- RES-19 [O] The reviewers ranked across the mismatched modes — kg/results.md
 
 ## Open forks (`forks.md`)
 

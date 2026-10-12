@@ -17,6 +17,7 @@ from hotel_market.bench import (
     ScriptedClient,
     accept_rate,
     cost,
+    counted,
     decline_f1,
     decline_precision,
     decline_recall,
@@ -29,6 +30,7 @@ from hotel_market.bench import (
     oracle_declines,
     oracle_labels,
     oracle_values,
+    recovered_share,
     regret,
     retries,
 )
@@ -98,6 +100,16 @@ LABELS = {key(B), key(C)}  # the labels the tests hand to the measures
 def test_regret_is_the_oracle_arms_change_minus_the_arms_change():
     assert regret(32899.0, 8438.0) == pytest.approx(24461.0)
     assert regret(100.0, 120.0) == pytest.approx(-20.0)
+
+
+def test_the_recovered_share_is_the_gain_over_the_template_as_a_share_of_the_oracles():
+    # The template earned +11,989, the oracle +34,117 and the reviewer +20,510 on the same
+    # seeds and mode: it recovered 39% of what a reviewer could.
+    assert recovered_share(11989.0, 34117.0, 20510.0) == pytest.approx(8521 / 22128)
+    assert recovered_share(11989.0, 34117.0, 34117.0) == 1.0  # the oracle itself
+    assert recovered_share(11989.0, 34117.0, 11989.0) == 0.0  # accept-all
+    assert recovered_share(100.0, 300.0, 50.0) == pytest.approx(-0.25)  # worse than accept-all
+    assert math.isnan(recovered_share(35648.0, 35648.0, 35648.0))  # the true mode: no room
 
 
 def test_accept_rate_counts_accepted_queued_plans():
@@ -186,6 +198,26 @@ def test_a_models_cost_comes_from_the_price_table():
     assert cost(calls, "claude-haiku-5-5") == pytest.approx((2000 * 0.10 + 500 * 0.50) / 1e6)
     assert cost([], "claude-sonnet-5-5") == 0.0
     assert math.isnan(cost(calls, "scripted"))
+
+
+def test_a_duplicate_call_record_is_counted_once(tmp_path):
+    # An arm's calls.jsonl is appended across runs while its cache can be deleted, so a rerun
+    # after deleting the cache writes a second record for the same request. The report keeps
+    # the last record per digest, and only a digest whose cache file is present or that failed.
+    folder = tmp_path / "seed7-fixed-1"
+    folder.mkdir()
+    (folder / "day010_convention.json").write_text(json.dumps({"request_digest": "a"}))
+    first = {"request_digest": "a", "input_tokens": 1000, "output_tokens": 100}
+    again = {"request_digest": "a", "input_tokens": 1100, "output_tokens": 110}  # the rerun
+    gone = {"request_digest": "b", "input_tokens": 1000, "output_tokens": 100}  # cache deleted
+    failed = {"request_digest": "c", "input_tokens": 300, "output_tokens": 0, "failed": True}
+    older = {"input_tokens": 500, "output_tokens": 50}  # from before the digest field
+    records = [first, gone, older, failed, again]
+    assert counted(records, folder) == [older, again, failed]
+    assert cost(counted(records, folder), "claude-opus-5-5") == pytest.approx(
+        ((1100 + 300 + 500) * 4.00 + (110 + 0 + 50) * 20.00) / 1e6
+    )
+    assert counted(records, tmp_path / "missing") == [older, failed]
 
 
 def test_bad_attempts_failed_requests_and_retries_are_counted():

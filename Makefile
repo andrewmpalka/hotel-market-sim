@@ -13,8 +13,11 @@
 # works on a fresh clone. PYTHON picks the interpreter that creates the
 # virtual environment: make setup PYTHON=python3.12
 
-# A local .env (never committed) may hold ANTHROPIC_API_KEY and ANTHROPIC_WORKSPACE_ID.
+# A local .env (never committed) may hold ANTHROPIC_API_KEY and ANTHROPIC_WORKSPACE_ID. Make
+# keeps the quotes of a quoted value, which the API then rejects, so they are stripped here.
 -include .env
+ANTHROPIC_API_KEY := $(strip $(subst ",,$(subst ',,$(ANTHROPIC_API_KEY))))
+ANTHROPIC_WORKSPACE_ID := $(strip $(subst ",,$(subst ',,$(ANTHROPIC_WORKSPACE_ID))))
 export ANTHROPIC_API_KEY ANTHROPIC_WORKSPACE_ID
 
 PYTHON ?= python3

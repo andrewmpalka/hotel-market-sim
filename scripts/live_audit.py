@@ -4,9 +4,12 @@ One seed with the live model, measured and audited.
 
     python scripts/live_audit.py --seed 7              # run live, then audit (needs an API key)
     python scripts/live_audit.py --seed 7 --audit-only # audit the cache a live run left
+    python scripts/live_audit.py --seed 7 --audit-only --elasticity fixed:1.0
+                                                       # audit a bench arm's cache (bench.py)
 
-The run is the hotel-market command's run for the seed in the default mode:
-both simulations, decisions.jsonl and the cache. A Measured client (model.py)
+The run is the hotel-market command's run for the seed in the mode given,
+the default mode unless --elasticity says otherwise: both simulations,
+decisions.jsonl and the cache. A Measured client (model.py)
 records each call's tokens, time, stop reason and answering model to
 calls.jsonl. The audit then reads the cache and prints every reason the model
 wrote, every plan it declined, and every number in a reason that does not
@@ -38,14 +41,14 @@ import statistics
 import time
 from pathlib import Path
 
+from hotel_market.agent import TRUE_MODE, Agent, ElasticityMode
+from hotel_market.bench import PRICES
 from hotel_market.cli import run, summary
-from hotel_market.model import HOLD, ClaudeClient, Measured
+from hotel_market.model import HOLD, MODEL, ClaudeClient, Measured
 
-# List prices for claude-opus-5-5 on 2026-10-06, dollars per million tokens; the
-# cost line is an estimate from them, and the token counts are printed for any
-# other price.
-INPUT_PRICE = 4.00
-OUTPUT_PRICE = 20.00
+# The default model's list prices, dollars per million tokens, from the bench's price table;
+# the cost line is an estimate from them, and the token counts are printed for any other price.
+INPUT_PRICE, OUTPUT_PRICE = PRICES[MODEL]
 
 # A figure as written: an optional sign and dollar sign, digits with thousands commas,
 # an optional decimal part, an optional percent sign. A comma after the last digit is
@@ -57,16 +60,16 @@ SPAN = re.compile(rf"(?P<a>{_FIGURE})\s*(?:–|—|-|to)\s*(?P<b>{_FIGURE})")
 SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
 
 
-def live_run(seed: int, out_dir: Path) -> list[dict]:
-    """Seed `seed` with the live model, writing decisions.jsonl, cache/ and calls.jsonl
-    under out_dir. A Measured client (model.py) records each call; the file holds this
-    run's calls only. Returns the calls' measurements."""
+def live_run(seed: int, out_dir: Path, mode: ElasticityMode = TRUE_MODE) -> list[dict]:
+    """Seed `seed` with the live model in `mode`, writing decisions.jsonl, cache/ and
+    calls.jsonl under out_dir. A Measured client (model.py) records each call; the file holds
+    this run's calls only. Returns the calls' measurements."""
     calls_path = out_dir / "calls.jsonl"
     if calls_path.exists():
         calls_path.unlink()
     client = Measured(ClaudeClient(), calls_path)
     start = time.perf_counter()
-    fixed, books, agent = run(seed, out_dir / "decisions.jsonl", out_dir / "cache", client)
+    fixed, books, agent = run(seed, out_dir / "decisions.jsonl", out_dir / "cache", client, mode)
     total = time.perf_counter() - start
     print(summary(seed, fixed, books, agent))
     print()
@@ -256,15 +259,24 @@ def main(argv: list[str] | None = None) -> None:
         action="store_true",
         help="audit an existing cache without calling the model",
     )
+    parser.add_argument(
+        "--elasticity",
+        type=ElasticityMode.parse,
+        default=TRUE_MODE,
+        metavar="MODE",
+        help="the arm's mode, true (the default), fixed:X or learn:X; it names the cache folder",
+    )
     args = parser.parse_args(argv)
-    cache_dir = args.out / "cache" / f"seed{args.seed}"
+    # The arm's folder, as the agent names it; a bench arm keeps its calls.jsonl inside it.
+    cache_dir = Agent(args.seed, args.out / "cache", elasticity=args.elasticity).cache_dir
+    calls_file = next(
+        (p for p in (cache_dir / "calls.jsonl", args.out / "calls.jsonl") if p.exists()), None
+    )
     calls: list[dict] = []
     if not args.audit_only:
-        calls = live_run(args.seed, args.out)
-    elif (args.out / "calls.jsonl").exists():
-        calls = [
-            json.loads(line) for line in (args.out / "calls.jsonl").read_text().splitlines() if line
-        ]
+        calls = live_run(args.seed, args.out, args.elasticity)
+    elif calls_file is not None:
+        calls = [json.loads(line) for line in calls_file.read_text().splitlines() if line]
     audit(cache_dir)
     print()
     report_calls(calls)

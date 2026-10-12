@@ -120,6 +120,40 @@ def test_the_audit_reads_a_cache_and_reports_what_is_not_in_the_request(tmp_path
         audit.audit(tmp_path / "nothing")
 
 
+def test_the_audit_finds_a_bench_arms_cache_and_its_calls(tmp_path, capsys, day10):
+    # A bench arm in a mismatched mode keeps its cache in the mode's folder and its calls
+    # inside it; --elasticity names the folder the way the agent does.
+    _, table = day10
+    hotel = demo().hotel("convention")
+    entries = [entry_for(10, f, table) for f in flags(10, table) if f.hotel == "convention"]
+    request = request_for(10, hotel, entries)
+    [decision] = template_decisions(request)
+    decision["choice"] = HOLD
+    arm = tmp_path / "cache" / "seed7-fixed-1"
+    arm.mkdir(parents=True)
+    record = {"request_digest": "x", "request": request, "source": "model", "decisions": [decision]}
+    (arm / "day010_convention.json").write_text(json.dumps(record))
+    call = {
+        "input_tokens": 1000,
+        "output_tokens": 500,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "seconds": 4.0,
+        "stop_reason": "end_turn",
+        "model": "claude-opus-5-5",
+        "fallback": False,
+    }
+    (arm / "calls.jsonl").write_text(json.dumps(call) + "\n")
+    audit.main(["--audit-only", "--seed", "7", "--elasticity", "fixed:1.0", "--out", str(tmp_path)])
+    out = capsys.readouterr().out
+    assert "1 model calls, 1 entries decided, 1 declined." in out
+    assert "declined: day 10, Downtown convention hotel, entry 45-48" in out
+    # The cost comes from the bench's price table for the default model: $4 in, $20 out.
+    assert "Cost at list prices ($4.00 in, $20.00 out per million tokens): $0.01." in out
+    with pytest.raises(SystemExit):  # the default mode's folder is not there
+        audit.main(["--audit-only", "--seed", "7", "--out", str(tmp_path)])
+
+
 # ---- the recorded live run ------------------------------------------------------
 
 FIXTURE = ROOT / "tests" / "fixtures" / "live_seed7"

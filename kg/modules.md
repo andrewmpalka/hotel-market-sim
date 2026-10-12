@@ -216,8 +216,8 @@ which is also the order in which they depend on each other.
 ### MOD-23 [C] bench.py
 - File: src/hotel_market/bench.py
 - Owns: the benchmark of the model as a reviewer ([[DEC-47]], [[DEC-48]]). The oracle reviewer re-scores each queued plan and hold at ORACLE_ELASTICITY ([[RUL-56]]). It declines the plan when hold scores at least as well.
-- Measures: regret ([[MEA-06]]), the accept rate ([[MEA-07]]), decline precision ([[MEA-08]]), decline recall ([[MEA-09]]), their F1 ([[MEA-10]]) and dollar-weighted recall ([[MEA-11]]). Each function's docstring gives its formula.
-- Counts: DeclineCounts ([[DAT-31]]) pools the counts behind the measures over runs. invalid_answers(), failed_requests() and retries() sum the call records ([[DAT-30]]), and cost() prices them from PRICES ([[RUL-80]]).
+- Measures: regret ([[MEA-06]]), the accept rate ([[MEA-07]]), decline precision ([[MEA-08]]), recall ([[MEA-09]]) and F1 ([[MEA-10]]). Also dollar-weighted recall ([[MEA-11]]) and the recovered share ([[MEA-12]]).
+- Counts: DeclineCounts ([[DAT-31]]) pools the counts behind the measures. counted() keeps one call record per digest ([[DAT-30]]); invalid_answers(), failed_requests() and retries() sum them, and cost() prices them ([[RUL-80]]).
 - Scripted: Reviewer ([[DAT-32]]) names an arm's reviewer: TEMPLATE, ORACLE or live(model), a measured Claude client. ScriptedClient plays a model offline, cached as scripted. It answers from a digest dict or declines the keys it is given.
 - Reads: [[MOD-08]] (the entries and rescored()), [[MOD-09]] (the clients and request_digest()), [[MOD-10]] (the day's entries in agent.today), [[MOD-11]], [[MOD-20]]; never the simulator, and nothing in the agent's path imports it
 - Tests: tests/test_bench.py

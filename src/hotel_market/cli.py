@@ -70,8 +70,10 @@ from hotel_market.bench import (
     DeclineCounts,
     Reviewer,
     cost,
+    counted,
     invalid_answers,
     live,
+    recovered_share,
     regret,
 )
 from hotel_market.bookings import Books, simulate
@@ -377,12 +379,16 @@ def sweep(
 
 
 def _calls(agent: Agent) -> list[dict]:
-    """The arm's call records: the calls.jsonl in its cache folder, which every run of the arm
-    appends to, or else what a measured client without a file kept in memory."""
+    """The arm's call records that count: the calls.jsonl in its cache folder, which every run
+    of the arm appends to, or else what a measured client without a file kept in memory; one
+    record per request, and only a request whose answer the cache holds or that failed
+    (bench.counted)."""
     path = agent.cache_dir / "calls.jsonl"
     if path.exists():
-        return [json.loads(line) for line in path.read_text().splitlines() if line]
-    return list(getattr(agent.client, "calls", []))
+        records = [json.loads(line) for line in path.read_text().splitlines() if line]
+    else:
+        records = list(getattr(agent.client, "calls", []))
+    return counted(records, agent.cache_dir)
 
 
 def _gain_on(
@@ -1062,20 +1068,22 @@ def _print_bench(
 
 
 _BENCH_HEADER = (
-    f"{'reviewer':20}{'mean change':>13}{'range':>22}{'ahead':>8}{'regret':>10}{'accept':>8}"
-    f"{'precision':>11}{'recall':>8}{'F1':>8}{'$ recall':>10}{'invalid':>9}{'calls':>7}"
-    f"{'tokens in/out':>18}{'median s':>10}{'cost':>9}"
+    f"{'reviewer':20}{'mean change':>13}{'range':>22}{'ahead':>8}{'regret':>10}{'recovered':>11}"
+    f"{'accept':>8}{'precision':>11}{'recall':>8}{'F1':>8}{'$ recall':>10}{'invalid':>9}"
+    f"{'calls':>7}{'tokens in/out':>18}{'median s':>10}{'cost':>9}"
 )
 
 
 def _bench_table(mode: ElasticityMode, arms: list[ArmResult]) -> list[str]:
     """One mode's arms, a row per reviewer: the mean realised change and its range, the seeds
-    ahead of the fixed-rate run, the regret against the oracle arm, the accept rate, the
-    decline precision, recall, F1 and dollar-weighted recall, the calls with a bad attempt,
-    and for a model its calls, tokens, median latency and list-price cost."""
+    ahead of the fixed-rate run, the regret against the oracle arm, the recovered share of the
+    oracle's gain over the template's, the accept rate, the decline precision, recall, F1 and
+    dollar-weighted recall, the calls with a bad attempt, and for a model its calls, tokens,
+    median latency and list-price cost."""
     oracle = next(arm for arm in arms if arm.reviewer.name == ORACLE.name)
+    template = next(arm for arm in arms if arm.reviewer.name == TEMPLATE.name)
     lines = [f"Elasticity {mode}: each reviewer against the fixed-rate run", _BENCH_HEADER]
-    lines += [_bench_row(arm, oracle) for arm in arms]
+    lines += [_bench_row(arm, oracle, template) for arm in arms]
     return lines
 
 
@@ -1089,28 +1097,32 @@ def _ranking_table(modes: Sequence[ElasticityMode], arms: list[ArmResult]) -> li
         seeds = [result for arm in own for result in arm.seeds]
         pooled.append(ArmResult(modes[0], seeds, own[0].target, own[0].reviewer))
     oracle = next(arm for arm in pooled if arm.reviewer.name == ORACLE.name)
+    template = next(arm for arm in pooled if arm.reviewer.name == TEMPLATE.name)
     ranked = sorted(pooled, key=lambda arm: -statistics.mean(arm.target_changes))
     lines = [
         f"Across the mismatched modes ({', '.join(str(mode) for mode in modes)}): each reviewer "
         f"pooled over those arms, the highest mean change first",
         f"{'rank':>4}  {_BENCH_HEADER}",
     ]
-    lines += [f"{rank:>4}  {_bench_row(arm, oracle)}" for rank, arm in enumerate(ranked, 1)]
+    lines += [
+        f"{rank:>4}  {_bench_row(arm, oracle, template)}" for rank, arm in enumerate(ranked, 1)
+    ]
     return lines
 
 
-def _bench_row(arm: ArmResult, oracle: ArmResult) -> str:
+def _bench_row(arm: ArmResult, oracle: ArmResult, template: ArmResult) -> str:
     changes = arm.target_changes
+    mean, oracle_mean = statistics.mean(changes), statistics.mean(oracle.target_changes)
     counts = arm.counts
     calls = arm.calls
     is_live = arm.reviewer.live
     seconds = [float(call.get("seconds", 0.0)) for call in calls]
     median = f"{statistics.median(seconds):.1f}" if seconds else "-"
     return (
-        f"{arm.reviewer.name:20}{statistics.mean(changes):>+13,.0f}"
+        f"{arm.reviewer.name:20}{mean:>+13,.0f}"
         f"{f'{min(changes):+,.0f} to {max(changes):+,.0f}':>22}"
-        f"{f'{arm.wins}/{len(changes)}':>8}"
-        f"{regret(statistics.mean(oracle.target_changes), statistics.mean(changes)):>+10,.0f}"
+        f"{f'{arm.wins}/{len(changes)}':>8}{regret(oracle_mean, mean):>+10,.0f}"
+        f"{_rate(recovered_share(statistics.mean(template.target_changes), oracle_mean, mean)):>11}"
         f"{_rate(counts.accept_rate):>8}{_rate(counts.precision):>11}{_rate(counts.recall):>8}"
         f"{_rate(counts.f1):>8}{_rate(counts.dollar_recall):>10}"
         f"{invalid_answers(calls) if is_live else '-':>9}{len(calls) if is_live else '-':>7}"
