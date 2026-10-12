@@ -198,6 +198,7 @@ it differs from what that would write. `README.md` is the legend.
 - DEC-44 [C] The request carries a display string in place of every figure, with its direction in words and each range as one phrase, and the prompt tells the model to copy the phrases whole and state only what the entry shows — kg/decisions.md
 - DEC-45 [T] Each model request carries the hotel's past decisions and their outcomes — kg/decisions.md
 - DEC-46 [T] The agent reprices when data arrives during the day — kg/decisions.md
+- DEC-49 [C] The benchmark measures the reviewer in the mismatched modes — kg/decisions.md
 
 ### Engineering
 
@@ -235,8 +236,8 @@ it differs from what that would write. `README.md` is the legend.
 - RES-13 [H] The cautious rule as first built — kg/results.md
 - RES-14 [O] The stored tables' timings — kg/results.md
 - RES-15 [O] The suite on each Python version — kg/results.md
-- RES-16 [O] The reviewers at fixed:1.0 on seeds 1 to 20 — kg/results.md
-- RES-17 [O] The reviewers at fixed:2.0 on seeds 1 to 20 — kg/results.md
+- RES-16 [C] The reviewers at fixed:1.0 on seeds 1 to 20 — kg/results.md
+- RES-17 [C] The reviewers at fixed:2.0 on seeds 1 to 20 — kg/results.md
 - RES-18 [O] The reviewers in the true mode on seeds 1 to 20 — kg/results.md
 - RES-19 [O] The reviewers ranked across the mismatched modes — kg/results.md
 
@@ -248,6 +249,7 @@ it differs from what that would write. `README.md` is the legend.
 - FRK-04 [O] Swapping the model for a locally hosted one — kg/forks.md
 - FRK-05 [O] Deliberate price tests, to learn the elasticity faster — kg/forks.md
 - FRK-06 [O] A read-only dashboard over the stored tables — kg/forks.md
+- FRK-07 [O] Reviewers from other providers — kg/forks.md
 
 ## Unknowns (`unknowns.md`)
 

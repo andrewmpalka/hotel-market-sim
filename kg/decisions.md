@@ -277,7 +277,8 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Replaces: nothing built; today the model sees only the day's entries ([[DAT-16]]).
 - Reason: a revenue manager judges a recommendation against the last ones, and the model cannot.
 - Needs: a record of each accepted plan's realised gain on its stay dates. The changed-pairs comparison already computes that per run ([[RES-02]]). The request and the cache digest need a place for it ([[DEC-23]]).
-- Links: [[DAT-16]], [[MOD-09]], [[MOD-10]], [[DEC-44]]
+- Measured: before this change, Opus recovers 0.28 of the oracle's gain over accept-all at fixed:1.0 ([[RES-16]]). It earns +$14,584 a seed against +$8,438 and +$30,588. Its reasons cite the fixed elasticity and no past outcome.
+- Links: [[DAT-16]], [[MOD-09]], [[MOD-10]], [[DEC-44]], [[RES-16]]
 
 ### DEC-46 [T] The agent reprices when data arrives during the day
 - Decided: the agent will run again within a day when a feed delivers new data.
@@ -285,6 +286,14 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Reason: a real feed arrives through the day, and a rate decided in the morning is stale by the afternoon.
 - Needs: a clock finer than as_of_day in the sources ([[DAT-25]]) and the stored tables ([[DAT-28]]). The hold needs a rule within a day ([[CON-10]]).
 - Links: [[MOD-10]], [[DAT-25]], [[DAT-28]], [[DEC-42]]
+
+### DEC-49 [C] The benchmark measures the reviewer in the mismatched modes
+- Decided: the bench measures every reviewer at fixed:1.0 and fixed:2.0 and keeps the true mode as a check. The ranking pools the two mismatched modes ([[DEC-48]]).
+- Replaces: nothing built; the live model had been measured in the true mode only ([[UNK-01]]).
+- Reason: in the true mode every plan is scored at the simulator's elasticity, so accepting every plan is right. The oracle accepts all ([[DEC-47]]). Only where the code's elasticity is wrong can a decline be right ([[DEC-38]]).
+- Measured: at fixed:1.0 Opus recovers 0.28 of the oracle's gain over accept-all, and Sonnet and Haiku recover none ([[RES-16]], [[RES-19]]).
+- Evidence: test_the_oracle_reviewer_accepts_every_queued_plan_in_true_mode, test_the_offline_bench_on_20_seeds_pins_the_benchmarks_headline
+- Links: [[UNK-01]], [[DEC-38]], [[DEC-47]], [[DEC-48]], [[MEA-12]], [[RES-16]], [[RES-17]], [[RES-18]], [[RES-19]]
 
 ## Engineering
 

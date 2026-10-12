@@ -47,3 +47,10 @@ it. None of these is in progress.
 - Known: the tables already hold every flag, plan and decision with the day it was known on. replay rebuilds a day from them alone ([[DEC-42]]), and a view would read and never write.
 - To decide it: pick a reader, such as a notebook, a static page or DuckDB's own tools. Keep the rule that nothing reads a day before it is written.
 - Links: [[DAT-28]], [[MOD-21]], [[DEC-42]]
+
+### FRK-07 [O] Reviewers from other providers
+- Choice: whether a model from another provider could review the queue next to the three Claude models the bench runs ([[RUL-79]]).
+- Known: the client behind the Client protocol is Anthropic's SDK ([[MOD-09]]). The call record keeps its usage fields and its fallback flag ([[DAT-30]]). A second provider's client is out of scope here.
+- Needs: a client whose complete(system, prompt, schema) returns JSON that fits the schema. Measured records its usage as it is, and PRICES needs its prices ([[RUL-80]]). The bench then takes it as one more --model ([[DEC-48]]).
+- Links: [[FRK-04]], [[MOD-09]], [[MOD-23]], [[DAT-30]], [[RUL-79]], [[RUL-80]]
+

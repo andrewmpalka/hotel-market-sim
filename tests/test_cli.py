@@ -525,17 +525,24 @@ def test_the_bench_needs_a_key_unless_it_runs_the_template_alone(monkeypatch):
 
 
 @pytest.mark.slow
-def test_the_offline_bench_on_20_seeds_reproduces_the_fixed_arms(tmp_path):
-    """The template arms of the bench are the --seeds sweep's arms, so they end where the
-    recorded sweep of the wrong elasticities ended, and the oracle agrees with itself."""
+def test_the_offline_bench_on_20_seeds_pins_the_benchmarks_headline(tmp_path):
+    """The template and oracle arms need no key, so they pin the headline of the benchmark's
+    tables: the template arms are the --seeds sweep's arms and end where the recorded sweep of
+    the wrong elasticities ended, and the oracle arms end where the recorded benchmark put
+    them, accepting the share of plans it recorded. The live arms are not pinned, since the
+    cache is not committed."""
     modes = [FIXED_1, ElasticityMode.parse("fixed:2.0")]
     arms = sweep(1, 20, tmp_path / "cache", modes, reviewers=[TEMPLATE, ORACLE])
     by_arm = {(str(arm.mode), arm.reviewer.name): arm for arm in arms}
     assert statistics.mean(by_arm[("fixed:1", "template")].changes) == pytest.approx(8438, abs=1)
     assert statistics.mean(by_arm[("fixed:2", "template")].changes) == pytest.approx(9551, abs=1)
+    assert statistics.mean(by_arm[("fixed:1", "oracle")].changes) == pytest.approx(30588, abs=1)
+    assert statistics.mean(by_arm[("fixed:2", "oracle")].changes) == pytest.approx(23058, abs=1)
+    assert round(by_arm[("fixed:1", "oracle")].counts.accept_rate, 2) == 0.15
+    assert round(by_arm[("fixed:2", "oracle")].counts.accept_rate, 2) == 0.29
     for mode in ("fixed:1", "fixed:2"):
         oracle = by_arm[(mode, "oracle")]
-        assert oracle.counts.precision == oracle.counts.recall == 1.0
+        assert oracle.counts.precision == oracle.counts.recall == 1.0 and oracle.wins == 20
         assert by_arm[(mode, "template")].counts.declined == 0
 
 

@@ -142,21 +142,23 @@ here for the rest.
 - Table: docs/results.md, "The suite on each Python version"
 - Links: [[UNK-04]], [[DEC-28]], [[DEC-30]]
 
-### RES-16 [O] The reviewers at fixed:1.0 on seeds 1 to 20
+### RES-16 [C] The reviewers at fixed:1.0 on seeds 1 to 20
 - Ran: `hotel-market bench --seeds 1 20` on 2026-10-12. Each seed has the fixed-rate run, then the template, the oracle and each of the three models in each mode. The run read every arm's cache and made no call.
 - Detail: the live calls were made first, in parallel chunks of seeds. Seeds 1 to 3 ran as one process per model, then seeds 4 to 20 in seven chunks. Each arm's cache folder holds its calls.jsonl.
 - Result: the template earns +$8,438 a seed and the oracle +$30,588 while accepting 15% of the plans. Opus earns +$14,584, ahead in 17 of 20, with a recovered share of 0.28. Sonnet and Haiku accept every plan and tie with the template.
 - Declines: Opus declines 47 plans with precision 1.00 and recall 0.14. 36 of them are the day-40 raise on stay dates 70 to 90 after the seat cut. Its regret against the oracle is $16,004 a seed.
 - Gap: the oracle's +$30,588 at fixed:1.0 stands next to the true mode's +$32,899 ([[RES-01]]). The $22,150 a seed between the template and the oracle is the value a reviewer can recover.
 - Table: docs/results.md, "Seeds 1 to 20 at a fixed elasticity of 1.0"
-- Links: [[DEC-47]], [[DEC-48]], [[MEA-12]], [[RES-01]], [[RES-03]], [[RES-19]], [[UNK-01]]
+- Evidence: test_the_offline_bench_on_20_seeds_pins_the_benchmarks_headline
+- Links: [[DEC-47]], [[DEC-48]], [[DEC-49]], [[MEA-12]], [[RES-01]], [[RES-03]], [[RES-19]], [[UNK-01]]
 
-### RES-17 [O] The reviewers at fixed:2.0 on seeds 1 to 20
+### RES-17 [C] The reviewers at fixed:2.0 on seeds 1 to 20
 - Ran: the same command as [[RES-16]], the fixed:2.0 arms.
 - Result: the template earns +$9,551 a seed and the oracle +$23,058 while accepting 29% of the plans. Opus earns +$9,557 with one decline, which the oracle shares, so its recall is 0.00. Sonnet and Haiku tie with the template.
 - Declines: Opus's one decline holds a 5% cut worth $340 on a date ahead of pace, on seed 4, day 53. The oracle declines 71% of the plans in this mode, most of them cuts.
 - Table: docs/results.md, "Seeds 1 to 20 at a fixed elasticity of 2.0"
-- Links: [[RES-16]], [[RES-03]], [[DEC-47]], [[UNK-01]]
+- Evidence: test_the_offline_bench_on_20_seeds_pins_the_benchmarks_headline
+- Links: [[RES-16]], [[RES-03]], [[DEC-47]], [[DEC-49]], [[UNK-01]]
 
 ### RES-18 [O] The reviewers in the true mode on seeds 1 to 20
 - Ran: the same command as [[RES-16]], the true-mode arms.
