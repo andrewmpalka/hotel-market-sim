@@ -162,12 +162,13 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-19 [C] SeedResult
 - File: src/hotel_market/cli.py
-- Fields: SeedResult(seed, contribution_change, revenue_change, rate_changes, estimated, estimates, rejected_at_an_end, shock_changes, shock_gain, other_changes, other_gain), frozen. It is one seed of a sweep over stay dates 0 to 149.
+- Fields: SeedResult(seed, contribution_change, revenue_change, rate_changes, estimated, estimates, rejected_at_an_end, shock_changes, shock_gain, other_changes, other_gain, entries, calls, counts), frozen. One seed of one arm.
 - Meaning: estimated is what the accepted plans were estimated to earn over holding. estimates maps (day, hotel key) to the learned Estimate ([[DAT-23]]) in learn mode. rejected_at_an_end counts the candidates the cautious band rejected.
 - Shocks: the shock fields count the plans whose causes include one of [[RUL-55]] and the target's change on their stay dates. The other fields do the same for every other plan, on the stay dates only those changed.
+- Bench: entries are the run's entries, calls its call records ([[DAT-30]]) and counts the oracle's labels on it ([[DAT-31]]). The bench tables sum them over an arm's seeds.
 - Written by: [[MOD-12]] (sweep)
-- Read by: [[MOD-12]] through [[DAT-24]] (the seeds table, the arm table and the estimate table)
-- Evidence: test_the_sweep_gives_each_seeds_change_over_the_fixed_run, test_a_sweep_counts_the_shock_plans_apart_from_the_other_plans, test_the_seeds_command_prints_each_seed_and_the_mean_and_range
+- Read by: [[MOD-12]] through [[DAT-24]] (the seeds table, the arm table, the estimate table and the bench tables)
+- Evidence: test_the_sweep_gives_each_seeds_change_over_the_fixed_run, test_a_sweep_counts_the_shock_plans_apart_from_the_other_plans, test_a_sweep_with_reviewers_keeps_each_arms_entries_calls_and_counts
 
 ### DAT-20 [C] Comparison
 - File: src/hotel_market/cli.py
@@ -206,13 +207,13 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-24 [C] ArmResult
 - File: src/hotel_market/cli.py
-- Fields: ArmResult(mode, seeds, target), frozen: one elasticity mode over the seeds of a sweep.
-- Derived: changes (contribution), revenue_changes, target_changes and wins, the seeds where the agent run earned more of the target.
+- Fields: ArmResult(mode, seeds, target, reviewer), frozen: one elasticity mode and one reviewer ([[DAT-32]]) over the seeds of a sweep.
+- Derived: changes (contribution), revenue_changes, target_changes and wins, the seeds where the agent run earned more of the target. counts ([[DAT-31]]) and calls pool the seeds' counts and call records.
 - Sums: rate_changes, estimated and realised (summed over the seeds), rejected_at_an_end, the shock and other changes and gains ([[RUL-55]]), and estimates_on(day).
-- Printed: a sweep with one mode prints the seeds table, and with several it prints one row per arm. Either way it prints where the gain came from, and an estimate table for each learn arm on REPORT_DAYS ([[RUL-53]]).
+- Printed: a sweep with one mode prints the seeds table, with several one row per arm. Both print where the gain came from and an estimate table per learn arm ([[RUL-53]]). The bench prints a table per mode and a ranking.
 - Written by: [[MOD-12]] (sweep)
 - Read by: [[MOD-12]]
-- Evidence: test_the_sweep_gives_each_seeds_change_over_the_fixed_run, test_the_seeds_command_prints_one_row_per_arm_and_a_learn_arms_estimates, test_a_revenue_target_arm_counts_wins_and_earnings_in_revenue
+- Evidence: test_the_sweep_gives_each_seeds_change_over_the_fixed_run, test_the_seeds_command_prints_one_row_per_arm_and_a_learn_arms_estimates, test_the_bench_command_prints_its_tables
 
 ### DAT-25 [C] The four sources
 - File: src/hotel_market/sources.py
@@ -270,3 +271,20 @@ the plans, the model's request and answer, and what the command writes.
 - Written by: [[MOD-09]], Measured.complete(), which also keeps the records in memory as calls. The tokens and seconds sum over the attempts.
 - Read by: [[MOD-22]] for the token, time and cost totals; [[MOD-23]] for invalid_answers(), failed_requests() and retries()
 - Evidence: test_a_measured_client_records_one_call, test_a_call_record_names_its_day_hotel_and_request_digest, test_a_measured_client_retries_an_sdk_error_after_a_backoff, test_a_request_that_fails_past_retries_still_leaves_a_record
+
+### DAT-31 [C] DeclineCounts
+- File: src/hotel_market/bench.py
+- Fields: DeclineCounts(queued, accepted, declined, oracle, agreed, loss, caught), frozen. Adding two sums the counts, so an arm's rates are pooled over its seeds and not averaged.
+- Rates: accept_rate, precision, recall, f1 and dollar_recall follow [[MEA-07]] to [[MEA-11]], with the same nan rules. of(entries) labels a run with the oracle after the fact.
+- Written by: [[MOD-12]] (sweep), one per seed and arm
+- Read by: [[MOD-12]] for the bench tables, summed over an arm's seeds
+- Evidence: test_decline_counts_pool_the_step_1_measures, test_a_sweep_with_reviewers_keeps_each_arms_entries_calls_and_counts
+
+### DAT-32 [C] Reviewer
+- File: src/hotel_market/bench.py
+- Fields: Reviewer(name, model, make), frozen: an arm's reviewer. name labels the row, model is the model it asks (None when none) and make builds its client. TEMPLATE, ORACLE and live(model) are the three kinds.
+- Client: client_for(agent) builds the client once the agent exists. The template has none. The oracle reads agent.today ([[DEC-47]]). A model gets a measured Claude client that writes calls.jsonl in the arm's cache folder ([[DAT-30]]).
+- Model: the agent takes the reviewer's model, so the arm's cache folder names it ([[DEC-23]]). live is true when the arm asks a model, and the bench then prints its calls, tokens, latency and cost.
+- Written by: [[MOD-12]] (the bench command, from --model) and tests
+- Read by: [[MOD-12]] (sweep)
+- Evidence: test_the_three_kinds_of_reviewer_make_their_clients, test_a_sweep_with_reviewers_keeps_each_arms_entries_calls_and_counts

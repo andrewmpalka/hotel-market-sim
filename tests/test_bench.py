@@ -1,4 +1,5 @@
-"""bench.py: the oracle reviewer as a grader, the reviewer measures and the scripted client."""
+"""bench.py: the oracle reviewer as a grader, the reviewer measures, the reviewers, the pooled
+counts, the price table and the scripted client."""
 
 import json
 import math
@@ -7,9 +8,15 @@ import pytest
 
 from hotel_market.agent import Agent, ElasticityMode
 from hotel_market.bench import (
+    ORACLE,
+    PRICES,
+    TEMPLATE,
+    DeclineCounts,
     OracleReviewer,
+    Reviewer,
     ScriptedClient,
     accept_rate,
+    cost,
     decline_f1,
     decline_precision,
     decline_recall,
@@ -18,6 +25,7 @@ from hotel_market.bench import (
     failed_requests,
     invalid_answers,
     key,
+    live,
     oracle_declines,
     oracle_labels,
     oracle_values,
@@ -27,7 +35,7 @@ from hotel_market.bench import (
 from hotel_market.bookings import simulate
 from hotel_market.customer import demo
 from hotel_market.detect import AHEAD, flags
-from hotel_market.model import SYSTEM, Measured, request_digest, request_for
+from hotel_market.model import MODELS, SYSTEM, ClaudeClient, Measured, request_digest, request_for
 from hotel_market.plan import (
     HOLD,
     Candidate,
@@ -84,7 +92,7 @@ C = _entry(20, 42, 1000.0, plan_rate=126.0)
 D = _entry(20, 43, 400.0)
 E = _entry(20, 44, 100.0)
 ENTRIES = [A, B, C, D, E]
-ORACLE = {key(B), key(C)}
+LABELS = {key(B), key(C)}  # the labels the tests hand to the measures
 
 
 def test_regret_is_the_oracle_arms_change_minus_the_arms_change():
@@ -101,25 +109,83 @@ def test_accept_rate_counts_accepted_queued_plans():
 def test_decline_precision_recall_and_f1_against_the_oracle():
     # Of the reviewer's two declines the oracle shares one; of the oracle's two the reviewer
     # shares one.
-    assert decline_precision(ENTRIES, ORACLE) == pytest.approx(1 / 2)
-    assert decline_recall(ENTRIES, ORACLE) == pytest.approx(1 / 2)
-    assert decline_f1(ENTRIES, ORACLE) == pytest.approx(1 / 2)
+    assert decline_precision(ENTRIES, LABELS) == pytest.approx(1 / 2)
+    assert decline_recall(ENTRIES, LABELS) == pytest.approx(1 / 2)
+    assert decline_f1(ENTRIES, LABELS) == pytest.approx(1 / 2)
     # The weight is the oracle's loss from accepting, hold minus plan at 1.5: $70 for B and
     # $140 for C, so the reviewer caught $70 of the $210 at stake.
     assert oracle_values(B) == pytest.approx((933.33, 863.33), abs=0.01)
     assert oracle_values(C) == pytest.approx((933.33, 793.33), abs=0.01)
-    assert dollar_weighted_recall(ENTRIES, ORACLE) == pytest.approx(70 / 210)
+    assert dollar_weighted_recall(ENTRIES, LABELS) == pytest.approx(70 / 210)
     # The plan's own value at stake is not the weight: by it the share would be 600 / 1,600.
     assert B.value_at_stake == 600 and C.value_at_stake == 1000
 
 
 def test_the_measures_are_nan_when_nobody_declined():
     accepted = [C, D]
-    assert math.isnan(decline_precision(accepted, ORACLE))  # the reviewer declined nothing
+    assert math.isnan(decline_precision(accepted, LABELS))  # the reviewer declined nothing
     assert math.isnan(decline_recall(ENTRIES, set()))  # the oracle declined nothing
     assert math.isnan(decline_f1(ENTRIES, set()))
     assert math.isnan(dollar_weighted_recall(ENTRIES, set()))
     assert decline_f1([A], {key(B)}) == 0.0  # both declined something, nothing in common
+
+
+def test_decline_counts_pool_the_step_1_measures():
+    # On one run the counts give the measures above, with the oracle's own labels: it would
+    # decline every one of the four plans, since each cuts the rate, so A and B agree with it.
+    labels = oracle_labels(ENTRIES)
+    assert labels == {key(A), key(B), key(C), key(D)}
+    counts = DeclineCounts.of(ENTRIES)
+    assert (counts.queued, counts.accepted, counts.declined) == (4, 2, 2)
+    assert (counts.oracle, counts.agreed) == (4, 2)
+    assert counts.accept_rate == accept_rate(ENTRIES) == 0.5
+    assert counts.precision == decline_precision(ENTRIES, labels) == 1.0
+    assert counts.recall == decline_recall(ENTRIES, labels) == 0.5
+    assert counts.f1 == pytest.approx(decline_f1(ENTRIES, labels))
+    assert counts.dollar_recall == pytest.approx(dollar_weighted_recall(ENTRIES, labels))
+    assert counts.loss == pytest.approx(70 + 70 + 140 + 70) and counts.caught == pytest.approx(140)
+    # Two runs add: the counts double and the rates hold, so an arm pools its seeds.
+    pooled = counts + counts
+    assert pooled.queued == 8 and pooled.agreed == 4 and pooled.loss == pytest.approx(700)
+    assert (pooled.accept_rate, pooled.precision, pooled.recall) == (0.5, 1.0, 0.5)
+    assert pooled.dollar_recall == pytest.approx(counts.dollar_recall)
+    # The nan rules are the functions': no decline, no precision; no oracle decline, no recall.
+    empty = DeclineCounts.of([E])
+    assert math.isnan(empty.accept_rate) and math.isnan(empty.precision)
+    assert math.isnan(empty.recall) and math.isnan(empty.f1) and math.isnan(empty.dollar_recall)
+    assert sum([counts, empty], DeclineCounts()) == counts
+
+
+def test_the_three_kinds_of_reviewer_make_their_clients(tmp_path, monkeypatch):
+    mode = ElasticityMode.parse("fixed:1.0")
+    agent = Agent(SEED, tmp_path, elasticity=mode)
+    assert TEMPLATE.client_for(agent) is None and TEMPLATE.model is None and not TEMPLATE.live
+    oracle = ORACLE.client_for(agent)
+    assert isinstance(oracle, OracleReviewer) and oracle.agent is agent and not ORACLE.live
+    # A model: a measured Claude client, its calls beside the arm's own cache. Building the
+    # client reads the key; nothing is sent.
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "not-a-key")
+    reviewer = live("claude-haiku-5-5")
+    assert reviewer.live and reviewer.name == reviewer.model == "claude-haiku-5-5"
+    haiku = Agent(SEED, tmp_path, elasticity=mode, model=reviewer.model)
+    client = reviewer.client_for(haiku)
+    assert isinstance(client, Measured) and isinstance(client.client, ClaudeClient)
+    assert client.client.model == "claude-haiku-5-5" and client.model == "claude-haiku-5-5"
+    assert client.path == haiku.cache_dir / "calls.jsonl"
+    assert haiku.cache_dir.name == "seed7-fixed-1-claude-haiku-5-5"
+    assert Reviewer("x", "x", lambda agent: None).live
+
+
+def test_a_models_cost_comes_from_the_price_table():
+    assert set(PRICES) == set(MODELS)
+    calls = [
+        {"input_tokens": 1200, "output_tokens": 300},
+        {"input_tokens": 800, "output_tokens": 200, "bad_attempt": True},  # paid for all the same
+    ]
+    assert cost(calls, "claude-opus-5-5") == pytest.approx((2000 * 4.00 + 500 * 20.00) / 1e6)
+    assert cost(calls, "claude-haiku-5-5") == pytest.approx((2000 * 0.10 + 500 * 0.50) / 1e6)
+    assert cost([], "claude-sonnet-5-5") == 0.0
+    assert math.isnan(cost(calls, "scripted"))
 
 
 def test_bad_attempts_failed_requests_and_retries_are_counted():

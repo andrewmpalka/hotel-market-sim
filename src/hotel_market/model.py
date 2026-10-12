@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import time
 from collections.abc import Callable
 from pathlib import Path
@@ -42,6 +43,8 @@ from hotel_market.text import (
 from hotel_market.world import Hotel
 
 MODEL = "claude-opus-5-5"
+# The current model at each tier, the benchmark's default reviewers (bench.py); MODEL is first.
+MODELS = ("claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5")
 
 SYSTEM = """\
 You advise the central revenue manager of four hotels. Each entry below is a \
@@ -136,7 +139,10 @@ class ClaudeClient:
         if sdk is None:
             import anthropic  # imported here so that offline runs never load it
 
-            sdk = anthropic.Anthropic()
+            # A key that is not scoped to a workspace needs the workspace named on every request.
+            workspace = os.environ.get("ANTHROPIC_WORKSPACE_ID")
+            headers = {"anthropic-workspace-id": workspace} if workspace else None
+            sdk = anthropic.Anthropic(default_headers=headers)
         self.sdk = sdk
         self.model = model
         self.last: dict | None = None  # what the last call returned, for a Measured wrapper

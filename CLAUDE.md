@@ -58,7 +58,7 @@ root with pip install -e ".[dev]" and imported as hotel_market.<module>.
 | stored.py | the four sources over the DuckDB tables, and the writers |
 | text.py | wording shared by the template reasons and the reports |
 | cli.py | the hotel-market command, which python -m hotel_market also runs |
-| bench.py | the benchmark of the model as a reviewer: the oracle grader and its measures |
+| bench.py | the benchmark of the model as a reviewer: the oracle grader, its measures, the reviewers and the price table |
 
 Around the package: tests/ holds one test file per module, conftest.py and
 tests/fixtures/live_seed7/, one recorded live run; customers/demo.toml is the
@@ -76,6 +76,7 @@ docs/results.md holds the experiment tables.
     make run SEED=7            # both runs with the template reasons
     make live SEED=7           # the model writes the reasons (ANTHROPIC_API_KEY, here or in .env)
     make live-audit SEED=7     # the live run, measured, then its audit
+    make bench FIRST=1 LAST=3  # the reviewers benchmarked (ANTHROPIC_API_KEY); BENCH=--template runs it offline
     make day SEED=7 DAY=20     # one day through the stored tables; make day-replay DAY=20 replays it
     make image                 # the Docker image; make docker-test and docker-run SEED=7 use it
     python kg_check.py         # the graph against the code; --write-index rewrites kg/index.md

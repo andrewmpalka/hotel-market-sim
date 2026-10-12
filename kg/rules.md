@@ -345,6 +345,13 @@ marked [H], with one line that names the node it moved to.
 - Meaning: the anthropic error classes a Measured client asks again, matched by class name so that model.py imports without the SDK. A status error is a rate limit or an overload; a connection error is a request that never arrived.
 - Evidence: test_a_measured_client_retries_an_sdk_error_after_a_backoff
 
+### RUL-79 [C] MODELS
+- Value: ("claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5")
+- File: src/hotel_market/model.py
+- Kind: label
+- Meaning: the current model at each tier, the bench's default reviewers, with MODEL ([[RUL-46]]) first. A label: no run depends on it until a model is asked. PRICES ([[RUL-80]]) prices each.
+- Evidence: test_a_models_cost_comes_from_the_price_table
+
 ## agent.py
 
 ### RUL-48 [C] MIN_STAY
@@ -399,6 +406,22 @@ marked [H], with one line that names the node it moved to.
 - Kind: label
 - Meaning: the two commands that run the agent against the stored tables ([[DEC-42]]). main() hands an argument list that starts with one of them to their own parser.
 - Evidence: test_the_daily_commands_run_a_day_and_replay_it
+
+### RUL-81 [C] BENCH_MODES
+- Value: ("fixed:1.0", "fixed:2.0", "true")
+- File: src/hotel_market/cli.py
+- Kind: parameter
+- Meaning: the bench's default modes: two where the code's elasticity is wrong, and the true one as the check. The ranking pools the mismatched modes ([[DEC-48]]).
+- Evidence: test_the_bench_needs_a_key_unless_it_runs_the_template_alone
+
+## bench.py
+
+### RUL-80 [C] PRICES
+- Value: {"claude-opus-5-5": (4.0, 20.0), "claude-sonnet-5-5": (2.0, 10.0), "claude-haiku-5-5": (0.1, 0.5)}
+- File: src/hotel_market/bench.py
+- Kind: parameter
+- Meaning: list prices in dollars per million input and output tokens, from Anthropic's pricing page on 2026-10-12. cost() prices every attempt's tokens with them. Haiku 5.5's price is for prompts under 100,000 tokens.
+- Evidence: test_a_models_cost_comes_from_the_price_table
 
 ## stored.py
 

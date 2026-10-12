@@ -62,6 +62,8 @@ it differs from what that would write. `README.md` is the legend.
 - DAT-28 [C] The stored tables — sql/schema.sql
 - DAT-29 [C] The recorded live run — tests/fixtures/live_seed7/
 - DAT-30 [C] The call record — src/hotel_market/model.py
+- DAT-31 [C] DeclineCounts — src/hotel_market/bench.py
+- DAT-32 [C] Reviewer — src/hotel_market/bench.py
 
 ## Rules and constants (`rules.md`)
 
@@ -101,6 +103,8 @@ it differs from what that would write. `README.md` is the legend.
 - RUL-51 [C] ELASTICITY_MIN — src/hotel_market/estimate.py
 - RUL-52 [C] ELASTICITY_MAX — src/hotel_market/estimate.py
 - RUL-53 [C] REPORT_DAYS — src/hotel_market/cli.py
+- RUL-81 [C] BENCH_MODES — src/hotel_market/cli.py
+- RUL-80 [C] PRICES — src/hotel_market/bench.py
 - RUL-58 [C] target — customers/demo.toml
 - RUL-59 [C] floor_share — customers/demo.toml
 - RUL-60 [C] ceiling_share — customers/demo.toml
@@ -113,7 +117,7 @@ it differs from what that would write. `README.md` is the legend.
 - RUL-67 [C] min_value_at_stake — customers/demo.toml
 - RUL-68 [C] days_out — customers/demo.toml
 - RUL-69 [C] share — customers/demo.toml
-- Labels: RUL-06, RUL-07, RUL-08, RUL-09, RUL-10, RUL-31, RUL-32, RUL-33, RUL-34, RUL-35, RUL-36, RUL-37, RUL-38, RUL-41, RUL-42, RUL-44, RUL-45, RUL-49, RUL-46, RUL-47, RUL-75, RUL-78, RUL-48, RUL-55, RUL-74, RUL-72, RUL-73, RUL-70, RUL-71, RUL-57
+- Labels: RUL-06, RUL-07, RUL-08, RUL-09, RUL-10, RUL-31, RUL-32, RUL-33, RUL-34, RUL-35, RUL-36, RUL-37, RUL-38, RUL-41, RUL-42, RUL-44, RUL-45, RUL-49, RUL-46, RUL-47, RUL-75, RUL-78, RUL-79, RUL-48, RUL-55, RUL-74, RUL-72, RUL-73, RUL-70, RUL-71, RUL-57
 
 ## Shocks (`shocks.md`)
 
@@ -211,6 +215,7 @@ it differs from what that would write. `README.md` is the legend.
 - DEC-41 [C] Everything specific to the market is a customer file, and the target is one of its settings — kg/decisions.md
 - DEC-42 [C] The feeds and the agent's output are stored tables keyed by as_of_day, and the agent can run one day at a time against them — kg/decisions.md
 - DEC-47 [C] The oracle reviewer is a grader outside the agent's path — kg/decisions.md
+- DEC-48 [C] The bench is one sweep with a reviewer per arm — kg/decisions.md
 
 ## Results (`results.md`)
 

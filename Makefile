@@ -4,6 +4,7 @@
 #   make test           run the tests (the slow 20-seed checks skipped)
 #   make test-all       run every test, the slow checks included
 #   make run SEED=7     run the simulation with the template reasons
+#   make bench FIRST=1 LAST=3   benchmark the reviewers; make bench BENCH=--template runs it offline
 #   make day SEED=7 DAY=20   run day 20 through the stored tables; make day-replay DAY=20 replays it
 #   make image          build a Docker image instead; make docker-run SEED=7 runs it
 #   make help           list every target
@@ -28,8 +29,8 @@ BIN   := $(VENV)/bin
 STAMP := $(VENV)/.installed
 
 .DEFAULT_GOAL := help
-.PHONY: help setup test test-all lint check run live live-audit replay sweep day day-replay clean \
-        clean-run clean-all image docker-test docker-run docker-live
+.PHONY: help setup test test-all lint check run live live-audit replay sweep bench day day-replay \
+        clean clean-run clean-all image docker-test docker-run docker-live
 
 help: ## List the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  make %-10s %s\n", $$1, $$2}'
@@ -75,6 +76,9 @@ replay: $(STAMP) ## Print day DAY of seed SEED from the cache
 
 sweep: $(STAMP) ## Run seeds FIRST to LAST with the template
 	$(BIN)/hotel-market --seeds $(FIRST) $(LAST)
+
+bench: $(STAMP) ## Benchmark the reviewers on seeds FIRST to LAST: the template, the oracle and each model (needs ANTHROPIC_API_KEY; BENCH=--template runs offline)
+	$(BIN)/hotel-market bench --seeds $(FIRST) $(LAST) $(BENCH)
 
 day: $(STAMP) ## Run day DAY of seed SEED through the stored tables (hotel_market.duckdb), from day 0 if the file is new
 	$(BIN)/hotel-market run-day --seed $(SEED) --as-of $(DAY) $(if $(wildcard hotel_market.duckdb),,--from 0) --template

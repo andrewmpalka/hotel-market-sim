@@ -33,7 +33,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import re
 import statistics
 import time
@@ -62,15 +61,10 @@ def live_run(seed: int, out_dir: Path) -> list[dict]:
     """Seed `seed` with the live model, writing decisions.jsonl, cache/ and calls.jsonl
     under out_dir. A Measured client (model.py) records each call; the file holds this
     run's calls only. Returns the calls' measurements."""
-    import anthropic
-
-    # A key that is not scoped to a workspace needs the workspace named on every request.
-    workspace = os.environ.get("ANTHROPIC_WORKSPACE_ID")
-    headers = {"anthropic-workspace-id": workspace} if workspace else None
     calls_path = out_dir / "calls.jsonl"
     if calls_path.exists():
         calls_path.unlink()
-    client = Measured(ClaudeClient(sdk=anthropic.Anthropic(default_headers=headers)), calls_path)
+    client = Measured(ClaudeClient(), calls_path)
     start = time.perf_counter()
     fixed, books, agent = run(seed, out_dir / "decisions.jsonl", out_dir / "cache", client)
     total = time.perf_counter() - start

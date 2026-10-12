@@ -420,3 +420,12 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Commit: 03506d4
 - Evidence: test_the_oracle_reviewer_accepts_every_queued_plan_in_true_mode, test_the_oracle_declines_where_hold_scores_at_least_as_well, test_the_agent_reads_only_through_the_interfaces
 - Links: [[MOD-23]], [[DEC-01]], [[DEC-02]], [[DEC-40]], [[MEA-06]]
+
+### DEC-48 [C] The bench is one sweep with a reviewer per arm
+- Decided: sweep() takes reviewers ([[DAT-32]]) as well as modes. An arm is one mode and one reviewer over the seeds; the fixed-rate run is made once per seed. The bench command runs the template, the oracle and each model in every mode.
+- Detail: each arm keeps its own cache folder ([[DEC-23]]), so a rerun reads the cache. A model's calls.jsonl grows only with new calls. Each seed keeps its entries, call records and decline counts ([[DAT-19]]).
+- Replaces: nothing built.
+- Reason: one sweep keeps one definition of the change against the fixed-rate run. The bench's template row is then the --seeds sweep's figure. A second loop would drift from it.
+- Modes: the default modes are BENCH_MODES ([[RUL-81]]), two mismatched and the true one. The ranking pools the mismatched modes, since the true mode cannot separate reviewers ([[DEC-47]]).
+- Evidence: test_a_sweep_with_reviewers_keeps_each_arms_entries_calls_and_counts, test_the_bench_command_prints_its_tables
+- Links: [[MOD-12]], [[MOD-23]], [[DAT-19]], [[DAT-24]], [[DAT-32]], [[DEC-47]]

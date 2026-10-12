@@ -83,7 +83,7 @@ which is also the order in which they depend on each other.
 - File: src/hotel_market/model.py
 - Owns: the model call: the request the model sees ([[DAT-16]]) and the system prompt ([[RUL-47]]). It builds the answer schema from the request's own options ([[DEC-34]]) and checks the answer against them.
 - Holds: the cache ([[DAT-17]], [[DEC-23]], [[DEC-25]]), the Claude client with its refusal fallback and the template, which needs no key. Measured wraps any client, records each call ([[DAT-30]]) and retries it after an error.
-- Names: MODEL ([[RUL-46]]), MODE_NAMES ([[RUL-75]]) and, for Measured, RETRIES, BACKOFF_SECONDS and SDK_ERRORS ([[RUL-76]], [[RUL-77]], [[RUL-78]]). Every figure in the request is a display string from [[MOD-11]] ([[DEC-44]]).
+- Names: MODEL and MODELS ([[RUL-46]], [[RUL-79]]), MODE_NAMES ([[RUL-75]]) and, for Measured, RETRIES, BACKOFF_SECONDS and SDK_ERRORS ([[RUL-76]] to [[RUL-78]]). Every request figure is a display string from [[MOD-11]] ([[DEC-44]]).
 - Reads: [[MOD-02]], [[MOD-07]], [[MOD-08]], [[MOD-11]]
 - Writes: [[DAT-16]], [[DAT-17]], [[DAT-30]]
 - Tests: tests/test_model.py
@@ -111,13 +111,13 @@ which is also the order in which they depend on each other.
 
 ### MOD-12 [C] cli.py
 - File: src/hotel_market/cli.py
-- Owns: the hotel-market command: the fixed-rate and agent runs, decisions.jsonl ([[DAT-18]]) and the replay of a day. It prints the queues and the summary tables ([[DAT-20]]) and checks the arguments.
-- Sweep: the sweep over seeds ([[DAT-19]]), one arm per --elasticity mode ([[DAT-24]]), with --cautious on the learn arms. It prints the arm, source and estimate tables. --customer and --target name the market and its target ([[DEC-41]]).
+- Owns: the hotel-market command: the fixed-rate and agent runs, decisions.jsonl ([[DAT-18]]), the replay of a day and the bench ([[DEC-48]]). It prints the queues and the summary tables ([[DAT-20]]) and checks the arguments.
+- Sweep: sweep() runs seeds, one arm per --elasticity mode ([[DAT-24]]) and reviewer ([[DAT-32]]), --cautious on the learn arms. bench runs the template, the oracle and each --model in every mode. It prints a table per mode and a ranking.
 - Daily: run_days() plays the simulator to a day with the stored changes and writes the feeds. A fresh agent then runs on the tables ([[MOD-21]]). replay_day() rebuilds a day's plans from the tables and checks them ([[DEC-42]]).
-- Holds: REPORT_DAYS ([[RUL-53]]), SHOCK_PLAN_CAUSES ([[RUL-55]]), DAILY_COMMANDS ([[RUL-74]]) and DEFAULT_DB, the file the daily commands keep the tables in.
-- Reads: [[MOD-01]], [[MOD-02]], [[MOD-06]], [[MOD-08]], [[MOD-09]], [[MOD-10]], [[MOD-11]], [[MOD-16]], [[MOD-19]], [[MOD-20]], [[MOD-21]]
+- Holds: REPORT_DAYS ([[RUL-53]]), SHOCK_PLAN_CAUSES ([[RUL-55]]), DAILY_COMMANDS ([[RUL-74]]), BENCH_MODES ([[RUL-81]]) and DEFAULT_DB, the daily commands' table file. --customer and --target name the market and its target ([[DEC-41]]).
+- Reads: [[MOD-01]], [[MOD-02]], [[MOD-06]], [[MOD-08]], [[MOD-09]], [[MOD-10]], [[MOD-11]], [[MOD-16]], [[MOD-19]], [[MOD-20]], [[MOD-21]], [[MOD-23]]
 - Tests: tests/test_cli.py
-- Evidence: test_two_runs_with_the_same_seed_write_identical_decisions_files, test_the_summary_compares_both_runs_on_the_changed_pairs, test_the_daily_commands_run_a_day_and_replay_it
+- Evidence: test_two_runs_with_the_same_seed_write_identical_decisions_files, test_the_summary_compares_both_runs_on_the_changed_pairs, test_the_daily_commands_run_a_day_and_replay_it, test_the_bench_command_prints_its_tables
 
 ### MOD-13 [C] __init__.py
 - File: src/hotel_market/__init__.py
@@ -206,7 +206,7 @@ which is also the order in which they depend on each other.
 ### MOD-22 [C] scripts/live_audit.py
 - File: scripts/live_audit.py
 - Owns: the measured live run and its audit, outside the package. A Measured client ([[MOD-09]]) records each call's tokens, time, stop reason and answering model ([[DAT-30]]).
-- Run: live_run() is the command's run for a seed with that client ([[MOD-12]]), so the request stays the one in [[MOD-09]]. calls.jsonl lands beside cache/. The run sends the workspace header when ANTHROPIC_WORKSPACE_ID is set.
+- Run: live_run() is the command's run for a seed with that client ([[MOD-12]]), so the request stays the one in [[MOD-09]]. calls.jsonl lands beside cache/. The client sends the workspace header when ANTHROPIC_WORKSPACE_ID is set.
 - Audit: audit() reads the cache ([[DAT-17]]) and prints each reason and declined plan. It lists each figure in a reason that its request does not hold, and each sentence with no request figure. It ends with the token, time and cost totals.
 - Quoted: a figure is quoted when a display string holding it appears whole in the same sentence. It is also quoted as a whole number or inside a name the request holds. "More than holding" in a sentence vouches for a bare dollar gain.
 - Ranges: a range such as "12–14%" counts as its two ends. Figures with different units stay apart, and one end of a request range on its own is not a quotation. The recorded run it audits is [[DAT-29]].
@@ -215,10 +215,10 @@ which is also the order in which they depend on each other.
 
 ### MOD-23 [C] bench.py
 - File: src/hotel_market/bench.py
-- Owns: the benchmark of the model as a reviewer ([[DEC-47]]). The oracle reviewer re-scores each queued plan and hold at ORACLE_ELASTICITY ([[RUL-56]]). It declines the plan when hold scores at least as well.
+- Owns: the benchmark of the model as a reviewer ([[DEC-47]], [[DEC-48]]). The oracle reviewer re-scores each queued plan and hold at ORACLE_ELASTICITY ([[RUL-56]]). It declines the plan when hold scores at least as well.
 - Measures: regret ([[MEA-06]]), the accept rate ([[MEA-07]]), decline precision ([[MEA-08]]), decline recall ([[MEA-09]]), their F1 ([[MEA-10]]) and dollar-weighted recall ([[MEA-11]]). Each function's docstring gives its formula.
-- Counts: invalid_answers() counts the call records with a bad attempt and failed_requests() those with no answer. retries() sums the retries ([[DAT-30]]).
-- Scripted: ScriptedClient answers from a dict of request digest to decisions. Otherwise it declines the keys it is given and accepts the rest. It plays a model, so its answers are cached under the model name scripted ([[DEC-23]]).
-- Reads: [[MOD-08]] (the entries and rescored()), [[MOD-09]] (request_digest()), [[MOD-10]] (the day's entries in agent.today), [[MOD-11]], [[MOD-20]]; never the simulator, and nothing in the agent's path imports it
+- Counts: DeclineCounts ([[DAT-31]]) pools the counts behind the measures over runs. invalid_answers(), failed_requests() and retries() sum the call records ([[DAT-30]]), and cost() prices them from PRICES ([[RUL-80]]).
+- Scripted: Reviewer ([[DAT-32]]) names an arm's reviewer: TEMPLATE, ORACLE or live(model), a measured Claude client. ScriptedClient plays a model offline, cached as scripted. It answers from a digest dict or declines the keys it is given.
+- Reads: [[MOD-08]] (the entries and rescored()), [[MOD-09]] (the clients and request_digest()), [[MOD-10]] (the day's entries in agent.today), [[MOD-11]], [[MOD-20]]; never the simulator, and nothing in the agent's path imports it
 - Tests: tests/test_bench.py
 - Evidence: test_the_oracle_reviewer_accepts_every_queued_plan_in_true_mode, test_the_oracle_declines_where_hold_scores_at_least_as_well, test_a_scripted_client_declines_chosen_plans_and_is_read_back

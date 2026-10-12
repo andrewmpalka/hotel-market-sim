@@ -25,12 +25,15 @@ Python 3.11 or later, from the repository root:
     hotel-market run-day --seed 7 --as-of 20 --from 0   # days 0 to 20, one day at a time, through stored tables
     hotel-market replay --as-of 20                      # day 20's plans again, from the stored tables alone
     python scripts/live_audit.py --seed 7               # a live run, every model call measured, then audited
+    hotel-market bench --seeds 1 20 --template          # the template and the oracle reviewer, in three modes, offline
+    hotel-market bench --seeds 1 3                      # the same with each Claude model reviewing (needs ANTHROPIC_API_KEY)
 
 With make, on a Mac or Linux machine:
 
     make setup                 # create .venv and install the package, pytest and ruff into it
     make test                  # the tests; make test-all includes the slow check; make lint runs ruff
     make run SEED=7            # the template run; make live SEED=7 uses the model
+    make bench FIRST=1 LAST=3  # the reviewers benchmarked; make bench BENCH=--template runs it offline
     make day SEED=7 DAY=20     # a day through the stored tables; make day-replay DAY=20 replays it
     make help                  # every target
 

@@ -27,21 +27,27 @@ standing for a block: decline precision, decline recall, their F1 and a
 dollar-weighted recall, plus the regret of an arm against the oracle's arm and
 the accept rate. Each is a function whose docstring gives its formula.
 
-A ScriptedClient plays a model offline: it answers from a dict of request
-digest to decisions, or declines the entries it is told to and accepts the
-rest, and it is cached under the model name "scripted", so the whole benchmark
-runs without a key.
+A Reviewer names what decides an arm of the benchmark: the template, the
+oracle or a model behind a measured Claude client, each with its own cache
+folder. cli.py's sweep() runs one arm per mode and reviewer and keeps each
+seed's entries, call records and DeclineCounts, the counts behind the measures
+pooled over the seeds, and the bench command prints them. PRICES turns an
+arm's tokens into a list-price cost. A ScriptedClient plays a model offline:
+it answers from a dict of request digest to decisions, or declines the entries
+it is told to and accepts the rest, and it is cached under the model name
+"scripted", so the whole benchmark runs without a key.
 """
 
 from __future__ import annotations
 
 import json
 import math
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
+from dataclasses import astuple, dataclass
 
 from hotel_market.agent import Agent
 from hotel_market.customer import Customer, demo
-from hotel_market.model import request_digest
+from hotel_market.model import ClaudeClient, Client, Measured, request_digest
 from hotel_market.plan import HOLD, ORACLE_ELASTICITY, Entry, rescored
 from hotel_market.text import tens_of_dollars
 
@@ -149,6 +155,65 @@ class ScriptedClient:
         return {"id": entry["id"], "choice": choice, "reason": f"Scripted: {choice}."}
 
 
+# ---- the reviewers ------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class Reviewer:
+    """One reviewer of the queued plans, as a sweep arm names it: the template, the oracle
+    or a model. `model` is the model the arm asks, None when it asks none; the agent takes
+    it, so the arm's cache folder names it. `make` builds the client once the agent exists,
+    since the oracle reads the agent's entries and a measured client writes its calls beside
+    the agent's cache; None is the template."""
+
+    name: str
+    model: str | None = None
+    make: Callable[[Agent], Client | None] | None = None
+
+    def client_for(self, agent: Agent) -> Client | None:
+        return None if self.make is None else self.make(agent)
+
+    @property
+    def live(self) -> bool:
+        """Whether the arm asks a model, so its calls, tokens, latency and cost are reported."""
+        return self.model is not None
+
+
+TEMPLATE = Reviewer("template")
+ORACLE = Reviewer("oracle", make=OracleReviewer)
+
+
+def live(model: str) -> Reviewer:
+    """A model as a reviewer: a measured Claude client whose calls are appended to calls.jsonl
+    in the arm's cache folder, so that a rerun that reads the cache adds nothing to it."""
+    return Reviewer(
+        model, model, lambda agent: Measured(ClaudeClient(model), agent.cache_dir / "calls.jsonl")
+    )
+
+
+# List prices in dollars per million tokens, (input, output), from Anthropic's pricing page,
+# https://platform.claude.com/docs/en/about-claude/pricing, read on 2026-10-12. Haiku 5.5 is
+# priced for prompts up to 100,000 tokens, which every request here is far under. Prompt
+# caching is off, so the cache token counts in a call record cost nothing.
+PRICES = {
+    "claude-opus-5-5": (4.00, 20.00),
+    "claude-sonnet-5-5": (2.00, 10.00),
+    "claude-haiku-5-5": (0.10, 0.50),
+}
+
+
+def cost(calls: Iterable[dict], model: str) -> float:
+    """The list-price cost of the calls in dollars at the model's PRICES. Every attempt's input
+    and output tokens count, since each was paid for. nan for a model not in the table."""
+    if model not in PRICES:
+        return math.nan
+    input_price, output_price = PRICES[model]
+    calls = list(calls)
+    tokens_in = sum(int(call.get("input_tokens", 0)) for call in calls)
+    tokens_out = sum(int(call.get("output_tokens", 0)) for call in calls)
+    return (tokens_in * input_price + tokens_out * output_price) / 1_000_000
+
+
 # ---- the measures -------------------------------------------------------------
 
 
@@ -224,6 +289,68 @@ def dollar_weighted_recall(
     if total == 0:
         return math.nan
     return sum(loss(k) for k in declined(entries) & oracle if k in by_key) / total
+
+
+@dataclass(frozen=True)
+class DeclineCounts:
+    """The counts behind the measures for one run or several: adding two sums the counts, so
+    that an arm's rates are pooled over its seeds rather than averaged. The rates follow
+    accept_rate, decline_precision, decline_recall, decline_f1 and dollar_weighted_recall
+    above, with the same nan rules. of(entries) labels a run with the oracle after the fact."""
+
+    queued: int = 0  # the plans the reviewer saw
+    accepted: int = 0
+    declined: int = 0
+    oracle: int = 0  # the plans the oracle declines
+    agreed: int = 0  # the plans both declined
+    loss: float = 0.0  # the oracle's loss from accepting every plan it declines
+    caught: float = 0.0  # that loss over the plans both declined
+
+    @classmethod
+    def of(cls, entries: Iterable[Entry], customer: Customer | None = None) -> DeclineCounts:
+        queued = reviewed(entries)
+        ours, labels = declined(queued), oracle_labels(queued, customer)
+        by_key = {key(e): e for e in queued}
+
+        def loss(k: Key) -> float:
+            hold, plan = oracle_values(by_key[k], customer)
+            return hold - plan
+
+        return cls(
+            len(queued),
+            sum(e.action != HOLD for e in queued),
+            len(ours),
+            len(labels),
+            len(ours & labels),
+            sum(loss(k) for k in labels),
+            sum(loss(k) for k in ours & labels),
+        )
+
+    def __add__(self, other: DeclineCounts) -> DeclineCounts:
+        return DeclineCounts(*(a + b for a, b in zip(astuple(self), astuple(other))))
+
+    @property
+    def accept_rate(self) -> float:
+        return self.accepted / self.queued if self.queued else math.nan
+
+    @property
+    def precision(self) -> float:
+        return self.agreed / self.declined if self.declined else math.nan
+
+    @property
+    def recall(self) -> float:
+        return self.agreed / self.oracle if self.oracle else math.nan
+
+    @property
+    def f1(self) -> float:
+        precision, recall = self.precision, self.recall
+        if math.isnan(precision) or math.isnan(recall):
+            return math.nan
+        return 2 * precision * recall / (precision + recall) if precision + recall else 0.0
+
+    @property
+    def dollar_recall(self) -> float:
+        return self.caught / self.loss if self.loss else math.nan
 
 
 def invalid_answers(calls: Iterable[dict]) -> int:

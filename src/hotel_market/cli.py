@@ -25,6 +25,10 @@ and stay-date pairs where the agent changed a rate.
                                                flags, plans and decisions
     hotel-market replay --as-of 20             day 20's queue again, rebuilt from the
                                                stored tables alone
+    hotel-market bench --seeds 1 3             the reviewers benchmarked: for each seed
+                                               and mode the template, the oracle and each
+                                               model decide the same queues
+    hotel-market bench --seeds 1 20 --template the template and the oracle only, offline
 
 With ANTHROPIC_API_KEY set, the agent asks Claude; otherwise a template
 writes the reasons. --elasticity is true (the default: the agent prices with
@@ -32,6 +36,11 @@ the simulator's own value), fixed:X or learn:X; --cautious applies to every
 learn arm of the command. --customer names the market's file
 (customers/demo.toml by default) and --target overrides its target,
 "contribution" or "revenue".
+
+The bench command (bench.py) runs the fixed-rate run once per seed, then one
+agent run per mode and reviewer, each in its own cache folder, and prints one
+table per mode with a row per reviewer, then a ranking over the mismatched
+modes, where the code's elasticity is wrong and declining is sometimes right.
 
 The two daily commands run the agent one day at a time against the tables
 sql/schema.sql defines (stored.py). run-day plays the simulator to the day
@@ -45,6 +54,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import statistics
 import sys
@@ -54,11 +64,21 @@ from pathlib import Path
 
 from hotel_market import stored
 from hotel_market.agent import MIN_STAY, TRUE_MODE, Advice, Agent, ElasticityMode
+from hotel_market.bench import (
+    ORACLE,
+    TEMPLATE,
+    DeclineCounts,
+    Reviewer,
+    cost,
+    invalid_answers,
+    live,
+    regret,
+)
 from hotel_market.bookings import Books, simulate
 from hotel_market.customer import TARGETS, Customer, demo, demo_path, load
 from hotel_market.detect import NEW_EVENT, SEATS_UP
 from hotel_market.estimate import Estimate
-from hotel_market.model import ClaudeClient, Client
+from hotel_market.model import MODELS, ClaudeClient, Client
 from hotel_market.plan import DAY_NAMES, HOLD, Entry, Pricing
 from hotel_market.schedule import HORIZON_DAYS
 from hotel_market.simulated import deciding, simulated_sources
@@ -71,6 +91,8 @@ REPORT_DAYS = (10, 20, 30, 40, 59)  # the days a sweep reports a learn arm's est
 SHOCK_PLAN_CAUSES = frozenset({NEW_EVENT, SEATS_UP})
 DAILY_COMMANDS = ("run-day", "replay")  # the commands that work through the stored tables
 DEFAULT_DB = Path("hotel_market.duckdb")  # where they keep the tables
+# The bench's default modes: two where the code's elasticity is wrong, and the true one.
+BENCH_MODES = ("fixed:1.0", "fixed:2.0", "true")
 
 # ---- the three things the command can do ----------------------------------
 
@@ -221,15 +243,19 @@ class SeedResult:
     shock_gain: float = 0.0  # the target's change on the stay dates those plans changed
     other_changes: int = 0  # every other plan that changed a rate
     other_gain: float = 0.0  # the target's change on the stay dates only those changed
+    entries: list[Entry] = field(default_factory=list)  # the run's entries, for the bench
+    calls: list[dict] = field(default_factory=list)  # the arm's call records (model.Measured)
+    counts: DeclineCounts = field(default_factory=DeclineCounts)  # the oracle's labels on the run
 
 
 @dataclass(frozen=True)
 class ArmResult:
-    """One elasticity mode over the seeds of a sweep."""
+    """One elasticity mode and one reviewer over the seeds of a sweep."""
 
     mode: ElasticityMode
     seeds: list[SeedResult]
     target: str = "contribution"  # what the agent scored on; wins and realised count it
+    reviewer: Reviewer = TEMPLATE
 
     @property
     def changes(self) -> list[float]:
@@ -288,6 +314,15 @@ class ArmResult:
             for hotel in hotels
         }
 
+    @property
+    def counts(self) -> DeclineCounts:
+        """The decline counts pooled over the seeds."""
+        return sum((result.counts for result in self.seeds), DeclineCounts())
+
+    @property
+    def calls(self) -> list[dict]:
+        return [call for result in self.seeds for call in result.calls]
+
 
 def sweep(
     first: int,
@@ -295,23 +330,29 @@ def sweep(
     cache_dir: Path = Path("cache"),
     modes: Sequence[ElasticityMode] = (TRUE_MODE,),
     customer: Customer | None = None,
+    reviewers: Sequence[Reviewer] = (TEMPLATE,),
 ) -> list[ArmResult]:
-    """Seeds first to last with the template: one fixed-rate run per seed, and one
-    agent run per seed and mode, each compared with the fixed-rate run."""
+    """Seeds first to last: one fixed-rate run per seed, and one agent run per seed, mode and
+    reviewer, each compared with the fixed-rate run. The arms come mode by mode, a reviewer
+    at a time. Each arm has its own cache folder, since the agent is given the reviewer's
+    model, and each seed keeps its entries, its call records and the oracle's labels on it."""
     customer = customer or demo()
     hotels = customer.hotels
-    arms: dict[ElasticityMode, list[SeedResult]] = {mode: [] for mode in modes}
+    arms: dict[tuple[ElasticityMode, Reviewer], list[SeedResult]] = {
+        (mode, reviewer): [] for mode in modes for reviewer in reviewers
+    }
     for seed in range(first, last + 1):
         fixed = simulate(seed, customer=customer)
-        for mode in modes:
-            agent = Agent(seed, cache_dir, elasticity=mode, customer=customer)
+        for mode, reviewer in arms:
+            agent = Agent(seed, cache_dir, elasticity=mode, customer=customer, model=reviewer.model)
+            agent.client = reviewer.client_for(agent)
             books = simulate(seed, deciding(agent), customer=customer)
             accepted = [entry for entry in agent.entries if entry.action != HOLD]
             shock = [entry for entry in accepted if SHOCK_PLAN_CAUSES & set(entry.causes)]
             other = [entry for entry in accepted if entry not in shock]
             shock_pairs = {(e.hotel, s) for e in shock for s in e.new_rates}
             other_pairs = {(e.hotel, s) for e in other for s in e.new_rates} - shock_pairs
-            arms[mode].append(
+            arms[(mode, reviewer)].append(
                 SeedResult(
                     seed,
                     sum(books.contribution(h) - fixed.contribution(h) for h in hotels),
@@ -324,9 +365,24 @@ def sweep(
                     _gain_on(fixed, books, shock_pairs, hotels, customer.target),
                     len(other),
                     _gain_on(fixed, books, other_pairs, hotels, customer.target),
+                    list(agent.entries),
+                    _calls(agent),
+                    DeclineCounts.of(agent.entries, customer),
                 )
             )
-    return [ArmResult(mode, results, customer.target) for mode, results in arms.items()]
+    return [
+        ArmResult(mode, results, customer.target, reviewer)
+        for (mode, reviewer), results in arms.items()
+    ]
+
+
+def _calls(agent: Agent) -> list[dict]:
+    """The arm's call records: the calls.jsonl in its cache folder, which every run of the arm
+    appends to, or else what a measured client without a file kept in memory."""
+    path = agent.cache_dir / "calls.jsonl"
+    if path.exists():
+        return [json.loads(line) for line in path.read_text().splitlines() if line]
+    return list(getattr(agent.client, "calls", []))
 
 
 def _gain_on(
@@ -587,6 +643,9 @@ def main(argv: list[str] | None = None) -> None:
     argv = sys.argv[1:] if argv is None else list(argv)
     if argv[:1] and argv[0] in DAILY_COMMANDS:
         _daily_main(argv)
+        return
+    if argv[:1] == ["bench"]:
+        _bench_main(argv[1:])
         return
     args = _parse_args(argv)
     customer = _customer(args)
@@ -920,6 +979,159 @@ def _source_table(arms: list[ArmResult]) -> list[str]:
             f"{arm.other_changes:>14}{arm.other_gain:>+14,.0f}"
         )
     return lines
+
+
+# ---- the bench --------------------------------------------------------------
+
+
+def _bench_main(argv: list[str]) -> None:
+    args = _parse_bench_args(argv)
+    customer = _customer(args)
+    reviewers = [TEMPLATE, ORACLE] + [live(model) for model in args.models]
+    _print_bench(*args.seeds, args.modes, reviewers, customer)
+
+
+def _parse_bench_args(argv: list[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        prog="hotel-market bench",
+        description="Benchmark the reviewers: for each seed and elasticity mode, the template, "
+        "the oracle and each model decide the same queues, each against the fixed-rate run.",
+    )
+    parser.add_argument(
+        "--seeds", type=_seed, nargs=2, metavar=("FIRST", "LAST"), required=True, help="the seeds"
+    )
+    parser.add_argument(
+        "--elasticity",
+        action="append",
+        type=_mode,
+        metavar="MODE",
+        help=f"a mode to run every reviewer in; repeat it for several (default: "
+        f"{', '.join(BENCH_MODES)})",
+    )
+    parser.add_argument(
+        "--model",
+        action="append",
+        metavar="NAME",
+        help=f"a model to review with; repeat it for several (default: {', '.join(MODELS)})",
+    )
+    parser.add_argument(
+        "--template",
+        action="store_true",
+        help="the template and the oracle only, with no model, so the bench runs offline",
+    )
+    _add_customer_options(parser)
+    args = parser.parse_args(argv)
+    if args.seeds[0] > args.seeds[1]:
+        parser.error("--seeds: FIRST must not be after LAST")
+    if args.template and args.model:
+        parser.error("--template runs no model; drop --model")
+    args.modes = args.elasticity or [ElasticityMode.parse(text) for text in BENCH_MODES]
+    args.models = [] if args.template else args.model or list(MODELS)
+    if args.models and not os.environ.get("ANTHROPIC_API_KEY"):
+        parser.error(
+            "ANTHROPIC_API_KEY is not set; set it, or pass --template for the template and the "
+            "oracle alone"
+        )
+    return args
+
+
+def _print_bench(
+    first: int,
+    last: int,
+    modes: Sequence[ElasticityMode],
+    reviewers: Sequence[Reviewer],
+    customer: Customer,
+) -> None:
+    arms = sweep(first, last, modes=modes, customer=customer, reviewers=reviewers)
+    print(
+        f"Seeds {first} to {last}: each reviewer against the fixed-rate run, stay dates 0 to 149, "
+        f"candidates scored on {customer.target}. Regret is the oracle arm's mean change minus "
+        f"the reviewer's; the rates are pooled over the seeds."
+    )
+    for mode in modes:
+        print()
+        print("\n".join(_bench_table(mode, [arm for arm in arms if arm.mode == mode])))
+    print()
+    mismatched = [mode for mode in modes if mode.kind != "true"]
+    if mismatched:
+        print(
+            "\n".join(_ranking_table(mismatched, [arm for arm in arms if arm.mode in mismatched]))
+        )
+    else:
+        print("No mismatched mode was run, so there is no ranking of the reviewers.")
+
+
+_BENCH_HEADER = (
+    f"{'reviewer':20}{'mean change':>13}{'range':>22}{'ahead':>8}{'regret':>10}{'accept':>8}"
+    f"{'precision':>11}{'recall':>8}{'F1':>8}{'$ recall':>10}{'invalid':>9}{'calls':>7}"
+    f"{'tokens in/out':>18}{'median s':>10}{'cost':>9}"
+)
+
+
+def _bench_table(mode: ElasticityMode, arms: list[ArmResult]) -> list[str]:
+    """One mode's arms, a row per reviewer: the mean realised change and its range, the seeds
+    ahead of the fixed-rate run, the regret against the oracle arm, the accept rate, the
+    decline precision, recall, F1 and dollar-weighted recall, the calls with a bad attempt,
+    and for a model its calls, tokens, median latency and list-price cost."""
+    oracle = next(arm for arm in arms if arm.reviewer.name == ORACLE.name)
+    lines = [f"Elasticity {mode}: each reviewer against the fixed-rate run", _BENCH_HEADER]
+    lines += [_bench_row(arm, oracle) for arm in arms]
+    return lines
+
+
+def _ranking_table(modes: Sequence[ElasticityMode], arms: list[ArmResult]) -> list[str]:
+    """The reviewers pooled over the mismatched modes, the highest mean change first, since the
+    question is which reviewer is the better one when the code's elasticity is wrong."""
+    names = list(dict.fromkeys(arm.reviewer.name for arm in arms))
+    pooled = []
+    for name in names:
+        own = [arm for arm in arms if arm.reviewer.name == name]
+        seeds = [result for arm in own for result in arm.seeds]
+        pooled.append(ArmResult(modes[0], seeds, own[0].target, own[0].reviewer))
+    oracle = next(arm for arm in pooled if arm.reviewer.name == ORACLE.name)
+    ranked = sorted(pooled, key=lambda arm: -statistics.mean(arm.target_changes))
+    lines = [
+        f"Across the mismatched modes ({', '.join(str(mode) for mode in modes)}): each reviewer "
+        f"pooled over those arms, the highest mean change first",
+        f"{'rank':>4}  {_BENCH_HEADER}",
+    ]
+    lines += [f"{rank:>4}  {_bench_row(arm, oracle)}" for rank, arm in enumerate(ranked, 1)]
+    return lines
+
+
+def _bench_row(arm: ArmResult, oracle: ArmResult) -> str:
+    changes = arm.target_changes
+    counts = arm.counts
+    calls = arm.calls
+    is_live = arm.reviewer.live
+    seconds = [float(call.get("seconds", 0.0)) for call in calls]
+    median = f"{statistics.median(seconds):.1f}" if seconds else "-"
+    return (
+        f"{arm.reviewer.name:20}{statistics.mean(changes):>+13,.0f}"
+        f"{f'{min(changes):+,.0f} to {max(changes):+,.0f}':>22}"
+        f"{f'{arm.wins}/{len(changes)}':>8}"
+        f"{regret(statistics.mean(oracle.target_changes), statistics.mean(changes)):>+10,.0f}"
+        f"{_rate(counts.accept_rate):>8}{_rate(counts.precision):>11}{_rate(counts.recall):>8}"
+        f"{_rate(counts.f1):>8}{_rate(counts.dollar_recall):>10}"
+        f"{invalid_answers(calls) if is_live else '-':>9}{len(calls) if is_live else '-':>7}"
+        f"{_tokens(calls) if is_live else '-':>18}{median if is_live else '-':>10}"
+        f"{_cost(calls, arm.reviewer.model) if is_live else '-':>9}"
+    )
+
+
+def _rate(value: float) -> str:
+    return "-" if math.isnan(value) else f"{value:.2f}"
+
+
+def _tokens(calls: list[dict]) -> str:
+    tokens_in = sum(int(call.get("input_tokens", 0)) for call in calls)
+    tokens_out = sum(int(call.get("output_tokens", 0)) for call in calls)
+    return f"{tokens_in:,}/{tokens_out:,}"
+
+
+def _cost(calls: list[dict], model: str | None) -> str:
+    dollars = cost(calls, model or "")
+    return "n/a" if math.isnan(dollars) else f"${dollars:.2f}"
 
 
 def _estimate_table(arm: ArmResult, hotels: Sequence[Hotel]) -> list[str]:
