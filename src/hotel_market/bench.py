@@ -204,24 +204,34 @@ PRICES = {
 
 
 def counted(records: Iterable[dict], folder: Path) -> list[dict]:
-    """The call records of an arm that count: the last record per request digest, and only
-    a digest whose answer is in the arm's cache folder or whose record is marked failed. The
-    file is appended across runs while the cache can be deleted, so without this a rerun
-    after a deleted cache would count a call's tokens and cost twice. A record with no
-    digest, from before the field, is kept as it is."""
+    """The call records of an arm that count: one per request digest, and only a digest whose
+    answer is in the arm's cache folder or whose record is marked failed. The file is appended
+    across runs while the cache can be deleted, so without this a rerun after a deleted cache
+    would count a call's tokens and cost twice. A digest's records merge into one that takes
+    its outcome, tokens and time from the last record and sums bad_attempt and retries over
+    all of them, so a request that failed in one run and answered in a rerun keeps every bad
+    attempt. A record with no digest, from before the field, is kept as it is."""
     cached = set()
     if folder.exists():
         for path in folder.glob("day*_*.json"):
             cached.add(json.loads(path.read_text()).get("request_digest"))
-    undigested, last = [], {}
+    undigested, merged = [], {}
     for record in records:
         digest = record.get("request_digest")
         if digest is None:
             undigested.append(record)
+        elif digest in merged:
+            earlier = merged[digest]
+            merged[digest] = {
+                **record,
+                "bad_attempt": int(earlier.get("bad_attempt", 0))
+                + int(record.get("bad_attempt", 0)),
+                "retries": int(earlier.get("retries", 0)) + int(record.get("retries", 0)),
+            }
         else:
-            last[digest] = record
+            merged[digest] = record
     return undigested + [
-        r for r in last.values() if r.get("failed") or r["request_digest"] in cached
+        r for r in merged.values() if r.get("failed") or r["request_digest"] in cached
     ]
 
 
@@ -390,8 +400,9 @@ class DeclineCounts:
 
 def invalid_answers(calls: Iterable[dict]) -> int:
     """How many call records had a bad attempt: an SDK error, a refusal or an answer that failed
-    model._check, whether or not a retry then answered. A Measured client writes the records."""
-    return sum(1 for call in calls if call.get("bad_attempt"))
+    model._check, whether or not a retry then answered. A Measured client writes the records,
+    and a record merged over several runs by counted() counts each run that had one."""
+    return sum(int(call.get("bad_attempt", 0)) for call in calls)
 
 
 def failed_requests(calls: Iterable[dict]) -> int:

@@ -213,11 +213,41 @@ def test_a_duplicate_call_record_is_counted_once(tmp_path):
     failed = {"request_digest": "c", "input_tokens": 300, "output_tokens": 0, "failed": True}
     older = {"input_tokens": 500, "output_tokens": 50}  # from before the digest field
     records = [first, gone, older, failed, again]
-    assert counted(records, folder) == [older, again, failed]
+    merged = {**again, "bad_attempt": 0, "retries": 0}  # the two clean runs of one request
+    assert counted(records, folder) == [older, merged, failed]
     assert cost(counted(records, folder), "claude-opus-5-5") == pytest.approx(
         ((1100 + 300 + 500) * 4.00 + (110 + 0 + 50) * 20.00) / 1e6
     )
     assert counted(records, tmp_path / "missing") == [older, failed]
+
+
+def test_a_failed_record_followed_by_a_good_one_sums_its_attempts(tmp_path):
+    # A request that failed in one run and answered in the rerun: the outcome, tokens and
+    # time come from the last record, and the bad attempts and retries add up over both.
+    folder = tmp_path / "seed8-claude-sonnet-5-5"
+    folder.mkdir()
+    (folder / "day020_airport.json").write_text(json.dumps({"request_digest": "a"}))
+    failed = {
+        "request_digest": "a",
+        "input_tokens": 13632,
+        "output_tokens": 408,
+        "seconds": 7.4,
+        "retries": 2,
+        "bad_attempt": True,
+        "failed": True,
+        "error": "ValueError",
+    }
+    good = {**failed, "input_tokens": 9088, "output_tokens": 300, "seconds": 5.0, "retries": 1}
+    good.update(failed=False, error=None)
+    [record] = counted([failed, good], folder)
+    assert record["failed"] is False and record["error"] is None
+    assert record["input_tokens"] == 9088 and record["seconds"] == 5.0
+    assert record["bad_attempt"] == 2 and record["retries"] == 3
+    assert invalid_answers([record]) == 2 and retries([record]) == 3
+    assert failed_requests([record]) == 0
+    # In the other order the later failure is the outcome, and the attempts still add up.
+    [record] = counted([good, failed], folder)
+    assert record["failed"] is True and record["bad_attempt"] == 2 and record["retries"] == 3
 
 
 def test_bad_attempts_failed_requests_and_retries_are_counted():

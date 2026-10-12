@@ -384,7 +384,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Links: [[MOD-15]], [[MOD-01]]
 
 ### DEC-34 [C] The answer schema lists the request's own entry ids and options as enums
-- Decided: schema_for(request) builds the structured-output schema. It limits "id" to the entry ids and "choice" to the plans and "hold" in that request.
+- Decided: schema_for(request) builds the structured-output schema. It limits "id" to the entry ids and "choice" to the plans and "hold" in that request. It sets the array's minimum length to the entries' count; the API rejects a maximum.
 - Replaces: a fixed schema that typed id and choice as free strings.
 - Reason: with free strings a schema-valid answer such as "Hold" failed the check, and the run aborted with nothing cached. With enums the API cannot return a choice the code would reject. The pairing check stays as the backstop.
 - Commit: abef71f
@@ -433,7 +433,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 
 ### DEC-48 [C] The bench is one sweep with a reviewer per arm
 - Decided: sweep() takes reviewers ([[DAT-32]]) as well as modes. An arm is one mode and one reviewer over the seeds; the fixed-rate run is made once per seed. The bench command runs the template, the oracle and each model in every mode.
-- Detail: each arm keeps its own cache folder ([[DEC-23]]), so a rerun reads the cache. The report keeps the last call record per request digest. It counts one only when its cache file is present or it failed.
+- Detail: each arm keeps its own cache folder ([[DEC-23]]), so a rerun reads the cache. The report merges a digest's call records into one, with the outcome from the last. It counts one only when its cache file is present or it failed.
 - Replaces: nothing built.
 - Reason: one sweep keeps one definition of the change against the fixed-rate run. The bench's template row is then the --seeds sweep's figure. A second loop would drift from it.
 - Modes: the default modes are BENCH_MODES ([[RUL-81]]), two mismatched and the true one. The ranking pools the mismatched modes, since the true mode cannot separate reviewers ([[DEC-47]]).

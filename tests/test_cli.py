@@ -499,7 +499,7 @@ def test_an_arms_call_records_are_read_from_its_folder_and_counted_once(tmp_path
         {"request_digest": "b", "input_tokens": 1000, "output_tokens": 100},
     ]
     (agent.cache_dir / "calls.jsonl").write_text("".join(json.dumps(c) + "\n" for c in lines))
-    assert _calls(agent) == [lines[1]]
+    assert _calls(agent) == [{**lines[1], "bad_attempt": 0, "retries": 0}]
 
 
 @pytest.mark.parametrize(

@@ -81,9 +81,9 @@ are not a forecast.
 In this repository the model is a reviewer, because code computes every
 candidate rate action and its estimate before the model is asked. The model
 accepts or declines each plan in a hotel's queue and writes the reason, and its
-answer is checked against the options it was given, so it cannot choose a rate
-the code did not compute. The fixed-rate run is the control, which means every
-gain is measured against the same bookings with no rate change. The seed and the
+answer is checked against the options it was given, so it cannot pick a rate the
+code did not compute. The fixed-rate run is the control, which means every gain
+is measured against the same bookings with no rate change. The seed and the
 cache make every run reproducible, because the same seed draws the same bookings
 and a cached answer is read back before the model is asked. The oracle reviewer
 is the ceiling, because it scores each plan with the simulator's own elasticity
@@ -91,24 +91,24 @@ and declines the plan when holding scores at least as well. The shape of the
 comparison follows Coinbase's series on building and evaluating a fraud agent.
 
 The benchmark ran seeds 1 to 20 in three elasticity modes with the template, the
-oracle and the three current Claude models. In the true mode every plan is
-scored at the simulator's own elasticity, so every reviewer accepts every plan
-and earns the template's +$32,899 a seed, which means only the mismatched modes
-can separate them. At a fixed elasticity of 1.0 accepting every plan earns
-+$8,438 a seed and the oracle earns +$30,588 while accepting 15% of the plans,
-so a reviewer had $22,150 a seed to recover. Opus recovered 28% of it and earned
-+$14,584 a seed, ahead in 17 of 20 seeds, because it declined 47 plans with a
-precision of 1.00 and a recall of 0.14, so every plan it declined was one the
-oracle declined too but it caught one in seven of them. Its declines cluster on
-the day-40 raise of 10% on every day of the week on stay dates 70 to 90 after
-the seat cut, 36 of the 47 cases, and its reasons cite an elasticity "fixed for
-the run rather than learned from our bookings" together with the dates trailing
-pace and sitting above the median. At 2.0 it declined one plan and tied with
-accept-all, +$9,557 against +$9,551, while the oracle earned +$23,058. Sonnet
-and Haiku declined nothing, so they tie with the template everywhere. So one
-model beats accept-all, by $6,146 a seed at a fixed elasticity of 1.0 and by
-nothing at 2.0, for $0.41 an arm at list prices, but for the other two the value
-of the run is in the code and the model is a reason-writer.
+oracle and three Claude models. In the true mode every plan is scored at the
+simulator's elasticity, so every reviewer accepts every plan and earns the
+template's +$32,899 a seed, so only the mismatched modes can separate them. At a
+fixed elasticity of 1.0 accepting every plan earns +$8,438 a seed and the oracle
+earns +$30,588 while accepting 15% of the plans, so a reviewer had $22,150 a
+seed to recover. Opus recovered 28% of it and earned +$14,584 a seed, ahead in
+17 of 20 seeds, because it declined 47 plans with a precision of 1.00 and a
+recall of 0.14, so every plan it declined was one the oracle declined too but it
+caught one in seven. Its dollar-weighted recall is 0.25 against that count
+recall of 0.14, so the one in seven it caught were the costlier ones. Its
+declines cluster on the day-40 raise on stay dates 70 to 90 after the seat cut,
+36 of the 47, and its reasons cite an elasticity "fixed for the run rather than
+learned from our bookings" and the dates trailing pace above the median. At 2.0
+it declined one plan and tied with accept-all, +$9,557 against +$9,551, against
+the oracle's +$23,058. Sonnet and Haiku declined nothing, so they tie with the
+template everywhere. So one model beats accept-all, by $6,146 a seed at a fixed
+elasticity of 1.0 and by nothing at 2.0, for $0.41 per seed, but for the other
+two the value of the run is in the code and the model is a reason-writer.
 
 Post-training is not done here, because the world is one this repository wrote.
 A model trained on these runs would learn the simulator's Poisson draws and its

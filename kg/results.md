@@ -146,8 +146,8 @@ here for the rest.
 - Ran: `hotel-market bench --seeds 1 20` on 2026-10-12. Each seed has the fixed-rate run, then the template, the oracle and each of the three models in each mode. The run read every arm's cache and made no call.
 - Detail: the live calls were made first, in parallel chunks of seeds. Seeds 1 to 3 ran as one process per model, then seeds 4 to 20 in seven chunks. Each arm's cache folder holds its calls.jsonl.
 - Result: the template earns +$8,438 a seed and the oracle +$30,588 while accepting 15% of the plans. Opus earns +$14,584, ahead in 17 of 20, with a recovered share of 0.28. Sonnet and Haiku accept every plan and tie with the template.
-- Declines: Opus declines 47 plans with precision 1.00 and recall 0.14. 36 of them are the day-40 raise on stay dates 70 to 90 after the seat cut. Its regret against the oracle is $16,004 a seed.
-- Gap: the oracle's +$30,588 at fixed:1.0 stands next to the true mode's +$32,899 ([[RES-01]]). The $22,150 a seed between the template and the oracle is the value a reviewer can recover.
+- Declines: Opus declines 47 plans with precision 1.00 and count recall 0.14. Its dollar-weighted recall is 0.25, so the one in seven it caught were the costlier ones. 36 are the day-40 raise on stay dates 70 to 90 after the seat cut.
+- Gap: the oracle's +$30,588 at fixed:1.0 stands next to the true mode's +$32,899 ([[RES-01]]). The $22,150 a seed between the template and the oracle is the value a reviewer can recover. Opus's regret is $16,004 a seed.
 - Table: docs/results.md, "Seeds 1 to 20 at a fixed elasticity of 1.0"
 - Evidence: test_the_offline_bench_on_20_seeds_pins_the_benchmarks_headline
 - Links: [[DEC-47]], [[DEC-48]], [[DEC-49]], [[MEA-12]], [[RES-01]], [[RES-03]], [[RES-19]], [[UNK-01]]
@@ -163,7 +163,7 @@ here for the rest.
 ### RES-18 [O] The reviewers in the true mode on seeds 1 to 20
 - Ran: the same command as [[RES-16]], the true-mode arms.
 - Result: every reviewer earns +$32,899 a seed, ahead in 20 of 20, the figure of [[RES-01]]. No model declines a plan, so the mode cannot separate them ([[DEC-47]]).
-- Calls: 174 calls a model. Opus costs $2.83, Sonnet $1.31 and Haiku $0.11 at list prices, with median latencies of 4.3, 2.5 and 4.2 s. Sonnet gives one invalid answer, which a retry fixes ([[UNK-02]]).
+- Calls: 174 calls a model. Opus costs $2.83, Sonnet $1.31 and Haiku $0.11 at list prices, with median latencies of 4.3, 2.5 and 4.2 s. Sonnet's one request with invalid answers counts twice, a failed run and its rerun ([[UNK-02]]).
 - Table: docs/results.md, "Seeds 1 to 20 in the true mode"
 - Links: [[RES-01]], [[RES-16]], [[DEC-47]], [[UNK-01]], [[UNK-02]], [[UNK-09]]
 

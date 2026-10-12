@@ -82,8 +82,11 @@ MODE_NAMES = {"true": "assumed"}
 
 def schema_for(request: dict) -> dict:
     """The shape of an answer to this request: one decision per entry, each
-    choosing from the request's own ids and options, so the API cannot return
-    a choice the code would reject."""
+    choosing from the request's own ids and options, and at least as many
+    decisions as entries, so the API cannot return a choice the code would
+    reject or leave an entry out. The API rejects maxItems on an array, so the
+    pairing check in _check() still catches a duplicated id. The schema is not
+    part of the request, so it changes no digest and no cache."""
     entries = request["entries"]
     options = sorted({option for entry in entries for option in entry["options"]})
     return {
@@ -91,6 +94,7 @@ def schema_for(request: dict) -> dict:
         "properties": {
             "decisions": {
                 "type": "array",
+                "minItems": len(entries),  # maxItems is not supported by the API
                 "items": {
                     "type": "object",
                     "properties": {

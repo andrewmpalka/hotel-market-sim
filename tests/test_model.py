@@ -178,9 +178,18 @@ def _number_paths(value, path="") -> set[str]:
 
 def test_the_schema_limits_ids_and_choices_to_the_requests_options(convention_request):
     request, [entry] = convention_request
-    decision = schema_for(request)["properties"]["decisions"]["items"]["properties"]
+    decisions = schema_for(request)["properties"]["decisions"]
+    decision = decisions["items"]["properties"]
     assert decision["id"]["enum"] == [entry.id]
     assert decision["choice"]["enum"] == sorted([entry.plan, HOLD])
+    # At least one decision per entry, so an answer that leaves an entry out is
+    # unrepresentable; the API rejects maxItems, so the pairing check catches a duplicate.
+    assert decisions["minItems"] == 1 and "maxItems" not in decisions
+    two = json.loads(json.dumps(request))
+    two["entries"].append({**two["entries"][0], "id": "50-52"})
+    decisions = schema_for(two)["properties"]["decisions"]
+    assert decisions["minItems"] == 2
+    assert decisions["items"]["properties"]["id"]["enum"] == [entry.id, "50-52"]
 
 
 def test_ask_calls_the_model_once_and_then_reads_the_cache(convention_request, tmp_path):
