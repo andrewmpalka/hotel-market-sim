@@ -27,11 +27,11 @@ and a RES node records the run. A claim that no test can confirm stays [U].
 - Resolves when: make image and make docker-test run on a machine with a daemon.
 - Links: [[DEC-28]]
 
-### UNK-04 [U] Whether the suite passes on Python 3.12 and 3.13
-- Unknown: only Python 3.11 has run the suite. The hosted runs that would have covered the others never started ([[DEC-29]]).
-- Best guess: it passes. The code uses nothing beyond Python 3.11, and the dependencies publish wheels for both versions.
-- Resolves when: the suite is run on either version.
-- Links: [[DEC-30]]
+### UNK-04 [H] Whether the suite passes on Python 3.12 and 3.13
+- Was unknown: only Python 3.11 had run the suite. The hosted runs that would have covered the others never started ([[DEC-29]]).
+- Closed by: [[RES-15]]
+- Result: the full suite passed on Python 3.12.6 and on 3.13.7 on 2026-10-12, the slow 20-seed check included.
+- Links: [[DEC-30]], [[RES-15]]
 
 ### UNK-05 [U] How a change in arriving seats turns into hotel demand in a real market
 - Unknown: the simulator makes demand rise by the hotel's air share times the fractional seat change, which is a modelling choice.
@@ -56,10 +56,10 @@ and a RES node records the run. A claim that no test can confirm stays [U].
 - Resolves when: never within this repository.
 
 ### UNK-08 [U] Whether the measured gains say anything about a real hotel
-- Unknown: the agent shares the simulator's demand formula, booking curve and elasticity, so it knows exactly how guests respond.
+- Unknown: the agent shares the simulator's demand formula and booking curve in every mode. In the default mode it is also handed the simulator's elasticity, so it knows price response exactly only there ([[DEC-38]]).
 - Best guess: no. The numbers show that the loop detects, scores, decides and records correctly, and nothing more. They are a test of the machinery.
 - Resolves when: never within this repository.
-- Links: [[DEC-36]], [[UNK-05]], [[UNK-07]]
+- Links: [[DEC-36]], [[DEC-38]], [[UNK-05]], [[UNK-07]]
 
 ### UNK-09 [C] What a live run costs and how long it takes
 - Was unknown: no live call had been made from this repository. The guess was about seven calls, a few cents to under a dollar, and under a minute.

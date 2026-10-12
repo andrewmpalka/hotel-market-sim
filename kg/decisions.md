@@ -86,7 +86,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Measured: a test event over nights 49 to 55 has its peak on Monday 49. Once the day-20 flights are known, the peak moves to Thursday 52.
 - Commit: abef71f
 - Evidence: test_convention_peak_night_is_its_busiest_night_as_of_day_10, test_peak_night_uses_what_is_known_on_the_day_the_event_becomes_known
-- Links: [[MOD-04]], [[SHK-01]], [[RUL-03]]
+- Links: [[MOD-18]], [[SHK-01]], [[RUL-03]]
 
 ### DEC-10 [C] A minimum stay is advice only, never simulated
 - Decided: when an event's peak night is ahead of pace, the agent recommends a two-night minimum once per hotel and event. The advice goes into decisions.jsonl marked "simulated": false and stays out of every estimate and result.

@@ -233,7 +233,7 @@ it differs from what that would write. `README.md` is the legend.
 - UNK-01 [C] How the live model decides, compared with the template — kg/unknowns.md
 - UNK-02 [C] Whether the enum schema behaves as expected against the live API — kg/unknowns.md
 - UNK-03 [U] Whether the container image builds and its tests pass — kg/unknowns.md
-- UNK-04 [U] Whether the suite passes on Python 3.12 and 3.13 — kg/unknowns.md
+- UNK-04 [H] Whether the suite passes on Python 3.12 and 3.13 — kg/unknowns.md
 - UNK-05 [U] How a change in arriving seats turns into hotel demand in a real market — kg/unknowns.md
 - UNK-06 [U] The real cost to service an occupied room — kg/unknowns.md
 - UNK-07 [U] The real price elasticity, and what the learned estimate does and does not settle — kg/unknowns.md
