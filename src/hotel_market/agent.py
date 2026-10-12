@@ -134,11 +134,15 @@ class Agent:
         ] = {}  # (hotel key, stay day) -> day of its last rate change
         self.advised: set[tuple[str, str]] = set()  # (hotel key, event name) already given advice
         self.entries: list[Entry] = []  # every flag's entry, in order
+        self.today: list[
+            Entry
+        ] = []  # the day's entries while they are decided; a client may read them
         self.advice: list[Advice] = []
 
     def decide(self, day: int, sources: Sources) -> dict[tuple[str, int], float]:
         """Decide the day's flags and return the rate changes to apply from tomorrow."""
         today = self.plans_for(day, sources)
+        self.today = today
         for hotel in self.customer.hotels:
             self._decide(day, hotel, [entry for entry in today if entry.hotel == hotel.key])
         self.entries.extend(today)

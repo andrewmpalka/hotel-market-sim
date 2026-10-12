@@ -72,8 +72,8 @@ which is also the order in which they depend on each other.
 ### MOD-08 [C] plan.py
 - File: src/hotel_market/plan.py
 - Owns: what the agent could do about a flag and what each option is worth. It builds each weekday's candidates ([[DAT-11]], [[DAT-12]]) and their estimates, the flag's numbers ([[DAT-13]]) and the Entry ([[DAT-14]]).
-- Estimate: E[min(N, unsold)] bookings ([[DEC-21]]) on each StayDate ([[DAT-10]]) times the margin, summed over the flag. Under a revenue target the rate replaces the margin ([[RUL-58]]). The elasticity comes from a Pricing ([[DAT-21]]).
-- Cautious: under the cautious rule ([[CON-11]], [[DEC-39]]) each estimate is made again at both ends of the pricing's band. A change must beat hold at all three.
+- Estimate: E[min(N, unsold)] bookings ([[DEC-21]]) on each StayDate ([[DAT-10]]) times the margin, summed over the flag. The elasticity is a Pricing's ([[DAT-21]]), and under a revenue target the rate replaces the margin ([[RUL-58]]).
+- Cautious: under the cautious rule ([[CON-11]], [[DEC-39]]) each estimate is made again at both ends of the pricing's band. A change must beat hold at all three. rescored() makes any estimate again at another elasticity ([[MOD-23]]).
 - Holds: ORACLE_ELASTICITY ([[RUL-56]]), MODES ([[RUL-49]]), BAND_STANDARD_ERRORS ([[RUL-54]]), the candidate names and factors ([[RUL-41]] to [[RUL-45]]). The minimum ([[RUL-67]]) and the target come from the customer.
 - Reads: [[MOD-02]], [[MOD-07]], [[MOD-16]] (the estimator's bounds), [[MOD-20]]; never the simulator ([[DEC-40]])
 - Tests: tests/test_plan.py
@@ -92,7 +92,7 @@ which is also the order in which they depend on each other.
 ### MOD-10 [C] agent.py
 - File: src/hotel_market/agent.py
 - Owns: the daily decision, decide(day, sources): detect numbers, flags, entries and the queue of plans worth the minimum. It makes one model or template call per hotel and records the accepted changes, their hold and the log ([[DAT-18]]).
-- Advice: the minimum-stay advice ([[DAT-15]], [[DEC-10]]), named by MIN_STAY ([[RUL-48]]).
+- Also: the minimum-stay advice ([[DAT-15]], [[DEC-10]]), named by MIN_STAY ([[RUL-48]]). decide() keeps the day's entries in agent.today while it asks about them. A client such as the oracle reviewer can read them there ([[MOD-23]]).
 - Modes: the elasticity modes ([[DAT-22]]): true, fixed:X or learn:X. In learn mode it re-estimates every hotel's elasticity every day ([[MOD-16]], [[DEC-38]]). It passes the cautious flag into each day's pricing ([[CON-11]]).
 - Resume: plans_for() builds a day's entries and advice_for() the advice. resume() picks up the hold and the advice that earlier days left. That is how a table-backed run gives each day's agent its state ([[MOD-21]], [[DEC-42]]).
 - Reads: [[MOD-02]], [[MOD-07]], [[MOD-08]], [[MOD-09]], [[MOD-16]], [[MOD-17]], [[MOD-18]], [[MOD-20]]; never the simulator, which wraps it with deciding() ([[MOD-19]])
@@ -212,3 +212,12 @@ which is also the order in which they depend on each other.
 - Ranges: a range such as "12–14%" counts as its two ends. Figures with different units stay apart, and one end of a request range on its own is not a quotation. The recorded run it audits is [[DAT-29]].
 - Tests: tests/test_live_audit.py, on made-up reasons and on the recorded run
 - Evidence: test_a_range_in_a_reason_is_read_as_its_two_ends, test_a_sentence_that_lists_several_gains_may_write_more_than_holding_once, test_the_recorded_live_run_of_seed_7_passes_the_audit
+
+### MOD-23 [C] bench.py
+- File: src/hotel_market/bench.py
+- Owns: the benchmark of the model as a reviewer ([[DEC-47]]). The oracle reviewer re-scores each queued plan and hold at ORACLE_ELASTICITY ([[RUL-56]]). It declines the plan when hold scores at least as well.
+- Measures: regret ([[MEA-06]]), the accept rate ([[MEA-07]]), decline precision ([[MEA-08]]), decline recall ([[MEA-09]]), their F1 ([[MEA-10]]) and dollar-weighted recall ([[MEA-11]]). Each function's docstring gives its formula.
+- Counts: invalid_answers() and retries() sum the flags of the call records a measured client writes.
+- Reads: [[MOD-08]] (the entries and rescored()), [[MOD-10]] (the day's entries in agent.today), [[MOD-11]], [[MOD-20]]; never the simulator, and nothing in the agent's path imports it
+- Tests: tests/test_bench.py
+- Evidence: test_the_oracle_reviewer_accepts_every_queued_plan_in_true_mode, test_the_oracle_declines_where_hold_scores_at_least_as_well, test_decline_precision_recall_and_f1_against_the_oracle

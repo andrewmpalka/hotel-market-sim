@@ -28,6 +28,7 @@ it differs from what that would write. `README.md` is the legend.
 - MOD-20 [C] customer.py — src/hotel_market/customer.py
 - MOD-21 [C] stored.py — src/hotel_market/stored.py
 - MOD-22 [C] scripts/live_audit.py — scripts/live_audit.py
+- MOD-23 [C] bench.py — src/hotel_market/bench.py
 
 ## Data (`data.md`)
 
@@ -139,6 +140,12 @@ it differs from what that would write. `README.md` is the legend.
 - MEA-03 [C] Revenue per available room — kg/measures.md
 - MEA-04 [C] Room revenue — kg/measures.md
 - MEA-05 [C] Contribution — kg/measures.md
+- MEA-06 [C] Regret — kg/measures.md
+- MEA-07 [C] Accept rate — kg/measures.md
+- MEA-08 [C] Decline precision — kg/measures.md
+- MEA-09 [C] Decline recall — kg/measures.md
+- MEA-10 [C] Decline F1 — kg/measures.md
+- MEA-11 [C] Dollar-weighted decline recall — kg/measures.md
 
 ## Sources (`sources.md`)
 
@@ -200,6 +207,7 @@ it differs from what that would write. `README.md` is the legend.
 - DEC-40 [C] The agent reads data only through four interfaces; the simulator is one implementation — kg/decisions.md
 - DEC-41 [C] Everything specific to the market is a customer file, and the target is one of its settings — kg/decisions.md
 - DEC-42 [C] The feeds and the agent's output are stored tables keyed by as_of_day, and the agent can run one day at a time against them — kg/decisions.md
+- DEC-47 [C] The oracle reviewer is a grader outside the agent's path — kg/decisions.md
 
 ## Results (`results.md`)
 

@@ -43,7 +43,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Iterable, Iterator
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 
 import numpy as np
 import pandas as pd
@@ -132,6 +132,7 @@ class WeekdayGroup:
     weekday: int  # Monday is 0
     candidates: list[Candidate]  # hold first
     cautious: bool = False  # whether the cautious rule picks the best candidate
+    stay_dates: list[StayDate] = field(default_factory=list)  # what the estimates were made from
 
     @property
     def stays(self) -> list[int]:
@@ -380,7 +381,7 @@ def entry_for(
     for wd in sorted({weekday(s.stay_day) for s in stay_dates}):
         in_group = [s for s in stay_dates if weekday(s.stay_day) == wd]
         candidates = _candidates(hotel, in_group, flag.causes, pricing, cost)
-        group = WeekdayGroup(wd, candidates, cautious=pricing.cautious)
+        group = WeekdayGroup(wd, candidates, cautious=pricing.cautious, stay_dates=in_group)
         weekdays.append(group)
     numbers = _flag_numbers(rows, stay_dates)
     return Entry(
@@ -445,6 +446,13 @@ def _candidates(
         )
         for name, rates in options
     ]
+
+
+def rescored(group: WeekdayGroup, candidate: Candidate, elasticity: float, cost: float) -> float:
+    """A candidate's estimate made again at another elasticity, from the stay dates the
+    group was built from. cost is the room cost for contribution, 0 for revenue. A grader
+    outside the agent's path uses this to score a plan at the simulator's elasticity."""
+    return _estimate(group.stay_dates, candidate.rates, elasticity, cost)
 
 
 def _estimate(

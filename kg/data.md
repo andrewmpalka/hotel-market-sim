@@ -97,12 +97,12 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-12 [C] WeekdayGroup
 - File: src/hotel_market/plan.py
-- Fields: WeekdayGroup(weekday, candidates with hold first, cautious), with stays, hold, best, gain (best over hold), gains(candidate), replaces_hold(candidate) and rejected_at_an_end.
+- Fields: WeekdayGroup(weekday, candidates with hold first, cautious, stay_dates), with stays, hold, best, gain (best over hold), gains(candidate), replaces_hold(candidate) and rejected_at_an_end.
 - Best: the highest estimate, hold winning a tie. Under the cautious rule it is the highest of the candidates that replace hold, else hold.
 - Cautious: gains(candidate) gives the gain over hold at the band's low elasticity, at the estimate and at the high one. replaces_hold() asks for a gain at all three, and rejected_at_an_end lists the candidates the band rejected.
 - Minimum: the minimum [[RUL-67]] applies to the whole plan through Entry.queued ([[DEC-43]]).
-- Written by: [[MOD-08]]
-- Read by: [[MOD-08]], [[MOD-09]], [[MOD-12]]
+- Stay dates: stay_dates keeps the StayDate records the estimates were made from, so a grader can score the candidates again ([[MOD-23]]). They are not in the log line.
+- Used by: written by [[MOD-08]]; read by [[MOD-08]], [[MOD-09]] and [[MOD-12]]
 - Evidence: test_after_the_new_flights_the_airport_raises_every_night_close_to_full, test_a_plan_needs_at_least_the_minimum_value_to_enter_the_queue, test_under_the_cautious_rule_a_candidate_that_loses_at_one_end_is_held
 
 ### DAT-13 [C] FlagNumbers and Range

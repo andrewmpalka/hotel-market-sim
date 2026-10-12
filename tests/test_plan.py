@@ -21,6 +21,7 @@ from hotel_market.plan import (
     WeekdayGroup,
     entry_for,
     expected_bookings,
+    rescored,
 )
 from hotel_market.simulated import simulated_sources
 from hotel_market.world import weekday
@@ -325,3 +326,21 @@ def test_the_cautious_rule_scores_each_candidate_one_standard_error_either_side(
     wide = Pricing(1.5, "learn", standard_error=1.2, prior=1.0, observations=10, cautious=True)
     assert wide.band == (ELASTICITY_MIN, 2.7)
     assert Pricing(1.5, "true").band is None
+
+
+def test_rescoring_at_the_pricings_elasticity_gives_the_candidates_own_estimate(day10):
+    # A group keeps the stay dates it was scored from, so a grader can score a candidate
+    # again at another elasticity; at the pricing's own value it gets the estimate back.
+    _, table = day10
+    airport = DEMO.hotel("airport")
+    entry = entry_for(10, Flag(10, "airport", 40, 46, (AHEAD,)), table, Pricing(1.0, "fixed"))
+    for group in entry.weekdays:
+        assert [s.stay_day for s in group.stay_dates] == group.stays
+        for candidate in group.candidates:
+            assert rescored(group, candidate, 1.0, airport.room_cost) == pytest.approx(
+                candidate.estimate
+            )
+            # At the simulator's value a raise is worth less than it looked at 1.0.
+            at_true = rescored(group, candidate, 1.5, airport.room_cost)
+            if candidate.name.startswith("raise"):
+                assert at_true < candidate.estimate

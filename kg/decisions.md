@@ -408,3 +408,13 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Measured: a 60-day run through the tables writes the in-memory run's decisions file byte for byte, in about 6 seconds ([[RES-14]]).
 - Commit: 6311cb6
 - Evidence: test_a_60_day_run_through_the_tables_gives_the_same_decisions_file, test_running_a_day_twice_leaves_the_tables_unchanged, test_replaying_a_past_day_reproduces_its_plans_exactly
+
+### DEC-47 [C] The oracle reviewer is a grader outside the agent's path
+- Decided: bench.py ([[MOD-23]]) holds an oracle reviewer. It re-scores each queued plan and hold at ORACLE_ELASTICITY ([[RUL-56]]). It declines the plan when hold scores at least as well.
+- Client: it stands in as the client the agent asks ([[MOD-09]]) and reads the day's entries from agent.today. Its decisions then drive a run of their own. It also labels the entries of any other run after the fact.
+- Boundary: it imports from plan.py and agent.py, and nothing in the agent's path imports it. tests/test_sources.py checks its imports with the agent's modules.
+- Replaces: nothing built.
+- Reason: the oracle uses the simulator's elasticity, which the agent may not see ([[DEC-01]], [[DEC-02]]). A grader outside the agent's path cannot leak it into a decision.
+- Measured: in the default mode the oracle accepts every queued plan. That mode therefore cannot separate reviewers, and the mismatched modes can ([[RES-03]]).
+- Evidence: test_the_oracle_reviewer_accepts_every_queued_plan_in_true_mode, test_the_oracle_declines_where_hold_scores_at_least_as_well, test_the_agent_reads_only_through_the_interfaces
+- Links: [[MOD-23]], [[DEC-01]], [[DEC-02]], [[DEC-40]], [[MEA-06]]

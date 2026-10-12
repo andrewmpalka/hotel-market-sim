@@ -14,7 +14,17 @@ from hotel_market.simulated import simulated_sources
 DEMO = demo()
 
 # The agent's modules, and the modules that hold the truth they must never read.
-AGENT_MODULES = ("detect", "forecast", "estimate", "plan", "model", "agent", "text", "stored")
+AGENT_MODULES = (
+    "detect",
+    "forecast",
+    "estimate",
+    "plan",
+    "model",
+    "agent",
+    "text",
+    "stored",
+    "bench",
+)
 TRUTH_MODULES = ("demand", "bookings", "shops", "schedule", "shocks", "simulated")
 TRUTH_NAMES = {
     "ELASTICITY",

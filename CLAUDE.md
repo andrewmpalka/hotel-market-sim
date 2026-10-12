@@ -57,6 +57,7 @@ root with pip install -e ".[dev]" and imported as hotel_market.<module>.
 | stored.py | the four sources over the DuckDB tables, and the writers |
 | text.py | wording shared by the template reasons and the reports |
 | cli.py | the hotel-market command, which python -m hotel_market also runs |
+| bench.py | the benchmark of the model as a reviewer: the oracle grader and its measures |
 
 Around the package: tests/ holds one test file per module, conftest.py and
 tests/fixtures/live_seed7/, one recorded live run; customers/demo.toml is the

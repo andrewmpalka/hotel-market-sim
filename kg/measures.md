@@ -36,3 +36,39 @@ the agent changed.
 - Function: hotel_market.bookings.Books.contribution
 - Used by: the agent's default target ([[CON-07]], [[DEC-12]], [[RUL-58]]), [[DAT-19]], [[DAT-20]] and the summary.
 - Evidence: test_contribution_is_revenue_minus_the_cost_of_every_room_sold, test_the_summary_compares_both_runs_on_the_changed_pairs
+
+### MEA-06 [C] Regret
+- Formula: the realised change of the arm that followed the oracle - the realised change of the arm under test. Both arms share the seed and the mode, and a positive regret means the reviewer left money behind.
+- Function: hotel_market.bench.regret
+- Used by: the bench report ([[MOD-23]]), per arm and per seed, with the oracle reviewer's arm as the reference ([[DEC-47]]).
+- Evidence: test_regret_is_the_oracle_arms_change_minus_the_arms_change
+
+### MEA-07 [C] Accept rate
+- Formula: queued entries whose plan the reviewer accepted / queued entries. A queued entry is one the reviewer saw; an entry under the minimum is never asked. nan with no queued entry.
+- Function: hotel_market.bench.accept_rate
+- Used by: the bench report ([[MOD-23]]). The template's rate is 1, and the oracle's in the default mode is 1 too.
+- Evidence: test_accept_rate_counts_accepted_queued_plans
+
+### MEA-08 [C] Decline precision
+- Formula: the reviewer's declines that the oracle also declined / the reviewer's declines. nan when the reviewer declined nothing.
+- Function: hotel_market.bench.decline_precision
+- Used by: the bench report ([[MOD-23]]). A decline stands for a block in the fraud benchmark the measures follow.
+- Evidence: test_decline_precision_recall_and_f1_against_the_oracle, test_the_measures_are_nan_when_nobody_declined
+
+### MEA-09 [C] Decline recall
+- Formula: the oracle's declines that the reviewer also declined / the oracle's declines. nan when the oracle declined nothing.
+- Function: hotel_market.bench.decline_recall
+- Used by: the bench report ([[MOD-23]]).
+- Evidence: test_decline_precision_recall_and_f1_against_the_oracle, test_the_measures_are_nan_when_nobody_declined
+
+### MEA-10 [C] Decline F1
+- Formula: 2 x precision x recall / (precision + recall), from [[MEA-08]] and [[MEA-09]]. nan when either is nan, and 0 when both are 0.
+- Function: hotel_market.bench.decline_f1
+- Used by: the bench report ([[MOD-23]]).
+- Evidence: test_decline_precision_recall_and_f1_against_the_oracle, test_the_measures_are_nan_when_nobody_declined
+
+### MEA-11 [C] Dollar-weighted decline recall
+- Formula: the value at stake of the plans both declined / the value at stake of every plan the oracle declined. The value at stake is the plan's own estimate over holding ([[CON-08]]).
+- Function: hotel_market.bench.dollar_weighted_recall
+- Used by: the bench report ([[MOD-23]]). It weighs a missed decline by what the plan claimed to earn.
+- Evidence: test_decline_precision_recall_and_f1_against_the_oracle
