@@ -74,6 +74,9 @@ it differs from what that would write. `README.md` is the legend.
 - RUL-04 [C] SIM_START — src/hotel_market/schedule.py
 - RUL-05 [C] HORIZON_DAYS — src/hotel_market/schedule.py
 - RUL-11 [C] EQUIPMENT — src/hotel_market/schedule.py
+- RUL-90 [C] CHURN_STREAM — src/hotel_market/schedule.py
+- RUL-91 [C] CHURN_WEEKS — src/hotel_market/schedule.py
+- RUL-92 [C] CHURN_SHIFTS — src/hotel_market/schedule.py
 - RUL-12 [C] SIM_DAYS — src/hotel_market/world.py
 - RUL-13 [C] LOOKAHEAD_DAYS — src/hotel_market/world.py
 - RUL-14 [H] FLOOR_SHARE — kg/rules.md
@@ -124,7 +127,7 @@ it differs from what that would write. `README.md` is the legend.
 - RUL-67 [C] min_value_at_stake — customers/demo.toml
 - RUL-68 [C] days_out — customers/demo.toml
 - RUL-69 [C] share — customers/demo.toml
-- Labels: RUL-06, RUL-07, RUL-08, RUL-09, RUL-10, RUL-31, RUL-32, RUL-33, RUL-34, RUL-35, RUL-36, RUL-37, RUL-38, RUL-41, RUL-42, RUL-44, RUL-45, RUL-49, RUL-46, RUL-47, RUL-75, RUL-78, RUL-79, RUL-48, RUL-55, RUL-74, RUL-86, RUL-72, RUL-73, RUL-70, RUL-71, RUL-57
+- Labels: RUL-06, RUL-07, RUL-08, RUL-09, RUL-10, RUL-89, RUL-93, RUL-31, RUL-32, RUL-33, RUL-34, RUL-35, RUL-36, RUL-37, RUL-38, RUL-41, RUL-42, RUL-44, RUL-45, RUL-49, RUL-46, RUL-47, RUL-75, RUL-78, RUL-79, RUL-48, RUL-55, RUL-74, RUL-86, RUL-94, RUL-72, RUL-73, RUL-70, RUL-71, RUL-57
 
 ## Shocks (`shocks.md`)
 
@@ -132,6 +135,9 @@ it differs from what that would write. `README.md` is the legend.
 - SHK-02 [C] The new flights — src/hotel_market/schedule.py
 - SHK-03 [C] The competitor rate cut — src/hotel_market/shocks.py
 - SHK-04 [C] The route suspension — src/hotel_market/schedule.py
+- SHK-05 [C] The upgauge — src/hotel_market/schedule.py
+- SHK-06 [C] The frequency cut — src/hotel_market/schedule.py
+- SHK-07 [C] The churn — src/hotel_market/schedule.py
 
 ## Concepts (`concepts.md`)
 
@@ -209,6 +215,7 @@ it differs from what that would write. `README.md` is the legend.
 - DEC-50 [C] A demand bias the agent never sees is the demand-level twin of a fixed elasticity — kg/decisions.md
 - DEC-51 [C] Competitors can follow the hotel's rate changes, as an opt-in arm — kg/decisions.md
 - DEC-52 [C] The share elasticity alone made a matched raise free, so the market can answer the comp median's level — kg/decisions.md
+- DEC-53 [C] The air schedule's filings are a named scenario, and the churn files what a feed files — kg/decisions.md
 
 ### Engineering
 
@@ -258,6 +265,7 @@ it differs from what that would write. `README.md` is the legend.
 - RES-25 [C] The comp median's path on seed 7's convention nights with the reaction on — kg/results.md
 - RES-26 [C] The market elasticity with the reaction on, seeds 1 to 20 — kg/results.md
 - RES-27 [C] The day-30 competitor cut on seed 7 at a market elasticity of 0.0 and 0.5 — kg/results.md
+- RES-28 [C] The churn on seeds 1 to 20 — kg/results.md
 
 ## Open forks (`forks.md`)
 

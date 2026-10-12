@@ -42,7 +42,7 @@ with pip install -e ".[dev]" and import it as hotel_market.<module>.
 
 | Module | Holds |
 | --- | --- |
-| schedule.py | the air schedule as known on a day, its seat counts, both air shocks |
+| schedule.py | the air schedule as known on a day, its seat counts, the filings, scenarios and churn |
 | world.py | the Hotel and Competitor dataclasses and the calendar |
 | customer.py | reads a market's customer file; demo() is customers/demo.toml |
 | sources.py | the four interfaces: Bookings, RateShops, Schedules, Events |
@@ -67,8 +67,9 @@ tests/fixtures/live_seed7/, one recorded live run. customers/demo.toml is the
 demo market, and sql/schema.sql defines the seven stored tables.
 scripts/live_audit.py runs and audits a live seed, and scripts/median_path.py
 prints a comp median's path next to the hotel's rate. kg/ and kg_check.py are
-the knowledge graph and its checker. Makefile and Dockerfile wrap the setup,
-and docs/results.md holds the experiment tables.
+the knowledge graph and its checker. Makefile and Dockerfile wrap the setup.
+docs/results.md holds the experiment tables, and docs/schedule-feed.md describes
+the air schedule feed as modelled.
 
 ## Commands
 

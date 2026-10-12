@@ -326,6 +326,15 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: test_the_market_elasticity_scales_each_days_draw_by_the_medians_level, test_the_grader_scores_a_raise_against_the_median_the_reaction_moves, test_the_oracle_reviewer_is_told_the_market_elasticity_and_the_reaction
 - Links: [[DEC-51]], [[DEC-50]], [[RUL-87]], [[RUL-88]], [[RES-26]], [[RES-27]], [[UNK-11]], [[UNK-15]], [[FRK-08]], [[FRK-09]]
 
+### DEC-53 [C] The air schedule's filings are a named scenario, and the churn files what a feed files
+- Decided: a Scenario is a named list of filings ([[DAT-03]]). The default is AIR_SHOCKS as it was. --scenario picks another from SCENARIOS, and the upgauge scenario holds an upgauge and a frequency cut ([[SHK-05]], [[SHK-06]]).
+- Kinds: a filing adds routes, suspends one, swaps a route's equipment, sets its daily flights or shifts its departures ([[RUL-89]]). An equipment change moves the seats while the flight count stays. A time change moves no seat.
+- Churn: --churn files the seed's weekly revisions on top, each under the detect threshold ([[SHK-07]]). A detector that fires on any revision fires on them. The threshold detector does not.
+- Reason: a real feed revises every week, and most revisions change no seat count a hotel should act on. The default's two shocks never tested that. The scenario option keeps the default pinned while another story runs.
+- Measured: with the churn, seeds 1 to 20 raise the same 173 seat flags as without it ([[RES-28]]).
+- Evidence: test_the_churn_files_weekly_revisions_below_the_threshold, test_a_detector_that_fires_on_any_revision_is_caught_by_the_churn, test_a_scenario_and_the_churn_go_to_both_runs
+- Links: [[DAT-03]], [[SHK-05]], [[SHK-06]], [[SHK-07]], [[RUL-89]], [[RES-28]], [[DEC-04]], [[UNK-05]]
+
 ## Engineering
 
 ### DEC-23 [C] The cache is keyed by seed, day and hotel, and each file records a digest of its request

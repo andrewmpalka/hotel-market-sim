@@ -17,16 +17,17 @@ the plans, the model's request and answer, and what the command writes.
 ### DAT-02 [C] Seats by day, seat change and seat revision
 - File: src/hotel_market/schedule.py
 - Made by: seats_by_day(schedule), a Series of arriving seats per simulation day 0 to 149.
-- Changes: seat_change(as_of_day) is the fractional change against the schedule with no shocks. seat_revision(as_of_day) is the change against the schedule known one day earlier.
+- Changes: seat_change(as_of_day) is the fractional change against the schedule with no shocks. seat_revision(as_of_day) is the change against the schedule known one day earlier. Both take the run's scenario ([[DEC-53]]).
 - Values: 4,244 seats on a normal day and 3,326 on Tuesdays and Saturdays before any shock. seat_change(21) is +17% for day 55.
 - Read by: [[MOD-04]] (seat_change, cached once per filing day), [[MOD-07]] (seat_revision, zero except on filing days)
 - Evidence: test_normal_day_has_4244_seats, test_tuesdays_and_saturdays_have_3326_seats, test_known_seat_revision_matches_the_schedule
 
 ### DAT-03 [C] Route and Shock
 - File: src/hotel_market/schedule.py
-- Fields: Route(origin, origin_city, origin_state, marketing, operating, flights, equipment, distance, first_flight_number, reduced_tue_sat, codeshare_partner, destination, service_type, periods).
-- Shock: Shock(known_day, kind "add" or "suspend", start_day, end_day, routes, origin, marketing).
-- Held in: BASE_ROUTES (13 routes, one of them the bus) and AIR_SHOCKS ([[SHK-02]], [[SHK-04]]). routes_as_of(as_of_day) applies the shocks known by a day.
+- Fields: Route(origin, origin_city, origin_state, marketing, operating, flights, equipment, distance, first_flight_number, reduced_tue_sat, codeshare_partner, destination, service_type, periods, time_shift).
+- Shock: Shock(known_day, kind of [[RUL-89]], start_day, end_day, routes, origin, marketing, equipment, operating, flights, minutes). The last four serve the equipment, frequency and time kinds.
+- Scenario: Scenario(name, shocks), frozen, with filing_days(). DEFAULT_SCENARIO holds AIR_SHOCKS, and SCENARIOS maps each name to its scenario ([[DEC-53]]). with_churn(scenario, seed) adds the seed's churn ([[SHK-07]]).
+- Held in: BASE_ROUTES (13 routes, one of them the bus) and AIR_SHOCKS ([[SHK-02]], [[SHK-04]]). routes_as_of(as_of_day, scenario) applies the shocks known by a day.
 - Read by: [[MOD-01]]
 - Evidence: test_normal_day_has_4244_seats, test_seat_change_as_of_day_21_is_plus_17_percent_for_day_55
 
@@ -57,7 +58,7 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-07 [C] Books
 - File: src/hotel_market/bookings.py
-- Fields: rooms (int, hotels x stay dates), revenue and rates (float, same shape), rates starting at the start rate. demand_bias ([[RUL-82]]), react ([[DEC-51]]) and market_elasticity ([[RUL-87]]) are the run's settings.
+- Fields: rooms (int, hotels x stay dates), revenue and rates (float, same shape). demand_bias ([[RUL-82]]), react ([[DEC-51]]), market_elasticity ([[RUL-87]]), scenario and churn ([[DEC-53]]) are the run's settings.
 - Draws: the random numbers for every draw of the run ([[DEC-22]]). The preload has one per hotel and stay date, and the loop one per day, hotel and stay date.
 - Log: daily_rooms, daily_rates and daily_medians, shape (days, hotels, stay dates), zero outside the day's window. preload holds the rooms loaded before day 0, and [[MOD-19]] serves the agent from the log as of any day.
 - Methods: book(day) and set_rates(changes). hotel_change() and comp_median() serve the reaction ([[DEC-51]]), and starting_median() the market term ([[DEC-52]]). The five measures are [[MEA-01]] to [[MEA-05]].
@@ -166,7 +167,7 @@ the plans, the model's request and answer, and what the command writes.
 - Meaning: estimated is what the accepted plans were estimated to earn over holding. estimates maps (day, hotel key) to the learned Estimate ([[DAT-23]]) in learn mode. rejected_at_an_end counts the candidates the cautious band rejected.
 - Shocks: the shock fields count the plans whose causes include one of [[RUL-55]] and the target's change on their stay dates. The other fields do the same for every other plan, on the stay dates only those changed.
 - Bench: entries are the run's entries, calls its call records ([[DAT-30]]) and counts the oracle's labels on it ([[DAT-31]]). The bench tables sum them over an arm's seeds.
-- Counts: flags counts the entries, pace_flags and median_flags those with a pace or a comp-median cause ([[RUL-86]]). own_median_flags and repeat_changes are the reaction's counts ([[DEC-51]], [[RUL-85]]).
+- Counts: flags, pace_flags and median_flags count the entries with each cause ([[RUL-86]]). own_median_flags and repeat_changes are the reaction's counts, and seat_flags and filings the schedule's ([[DEC-51]], [[DEC-53]]).
 - Written by: [[MOD-12]] (sweep). [[MOD-12]] reads it through [[DAT-24]] for the seeds, arm, estimate, bench and reaction tables.
 - Evidence: test_the_sweep_gives_each_seeds_change_over_the_fixed_run, test_a_sweep_counts_the_shock_plans_apart_from_the_other_plans, test_a_sweep_with_reviewers_keeps_each_arms_entries_calls_and_counts
 

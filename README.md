@@ -5,7 +5,8 @@ rates in it. Four hotels of one brand share the market. The market produces
 daily bookings, competitor rate shops, one convention and two changes to the air
 schedule. Each day the agent flags the stay dates where a signal changed. Code
 scores the rate options for each flag. The model accepts or declines each plan
-and writes the reason for the revenue manager.
+and writes the reason for the revenue manager. The air schedule feed, as this
+repository models it, is described in [docs/schedule-feed.md](docs/schedule-feed.md).
 
 The schedule columns follow Cirium's published data dictionary, but every row is
 synthetic. The repository has no Cirium data and no affiliation with Cirium.
@@ -36,6 +37,8 @@ Python 3.11 or later, from the repository root:
     hotel-market bench --seeds 1 20 --template --react  # competitors follow the hotels' rate changes, three days later
     hotel-market bench --seeds 1 20 --template --react --market-elasticity 0.5
                                                         # the market's demand answers the comp median's level; the agent is told the value
+    hotel-market --seeds 1 20 --churn                   # the airline files weekly revisions below the threshold
+    hotel-market --seeds 1 20 --scenario upgauge        # another set of air-schedule filings
     python scripts/median_path.py --seed 7 --react --hotel convention --stays 45 48 --days 9 15
                                                         # a comp median's path next to the hotel's rate
 
@@ -174,23 +177,18 @@ bookings.
   start rate contribution-best on a night that will not sell out.
 - The $250 minimum applies to a whole plan, so a small change on one day of the
   week can ride inside a plan that clears the minimum on its other days.
-- By default competitors never react to the hotels' rates, and the market has
-  no price response of its own. Bookings follow a hotel's rate against the comp
-  median alone, so a raise that every hotel matches costs no rooms. That is
-  what the default makes free. The option `--react` makes each competitor move
-  half of a hotel's change three days after it takes effect, read from the
-  Books' own log, and `--market-elasticity E` makes the market's demand fall by
-  the comp median over its starting level to the power of E, with the agent
-  told E. With the reaction on, the default run earns +$111,272 a seed at an E
-  of 0.0, +$72,229 at 0.5 and +$43,584 at 1.0, against +$32,899 with neither.
-  Part of that gain is correct. Competitors that follow half of a raise lower
-  the hotel's effective own-price elasticity below 1.5, so a raise pays more
-  in that world and the agent is right to take it. The fault is the loop in
-  which the competitors' answer to our own change is read as news and the
-  hold lifts, and its measure is the stay dates changed twice within 14 days,
-  which the term cut from 97 to 25. FRK-09 holds the open question for the
-  rest. The oracle is told both settings, so it is the ceiling again
-  (docs/results.md).
+- The air schedule files two changes by default and, with `--churn`, weekly
+  revisions below the threshold that raised no seat flag on seeds 1 to 20. A
+  second scenario holds an upgauge and a frequency cut. A real feed revises in
+  more ways than these (docs/schedule-feed.md).
+- By default competitors never react and the market has no price response of
+  its own, so `--react` makes each competitor move half of a hotel's change
+  three days after it takes effect, and `--market-elasticity E` makes the
+  market's demand fall with the comp median's level to the power of E, with
+  the agent told E. With the reaction on, the default run earns +$111,272 a
+  seed at an E of 0.0, +$72,229 at 0.5 and +$43,584 at 1.0, against +$32,899
+  with neither. What those figures show, and the loop they expose, is in the
+  market section of docs/results.md.
 - There is one rate per hotel and stay date, with no room types, group blocks,
   cancellations or no-shows.
 - Without an API key, every plan is accepted. A template run therefore measures

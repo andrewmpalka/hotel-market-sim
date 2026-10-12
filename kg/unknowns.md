@@ -49,8 +49,8 @@ and a RES node records the run. A claim that no test can confirm stays [U].
 
 ### UNK-07 [U] The real price elasticity, and what the learned estimate does and does not settle
 - Unknown: the real elasticity of any hotel. 1.5 is assumed in the simulator ([[RUL-21]]) and, in the default mode, handed to the agent as an oracle ([[RUL-56]]).
-- Settled: inside this simulator the agent can recover a value it is not told ([[DEC-38]], [[MOD-16]], [[RES-10]]). From a prior of 1.0 or 2.0, its day-59 estimates land at 1.36 to 1.68 by hotel ([[RES-04]]).
-- Error: the standard error says how little the data pin it down. It is 0.12 to 0.31 on day 59 when the agent has been changing rates. When it has not, it is 0.4 to 0.5, the prior's own width.
+- Settled: inside this simulator the agent can recover a value it is not told ([[DEC-38]], [[RES-10]]). From a prior of 1.0 or 2.0, its day-59 estimates land at 1.36 to 1.68 by hotel ([[RES-04]]). Their standard errors are 0.12 to 0.31.
+- Reacting: the simulator's 1.5 fits a hotel whose competitors never move. Under the reaction the true mode is too timid. The learner's lower estimate raises more and is right to ([[RES-26]]). A reacting market needs the effective one.
 - Cost: what a wrong value costs, and what learning wins back, is measured ([[RES-03]], [[RES-04]], [[RES-05]]). That closed [[FRK-02]].
 - Not settled: whether a real market's bookings obey one elasticity at all ([[UNK-14]]). The same one across stay dates, days out and guest segments is less likely still.
 - Measured: a constant level error lands in the intercept ([[DEC-50]]). At a demand bias of 0.9 or 1.1 the day-59 estimates stay at 1.26 to 1.49 ([[RES-21]], [[RES-22]]). The baseline must carry the market term ([[RES-26]]).

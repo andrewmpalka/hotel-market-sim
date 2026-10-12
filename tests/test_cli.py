@@ -30,6 +30,7 @@ from hotel_market.cli import (
     MEDIAN_CAUSES,
     REPEAT_WINDOW,
     REPORT_DAYS,
+    SEAT_CAUSES,
     SHOCK_PLAN_CAUSES,
     ArmResult,
     SeedResult,
@@ -51,6 +52,7 @@ from hotel_market.detect import NEW_EVENT, PACE, SEATS_UP
 from hotel_market.estimate import Estimate
 from hotel_market.model import Measured
 from hotel_market.plan import HOLD
+from hotel_market.schedule import DEFAULT_SCENARIO, UPGAUGE_SCENARIO
 
 DEMO = demo()
 
@@ -286,9 +288,7 @@ ROWS = [
 def test_the_seeds_command_prints_each_seed_and_the_mean_and_range(monkeypatch, capsys):
     monkeypatch.setattr(
         "hotel_market.cli.sweep",
-        lambda first, last, modes, customer, demand_bias, react, market_elasticity: [
-            ArmResult(TRUE_MODE, ROWS)
-        ],
+        lambda first, last, modes, customer, **world: [ArmResult(TRUE_MODE, ROWS)],
     )
     main(["--seeds", "1", "3"])
     out = capsys.readouterr().out
@@ -302,8 +302,9 @@ def test_the_seeds_command_prints_each_seed_and_the_mean_and_range(monkeypatch, 
     ) in out
     assert "Revenue change: mean -2, range -20 to +15." in out
     assert "Where the gain came from" in out
-    [source] = [line.split() for line in out.splitlines() if line.startswith("true ")]
+    source, filings = [line.split() for line in out.splitlines() if line.startswith("true ")]
     assert source == ["true", "3", "+94", "3", "-45"]
+    assert filings == ["true", "0", "0", "6"]  # the filings table: no filings in these rows
 
 
 def test_a_revenue_target_arm_counts_wins_and_earnings_in_revenue(monkeypatch, capsys):
@@ -311,7 +312,7 @@ def test_a_revenue_target_arm_counts_wins_and_earnings_in_revenue(monkeypatch, c
     assert arm.wins == 1 and arm.realised == pytest.approx(-5.0)
     monkeypatch.setattr(
         "hotel_market.cli.sweep",
-        lambda first, last, modes, customer, demand_bias, react, market_elasticity: [arm],
+        lambda first, last, modes, customer, **world: [arm],
     )
     main(["--seeds", "1", "3", "--target", "revenue"])
     out = capsys.readouterr().out
@@ -338,7 +339,7 @@ def test_the_seeds_command_prints_one_row_per_arm_and_a_learn_arms_estimates(mon
     arms = [ArmResult(TRUE_MODE, ROWS), ArmResult(cautious, learned)]
     monkeypatch.setattr(
         "hotel_market.cli.sweep",
-        lambda first, last, modes, customer, demand_bias, react, market_elasticity: arms,
+        lambda first, last, modes, customer, **world: arms,
     )
     main(["--seeds", "1", "3", "--elasticity", "true", "--elasticity", "learn:1.0", "--cautious"])
     out = capsys.readouterr().out
@@ -449,7 +450,7 @@ def test_the_bench_command_prints_its_tables(bench_arms, monkeypatch, capsys):
     template, oracle, scripted = arms
     monkeypatch.setattr(
         "hotel_market.cli.sweep",
-        lambda first, last, modes, customer, reviewers, demand_bias, react, market_elasticity: arms,
+        lambda first, last, modes, customer, reviewers, **world: arms,
     )
     main(["bench", "--seeds", "1", "2", "--elasticity", "fixed:1.0", "--template"])
     out = capsys.readouterr().out
@@ -597,6 +598,39 @@ def test_a_market_elasticity_goes_to_both_runs_and_to_the_agent(tmp_path):
     )
 
 
+def test_a_scenario_and_the_churn_go_to_both_runs(tmp_path):
+    fixed, books, agent = run(
+        SEED, tmp_path / "d.jsonl", tmp_path / "cache", FakeClient(), scenario=UPGAUGE_SCENARIO
+    )
+    assert fixed.scenario is UPGAUGE_SCENARIO and books.scenario is UPGAUGE_SCENARIO
+    assert agent.cache_dir == tmp_path / "cache" / "scenario-upgauge" / "seed7"
+    text = summary(SEED, fixed, books, agent)
+    assert "The air schedule ran the upgauge scenario in both runs." in text
+    fixed, books, agent = run(
+        SEED, tmp_path / "c.jsonl", tmp_path / "cache", FakeClient(), churn=True
+    )
+    assert books.churn and books.scenario.name == "default+churn"
+    assert fixed.scenario == books.scenario and not fixed.scenario == DEFAULT_SCENARIO
+    assert agent.cache_dir == tmp_path / "cache" / "churn" / "seed7"
+    assert "with the seed's weekly revisions filed on top" in summary(SEED, fixed, books, agent)
+    [arm] = sweep(SEED, SEED, tmp_path / "cache", churn=True)
+    [result] = arm.seeds
+    assert result.filings == arm.filings == 10
+    assert result.seat_flags == sum(bool(SEAT_CAUSES & set(e.causes)) for e in result.entries) > 0
+
+
+@pytest.mark.slow
+def test_the_churn_and_the_upgauge_runs_pin_their_headline(tmp_path):
+    """The template arms with the churn and with the upgauge scenario end where the recorded
+    runs ended, so the filings table stays pinned."""
+    [churned] = sweep(1, 20, tmp_path / "cache", churn=True)
+    assert statistics.mean(churned.changes) == pytest.approx(33017, abs=1)
+    assert (churned.filings, churned.seat_flags, churned.rate_changes) == (200, 173, 179)
+    [upgauged] = sweep(1, 20, tmp_path / "cache", scenario=UPGAUGE_SCENARIO)
+    assert statistics.mean(upgauged.changes) == pytest.approx(21083, abs=1)
+    assert (upgauged.filings, upgauged.seat_flags, upgauged.rate_changes) == (40, 182, 177)
+
+
 def test_the_command_and_the_bench_take_a_demand_bias(monkeypatch, capsys):
     seen = {}
 
@@ -609,9 +643,11 @@ def test_the_command_and_the_bench_take_a_demand_bias(monkeypatch, capsys):
         demand_bias=1.0,
         react=False,
         market_elasticity=0.0,
+        scenario=DEFAULT_SCENARIO,
+        churn=False,
     ):
         seen["bias"], seen["reviewers"], seen["react"] = demand_bias, list(reviewers), react
-        seen["market"] = market_elasticity
+        seen["market"], seen["scenario"], seen["churn"] = market_elasticity, scenario, churn
         return [ArmResult(mode, ROWS, reviewer=r) for mode in modes for r in reviewers]
 
     monkeypatch.setattr("hotel_market.cli.sweep", fake_sweep)
@@ -650,6 +686,19 @@ def test_the_command_and_the_bench_take_a_demand_bias(monkeypatch, capsys):
     assert seen["market"] == 0.5 and seen["reviewers"][1] is not ORACLE
     with pytest.raises(SystemExit):
         main(["--seeds", "1", "3", "--market-elasticity", "-0.5"])
+    # --scenario and --churn go to the sweep on both commands; a sweep always prints the
+    # filings table, and the bench prints it when either is set.
+    main(["--seeds", "1", "3", "--scenario", "upgauge", "--churn"])
+    out = capsys.readouterr().out
+    assert seen["scenario"] is UPGAUGE_SCENARIO and seen["churn"]
+    assert "the upgauge schedule scenario, the airline filing weekly revisions" in out
+    assert "The air schedule's filings through day 59" in out
+    main(["bench", "--seeds", "1", "3", "--template", "--elasticity", "fixed:1.0", "--churn"])
+    out = capsys.readouterr().out
+    assert seen["churn"] and seen["scenario"] is DEFAULT_SCENARIO
+    assert "The air schedule's filings through day 59" in out
+    with pytest.raises(SystemExit):
+        main(["--seeds", "1", "3", "--scenario", "bogus"])
     for argv in (
         ["--seeds", "1", "3", "--demand-bias", "0"],
         ["bench", "--seeds", "1", "3", "--template", "--demand-bias", "-1"],

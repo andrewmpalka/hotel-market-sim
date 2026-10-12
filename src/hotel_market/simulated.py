@@ -21,7 +21,7 @@ from hotel_market.bookings import Books, Decide, simulate
 from hotel_market.customer import Customer, demo
 from hotel_market.demand import last_filing
 from hotel_market.detect import AHEAD, PACE, Flag, detect_numbers, flags, pace_without_shock
-from hotel_market.schedule import build_schedule, seats_by_day
+from hotel_market.schedule import DEFAULT_SCENARIO, Scenario, build_schedule, seats_by_day
 from hotel_market.shocks import events_as_of
 from hotel_market.shops import comp_rates
 from hotel_market.sources import (
@@ -87,16 +87,19 @@ class SimulatedRateShops(RateShops):
 
 
 class SimulatedSchedules(Schedules):
-    """The schedule as filed by a day, counted to arriving seats. The schedule only
-    changes on filing days, so the seats are counted once per filing and reused."""
+    """The schedule as filed by a day under a scenario, counted to arriving seats. The schedule
+    only changes on filing days, so the seats are counted once per filing and reused."""
+
+    def __init__(self, scenario: Scenario = DEFAULT_SCENARIO):
+        self.scenario = scenario
 
     def seats(self, as_of_day: int) -> np.ndarray:
-        return _seats(last_filing(as_of_day))
+        return _seats(last_filing(as_of_day, self.scenario), self.scenario)
 
 
 @lru_cache(maxsize=None)
-def _seats(filing_day: int) -> np.ndarray:
-    seats = seats_by_day(build_schedule(as_of_day=filing_day)).to_numpy()
+def _seats(filing_day: int, scenario: Scenario) -> np.ndarray:
+    seats = seats_by_day(build_schedule(as_of_day=filing_day, scenario=scenario)).to_numpy()
     seats.flags.writeable = False
     return seats
 
@@ -109,7 +112,10 @@ class SimulatedEvents(Events):
 def simulated_sources(books: Books) -> Sources:
     """The four sources, answering from these books and their seed."""
     return Sources(
-        SimulatedBookings(books), SimulatedRateShops(books), SimulatedSchedules(), SimulatedEvents()
+        SimulatedBookings(books),
+        SimulatedRateShops(books),
+        SimulatedSchedules(books.scenario),
+        SimulatedEvents(),
     )
 
 
@@ -124,9 +130,13 @@ def deciding(agent: Agent) -> Decide:
 
 
 def watch(
-    seed: int, customer: Customer | None = None
+    seed: int,
+    customer: Customer | None = None,
+    scenario: Scenario = DEFAULT_SCENARIO,
+    churn: bool = False,
 ) -> tuple[Books, list[Flag], dict[int, pd.DataFrame]]:
-    """A fixed-rate run that runs detect after each of days 0 to 59.
+    """A fixed-rate run that runs detect after each of days 0 to 59, under a scenario and with
+    the churn when asked.
 
     Returns the books, every flag, and each day's detect numbers.
     """
@@ -139,7 +149,8 @@ def watch(
         found.extend(flags(day, tables[day], customer=customer))
         return {}
 
-    return simulate(seed, record, customer=customer), found, tables
+    books = simulate(seed, record, customer=customer, scenario=scenario, churn=churn)
+    return books, found, tables
 
 
 if __name__ == "__main__":

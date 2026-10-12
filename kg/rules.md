@@ -89,6 +89,41 @@ marked [H], with one line that names the node it moved to.
 - Meaning: equipment code to (first, business, economy) seats. BUS is the coach sold under a flight number.
 - Evidence: test_normal_day_has_4244_seats, test_summing_with_type_u_rows_counts_the_bus
 
+### RUL-89 [C] KINDS
+- Value: ("add", "suspend", "equipment", "frequency", "time")
+- File: src/hotel_market/schedule.py
+- Kind: label
+- Meaning: what a filing can do ([[DEC-53]]). add and suspend are the default's kinds. equipment swaps a route's code for a date range, frequency sets its daily flights and time shifts its departures.
+- Evidence: test_the_default_scenario_is_the_air_shocks_and_the_kinds_are_named
+
+### RUL-90 [C] CHURN_STREAM
+- Value: 3
+- File: src/hotel_market/schedule.py
+- Kind: parameter
+- Meaning: the random stream for the churn ([[SHK-07]]), kept apart from the rate-shop and booking streams ([[RUL-20]], [[RUL-22]]).
+- Evidence: test_the_churn_files_weekly_revisions_below_the_threshold
+
+### RUL-91 [C] CHURN_WEEKS
+- Value: 8
+- File: src/hotel_market/schedule.py
+- Kind: parameter
+- Meaning: the churn files on days 7, 14 and every seventh day through 56 ([[SHK-07]]). Each filing holds one swap and one time change.
+- Evidence: test_the_churn_files_weekly_revisions_below_the_threshold
+
+### RUL-92 [C] CHURN_SHIFTS
+- Value: (-30, -15, 15, 30)
+- File: src/hotel_market/schedule.py
+- Kind: parameter
+- Meaning: the departure-time changes the churn draws from, in minutes ([[SHK-07]]). A time change moves no seat.
+- Evidence: test_the_churn_files_weekly_revisions_below_the_threshold, test_a_time_change_moves_departures_and_no_seat
+
+### RUL-93 [C] SWAPS
+- Value: {"738": "321", "321": "738", "320": "32N", "32N": "320"}
+- File: src/hotel_market/schedule.py
+- Kind: label
+- Meaning: the one-day equipment swaps the churn draws, between codes within 30 seats of each other ([[RUL-11]], [[SHK-07]]).
+- Evidence: test_the_churn_files_weekly_revisions_below_the_threshold
+
 ## world.py
 
 ### RUL-12 [C] SIM_DAYS
@@ -466,6 +501,13 @@ marked [H], with one line that names the node it moved to.
 - Kind: label
 - Meaning: the two comp-median causes. A sweep counts the flags that carry one, and with --react those the hotels' own changes caused ([[DEC-51]]).
 - Evidence: test_a_reacting_sweep_counts_its_own_median_flags_and_the_repeat_changes
+
+### RUL-94 [C] SEAT_CAUSES
+- Value: {"seats up", "seats cut"}
+- File: src/hotel_market/cli.py
+- Kind: label
+- Meaning: the two seat causes, the flags a filing raises. A sweep counts them in its filings table ([[DEC-53]]).
+- Evidence: test_a_scenario_and_the_churn_go_to_both_runs
 
 ## bench.py
 

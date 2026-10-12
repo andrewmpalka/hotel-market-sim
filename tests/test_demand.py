@@ -10,7 +10,7 @@ from hotel_market.demand import (
     known_seat_change,
     normal_demand,
 )
-from hotel_market.schedule import seat_change
+from hotel_market.schedule import UPGAUGE_SCENARIO, seat_change
 from hotel_market.shocks import event_uplift
 from hotel_market.world import stay_window, weekday
 
@@ -118,3 +118,13 @@ def test_the_market_elasticity_scales_demand_with_the_medians_level():
         hotel, 46, 10, median_ratio=1.15, market_elasticity=0.5
     ) == pytest.approx(plain * 1.15**-0.5)
     assert expected_demand(hotel, 46, 10, 0.9, 1.15, 1.0) == pytest.approx(0.9 * plain / 1.15)
+
+
+def test_a_scenario_changes_the_seats_the_demand_reads():
+    convention = DEMO.hotel("convention")
+    assert known_seat_change(15, UPGAUGE_SCENARIO)[52] == pytest.approx(270 / 4244)
+    assert known_seat_change(15)[52] == 0  # the default has filed nothing by day 15
+    ratio = 1 + convention.air_share * 270 / 4244
+    assert expected_demand(convention, 52, 15, scenario=UPGAUGE_SCENARIO) == pytest.approx(
+        expected_demand(convention, 52, 15) * ratio
+    )

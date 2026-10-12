@@ -2,18 +2,30 @@
 
 from datetime import timedelta
 
+import numpy as np
 import pytest
 
+from hotel_market.customer import demo
 from hotel_market.schedule import (
+    AIR_SHOCKS,
+    DEFAULT_SCENARIO,
     HORIZON_DAYS,
+    KINDS,
     MARKET_CITY,
     MARKET_COUNTRY,
     MARKET_STATE,
     MARKET_STATION,
+    SCENARIOS,
     SIM_START,
+    UPGAUGE_SCENARIO,
+    Scenario,
+    Shock,
     build_schedule,
+    churn,
     seat_change,
+    seat_revision,
     seats_by_day,
+    with_churn,
 )
 
 TUESDAY, SATURDAY = 1, 5
@@ -93,3 +105,76 @@ def test_a_regional_operating_carrier_is_not_a_wet_lease(rows):
     codeshare = rows[rows["IS_CODESHARE"]]
     assert set(codeshare["MARKETING_CARRIER_IATA"]) == {"XP"}
     assert set(codeshare["OPERATING_CARRIER_IATA"]) == {"XA", "XB"}
+
+
+def _on(rows, station, day):
+    """A station's rows on one simulation day."""
+    days = rows["OPERATING_DATE_LOCAL"].map(lambda d: (d - SIM_START).days)
+    operating = ~rows["IS_CODESHARE"]  # the codeshare rows repeat the operating rows
+    return rows[operating & (days == day) & (rows["DEPARTURE_STATION_CODE_IATA"] == station)]
+
+
+def test_an_equipment_change_moves_the_seats_and_not_the_flight_count():
+    # The upgauge scenario: filed on day 15, XB flies MSP on 738s from day 45. Day 52 is a
+    # Thursday with three MSP flights, and each gains 90 seats.
+    before, after = build_schedule(14, UPGAUGE_SCENARIO), build_schedule(15, UPGAUGE_SCENARIO)
+    assert len(_on(before, "MSP", 52)) == len(_on(after, "MSP", 52)) == 3
+    assert set(_on(before, "MSP", 52)["EQUIPMENT_SUBTYPE_CODE_IATA"]) == {"E75"}
+    assert set(_on(after, "MSP", 52)["EQUIPMENT_SUBTYPE_CODE_IATA"]) == {"738"}
+    assert set(_on(after, "MSP", 52)["OPERATING_CARRIER_IATA"]) == {"XB"}
+    assert set(_on(after, "MSP", 44)["EQUIPMENT_SUBTYPE_CODE_IATA"]) == {"E75"}  # before day 45
+    assert seats_by_day(after)[52] == seats_by_day(before)[52] + 270
+    assert seat_revision(15, UPGAUGE_SCENARIO)[52] == pytest.approx(270 / 4244)
+    assert seat_revision(15, UPGAUGE_SCENARIO)[44] == 0
+
+
+def test_a_frequency_change_sets_the_daily_flights():
+    # Filed on day 35, ORD drops from four flights to two for days 60 to 110: 332 seats fewer
+    # on a Monday. On a Tuesday the reduced flight is one of the two that remain.
+    before, after = build_schedule(34, UPGAUGE_SCENARIO), build_schedule(35, UPGAUGE_SCENARIO)
+    assert len(_on(before, "ORD", 70)) == 4 and len(_on(after, "ORD", 70)) == 2
+    assert len(_on(after, "ORD", 59)) == 4  # before day 60
+    assert len(_on(before, "ORD", 71)) == 3 and len(_on(after, "ORD", 71)) == 1
+    assert seats_by_day(after)[70] == seats_by_day(before)[70] - 332
+    assert seat_revision(35, UPGAUGE_SCENARIO)[70] == pytest.approx(-332 / seats_by_day(before)[70])
+
+
+def test_a_time_change_moves_departures_and_no_seat():
+    scenario = Scenario(
+        "shifted", (Shock(5, "time", 10, 20, origin="LAX", marketing="XA", minutes=15),)
+    )
+    before, after = build_schedule(4, scenario), build_schedule(5, scenario)
+    assert seats_by_day(before).equals(seats_by_day(after))
+    for day in (9, 10, 20, 21):
+        was = _on(before, "LAX", day)["PASSENGER_DEPARTURE_TIME_LOCAL"].to_numpy()
+        now = _on(after, "LAX", day)["PASSENGER_DEPARTURE_TIME_LOCAL"].to_numpy()
+        shift = np.timedelta64(15 if 10 <= day <= 20 else 0, "m")
+        assert (now == was + shift).all()
+
+
+def test_the_churn_files_weekly_revisions_below_the_threshold():
+    filed = churn(7)
+    assert len(filed) == 16 and churn(7) == filed and churn(8) != filed
+    assert sorted({s.known_day for s in filed}) == [7, 14, 21, 28, 35, 42, 49, 56]
+    assert {s.kind for s in filed} == {"equipment", "time"}
+    churned = with_churn(DEFAULT_SCENARIO, 7)
+    assert churned.name == "default+churn" and churned.shocks[:2] == tuple(AIR_SHOCKS)
+    moved = 0
+    for day in churned.filing_days(59):
+        if day in (20, 40):
+            continue
+        revision = seat_revision(day, churned)
+        assert revision.abs().max() < demo().seat_threshold
+        moved += int((revision != 0).any())
+    assert moved > 0  # a detector that fires on any revision fires on the churn
+
+
+def test_the_default_scenario_is_the_air_shocks_and_the_kinds_are_named():
+    assert DEFAULT_SCENARIO.shocks == tuple(AIR_SHOCKS)
+    assert SCENARIOS["default"] is DEFAULT_SCENARIO and SCENARIOS["upgauge"] is UPGAUGE_SCENARIO
+    assert {s.kind for scenario in SCENARIOS.values() for s in scenario.shocks} <= set(KINDS)
+    assert DEFAULT_SCENARIO.filing_days() == (20, 40)
+    assert UPGAUGE_SCENARIO.filing_days() == (15, 35)
+    bad = Scenario("bad", (Shock(0, "merge", 1, 2, origin="LAX", marketing="XA"),))
+    with pytest.raises(ValueError, match="merge"):
+        build_schedule(1, bad)

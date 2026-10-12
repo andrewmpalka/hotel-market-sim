@@ -8,7 +8,7 @@ which is also the order in which they depend on each other.
 ### MOD-01 [C] schedule.py
 - File: src/hotel_market/schedule.py
 - Owns: the synthetic air schedule as known on a day (build_schedule) and the seats arriving each day (seats_by_day). It also gives the seat change against the no-shock schedule and against the day before.
-- Holds: both air shocks ([[SHK-02]], [[SHK-04]]) and the three counting traps: codeshare rows, the type U bus and the second airport. Its column names and signatures do not change.
+- Holds: both air shocks ([[SHK-02]], [[SHK-04]]), the scenarios and the churn ([[DEC-53]]). It also holds the three counting traps: codeshare rows, the type U bus and the second airport. Its column names do not change.
 - Carriers: where the operating carrier differs from the marketing carrier, a regional flies the route under capacity purchase. IS_WETLEASE is False on every row, because a wet lease is a separate arrangement ([[DEC-35]]).
 - Reads: nothing in the package
 - Writes: [[DAT-01]], [[DAT-02]], [[DAT-03]]
@@ -36,7 +36,7 @@ which is also the order in which they depend on each other.
 ### MOD-04 [C] demand.py
 - File: src/hotel_market/demand.py
 - Owns: the simulator's demand per hotel and stay date as known on a day. The formula is rooms x base occupancy x weekday factor x seats x events. Normal demand leaves out seats and events.
-- Holds: the per-filing cache of seat changes (last_filing, known_seat_change). The agent never reads this module. Its own demand model is [[MOD-18]], which matches it by construction for the demo market.
+- Holds: the per-filing cache of seat changes (last_filing, known_seat_change), keyed by the run's scenario ([[DEC-53]]). The agent never reads this module. Its own demand model is [[MOD-18]], which matches it by construction.
 - Bias: DEMAND_BIAS multiplies both demands for the simulator alone ([[RUL-82]], [[DEC-50]]). MARKET_ELASTICITY scales expected demand by the median's level, and the agent is told it ([[RUL-87]], [[DEC-52]]).
 - Reads: [[MOD-01]], [[MOD-02]], [[MOD-03]], [[MOD-20]]
 - Writes: nothing stored; the functions are pure functions of what is known on a day
@@ -181,7 +181,7 @@ which is also the order in which they depend on each other.
 ### MOD-19 [C] simulated.py
 - File: src/hotel_market/simulated.py
 - Owns: the simulator as the agent's four sources ([[DEC-40]]). SimulatedBookings reads the Books' daily log ([[DAT-07]]), and SimulatedRateShops the seed and the logged medians.
-- Also: SimulatedSchedules reads the schedule as filed, and SimulatedEvents the events. deciding() wraps an Agent as the simulator's decide hook, and watch() is the fixed-rate run that records every day's flags.
+- Also: SimulatedSchedules reads the schedule as filed under the run's scenario ([[DEC-53]]), and SimulatedEvents the events. deciding() wraps an Agent as the simulator's decide hook, and watch() records a fixed-rate run's flags.
 - Reaction: the rate-shop source passes the Books' lagged hotel change to each shop ([[DEC-51]]). first_median() is the shop of day -1 ([[DEC-52]]). The agent therefore sees the shop the simulator used.
 - Reads: [[MOD-01]], [[MOD-02]], [[MOD-03]], [[MOD-04]], [[MOD-05]], [[MOD-06]], [[MOD-07]], [[MOD-10]], [[MOD-17]], [[MOD-20]]
 - Writes: [[DAT-25]], as their implementation

@@ -46,7 +46,7 @@ import numpy as np
 
 from hotel_market.customer import Customer, demo
 from hotel_market.demand import DEMAND_BIAS, MARKET_ELASTICITY, expected_demand, normal_demand
-from hotel_market.schedule import HORIZON_DAYS
+from hotel_market.schedule import DEFAULT_SCENARIO, HORIZON_DAYS, Scenario, with_churn
 from hotel_market.shops import REACTION_LAG, comp_median, starting_median
 from hotel_market.world import SIM_DAYS, Hotel, stay_window
 
@@ -104,12 +104,16 @@ class Books:
         demand_bias: float = DEMAND_BIAS,
         react: bool = False,
         market_elasticity: float = MARKET_ELASTICITY,
+        scenario: Scenario = DEFAULT_SCENARIO,
+        churn: bool = False,
     ):
         self.seed = seed
         self.customer = customer or demo()
         self.demand_bias = demand_bias  # multiplies the preload and every day's expected demand
         self.react = react  # whether competitors react to the hotels' rate changes
         self.market_elasticity = market_elasticity  # the market's response to the median's level
+        self.churn = churn  # whether the airline also files the seed's weekly revisions
+        self.scenario = with_churn(scenario, seed) if churn else scenario  # the air schedule's
         self._starting: dict[tuple[int, int], float] = {}  # (hotel row, stay day) -> median
         hotels = self.customer.hotels
         rng = np.random.default_rng([seed, BOOKING_STREAM])
@@ -153,11 +157,10 @@ class Books:
             median = self.comp_median(day, hotel, stay_day)
         curve = self.customer.curve
         ratio = median / self.starting_median(hotel, stay_day) if self.market_elasticity else 1.0
-        return (
-            expected_demand(hotel, stay_day, day, self.demand_bias, ratio, self.market_elasticity)
-            * (curve(days_out) - curve(days_out + 1))
-            * (rate / median) ** -ELASTICITY
+        demand = expected_demand(
+            hotel, stay_day, day, self.demand_bias, ratio, self.market_elasticity, self.scenario
         )
+        return demand * (curve(days_out) - curve(days_out + 1)) * (rate / median) ** -ELASTICITY
 
     def starting_median(self, hotel: Hotel, stay_day: int) -> float:
         """The comp median's starting level for a stay date (shops.starting_median), kept once."""
@@ -245,6 +248,8 @@ def simulate(
     demand_bias: float = DEMAND_BIAS,
     react: bool = False,
     market_elasticity: float = MARKET_ELASTICITY,
+    scenario: Scenario = DEFAULT_SCENARIO,
+    churn: bool = False,
 ) -> Books:
     """Run the booking loop on days 0 to last_day (149 for a full run) and return the books.
 
@@ -252,9 +257,10 @@ def simulate(
     customer, the market is the demo market. The demand bias multiplies the
     simulator's demand, and nothing the agent reads carries it. With react, the
     competitors follow the hotels' rate changes (shops.py). The market elasticity
-    is the market's response to the comp median's level (demand.py).
+    is the market's response to the comp median's level (demand.py). The scenario
+    is the air schedule's filings, and churn adds the seed's weekly revisions.
     """
-    books = Books(seed, customer, demand_bias, react, market_elasticity)
+    books = Books(seed, customer, demand_bias, react, market_elasticity, scenario, churn)
     for day in range(last_day + 1):
         books.book(day)
         if decide is not None and day < SIM_DAYS:

@@ -186,3 +186,21 @@ def test_pace_causes_follow_the_gap_against_the_threshold(run):
         assert row["pace_gap"] < -row["pace_threshold"] and BEHIND in row["causes"]
     behind = [f for f in flags(10, table) if f.hotel == "convention" and BEHIND in f.causes]
     assert behind == [Flag(10, "convention", 40, 42, (BEHIND,))]
+
+
+def test_a_detector_that_fires_on_any_revision_is_caught_by_the_churn():
+    from hotel_market.schedule import DEFAULT_SCENARIO, with_churn
+    from hotel_market.simulated import watch
+
+    _, with_churn_flags, _ = watch(7, churn=True)
+    _, plain_flags, _ = watch(7)
+
+    def seat_days(found):
+        return sorted({f.day for f in found if set(f.causes) & {SEATS_UP, SEATS_CUT}})
+
+    # The churn files on eight more days, with a seat revision on some of them, and raises no
+    # seat flag: the threshold holds them out, as it is meant to.
+    assert seat_days(with_churn_flags) == seat_days(plain_flags) == [20, 40]
+    revisions = SimulatedSchedules(with_churn(DEFAULT_SCENARIO, 7))
+    moved = [day for day in range(7, 57, 7) if any(revisions.seat_revision(day).values())]
+    assert moved

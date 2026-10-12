@@ -30,7 +30,7 @@ from functools import lru_cache
 from types import MappingProxyType
 
 from hotel_market.customer import demo
-from hotel_market.schedule import AIR_SHOCKS, seat_change
+from hotel_market.schedule import DEFAULT_SCENARIO, Scenario, seat_change
 from hotel_market.shocks import event_uplift
 from hotel_market.world import Hotel, weekday
 
@@ -58,36 +58,40 @@ def expected_demand(
     demand_bias: float = DEMAND_BIAS,
     median_ratio: float = 1.0,
     market_elasticity: float = MARKET_ELASTICITY,
+    scenario: Scenario = DEFAULT_SCENARIO,
 ) -> float:
     """Rooms a hotel expects to sell for a stay date, given what is known on as_of_day. The
     demand bias multiplies it. median_ratio is the comp median as shopped over its starting
-    level, and the market elasticity scales demand by median_ratio ** -market_elasticity."""
+    level, and the market elasticity scales demand by median_ratio ** -market_elasticity. The
+    scenario is the air schedule's filings."""
     return (
         normal_demand(hotel, stay_day, demand_bias)
-        * (1 + hotel.air_share * known_seat_change(as_of_day)[stay_day])
+        * (1 + hotel.air_share * known_seat_change(as_of_day, scenario)[stay_day])
         * (1 + event_uplift(hotel.key, stay_day, as_of_day))
         * median_ratio**-market_elasticity
     )
 
 
-def last_filing(as_of_day: int) -> int:
+def last_filing(as_of_day: int, scenario: Scenario = DEFAULT_SCENARIO) -> int:
     """The last day on or before as_of_day when an airline filed a change, or -1 if none.
 
     The schedule changes only on filing days. Every day therefore has the same seats as the last
     filing day before it. The functions seat_change and seat_revision build two schedules each,
     so they run once per filing instead of once a day.
     """
-    return max((s.known_day for s in AIR_SHOCKS if s.known_day <= as_of_day), default=-1)
+    return max((s.known_day for s in scenario.shocks if s.known_day <= as_of_day), default=-1)
 
 
-def known_seat_change(as_of_day: int) -> MappingProxyType[int, float]:
+def known_seat_change(
+    as_of_day: int, scenario: Scenario = DEFAULT_SCENARIO
+) -> MappingProxyType[int, float]:
     """seat_change(as_of_day) as a read-only {stay day: change}, built once per filing."""
-    return _seat_change(last_filing(as_of_day))
+    return _seat_change(last_filing(as_of_day, scenario), scenario)
 
 
 @lru_cache(maxsize=None)
-def _seat_change(as_of_day: int) -> MappingProxyType[int, float]:
-    return MappingProxyType(seat_change(as_of_day).to_dict())
+def _seat_change(as_of_day: int, scenario: Scenario) -> MappingProxyType[int, float]:
+    return MappingProxyType(seat_change(as_of_day, scenario).to_dict())
 
 
 if __name__ == "__main__":

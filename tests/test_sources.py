@@ -121,3 +121,12 @@ def test_the_simulated_first_median_is_the_shop_before_any_shock():
     assert sources.shops.median(10, convention, 46) == pytest.approx(
         1.15 * sources.shops.first_median(convention, 46)
     )
+
+
+def test_the_simulated_schedules_follow_the_runs_scenario():
+    from hotel_market.schedule import UPGAUGE_SCENARIO
+    from hotel_market.simulated import SimulatedSchedules
+
+    sources = simulated_sources(simulate(7, last_day=16, scenario=UPGAUGE_SCENARIO))
+    assert sources.schedules.seats(14)[52] == 4244 and sources.schedules.seats(15)[52] == 4514
+    assert SimulatedSchedules().seats(20)[55] == 4964  # the default, as before

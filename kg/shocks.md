@@ -37,3 +37,27 @@ on ([[RUL-03]]).
 - File: src/hotel_market/schedule.py
 - Flags: [[RUL-34]] on day 40 at every hotel for stay dates 70 to 90. In the seed-7 run every take-back plan was worth less than [[RUL-67]] and was held ([[RES-02]]).
 - Evidence: test_route_cut_lowers_demand_from_day_40, test_each_shock_flags_on_the_day_it_becomes_known
+
+### SHK-05 [C] The upgauge
+- Known on day: 15, when the airline files it, in the upgauge scenario only ([[DEC-53]])
+- Stay dates: 45 to 120
+- Effect: XB takes the MSP route mainline on 738s. The three daily flights stay, and each gains 90 seats. That is +270 a day, +6.4% on a normal day's 4,244 and +5.4% on a Tuesday or Saturday.
+- File: src/hotel_market/schedule.py
+- Flags: [[RUL-33]] on day 15 at every hotel for stay dates 45 to 104, the end of that day's window. The revision clears [[RUL-64]].
+- Evidence: test_an_equipment_change_moves_the_seats_and_not_the_flight_count
+
+### SHK-06 [C] The frequency cut
+- Known on day: 35, when the airline files it, in the upgauge scenario only ([[DEC-53]])
+- Stay dates: 60 to 110
+- Effect: the ORD route drops from four daily flights to two. That is 332 seats a day fewer, 7.4% below the day before on a Monday. The two lowest flight numbers remain.
+- File: src/hotel_market/schedule.py
+- Flags: [[RUL-34]] on day 35 at every hotel for stay dates 60 to 110, because the revision clears [[RUL-64]]
+- Evidence: test_a_frequency_change_sets_the_daily_flights
+
+### SHK-07 [C] The churn
+- Known on day: 7, 14 and every seventh day through 56, with --churn ([[DEC-53]], [[RUL-91]])
+- Stay dates: one to six weeks after each filing, drawn from the seed on [[RUL-90]]
+- Effect: each filing swaps one route's equipment for one day, between codes within 30 seats ([[RUL-93]]). It also shifts another route's departures for a fortnight ([[RUL-92]]). The largest seat move is under 3%.
+- File: src/hotel_market/schedule.py
+- Flags: none. The revision stays under [[RUL-64]], so the threshold holds it out. A detector that fired on any revision would fire eight more times a seed ([[RES-28]]).
+- Evidence: test_the_churn_files_weekly_revisions_below_the_threshold, test_a_detector_that_fires_on_any_revision_is_caught_by_the_churn

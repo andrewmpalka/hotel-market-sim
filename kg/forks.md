@@ -63,6 +63,6 @@ it. None of these is in progress.
 
 ### FRK-09 [O] A comp move that follows our own change as a flag cause
 - Choice: whether a comp median move that follows our own change should count as a flag cause ([[RUL-65]]). It arrives within REACTION_LAG days on the same stay dates ([[RUL-84]]), so the detector could read it as the reaction.
-- Known: with the reaction on, 481 of the true mode's 541 comp-median flags follow the hotels' own changes ([[RES-24]]). 97 stay dates change twice within 14 days. The flag lifts the hold, so the agent raises again ([[DEC-51]]).
+- Known: at 0.5 with the reaction on, the cautious learn arm changes 702 stay dates twice within 14 days ([[RES-26]]). Its rate changes are 784. That is the arm anyone would run, and the flag lifts the hold, so it raises again ([[DEC-51]]).
 - Needs: the hotel's own change days per stay date among detect.py's inputs, and a rule for the window. The oracle already scores the followed median ([[DEC-52]]), so the arm would measure the flag alone.
 - Links: [[DEC-51]], [[DEC-52]], [[RUL-65]], [[RUL-84]], [[RUL-85]], [[RES-24]], [[RES-26]]

@@ -16,6 +16,16 @@ The table has one row per flight per operating date. A schedule also has an "as 
 knows about a flight only after the airline has filed it. build_schedule(as_of_day) returns the
 schedule as it was known on that simulation day.
 
+A filing is a Shock of one of five kinds. An "add" files new routes and a "suspend" stops one for
+a date range. An "equipment" change swaps a route's equipment code for a date range, so the seats
+move while the flight count does not. A "frequency" change sets a route's daily flights for a
+date range. A "time" change shifts a route's departure times and moves no seat. A Scenario is a
+named list of shocks. AIR_SHOCKS is the default scenario, and SCENARIOS holds the others.
+
+With --churn the airline also files weekly revisions drawn from the seed, below the detect
+threshold: a departure-time change for a fortnight and a one-day equipment swap (churn). A
+detector that fires on any revision fires on them; the threshold detector does not.
+
 A row's marketing carrier sells the flight and its operating carrier flies it. Where the two
 differ on an operating row, a regional airline flies the route for the marketing carrier under
 a capacity-purchase agreement. XR does that for XB and XA on the E75 routes. On a codeshare row
@@ -30,6 +40,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field, replace
 from datetime import date, datetime, time, timedelta
 
+import numpy as np
 import pandas as pd
 
 SIM_START = date(2027, 1, 4)  # simulation day 0, a Monday
@@ -69,6 +80,7 @@ class Route:
     service_type: str = "J"  # J is scheduled passenger service, U a bus or rail link
     # (first day, last day) ranges when the route operates, in simulation days
     periods: tuple[tuple[int, int], ...] = ((0, HORIZON_DAYS - 1),)
+    time_shift: int = 0  # minutes added to every departure, by a "time" revision
 
 
 # One route per line reads as the table it is, so the formatter leaves this block alone.
@@ -94,15 +106,22 @@ BASE_ROUTES = [
 # fmt: on
 
 
+KINDS = ("add", "suspend", "equipment", "frequency", "time")  # what a filing can do
+
+
 @dataclass(frozen=True)
 class Shock:
     known_day: int  # the simulation day the airline files the change
-    kind: str  # "add" or "suspend"
+    kind: str  # one of KINDS
     start_day: int
     end_day: int
     routes: tuple[Route, ...] = field(default_factory=tuple)  # for "add"
-    origin: str | None = None  # for "suspend"
+    origin: str | None = None  # the route the change applies to, with marketing
     marketing: str | None = None
+    equipment: str | None = None  # for "equipment": the new code
+    operating: str | None = None  # for "equipment": a new operating carrier, if the code brings one
+    flights: int | None = None  # for "frequency": the new daily flights
+    minutes: int = 0  # for "time": the departure shift, minutes either way
 
 
 AIR_SHOCKS = [
@@ -122,6 +141,102 @@ AIR_SHOCKS = [
 ]
 
 
+@dataclass(frozen=True)
+class Scenario:
+    """A named list of filings. The default is AIR_SHOCKS. A run's scenario may also carry the
+    seeded churn (with_churn)."""
+
+    name: str
+    shocks: tuple[Shock, ...]
+
+    def filing_days(self, last_day: int = HORIZON_DAYS - 1) -> tuple[int, ...]:
+        """The days the airline files something, through last_day."""
+        return tuple(sorted({s.known_day for s in self.shocks if s.known_day <= last_day}))
+
+
+DEFAULT_SCENARIO = Scenario("default", tuple(AIR_SHOCKS))
+UPGAUGE_SCENARIO = Scenario(
+    "upgauge",
+    (
+        # Filed on day 15: XB takes the MSP route mainline on 738s for days 45 to 120. The
+        # flight count stays at three, and the seats rise by 270 a day.
+        Shock(
+            known_day=15,
+            kind="equipment",
+            start_day=45,
+            end_day=120,
+            origin="MSP",
+            marketing="XB",
+            equipment="738",
+            operating="XB",
+        ),
+        # Filed on day 35: the ORD route drops from four daily flights to two for days 60 to
+        # 110, 332 seats a day fewer.
+        Shock(
+            known_day=35,
+            kind="frequency",
+            start_day=60,
+            end_day=110,
+            origin="ORD",
+            marketing="XA",
+            flights=2,
+        ),
+    ),
+)
+SCENARIOS = {DEFAULT_SCENARIO.name: DEFAULT_SCENARIO, UPGAUGE_SCENARIO.name: UPGAUGE_SCENARIO}
+
+# The churn: weekly filings on days 7, 14, ... for CHURN_WEEKS weeks, on their own stream.
+CHURN_STREAM = 3
+CHURN_WEEKS = 8
+CHURN_SHIFTS = (-30, -15, 15, 30)  # the departure-time changes, in minutes
+# One-day equipment swaps between codes of nearly the same size: at most 30 seats on a day.
+SWAPS = {"738": "321", "321": "738", "320": "32N", "32N": "320"}
+
+
+def churn(seed: int) -> tuple[Shock, ...]:
+    """The weekly revisions a seed files, each below the detect threshold. On each filing day the
+    airline swaps one route's equipment for one day, one to six weeks out, and shifts another
+    route's departures for a fortnight. A swap moves at most 30 seats a flight, so at most 120 on
+    a day of 4,244, under 3%."""
+    rng = np.random.default_rng([seed, CHURN_STREAM])
+    swappable = [r for r in BASE_ROUTES if r.equipment in SWAPS]
+    found = []
+    for week in range(1, CHURN_WEEKS + 1):
+        filed = 7 * week
+        route = swappable[int(rng.integers(len(swappable)))]
+        day = filed + int(rng.integers(7, 43))
+        found.append(
+            Shock(
+                filed,
+                "equipment",
+                day,
+                day,
+                origin=route.origin,
+                marketing=route.marketing,
+                equipment=SWAPS[route.equipment],
+            )
+        )
+        route = swappable[int(rng.integers(len(swappable)))]
+        day = filed + int(rng.integers(7, 43))
+        found.append(
+            Shock(
+                filed,
+                "time",
+                day,
+                day + 13,
+                origin=route.origin,
+                marketing=route.marketing,
+                minutes=int(rng.choice(CHURN_SHIFTS)),
+            )
+        )
+    return tuple(found)
+
+
+def with_churn(scenario: Scenario, seed: int) -> Scenario:
+    """The scenario with the seed's churn filed on top of it."""
+    return Scenario(f"{scenario.name}+churn", scenario.shocks + churn(seed))
+
+
 def _remove_window(periods, start, end):
     """Cut the days start..end out of a list of (first, last) periods."""
     out = []
@@ -136,10 +251,44 @@ def _remove_window(periods, start, end):
     return tuple(out)
 
 
-def routes_as_of(as_of_day: int) -> list[Route]:
-    """The route list as it was known on a simulation day."""
+def _inside_window(periods, start, end):
+    """The parts of a list of (first, last) periods that fall on the days start..end."""
+    return tuple(
+        (max(first, start), min(last, end))
+        for first, last in periods
+        if not (end < first or start > last)
+    )
+
+
+def _revised(route: Route, shock: Shock) -> list[Route]:
+    """The route after an equipment, frequency or time filing: the days inside the filing's range
+    carry the revision, and the others stay as they were."""
+    if route.origin != shock.origin or route.marketing != shock.marketing:
+        return [route]
+    inside = _inside_window(route.periods, shock.start_day, shock.end_day)
+    outside = _remove_window(route.periods, shock.start_day, shock.end_day)
+    if shock.kind == "equipment":
+        revised = replace(
+            route, equipment=shock.equipment, operating=shock.operating or route.operating
+        )
+    elif shock.kind == "frequency":
+        revised = replace(
+            route, flights=shock.flights, reduced_tue_sat=min(route.reduced_tue_sat, shock.flights)
+        )
+    elif shock.kind == "time":
+        revised = replace(route, time_shift=route.time_shift + shock.minutes)
+    else:
+        raise ValueError(f"unknown filing kind {shock.kind!r}; the kinds are {KINDS}")
+    found = [replace(route, periods=outside)] if outside else []
+    if inside:
+        found.append(replace(revised, periods=inside))
+    return found
+
+
+def routes_as_of(as_of_day: int, scenario: Scenario = DEFAULT_SCENARIO) -> list[Route]:
+    """The route list as it was known on a simulation day, under a scenario."""
     routes = list(BASE_ROUTES)
-    for shock in AIR_SHOCKS:
+    for shock in scenario.shocks:
         if as_of_day < shock.known_day:
             continue
         if shock.kind == "add":
@@ -152,6 +301,8 @@ def routes_as_of(as_of_day: int) -> list[Route]:
                 else r
                 for r in routes
             ]
+        else:
+            routes = [revised for r in routes for revised in _revised(r, shock)]
     return routes
 
 
@@ -161,10 +312,12 @@ def _operates(route: Route, flight_index: int, weekday: int) -> bool:
     return not (reduced and weekday in (1, 5))
 
 
-def build_schedule(as_of_day: int = HORIZON_DAYS) -> pd.DataFrame:
-    """One row per flight per operating date, as known on `as_of_day`."""
+def build_schedule(
+    as_of_day: int = HORIZON_DAYS, scenario: Scenario = DEFAULT_SCENARIO
+) -> pd.DataFrame:
+    """One row per flight per operating date, as known on `as_of_day` under a scenario."""
     rows = []
-    for route in routes_as_of(as_of_day):
+    for route in routes_as_of(as_of_day, scenario):
         first, business, economy = EQUIPMENT[route.equipment]
         for i in range(route.flights):
             flight_number = route.first_flight_number + i
@@ -203,7 +356,8 @@ def build_schedule(as_of_day: int = HORIZON_DAYS) -> pd.DataFrame:
                         "DEPARTURE_COUNTRY_CODE_IATA": "US",
                         "DEPARTURE_STATE_PROVINCE_CODE_IATA": route.origin_state,
                         "DEPARTURE_CITY_CODE_IATA": route.origin_city,
-                        "PASSENGER_DEPARTURE_TIME_LOCAL": datetime.combine(d, time(dep_hour, 15)),
+                        "PASSENGER_DEPARTURE_TIME_LOCAL": datetime.combine(d, time(dep_hour, 15))
+                        + timedelta(minutes=route.time_shift),
                         "ARRIVAL_STATION_CODE_IATA": route.destination,
                         "ARRIVAL_COUNTRY_CODE_IATA": MARKET_COUNTRY,
                         "ARRIVAL_STATE_PROVINCE_CODE_IATA": MARKET_STATE,
@@ -252,25 +406,25 @@ def seats_by_day(schedule: pd.DataFrame, city: str = MARKET_CITY) -> pd.Series:
     return out.reindex(range(HORIZON_DAYS), fill_value=0).rename("seats")
 
 
-def seat_change(as_of_day: int) -> pd.Series:
+def seat_change(as_of_day: int, scenario: Scenario = DEFAULT_SCENARIO) -> pd.Series:
     """Fractional change in arriving seats against the schedule with no shocks.
 
     0.18 means seats are 18% above baseline for that day. This is the number
     the demand rule and the agent's flagging code both read.
     """
-    baseline = seats_by_day(build_schedule(as_of_day=-1))
-    known = seats_by_day(build_schedule(as_of_day=as_of_day))
+    baseline = seats_by_day(build_schedule(as_of_day=-1, scenario=scenario))
+    known = seats_by_day(build_schedule(as_of_day=as_of_day, scenario=scenario))
     return ((known - baseline) / baseline).rename("seat_change")
 
 
-def seat_revision(as_of_day: int) -> pd.Series:
+def seat_revision(as_of_day: int, scenario: Scenario = DEFAULT_SCENARIO) -> pd.Series:
     """Fractional change in arriving seats against the schedule known one day earlier.
 
     This catches a change on the day it is filed. The day-40 cut needs it. Seats on days 70 to 90
     stay above the original baseline even after the cut. The day-20 flights are still there.
     """
-    before = seats_by_day(build_schedule(as_of_day=as_of_day - 1))
-    after = seats_by_day(build_schedule(as_of_day=as_of_day))
+    before = seats_by_day(build_schedule(as_of_day=as_of_day - 1, scenario=scenario))
+    after = seats_by_day(build_schedule(as_of_day=as_of_day, scenario=scenario))
     return ((after - before) / before).rename("seat_revision")
 
 
