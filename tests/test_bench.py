@@ -24,21 +24,24 @@ from hotel_market.bench import (
 from hotel_market.bookings import simulate
 from hotel_market.customer import demo
 from hotel_market.detect import AHEAD
-from hotel_market.plan import HOLD, Candidate, Entry, FlagNumbers, Range, WeekdayGroup
+from hotel_market.plan import HOLD, Candidate, Entry, FlagNumbers, Range, StayDate, WeekdayGroup
 from hotel_market.simulated import deciding
 
 DEMO = demo()
 SEED = 7
 
 
-def _entry(day, first, gain, action=None, hotel="airport"):
-    """A made-up queued entry worth `gain` over holding, accepted unless action is HOLD."""
+def _entry(day, first, gain, action=None, plan_rate=133.0, hotel="airport"):
+    """A made-up queued entry worth `gain` over holding by its own estimate, accepted unless
+    action is HOLD. Its one stay date has 10 rooms left against 1,000 rooms of demand, so
+    every candidate sells those 10 and the oracle's loss from the plan is 10 x (140 - rate)."""
     group = WeekdayGroup(
         0,
         [
             Candidate(HOLD, {first: 140.0}, 1000.0),
-            Candidate("raise 5%", {first: 147.0}, 1000.0 + gain),
+            Candidate("lower 5%", {first: plan_rate}, 1000.0 + gain),
         ],
+        stay_dates=[StayDate(first, 140.0, 140.0, 10, 1000.0)],
     )
     numbers = FlagNumbers(
         days_out=Range(0, 0),
@@ -60,10 +63,11 @@ def _entry(day, first, gain, action=None, hotel="airport"):
 
 
 # Four queued entries and one under the minimum. The reviewer declines A and B; the oracle
-# would decline B and C. D is accepted by both, and E was never asked.
+# would decline B and C. D is accepted by both, and E was never asked. B's plan cuts the
+# rate to $133 and C's to $126, so the oracle's losses from accepting them are $70 and $140.
 A = _entry(10, 40, 300.0, HOLD)
 B = _entry(10, 41, 600.0, HOLD)
-C = _entry(20, 42, 1000.0)
+C = _entry(20, 42, 1000.0, plan_rate=126.0)
 D = _entry(20, 43, 400.0)
 E = _entry(20, 44, 100.0)
 ENTRIES = [A, B, C, D, E]
@@ -87,8 +91,13 @@ def test_decline_precision_recall_and_f1_against_the_oracle():
     assert decline_precision(ENTRIES, ORACLE) == pytest.approx(1 / 2)
     assert decline_recall(ENTRIES, ORACLE) == pytest.approx(1 / 2)
     assert decline_f1(ENTRIES, ORACLE) == pytest.approx(1 / 2)
-    # B is worth $600 of the $1,600 the oracle would have declined.
-    assert dollar_weighted_recall(ENTRIES, ORACLE) == pytest.approx(600 / 1600)
+    # The weight is the oracle's loss from accepting, hold minus plan at 1.5: $70 for B and
+    # $140 for C, so the reviewer caught $70 of the $210 at stake.
+    assert oracle_values(B) == pytest.approx((933.33, 863.33), abs=0.01)
+    assert oracle_values(C) == pytest.approx((933.33, 793.33), abs=0.01)
+    assert dollar_weighted_recall(ENTRIES, ORACLE) == pytest.approx(70 / 210)
+    # The plan's own value at stake is not the weight: by it the share would be 600 / 1,600.
+    assert B.value_at_stake == 600 and C.value_at_stake == 1000
 
 
 def test_the_measures_are_nan_when_nobody_declined():
@@ -140,13 +149,30 @@ def test_the_oracle_reviewer_accepts_every_queued_plan_in_true_mode(tmp_path):
     assert change == pytest.approx(28818, abs=1)
 
 
-def test_the_oracle_reviewer_drives_a_run_of_its_own_in_a_wrong_mode(tmp_path):
-    agent = Agent(SEED, tmp_path, elasticity=ElasticityMode("fixed", 1.0))
+@pytest.fixture(scope="module")
+def oracle_fixed_run(tmp_path_factory):
+    """Seed 7 at fixed:1.0 with the oracle deciding, and the cache dir it was given."""
+    cache = tmp_path_factory.mktemp("oracle_cache")
+    agent = Agent(SEED, cache, elasticity=ElasticityMode("fixed", 1.0))
     agent.client = OracleReviewer(agent)
     simulate(SEED, deciding(agent))
+    return agent, cache
+
+
+def test_the_oracle_reviewer_drives_a_run_of_its_own_in_a_wrong_mode(oracle_fixed_run):
+    agent, _ = oracle_fixed_run
     # Its declines are exactly its own labels on the entries it saw.
     assert declined(agent.entries) == oracle_labels(agent.entries) != set()
     assert decline_precision(agent.entries, oracle_labels(agent.entries)) == 1.0
     assert decline_recall(agent.entries, oracle_labels(agent.entries)) == 1.0
     held = [e for e in agent.entries if e.queued and e.action == HOLD]
-    assert all(e.reason.endswith("so we hold.") and e.reason_source == "model" for e in held)
+    assert all(e.reason.endswith("so we hold.") and e.reason_source == "oracle" for e in held)
+
+
+def test_an_oracle_run_writes_nothing_to_the_cache(oracle_fixed_run):
+    # The oracle is uncached: a later live run in the same mode must never read its answers
+    # as the model's, so its cache folder is never even created.
+    agent, cache = oracle_fixed_run
+    assert agent.cache_dir.name == "seed7-fixed-1" and not agent.cache_dir.exists()
+    assert list(cache.iterdir()) == []
+    assert {e.reason_source for e in agent.entries if e.queued} == {"oracle"}

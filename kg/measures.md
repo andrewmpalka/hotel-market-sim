@@ -68,7 +68,8 @@ the agent changed.
 - Evidence: test_decline_precision_recall_and_f1_against_the_oracle, test_the_measures_are_nan_when_nobody_declined
 
 ### MEA-11 [C] Dollar-weighted decline recall
-- Formula: the value at stake of the plans both declined / the value at stake of every plan the oracle declined. The value at stake is the plan's own estimate over holding ([[CON-08]]).
+- Formula: the oracle's loss from accepting a plan is hold minus plan at ORACLE_ELASTICITY. The recall is that loss summed over the plans both declined / the loss over every plan the oracle declined.
 - Function: hotel_market.bench.dollar_weighted_recall
-- Used by: the bench report ([[MOD-23]]). It weighs a missed decline by what the plan claimed to earn.
+- Weight: a wrong elasticity overstates a plan's own value at stake ([[CON-08]]). The oracle's loss is therefore the weight.
+- Used by: the bench report ([[MOD-23]]). It weighs a missed decline by what accepting it cost at the simulator's elasticity.
 - Evidence: test_decline_precision_recall_and_f1_against_the_oracle

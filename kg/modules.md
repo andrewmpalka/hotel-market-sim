@@ -83,7 +83,7 @@ which is also the order in which they depend on each other.
 - File: src/hotel_market/model.py
 - Owns: the model call: the request the model sees ([[DAT-16]]) and the system prompt ([[RUL-47]]). It builds the answer schema from the request's own options ([[DEC-34]]) and checks the answer against them.
 - Holds: the cache of the model's answers ([[DAT-17]], [[DEC-23]], [[DEC-25]]) and the Claude client with its refusal fallback. The template answers without an API key from the request's display strings.
-- Names: MODEL ([[RUL-46]]) and MODE_NAMES ([[RUL-75]]). Every figure in the request is a display string from [[MOD-11]] ([[DEC-44]]).
+- Names: MODEL ([[RUL-46]]) and MODE_NAMES ([[RUL-75]]). Every figure in the request is a display string from [[MOD-11]] ([[DEC-44]]). A client's name is the source its decisions record; an uncached client is never cached ([[DEC-25]]).
 - Reads: [[MOD-02]], [[MOD-07]], [[MOD-08]], [[MOD-11]]
 - Writes: [[DAT-16]], [[DAT-17]]
 - Tests: tests/test_model.py

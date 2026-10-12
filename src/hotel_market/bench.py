@@ -10,11 +10,14 @@ reviewer ties there. In the modes where the agent prices with a wrong or a
 learned elasticity, a plan is sometimes worth less than holding, and declining
 it is right. The benchmark runs the reviewers in those modes.
 
-The oracle reviewer is the ceiling: a grader, not an agent. For each queued
-entry it re-scores the plan and hold with ORACLE_ELASTICITY, the simulator's
-own value, and declines the plan when hold scores at least as well. It stands in
-as the client the agent asks, so its decisions drive a run of their own, and it
-labels the entries of any other run after the fact. It imports from plan.py and
+The oracle reviewer is the ceiling for a reviewer: a grader, not an agent. It
+cannot pick a better candidate than the plan, and a single seed's draw can beat
+it. For each queued entry it re-scores the plan and hold with ORACLE_ELASTICITY,
+the simulator's own value, and declines the plan when hold scores at least as
+well. It stands in as the client the agent asks, so its decisions drive a run
+of their own, and it labels the entries of any other run after the fact. Its
+answers are never cached and record the source "oracle", so a later live run in
+the same mode cannot mistake them for the model's. It imports from plan.py and
 agent.py and nothing in the agent's path imports it, so the simulator's
 elasticity never reaches a decision through it; tests/test_sources.py checks
 its imports with the agent's modules.
@@ -76,9 +79,10 @@ class OracleReviewer:
     """The oracle as the client an agent asks: it answers each request from the day's
     entries, which the agent keeps in agent.today while it asks, and declines a plan when
     hold scores at least as well at the simulator's elasticity. Its reasons are written
-    by code from the two scores, as the rules require."""
+    by code from the two scores, as the rules require. Nothing it answers is cached."""
 
     name = "oracle"
+    cached = False
 
     def __init__(self, agent: Agent):
         self.agent = agent
@@ -163,17 +167,24 @@ def decline_f1(entries: Iterable[Entry], oracle: set[Key]) -> float:
     return 2 * precision * recall / (precision + recall)
 
 
-def dollar_weighted_recall(entries: Iterable[Entry], oracle: set[Key]) -> float:
-    """Dollar-weighted decline recall = the value at stake of the plans both the reviewer and
-    the oracle declined / the value at stake of every plan the oracle declined. The value at
-    stake is the plan's own estimate over holding, as the reviewer saw it. nan when the
+def dollar_weighted_recall(
+    entries: Iterable[Entry], oracle: set[Key], customer: Customer | None = None
+) -> float:
+    """Dollar-weighted decline recall = the oracle's loss from accepting, summed over the
+    plans both the reviewer and the oracle declined / the same loss summed over every plan
+    the oracle declined. The loss is hold minus plan at ORACLE_ELASTICITY (oracle_values),
+    not the plan's own value at stake, which a wrong elasticity overstates. nan when the
     oracle declined nothing."""
     by_key = {key(e): e for e in reviewed(entries)}
-    at_stake = sum(by_key[k].value_at_stake for k in oracle if k in by_key)
-    if at_stake == 0:
+
+    def loss(k: Key) -> float:
+        hold, plan = oracle_values(by_key[k], customer)
+        return hold - plan
+
+    total = sum(loss(k) for k in oracle if k in by_key)
+    if total == 0:
         return math.nan
-    both = declined(entries) & oracle
-    return sum(by_key[k].value_at_stake for k in both) / at_stake
+    return sum(loss(k) for k in declined(entries) & oracle if k in by_key) / total
 
 
 def invalid_answers(calls: Iterable[dict]) -> int:

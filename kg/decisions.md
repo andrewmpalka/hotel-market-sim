@@ -307,10 +307,11 @@ design keeps its node, marked [H], and names the decision that replaced it.
 ### DEC-25 [C] Only the model's answers are cached; the template is a function of the request
 - Decided: without a client the template answers and nothing is written. With a client the model's cached answer is read first. A cache file whose source is not "model" is ignored and overwritten.
 - Detail: a replay reads the model's cache when a client is given and uses the template otherwise.
+- Uncached: a client whose cached flag is false, such as the oracle grader ([[DEC-47]]), joins the template as an uncached answer. Nothing is written or read; its decisions record the client's name as their source.
 - Replaces: [[DEC-24]]
 - Reason: the template is a fixed function of the request, so it needs no cache. --template and --seeds always use it, and a live run can follow a template run. Template reasons now keep an event's name capitalised, the only output change.
 - Commit: abef71f
-- Evidence: test_the_template_never_reads_the_models_cache, test_a_template_answer_cached_by_an_older_version_is_ignored_and_replaced, test_replaying_day_20_makes_no_model_call_and_prints_the_same_entries
+- Evidence: test_the_template_never_reads_the_models_cache, test_replaying_day_20_makes_no_model_call_and_prints_the_same_entries, test_an_oracle_run_writes_nothing_to_the_cache
 - Links: [[MOD-09]], [[DAT-17]], [[MOD-12]]
 
 ### DEC-27 [H] The modules lived flat at the repository root
@@ -412,9 +413,9 @@ design keeps its node, marked [H], and names the decision that replaced it.
 ### DEC-47 [C] The oracle reviewer is a grader outside the agent's path
 - Decided: bench.py ([[MOD-23]]) holds an oracle reviewer. It re-scores each queued plan and hold at ORACLE_ELASTICITY ([[RUL-56]]). It declines the plan when hold scores at least as well.
 - Client: it stands in as the client the agent asks ([[MOD-09]]) and reads the day's entries from agent.today. Its decisions then drive a run of their own. It also labels the entries of any other run after the fact.
-- Boundary: it imports from plan.py and agent.py, and nothing in the agent's path imports it. tests/test_sources.py checks its imports with the agent's modules.
+- Boundary: it imports from plan.py and agent.py, and nothing in the agent's path imports it. tests/test_sources.py checks its imports with the agent's modules. Its answers are never cached and record source oracle ([[DEC-25]]).
 - Replaces: nothing built.
-- Reason: the oracle uses the simulator's elasticity, which the agent may not see ([[DEC-01]], [[DEC-02]]). A grader outside the agent's path cannot leak it into a decision.
+- Reason: the oracle uses the simulator's elasticity, which the agent may not see. A grader outside the agent's path cannot leak it. It is the ceiling for a reviewer: it cannot pick a better candidate, and a seed's draw can beat it.
 - Measured: in the default mode the oracle accepts every queued plan. That mode therefore cannot separate reviewers, and the mismatched modes can ([[RES-03]]).
 - Evidence: test_the_oracle_reviewer_accepts_every_queued_plan_in_true_mode, test_the_oracle_declines_where_hold_scores_at_least_as_well, test_the_agent_reads_only_through_the_interfaces
 - Links: [[MOD-23]], [[DEC-01]], [[DEC-02]], [[DEC-40]], [[MEA-06]]

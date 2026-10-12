@@ -154,7 +154,7 @@ the plans, the model's request and answer, and what the command writes.
 - File: src/hotel_market/plan.py
 - Made by: Entry.to_json() in [[MOD-08]] and Advice.to_json() in [[MOD-10]]. [[MOD-12]] writes one line per entry and advice, by day, entries before advice.
 - Entry line: day, hotel, stays [first, last], causes and numbers ([[DAT-13]], its ranges as named pairs). elasticity is the pricing, with the mode as the command line names it.
-- More: by_weekday, plan, value_at_stake, queued, action, new_rates (null when held), reason, reason_source ("code", "template" or "model") and simulated true. The line holds raw numbers, not the request's display strings.
+- More: by_weekday, plan, value_at_stake, queued, action, new_rates (null when held), reason and simulated true. reason_source is "code", "template", "model" or a client's name. The line holds raw numbers, not the request's display strings.
 - By weekday: weekday, stays and the candidates with name, rates as a named pair, estimate, best and gain. Under the cautious rule a candidate's band is named by its ends, and the line adds rejected_at_an_end. A revenue target adds target.
 - Advice line: day, hotel, stays, causes, event, action, value_at_stake null, reason and simulated false.
 - Read by: nothing in the package; it is the record a person reads

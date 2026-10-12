@@ -102,6 +102,12 @@ def schema_for(request: dict) -> dict:
 
 
 class Client(Protocol):
+    """Whatever answers a request. Two optional attributes shape how ask() treats the
+    answers: name, the source a decision records ("model" when absent), and cached,
+    whether the answers are kept in the cache (True when absent). An uncached client,
+    such as the oracle grader in bench.py, answers like the template: nothing is
+    written, and nothing of the model's is read."""
+
     def complete(self, system: str, prompt: str, schema: dict) -> str:
         """Send one request and return the model's JSON text."""
 
@@ -284,13 +290,20 @@ def ask(request: dict, path: Path, client: Client | None = None, replay: bool = 
     """The decisions for one hotel's queue on one day.
 
     Without a client the template answers, and nothing is cached: the template
-    is a function of the request. With a client, the model's cached answer is
-    read first. A cached answer written for a different request raises rather
-    than answering the wrong question, and a replay never calls the model: it
-    reads the cache or raises.
+    is a function of the request. An uncached client (its cached flag is false)
+    is treated the same way, and its decisions record its name as their source.
+    With any other client, the model's cached answer is read first. A cached
+    answer written for a different request raises rather than answering the
+    wrong question, and a replay never calls the model: it reads the cache or
+    raises.
     """
     if client is None:
         return {"source": "template", "decisions": template_decisions(request)}
+    source = getattr(client, "name", "model")
+    if not getattr(client, "cached", True):
+        answer = {"source": source, "decisions": _answer(client, request)}
+        _check(answer["decisions"], request)
+        return answer
     digest = request_digest(request)
     cached = _read_cache(path, digest)
     if cached is not None:
@@ -298,13 +311,18 @@ def ask(request: dict, path: Path, client: Client | None = None, replay: bool = 
         return cached
     if replay:
         raise CacheMiss(f"{path} is missing; run without --replay first")
-    text = client.complete(SYSTEM, json.dumps(request, indent=2), schema_for(request))
-    answer = {"source": "model", "decisions": json.loads(text)["decisions"]}
+    answer = {"source": source, "decisions": _answer(client, request)}
     _check(answer["decisions"], request)
     record = {"request_digest": digest, "request": request, **answer}
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(record, indent=2) + "\n")
     return record
+
+
+def _answer(client: Client, request: dict) -> list[dict]:
+    """The client's decisions for a request, as the schema shapes them."""
+    text = client.complete(SYSTEM, json.dumps(request, indent=2), schema_for(request))
+    return json.loads(text)["decisions"]
 
 
 def request_digest(request: dict) -> str:
