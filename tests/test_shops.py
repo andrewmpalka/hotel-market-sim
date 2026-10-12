@@ -91,3 +91,20 @@ def test_two_cheapest_full_service_competitors_cut_20_percent_from_shop_day_30()
             - 1
         )
         assert drop <= -0.05
+
+
+def test_competitors_move_half_of_the_hotels_change_when_they_are_told_it():
+    # The reaction is a dollar move on top of the noise and the shocks: each competitor moves
+    # REACTION_SHARE of the hotel's change from its start rate. Told no change, nothing moves.
+    assert (shops.REACTION_SHARE, shops.REACTION_LAG) == (0.5, 3)
+    hotel = DEMO.hotel("convention")
+    for shop_day, stay_day in [(0, 40), (10, 46), (30, 38)]:
+        plain = comp_rates(shop_day, hotel, stay_day, seed=SEED)
+        moved = comp_rates(shop_day, hotel, stay_day, seed=SEED, hotel_change=22.0)
+        assert all(moved[name] == pytest.approx(plain[name] + 11.0) for name in plain)
+        assert comp_median(
+            shop_day, hotel, stay_day, seed=SEED, hotel_change=22.0
+        ) == pytest.approx(comp_median(shop_day, hotel, stay_day, seed=SEED) + 11.0)
+        assert comp_rates(shop_day, hotel, stay_day, seed=SEED, hotel_change=0.0) == plain
+        cut = comp_rates(shop_day, hotel, stay_day, seed=SEED, hotel_change=-11.0)
+        assert all(cut[name] == pytest.approx(plain[name] - 5.5) for name in plain)

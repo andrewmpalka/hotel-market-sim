@@ -15,6 +15,11 @@ and capped at the rooms still unsold. Rates can change on days 0 to 59. A change
 next day, and rates are frozen from day 60. A demand bias other than 1.0 multiplies the preload
 and every day's expected demand (demand.py). The agent never sees it.
 
+With the reaction on (--react), each day's rate shop is given the hotel's change from its start
+rate as it stood REACTION_LAG days earlier, read from the daily log (shops.py). The competitors
+move REACTION_SHARE of it. The reaction is off by default, and a fixed-rate run never changes a
+rate, so the fixed-rate run is the same with it on.
+
 Every draw has its own random number, fixed by the seed before the run starts. The function
 poisson_draw turns it into a Poisson count. A change to one rate changes only that stay date's
 draws. A fixed-rate run and an agent run with the same seed therefore differ only where the agent
@@ -38,7 +43,7 @@ import numpy as np
 from hotel_market.customer import Customer, demo
 from hotel_market.demand import DEMAND_BIAS, expected_demand, normal_demand
 from hotel_market.schedule import HORIZON_DAYS
-from hotel_market.shops import comp_median
+from hotel_market.shops import REACTION_LAG, comp_median
 from hotel_market.world import SIM_DAYS, Hotel, stay_window
 
 ELASTICITY = 1.5  # bookings scale with (rate / comp median) ** -ELASTICITY
@@ -89,11 +94,16 @@ class Books:
     """
 
     def __init__(
-        self, seed: int, customer: Customer | None = None, demand_bias: float = DEMAND_BIAS
+        self,
+        seed: int,
+        customer: Customer | None = None,
+        demand_bias: float = DEMAND_BIAS,
+        react: bool = False,
     ):
         self.seed = seed
         self.customer = customer or demo()
         self.demand_bias = demand_bias  # multiplies the preload and every day's expected demand
+        self.react = react  # whether competitors react to the hotels' rate changes
         hotels = self.customer.hotels
         rng = np.random.default_rng([seed, BOOKING_STREAM])
         self._preload_luck = rng.random((len(hotels), HORIZON_DAYS))
@@ -133,12 +143,29 @@ class Books:
         days_out = stay_day - day
         rate = self.rates[hotel.row, stay_day]
         if median is None:
-            median = comp_median(day, hotel, stay_day, seed=self.seed, customer=self.customer)
+            median = self.comp_median(day, hotel, stay_day)
         curve = self.customer.curve
         return (
             expected_demand(hotel, stay_day, day, self.demand_bias)
             * (curve(days_out) - curve(days_out + 1))
             * (rate / median) ** -ELASTICITY
+        )
+
+    def hotel_change(self, day: int, hotel: Hotel, stay_day: int) -> float:
+        """The hotel's change from its start rate that its competitors react to on a shop day: its
+        rate in force REACTION_LAG days earlier, read from the daily log. It is zero when the
+        reaction is off, before that day exists, and where the stay date was outside that day's
+        window."""
+        if not self.react or day < REACTION_LAG:
+            return 0.0
+        rate = self.daily_rates[day - REACTION_LAG, hotel.row, stay_day]
+        return float(rate - hotel.start_rate) if rate else 0.0
+
+    def comp_median(self, day: int, hotel: Hotel, stay_day: int) -> float:
+        """The comp median the run shops on a day, with the reaction when it is on."""
+        change = self.hotel_change(day, hotel, stay_day)
+        return comp_median(
+            day, hotel, stay_day, seed=self.seed, customer=self.customer, hotel_change=change
         )
 
     def book(self, day: int) -> None:
@@ -147,9 +174,7 @@ class Books:
         stays = np.array(window)
         for hotel in self.customer.hotels:
             i = hotel.row
-            medians = [
-                comp_median(day, hotel, s, seed=self.seed, customer=self.customer) for s in window
-            ]
+            medians = [self.comp_median(day, hotel, s) for s in window]
             mean = np.array(
                 [self.expected_new_bookings(hotel, s, day, m) for s, m in zip(window, medians)]
             )
@@ -201,14 +226,16 @@ def simulate(
     last_day: int = HORIZON_DAYS - 1,
     customer: Customer | None = None,
     demand_bias: float = DEMAND_BIAS,
+    react: bool = False,
 ) -> Books:
     """Run the booking loop on days 0 to last_day (149 for a full run) and return the books.
 
     Without decide, every rate stays at the hotel's starting rate. Without a
     customer, the market is the demo market. The demand bias multiplies the
-    simulator's demand, and nothing the agent reads carries it.
+    simulator's demand, and nothing the agent reads carries it. With react, the
+    competitors follow the hotels' rate changes (shops.py).
     """
-    books = Books(seed, customer, demand_bias)
+    books = Books(seed, customer, demand_bias, react)
     for day in range(last_day + 1):
         books.book(day)
         if decide is not None and day < SIM_DAYS:

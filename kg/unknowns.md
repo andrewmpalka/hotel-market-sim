@@ -82,8 +82,9 @@ and a RES node records the run. A claim that no test can confirm stays [U].
 ### UNK-11 [U] How competitors react to a rate change, and what that does to the revenue-target result
 - Unknown: the simulator's competitors never react ([[CON-03]]). The revenue target's gain ([[RES-07]]) comes from cuts that real competitors might match.
 - Best guess: a matched cut gives back most of the revenue gain. The contribution target's raises are less exposed, because a competitor need not follow a raise.
-- Resolves when: never within this repository; a reaction rule would be another modelling choice.
-- Links: [[CON-03]], [[DEC-41]], [[RES-07]], [[UNK-05]]
+- Measured: with --react, competitors move half of a change three days later ([[DEC-51]]). The default mode's gain then rises to +$111,272 a seed ([[RES-24]]). The simulator's demand responds to the rate against the median only.
+- Resolves when: never within this repository; a reaction rule is another modelling choice, and --react is one.
+- Links: [[CON-03]], [[DEC-41]], [[DEC-51]], [[RES-07]], [[RES-24]], [[UNK-05]]
 
 ### UNK-12 [U] The effect of cancellations, no-shows, groups and room types
 - Unknown: the simulator has none of these ([[DAT-07]]). Every booking stays, every room is the same, and the estimate assumes clean Poisson noise ([[CON-09]]).

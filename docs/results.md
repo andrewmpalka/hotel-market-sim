@@ -262,3 +262,30 @@ Seeds 1 to 20 at the default demand bias of 1.0, the same arms, as the reference
 | learn:1.0 --cautious | oracle | +31,042 | +12,679 to +55,153 | 20/20 | 1799 | 1575 | 201 | 0.34 | 1.25 to 1.35 |
 
 At 0.9 the agent expects 11% more demand than arrives, so every raise sells fewer rooms than its estimate says. The default mode's gain falls from +$32,899 to +$1,913 a seed, and accepting every plan at a wrong elasticity now loses money. In the mismatched modes the oracle holds 90% or more of the plans. At 1.1 every arm gains, because the start rates were set for a smaller market and the dates run ahead of pace. The learning agent's day-59 estimates move by 0.05 or less from the 1.0 values, so the demand-level error landed in the estimator's intercept, as estimate.py intends. The oracle's learn arms at 0.9 end at 1.05 to 1.31, because the oracle held most plans and the rates barely moved.
+
+## The competitor reaction
+
+`hotel-market bench --seeds 1 20 --template --react --elasticity true` and the same command with `--elasticity learn:1.0 --cautious`, run on 2026-10-12. With `--react`, each competitor moves half of a hotel's change from its start rate three days after the change takes effect. The shop on a day reads the hotel's rate in force three days earlier from the Books' own log, so nothing is used before it is known. The fixed-rate run never changes a rate, so the reaction leaves it as it is. The columns are those of the demand-bias tables. Median flags counts the flags with a comp-median cause, own changes those among them that the hotels' own changes caused, and changed twice the stay dates changed twice or more within 14 days.
+
+Seeds 1 to 20 with the reaction on, the template and the oracle in the true mode and the cautious learning mode, each against the fixed-rate run.
+
+| Mode | Reviewer | Mean change | Range | Ahead | Flags | Pace flags | Rate changes | Median flags | Own changes | Changed twice | Accept | Day-59 estimate |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| true | template | +111,272 | +89,756 to +147,250 | 20/20 | 2498 | 1811 | 298 | 541 | 481 | 97 | 1.00 | - |
+| true | oracle | +111,272 | +89,756 to +147,250 | 20/20 | 2498 | 1811 | 298 | 541 | 481 | 97 | 1.00 | - |
+| learn:1.0 --cautious | template | +298,869 | +124,847 to +528,068 | 20/20 | 2913 | 1417 | 890 | 1363 | 1303 | 734 | 1.00 | 1.23 to 1.41 |
+| learn:1.0 --cautious | oracle | +129,090 | +83,945 to +169,143 | 20/20 | 2429 | 1617 | 417 | 670 | 610 | 219 | 0.45 | 1.18 to 1.34 |
+
+Seed 7 with the reaction on: the convention hotel's rate in force and its comp median on the convention nights, stay dates 45 to 48, by shop day. The competitors raise 15% on day 10, when the convention is announced. The agent's day-10 plan takes effect on day 11, and the competitors move half of it on day 14.
+
+| Shop day | Stay 45 rate | Median | Stay 46 rate | Median | Stay 47 rate | Median | Stay 48 rate | Median |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 9 | 220.00 | 224.14 | 220.00 | 222.41 | 220.00 | 215.60 | 220.00 | 214.17 |
+| 10 | 220.00 | 257.76 | 220.00 | 255.77 | 220.00 | 247.94 | 220.00 | 246.30 |
+| 11 | 242.00 | 257.76 | 231.00 | 255.77 | 242.00 | 247.94 | 220.00 | 246.30 |
+| 12 | 242.00 | 257.76 | 231.00 | 255.77 | 242.00 | 247.94 | 220.00 | 246.30 |
+| 13 | 242.00 | 257.76 | 231.00 | 255.77 | 242.00 | 247.94 | 220.00 | 246.30 |
+| 14 | 242.00 | 268.76 | 231.00 | 261.27 | 242.00 | 258.94 | 220.00 | 246.30 |
+| 15 | 242.00 | 268.76 | 231.00 | 261.27 | 242.00 | 258.94 | 220.00 | 246.30 |
+
+With the reaction on, the default mode earns 3.4 times its gain without it, +$111,272 against +$32,899 a seed, and changes 298 rates against 179. The simulator's bookings follow the hotel's rate against the comp median and never the level the two reach together, so a raise the competitors half follow costs the hotel few rooms. The moved median then raises a new flag on the same dates, the hold lifts for it, and the agent raises again. In the true mode 481 of the 541 comp-median flags follow the hotels' own changes, and 97 stay dates change twice within 14 days. The cautious learning arm starts from an elasticity of 1.0, so it expects a raise to cost less than it does. It changes 890 rates, 734 of them twice within 14 days, and earns +$298,869 a seed. The oracle scores every plan without the reaction, so it holds 55% of that arm's plans and earns $169,780 a seed less than accepting all. With the reaction on it is no longer the ceiling.

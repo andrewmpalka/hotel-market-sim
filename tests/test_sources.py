@@ -85,3 +85,27 @@ def test_the_simulated_sources_answer_as_of_the_day():
     shopped = sources.shops.competitor_rates(10, hotel, 46)
     assert len(shopped) == 4
     assert sources.shops.median(10, hotel, 46) == pytest.approx(statistics.median(shopped.values()))
+
+
+def test_the_simulated_rate_shops_carry_the_reaction_the_simulator_used():
+    from hotel_market.bookings import Books
+    from hotel_market.shops import REACTION_SHARE, comp_median
+
+    hotel = DEMO.hotel("convention")
+    books = Books(7, react=True)
+    for day in range(6):
+        books.book(day)
+    books.set_rates({("convention", 50): hotel.start_rate + 20.0})  # in force from day 6
+    for day in range(6, 13):
+        books.book(day)
+    sources = simulated_sources(books)
+    # Before the lag the shop is the seed's own; from day 9 it carries the reaction, and the
+    # source answers exactly what the loop shopped and logged.
+    assert sources.shops.median(8, hotel, 50) == comp_median(8, hotel, 50, seed=7)
+    assert sources.shops.median(9, hotel, 50) == pytest.approx(
+        comp_median(9, hotel, 50, seed=7) + REACTION_SHARE * 20.0
+    )
+    assert sources.shops.median(9, hotel, 50) == books.daily_medians[9, hotel.row, 50]
+    shopped = sources.shops.competitor_rates(9, hotel, 50)
+    assert statistics.median(shopped.values()) == pytest.approx(sources.shops.median(9, hotel, 50))
+    assert sources.shops.median_history(10)[9, hotel.row, 50] == sources.shops.median(9, hotel, 50)

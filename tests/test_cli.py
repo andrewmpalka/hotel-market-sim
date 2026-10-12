@@ -27,6 +27,8 @@ from hotel_market.bench import (
 from hotel_market.bookings import simulate
 from hotel_market.cli import (
     BENCH_MODES,
+    MEDIAN_CAUSES,
+    REPEAT_WINDOW,
     REPORT_DAYS,
     SHOCK_PLAN_CAUSES,
     ArmResult,
@@ -36,7 +38,9 @@ from hotel_market.cli import (
     changed_stays,
     format_entry,
     main,
+    own_median_flags,
     queue,
+    repeat_changes,
     replay,
     run,
     summary,
@@ -282,7 +286,7 @@ ROWS = [
 def test_the_seeds_command_prints_each_seed_and_the_mean_and_range(monkeypatch, capsys):
     monkeypatch.setattr(
         "hotel_market.cli.sweep",
-        lambda first, last, modes, customer, demand_bias: [ArmResult(TRUE_MODE, ROWS)],
+        lambda first, last, modes, customer, demand_bias, react: [ArmResult(TRUE_MODE, ROWS)],
     )
     main(["--seeds", "1", "3"])
     out = capsys.readouterr().out
@@ -304,7 +308,7 @@ def test_a_revenue_target_arm_counts_wins_and_earnings_in_revenue(monkeypatch, c
     arm = ArmResult(TRUE_MODE, ROWS, "revenue")
     assert arm.wins == 1 and arm.realised == pytest.approx(-5.0)
     monkeypatch.setattr(
-        "hotel_market.cli.sweep", lambda first, last, modes, customer, demand_bias: [arm]
+        "hotel_market.cli.sweep", lambda first, last, modes, customer, demand_bias, react: [arm]
     )
     main(["--seeds", "1", "3", "--target", "revenue"])
     out = capsys.readouterr().out
@@ -330,7 +334,7 @@ def test_the_seeds_command_prints_one_row_per_arm_and_a_learn_arms_estimates(mon
     cautious = replace(learn, cautious=True)
     arms = [ArmResult(TRUE_MODE, ROWS), ArmResult(cautious, learned)]
     monkeypatch.setattr(
-        "hotel_market.cli.sweep", lambda first, last, modes, customer, demand_bias: arms
+        "hotel_market.cli.sweep", lambda first, last, modes, customer, demand_bias, react: arms
     )
     main(["--seeds", "1", "3", "--elasticity", "true", "--elasticity", "learn:1.0", "--cautious"])
     out = capsys.readouterr().out
@@ -441,7 +445,7 @@ def test_the_bench_command_prints_its_tables(bench_arms, monkeypatch, capsys):
     template, oracle, scripted = arms
     monkeypatch.setattr(
         "hotel_market.cli.sweep",
-        lambda first, last, modes, customer, reviewers, demand_bias: arms,
+        lambda first, last, modes, customer, reviewers, demand_bias, react: arms,
     )
     main(["bench", "--seeds", "1", "2", "--elasticity", "fixed:1.0", "--template"])
     out = capsys.readouterr().out
@@ -525,11 +529,49 @@ def test_a_demand_bias_goes_to_both_runs_and_never_to_the_agent(tmp_path):
     assert "multiplied its demand" not in summary(SEED, plain, plain, plain_agent)
 
 
+def test_a_reacting_run_goes_to_both_runs_and_never_to_the_agent(tmp_path):
+    fixed, books, agent = run(
+        SEED, tmp_path / "d.jsonl", tmp_path / "cache", FakeClient(), react=True
+    )
+    assert fixed.react and books.react
+    # The fixed-rate run never changes a rate, so the reaction leaves it as it is.
+    assert np.array_equal(fixed.rooms, simulate(SEED).rooms)
+    assert agent.cache_dir == tmp_path / "cache" / "react" / "seed7"
+    assert not hasattr(agent, "react") and "react" not in json.dumps(agent.log)
+    assert "Competitors reacted in both runs: 3 days after" in summary(SEED, fixed, books, agent)
+    both = run(
+        SEED, tmp_path / "b.jsonl", tmp_path / "cache", FakeClient(), demand_bias=0.9, react=True
+    )[2]
+    assert both.cache_dir == tmp_path / "cache" / "demand-bias-0.9-react" / "seed7"
+
+
+def test_a_reacting_sweep_counts_its_own_median_flags_and_the_repeat_changes(first, tmp_path):
+    _, _, books, agent = first
+    assert own_median_flags(agent.entries, books) == 0  # no reaction, so nothing counts
+    accepted = next(e for e in agent.entries if e.action != HOLD)
+    soon, later = (
+        replace(accepted, day=accepted.day + REPEAT_WINDOW),
+        replace(accepted, day=accepted.day + REPEAT_WINDOW + 1),
+    )
+    assert repeat_changes([accepted, soon]) == len(accepted.new_rates)
+    assert repeat_changes([accepted, later]) == 0 and repeat_changes([accepted]) == 0
+    assert REPEAT_WINDOW == 14
+    [arm] = sweep(SEED, SEED, tmp_path / "cache", react=True)
+    [result] = arm.seeds
+    assert result.median_flags == sum(bool(MEDIAN_CAUSES & set(e.causes)) for e in result.entries)
+    assert 0 < result.own_median_flags <= result.median_flags
+    assert result.repeat_changes == repeat_changes(result.entries) > 0
+    assert arm.own_median_flags == result.own_median_flags
+    assert arm.repeat_changes == result.repeat_changes and arm.median_flags == result.median_flags
+
+
 def test_the_command_and_the_bench_take_a_demand_bias(monkeypatch, capsys):
     seen = {}
 
-    def fake_sweep(first, last, modes, customer, reviewers=(TEMPLATE,), demand_bias=1.0):
-        seen["bias"], seen["reviewers"] = demand_bias, list(reviewers)
+    def fake_sweep(
+        first, last, modes, customer, reviewers=(TEMPLATE,), demand_bias=1.0, react=False
+    ):
+        seen["bias"], seen["reviewers"], seen["react"] = demand_bias, list(reviewers), react
         return [ArmResult(mode, ROWS, reviewer=r) for mode in modes for r in reviewers]
 
     monkeypatch.setattr("hotel_market.cli.sweep", fake_sweep)
@@ -549,7 +591,15 @@ def test_the_command_and_the_bench_take_a_demand_bias(monkeypatch, capsys):
     # The default is 1.0, where the oracle is ORACLE itself; a bias must be above zero, and
     # --cautious needs a learn mode, as on the sweep.
     main(["bench", "--seeds", "1", "3", "--template", "--elasticity", "fixed:1.0"])
-    assert seen["bias"] == 1.0 and seen["reviewers"][1] is ORACLE
+    assert seen["bias"] == 1.0 and seen["reviewers"][1] is ORACLE and not seen["react"]
+    # --react goes to the sweep on both commands, and each then prints the reaction table.
+    main(["--seeds", "1", "3", "--react"])
+    out = capsys.readouterr().out
+    assert seen["react"] and "competitors reacting to the hotels' rate changes" in out
+    assert "With competitors reacting: the comp-median flags" in out
+    main(["bench", "--seeds", "1", "3", "--template", "--elasticity", "fixed:1.0", "--react"])
+    out = capsys.readouterr().out
+    assert seen["react"] and "With competitors reacting" in out and "oracle" in out
     for argv in (
         ["--seeds", "1", "3", "--demand-bias", "0"],
         ["bench", "--seeds", "1", "3", "--template", "--demand-bias", "-1"],
@@ -628,6 +678,18 @@ def test_the_demand_bias_runs_pin_their_headline(tmp_path):
         by_mode = {str(arm.mode): arm for arm in arms}
         assert statistics.mean(by_mode["true"].changes) == pytest.approx(true_mean, abs=1)
         assert statistics.mean(by_mode["fixed:1"].changes) == pytest.approx(fixed_mean, abs=1)
+
+
+@pytest.mark.slow
+def test_the_reacting_runs_pin_their_headline(tmp_path):
+    """The template arms with the reaction on end where the recorded runs ended, so the reaction
+    tables stay pinned."""
+    cautious = ElasticityMode("learn", 1.0, cautious=True)
+    arms = sweep(1, 20, tmp_path / "cache", [TRUE_MODE, cautious], react=True)
+    by_mode = {str(arm.mode): arm for arm in arms}
+    assert statistics.mean(by_mode["true"].changes) == pytest.approx(111272, abs=1)
+    assert statistics.mean(by_mode["learn:1 cautious"].changes) == pytest.approx(298869, abs=1)
+    assert by_mode["true"].own_median_flags == 481 and by_mode["true"].repeat_changes == 97
 
 
 def test_a_learn_run_keeps_its_own_cache_and_says_where_its_estimates_ended(tmp_path):

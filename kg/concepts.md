@@ -19,7 +19,7 @@ the modules, constants and decisions that implement it.
 
 ### CON-03 [C] Competitor set
 - Definition: the four competitors each hotel is compared with. They are priced 8% and 3% below and 3% and 8% above its start rate ([[DAT-04]]). The set's median therefore starts level with the hotel.
-- Reaction: competitors never react to the hotel. Their rates move only with the scripted shocks ([[SHK-01]], [[SHK-03]]).
+- Reaction: by default competitors never react to the hotel, and their rates move only with the scripted shocks ([[SHK-01]], [[SHK-03]]). With --react each moves half of the hotel's change three days later ([[DEC-51]]).
 - Implemented by: Competitor and Hotel.competitors in [[MOD-02]] ([[DAT-04]]), which [[MOD-20]] builds from the offsets in the customer file. The rate shop is in [[MOD-05]].
 - Evidence: test_each_hotel_has_four_competitors_within_10_percent_of_its_rate, test_comp_set_median_starts_at_the_hotels_own_rate, test_comp_median_moves_only_when_a_shock_becomes_known
 

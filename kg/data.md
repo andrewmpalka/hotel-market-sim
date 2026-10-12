@@ -50,17 +50,17 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-06 [C] The rate shop
 - File: src/hotel_market/shops.py
-- Made by: comp_rates(shop_day, hotel, stay_day, seed), a dict of competitor name to rate as seen on the shop day. comp_median(...) is the median of those four.
+- Made by: comp_rates(shop_day, hotel, stay_day, seed, hotel_change), a dict of competitor name to rate on the shop day. comp_median(...) is their median. hotel_change is the lagged change the competitors follow ([[DEC-51]]).
 - Noise: one read-only array per seed, shape (hotels, competitors, stay dates), drawn on the seed's noise stream [[RUL-20]].
 - Read by: [[MOD-06]] (bookings scale with rate over comp median), [[MOD-07]] (rate against median, median change since yesterday), [[MOD-08]] (estimates)
 - Evidence: test_comp_median_moves_only_when_a_shock_becomes_known, test_hotel_starts_level_with_its_comp_median
 
 ### DAT-07 [C] Books
 - File: src/hotel_market/bookings.py
-- Fields: rooms (int, hotels x stay dates), revenue (float, same shape) and rates (float, same shape). Rates start at each hotel's start rate. demand_bias is the simulator's factor on demand ([[RUL-82]]).
+- Fields: rooms (int, hotels x stay dates), revenue (float, same shape) and rates (float, same shape). Rates start at each hotel's start rate. demand_bias is the factor on demand ([[RUL-82]]), and react turns the reaction on.
 - Draws: the random numbers for every draw of the run ([[DEC-22]]). The preload has one per hotel and stay date, and the loop one per day, hotel and stay date.
 - Log: daily_rooms, daily_rates and daily_medians, shape (days, hotels, stay dates), zero outside the day's window. preload holds the rooms loaded before day 0, and [[MOD-19]] serves the agent from the log as of any day.
-- Methods: book(day), set_rates(changes), and the measures occupancy, average_rate, revpar, room_revenue and contribution over a range of stay dates ([[MEA-01]] to [[MEA-05]]).
+- Methods: book(day) and set_rates(changes). hotel_change() and comp_median() serve the reaction ([[DEC-51]]). The measures are occupancy, average_rate, revpar, room_revenue and contribution ([[MEA-01]] to [[MEA-05]]).
 - Written by: [[MOD-06]]; the agent's rate changes arrive through set_rates after each day's bookings
 - Read by: [[MOD-19]], [[MOD-12]]
 - Evidence: test_day_0_starts_with_the_bookings_made_before_the_run, test_contribution_is_revenue_minus_the_cost_of_every_room_sold, test_the_simulated_sources_answer_as_of_the_day
@@ -162,12 +162,12 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-19 [C] SeedResult
 - File: src/hotel_market/cli.py
-- Fields: SeedResult(seed, contribution_change, revenue_change, rate_changes, estimated, estimates, rejected_at_an_end, shock_changes, shock_gain, other_changes, other_gain, entries, calls, counts, flags, pace_flags), frozen.
+- Fields: SeedResult(seed, contribution_change, revenue_change, rate_changes, estimated, estimates, rejected_at_an_end, shock_changes, shock_gain, other_changes, other_gain, entries, calls, counts, and five counts), frozen.
 - Meaning: estimated is what the accepted plans were estimated to earn over holding. estimates maps (day, hotel key) to the learned Estimate ([[DAT-23]]) in learn mode. rejected_at_an_end counts the candidates the cautious band rejected.
 - Shocks: the shock fields count the plans whose causes include one of [[RUL-55]] and the target's change on their stay dates. The other fields do the same for every other plan, on the stay dates only those changed.
-- Bench: entries are the run's entries, calls its call records ([[DAT-30]]) and counts the oracle's labels on it ([[DAT-31]]). flags counts the entries and pace_flags those with a pace cause. The bench tables sum them over an arm's seeds.
-- Written by: [[MOD-12]] (sweep)
-- Read by: [[MOD-12]] through [[DAT-24]] (the seeds table, the arm table, the estimate table and the bench tables)
+- Bench: entries are the run's entries, calls its call records ([[DAT-30]]) and counts the oracle's labels on it ([[DAT-31]]). The bench tables sum them over an arm's seeds.
+- Counts: flags counts the entries, pace_flags and median_flags those with a pace or a comp-median cause ([[RUL-86]]). own_median_flags and repeat_changes are the reaction's counts ([[DEC-51]], [[RUL-85]]).
+- Written by: [[MOD-12]] (sweep). [[MOD-12]] reads it through [[DAT-24]] for the seeds, arm, estimate, bench and reaction tables.
 - Evidence: test_the_sweep_gives_each_seeds_change_over_the_fixed_run, test_a_sweep_counts_the_shock_plans_apart_from_the_other_plans, test_a_sweep_with_reviewers_keeps_each_arms_entries_calls_and_counts
 
 ### DAT-20 [C] Comparison

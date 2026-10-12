@@ -46,6 +46,7 @@ which is also the order in which they depend on each other.
 - File: src/hotel_market/shops.py
 - Owns: the rate shop: each competitor's rate for a stay date as seen on a shop day, and their median ([[DAT-06]]).
 - Holds: NOISE ([[RUL-19]]) and NOISE_STREAM ([[RUL-20]]). Rates are flat across the week ([[DEC-16]]). The noise is drawn once per competitor and stay date from the seed ([[DEC-37]]).
+- Reaction: comp_rates() takes the hotel's lagged change in dollars and moves each competitor REACTION_SHARE of it ([[RUL-83]], [[RUL-84]], [[DEC-51]]). The Books pass it ([[DAT-07]]).
 - Reads: [[MOD-01]], [[MOD-02]], [[MOD-03]], [[MOD-20]]
 - Writes: [[DAT-06]]
 - Tests: tests/test_shops.py
@@ -179,6 +180,7 @@ which is also the order in which they depend on each other.
 - File: src/hotel_market/simulated.py
 - Owns: the simulator as the agent's four sources ([[DEC-40]]). SimulatedBookings reads the Books' daily log ([[DAT-07]]), and SimulatedRateShops the seed and the logged medians.
 - Also: SimulatedSchedules reads the schedule as filed, and SimulatedEvents the events. deciding() wraps an Agent as the simulator's decide hook, and watch() is the fixed-rate run that records every day's flags.
+- Reaction: the rate-shop source passes the Books' lagged hotel change to each shop ([[DEC-51]]). The agent therefore sees the shop the simulator used.
 - Reads: [[MOD-01]], [[MOD-02]], [[MOD-03]], [[MOD-04]], [[MOD-05]], [[MOD-06]], [[MOD-07]], [[MOD-10]], [[MOD-17]], [[MOD-20]]
 - Writes: [[DAT-25]], as their implementation
 - Tests: tests/test_sources.py, tests/test_detect.py
@@ -223,3 +225,10 @@ which is also the order in which they depend on each other.
 - Reads: [[MOD-08]] (the entries and rescored()), [[MOD-09]] (the clients and request_digest()), [[MOD-10]] (the day's entries in agent.today), [[MOD-11]], [[MOD-20]]; never the simulator, and nothing in the agent's path imports it
 - Tests: tests/test_bench.py
 - Evidence: test_the_oracle_reviewer_accepts_every_queued_plan_in_true_mode, test_the_oracle_declines_where_hold_scores_at_least_as_well, test_a_scripted_client_declines_chosen_plans_and_is_read_back
+
+### MOD-24 [C] scripts/median_path.py
+- File: scripts/median_path.py
+- Owns: the comp median's path on one hotel's stay dates next to its rate, shop day by shop day. The run is a template run of one seed. median_path() returns the rows, the agent and the Books.
+- Run: the run is the command's template run in the true mode, with --react and --demand-bias as given ([[MOD-12]]). It makes no model call and writes nothing. The table reads the daily log ([[DAT-07]]).
+- Tests: tests/test_median_path.py
+- Evidence: test_the_median_follows_the_hotels_change_after_the_lag

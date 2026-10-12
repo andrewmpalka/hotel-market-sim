@@ -23,7 +23,7 @@ from hotel_market.demand import last_filing
 from hotel_market.detect import AHEAD, PACE, Flag, detect_numbers, flags, pace_without_shock
 from hotel_market.schedule import build_schedule, seats_by_day
 from hotel_market.shocks import events_as_of
-from hotel_market.shops import comp_median, comp_rates
+from hotel_market.shops import comp_rates
 from hotel_market.sources import (
     BookingHistory,
     Bookings,
@@ -57,20 +57,26 @@ class SimulatedBookings(Bookings):
 
 
 class SimulatedRateShops(RateShops):
-    """The rate shops the simulator draws from the seed, and the log of the medians it used."""
+    """The rate shops the simulator draws from the seed, and the log of the medians it used. With
+    the reaction on, each shop carries the Books' lagged hotel change, so the agent sees the
+    shop the simulator used."""
 
     def __init__(self, books: Books):
         self.books = books
 
     def competitor_rates(self, shop_day: int, hotel: Hotel, stay_day: int) -> dict[str, float]:
+        books = self.books
         return comp_rates(
-            shop_day, hotel, stay_day, seed=self.books.seed, customer=self.books.customer
+            shop_day,
+            hotel,
+            stay_day,
+            seed=books.seed,
+            customer=books.customer,
+            hotel_change=books.hotel_change(shop_day, hotel, stay_day),
         )
 
     def median(self, shop_day: int, hotel: Hotel, stay_day: int) -> float:
-        return comp_median(
-            shop_day, hotel, stay_day, seed=self.books.seed, customer=self.books.customer
-        )
+        return self.books.comp_median(shop_day, hotel, stay_day)
 
     def median_history(self, as_of_day: int) -> np.ndarray:
         return self.books.daily_medians[:as_of_day]

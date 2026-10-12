@@ -29,6 +29,7 @@ it differs from what that would write. `README.md` is the legend.
 - MOD-21 [C] stored.py — src/hotel_market/stored.py
 - MOD-22 [C] scripts/live_audit.py — scripts/live_audit.py
 - MOD-23 [C] bench.py — src/hotel_market/bench.py
+- MOD-24 [C] scripts/median_path.py — scripts/median_path.py
 
 ## Data (`data.md`)
 
@@ -86,6 +87,8 @@ it differs from what that would write. `README.md` is the legend.
 - RUL-82 [C] DEMAND_BIAS — src/hotel_market/demand.py
 - RUL-19 [C] NOISE — src/hotel_market/shops.py
 - RUL-20 [C] NOISE_STREAM — src/hotel_market/shops.py
+- RUL-83 [C] REACTION_SHARE — src/hotel_market/shops.py
+- RUL-84 [C] REACTION_LAG — src/hotel_market/shops.py
 - RUL-21 [C] ELASTICITY — src/hotel_market/bookings.py
 - RUL-22 [C] BOOKING_STREAM — src/hotel_market/bookings.py
 - RUL-26 [H] PACE_SHARE — kg/rules.md
@@ -105,6 +108,7 @@ it differs from what that would write. `README.md` is the legend.
 - RUL-52 [C] ELASTICITY_MAX — src/hotel_market/estimate.py
 - RUL-53 [C] REPORT_DAYS — src/hotel_market/cli.py
 - RUL-81 [C] BENCH_MODES — src/hotel_market/cli.py
+- RUL-85 [C] REPEAT_WINDOW — src/hotel_market/cli.py
 - RUL-80 [C] PRICES — src/hotel_market/bench.py
 - RUL-58 [C] target — customers/demo.toml
 - RUL-59 [C] floor_share — customers/demo.toml
@@ -118,7 +122,7 @@ it differs from what that would write. `README.md` is the legend.
 - RUL-67 [C] min_value_at_stake — customers/demo.toml
 - RUL-68 [C] days_out — customers/demo.toml
 - RUL-69 [C] share — customers/demo.toml
-- Labels: RUL-06, RUL-07, RUL-08, RUL-09, RUL-10, RUL-31, RUL-32, RUL-33, RUL-34, RUL-35, RUL-36, RUL-37, RUL-38, RUL-41, RUL-42, RUL-44, RUL-45, RUL-49, RUL-46, RUL-47, RUL-75, RUL-78, RUL-79, RUL-48, RUL-55, RUL-74, RUL-72, RUL-73, RUL-70, RUL-71, RUL-57
+- Labels: RUL-06, RUL-07, RUL-08, RUL-09, RUL-10, RUL-31, RUL-32, RUL-33, RUL-34, RUL-35, RUL-36, RUL-37, RUL-38, RUL-41, RUL-42, RUL-44, RUL-45, RUL-49, RUL-46, RUL-47, RUL-75, RUL-78, RUL-79, RUL-48, RUL-55, RUL-74, RUL-86, RUL-72, RUL-73, RUL-70, RUL-71, RUL-57
 
 ## Shocks (`shocks.md`)
 
@@ -201,6 +205,7 @@ it differs from what that would write. `README.md` is the legend.
 - DEC-46 [T] The agent reprices when data arrives during the day — kg/decisions.md
 - DEC-49 [C] The benchmark measures the reviewer in the mismatched modes — kg/decisions.md
 - DEC-50 [C] A demand bias the agent never sees is the demand-level twin of a fixed elasticity — kg/decisions.md
+- DEC-51 [C] Competitors can follow the hotel's rate changes, as an opt-in arm — kg/decisions.md
 
 ### Engineering
 
@@ -246,6 +251,8 @@ it differs from what that would write. `README.md` is the legend.
 - RES-21 [C] Seeds 1 to 20 at a demand bias of 0.9 — kg/results.md
 - RES-22 [C] Seeds 1 to 20 at a demand bias of 1.1 — kg/results.md
 - RES-23 [C] The same arms at the default demand bias of 1.0 — kg/results.md
+- RES-24 [C] The competitor reaction on seeds 1 to 20 — kg/results.md
+- RES-25 [C] The comp median's path on seed 7's convention nights with the reaction on — kg/results.md
 
 ## Open forks (`forks.md`)
 

@@ -154,6 +154,20 @@ marked [H], with one line that names the node it moved to.
 - Meaning: the random stream for the rate-shop noise, kept apart from the booking stream [[RUL-22]]. Another stream draws other noise and other results.
 - Evidence: test_rates_depend_only_on_the_seed, test_the_default_mode_still_gives_28818_on_seed_7
 
+### RUL-83 [C] REACTION_SHARE
+- Value: 0.5
+- File: src/hotel_market/shops.py
+- Kind: parameter
+- Meaning: with --react, the share of a hotel's change from its start rate that each competitor moves ([[DEC-51]]). The move is in dollars, on top of the noise and the shocks.
+- Evidence: test_competitors_move_half_of_the_hotels_change_when_they_are_told_it
+
+### RUL-84 [C] REACTION_LAG
+- Value: 3
+- File: src/hotel_market/shops.py
+- Kind: parameter
+- Meaning: the days between a hotel's rate taking effect and the competitors' move. A shop day reads the hotel's rate in force that many days earlier from the Books' log ([[DEC-51]]).
+- Evidence: test_the_reaction_reads_the_hotels_rate_three_days_back_from_the_log
+
 ## bookings.py
 
 ### RUL-21 [C] ELASTICITY
@@ -422,6 +436,20 @@ marked [H], with one line that names the node it moved to.
 - Kind: parameter
 - Meaning: the bench's default modes: two where the code's elasticity is wrong, and the true one as the check. The ranking pools the mismatched modes ([[DEC-48]]).
 - Evidence: test_the_bench_needs_a_key_unless_it_runs_the_template_alone
+
+### RUL-85 [C] REPEAT_WINDOW
+- Value: 14
+- File: src/hotel_market/cli.py
+- Kind: parameter
+- Meaning: a reacting run reports the stay dates changed twice or more within this many days. The hold ([[RUL-66]]) lasts seven, so a second change inside the window follows soon after it lifts ([[DEC-51]]).
+- Evidence: test_a_reacting_sweep_counts_its_own_median_flags_and_the_repeat_changes
+
+### RUL-86 [C] MEDIAN_CAUSES
+- Value: {"comp median down", "comp median up"}
+- File: src/hotel_market/cli.py
+- Kind: label
+- Meaning: the two comp-median causes. A sweep counts the flags that carry one, and with --react those the hotels' own changes caused ([[DEC-51]]).
+- Evidence: test_a_reacting_sweep_counts_its_own_median_flags_and_the_repeat_changes
 
 ## bench.py
 

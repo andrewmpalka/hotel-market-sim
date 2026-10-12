@@ -33,6 +33,9 @@ Python 3.11 or later, from the repository root:
     hotel-market bench --seeds 1 3                      # the same with each Claude model reviewing (needs ANTHROPIC_API_KEY)
     hotel-market bench --seeds 1 20 --template --demand-bias 0.9 --elasticity true --elasticity learn:1.0
                                                         # the simulator's demand times 0.9, which the agent never sees
+    hotel-market bench --seeds 1 20 --template --react  # competitors follow the hotels' rate changes, three days later
+    python scripts/median_path.py --seed 7 --react --hotel convention --stays 45 48 --days 9 15
+                                                        # a comp median's path next to the hotel's rate
 
 With make, on a Mac or Linux machine:
 
@@ -169,8 +172,18 @@ bookings.
   start rate contribution-best on a night that will not sell out.
 - The $250 minimum applies to a whole plan, so a small change on one day of the
   week can ride inside a plan that clears the minimum on its other days.
-- Competitors never react to the hotels' rates; theirs move only with the
-  scripted shocks.
+- By default competitors never react to the hotels' rates, and theirs move
+  only with the scripted shocks. The option `--react` makes each competitor
+  move half of a hotel's change from its start rate three days after it takes
+  effect, read from the Books' own log. With it on, the default run earns
+  +$111,272 a seed against +$32,899, because the simulator's bookings respond
+  to the hotel's rate against the comp median alone, so the level both reach
+  together changes nothing. A raise the competitors half follow therefore costs
+  few rooms, the moved median raises a new flag, and the agent raises again. In
+  the true mode 97 stay dates were changed twice within 14 days, and in the
+  cautious learning arm 734.
+  The oracle scores every plan without the reaction, so with it on the oracle is
+  no longer the ceiling (docs/results.md).
 - There is one rate per hotel and stay date, with no room types, group blocks,
   cancellations or no-shows.
 - Without an API key, every plan is accepted. A template run therefore measures

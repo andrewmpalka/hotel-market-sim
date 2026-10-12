@@ -9,7 +9,7 @@ from hotel_market.bookings import ELASTICITY, Books, poisson_draw, preload_mean,
 from hotel_market.customer import demo
 from hotel_market.demand import DEMAND_BIAS, expected_demand
 from hotel_market.schedule import HORIZON_DAYS
-from hotel_market.shops import comp_median
+from hotel_market.shops import REACTION_LAG, REACTION_SHARE, comp_median
 from hotel_market.world import SIM_DAYS
 
 DEMO = demo()
@@ -234,3 +234,37 @@ def test_a_rate_change_applies_from_the_next_day_and_touches_no_other_stay_date(
     others = np.ones(fixed.rooms.shape, dtype=bool)
     others[i, 40] = False
     assert np.array_equal(changed.rooms[others], fixed.rooms[others])
+
+
+def test_the_reaction_reads_the_hotels_rate_three_days_back_from_the_log():
+    airport = DEMO.hotel("airport")
+    row, change = airport.row, 0.1 * airport.start_rate
+    books, plain = Books(SEED, react=True), Books(SEED)
+    assert books.react and not plain.react
+    for day in range(6):
+        books.book(day)
+        plain.book(day)
+    # Two rates change after day 5's bookings, so they are in force from day 6. Stay 96 is
+    # outside day 6's window, so day 6's log holds no rate for it.
+    books.set_rates({("airport", 40): 1.1 * airport.start_rate, ("airport", 96): 242.0})
+    for day in range(6, 12):
+        books.book(day)
+        plain.book(day)
+    # A shop on day 9 reads day 6, the first day of the new rate; day 8 still reads the old one.
+    assert books.hotel_change(2, airport, 40) == 0 and books.hotel_change(8, airport, 40) == 0
+    assert books.hotel_change(9, airport, 40) == pytest.approx(change)
+    assert books.hotel_change(9, airport, 96) == 0  # not known on day 6: outside its window
+    assert books.hotel_change(10, airport, 96) == pytest.approx(242.0 - airport.start_rate)
+    assert plain.hotel_change(9, airport, 40) == 0  # the reaction is off
+    # The median the loop shopped follows: the same as the plain run until day 8, then up by
+    # REACTION_SHARE of the change, and the method answers what the log holds.
+    assert books.daily_medians[8, row, 40] == plain.daily_medians[8, row, 40]
+    assert books.daily_medians[9, row, 40] == pytest.approx(
+        plain.daily_medians[9, row, 40] + REACTION_SHARE * change
+    )
+    assert books.comp_median(9, airport, 40) == books.daily_medians[9, row, 40]
+    assert REACTION_LAG == 3
+    # The fixed-rate run never changes a rate, so it is the same with the reaction on.
+    assert np.array_equal(
+        simulate(SEED, last_day=30, react=True).rooms, simulate(SEED, last_day=30).rooms
+    )

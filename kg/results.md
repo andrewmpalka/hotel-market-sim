@@ -209,3 +209,21 @@ here for the rest.
 - Table: docs/results.md, "Seeds 1 to 20 at the default demand bias of 1.0"
 - Evidence: test_the_offline_bench_on_20_seeds_pins_the_benchmarks_headline, test_the_default_mode_still_gives_a_20_seed_mean_of_32899
 - Links: [[DEC-50]], [[RUL-82]], [[RES-01]], [[RES-04]], [[RES-05]], [[RES-16]], [[RES-21]], [[RES-22]]
+
+### RES-24 [C] The competitor reaction on seeds 1 to 20
+- Ran: `hotel-market bench --seeds 1 20 --template --react --elasticity true` and the same with `--elasticity learn:1.0 --cautious`, on 2026-10-12.
+- Result: in the true mode every arm earns +$111,272 a seed against the fixed-rate run. The reaction leaves that run as it is. That is 3.4 times the +$32,899 without it ([[RES-01]]). The cautious learn arm earns +$298,869 accepting all.
+- Why: the simulator's bookings follow the hotel's rate against the comp median ([[RUL-21]]). A raise the competitors half follow costs few rooms, and the moved median raises a new flag. The agent then raises again.
+- Repeats: the true mode changes 298 rates against 179 without the reaction. 481 of its 541 comp-median flags follow the hotels' own changes, and 97 stay dates change twice within 14 days. The cautious learn arm changes 734 twice.
+- Oracle: the oracle scores without the reaction ([[DEC-51]]). It accepts 45% of the cautious arm's plans, earns +$129,090 a seed, and so trails accepting all by $169,780. It is not the ceiling here.
+- Table: docs/results.md, "Seeds 1 to 20 with the reaction on"
+- Evidence: test_the_reacting_runs_pin_their_headline
+- Links: [[DEC-51]], [[DEC-37]], [[RES-01]], [[RES-05]], [[RES-23]], [[RES-25]], [[UNK-11]]
+
+### RES-25 [C] The comp median's path on seed 7's convention nights with the reaction on
+- Ran: `python scripts/median_path.py --seed 7 --react --hotel convention --stays 45 48 --days 9 15` on 2026-10-12.
+- Result: the competitors raise 15% on shop day 10, when the convention is announced ([[SHK-01]]). The agent's day-10 plan takes effect on day 11. It raises 10% on stays 45 and 47 and 5% on 46, and leaves 48.
+- Reaction: on day 14 the median moves half of each change and stays there. That is $11.00 on stays 45 and 47 and $5.50 on 46. Stay 48's median does not move.
+- Table: docs/results.md, "Seed 7 with the reaction on"
+- Evidence: test_the_median_follows_the_hotels_change_after_the_lag
+- Links: [[DEC-51]], [[RES-24]], [[RES-02]], [[SHK-01]], [[MOD-24]]

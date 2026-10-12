@@ -302,8 +302,19 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Oracle: cli.py tells the oracle reviewer the bias when it builds it, as ORACLE_ELASTICITY names the elasticity for it ([[RUL-56]]). rescored() scales the remaining demand by it, so the oracle stays the simulator's truth ([[DEC-47]]).
 - Reason: the estimator's intercept is meant to absorb a demand-level error ([[UNK-07]]). The bias is the first test of that, and of what a level error does to the pace flags ([[UNK-08]]).
 - Measured: at a bias of 0.9 the default mode's gain falls to +$1,913 a seed ([[RES-21]]). The learn arms' day-59 estimates hold near 1.5 at both biases ([[RES-22]], [[RES-23]]).
+- Commit: 416ea22
 - Evidence: test_the_demand_bias_scales_the_preload_and_every_days_draw, test_the_oracle_reviewer_is_told_the_demand_bias, test_the_agent_reads_only_through_the_interfaces
 - Links: [[RUL-82]], [[DEC-38]], [[DEC-47]], [[RES-21]], [[RES-22]], [[RES-23]], [[UNK-07]], [[UNK-08]]
+
+### DEC-51 [C] Competitors can follow the hotel's rate changes, as an opt-in arm
+- Decided: --react makes each competitor move REACTION_SHARE of a hotel's change from its start rate ([[RUL-83]]). It moves REACTION_LAG days after the change takes effect ([[RUL-84]]). The move is in dollars, on top of the shocks.
+- Known: the shop on a day reads the hotel's rate in force REACTION_LAG days earlier from the Books' daily log. Nothing is therefore used before it is known ([[RUL-03]]). The agent's rate-shop source carries the same shop ([[MOD-19]]).
+- Default: the reaction is off, so [[DEC-37]] stands for the default run. A fixed-rate run never changes a rate, so it is the same with the reaction on.
+- Flags: a median move of 5% or more is a flag cause and lifts the hold ([[RUL-65]], [[RUL-66]]). A reaction can therefore raise a flag on the dates the hotel just changed. Nothing suppresses that.
+- Oracle: the oracle scores a plan at the simulator's elasticity and demand bias, without the reaction ([[DEC-50]]). With the reaction on it is therefore no longer the ceiling.
+- Measured: with the reaction on, the default mode earns +$111,272 a seed against +$32,899 without ([[RES-24]], [[RES-25]]).
+- Evidence: test_the_reaction_reads_the_hotels_rate_three_days_back_from_the_log, test_the_simulated_rate_shops_carry_the_reaction_the_simulator_used, test_a_reacting_run_goes_to_both_runs_and_never_to_the_agent
+- Links: [[DEC-37]], [[DEC-50]], [[RUL-83]], [[RUL-84]], [[RUL-85]], [[RES-24]], [[RES-25]], [[UNK-11]], [[CON-03]]
 
 ## Engineering
 
