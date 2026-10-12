@@ -72,7 +72,7 @@ A node marked [H] needs no evidence beyond the line that links to its successor.
 A RES node is [C] when a test pins at least one of its figures and [O] when
 none does. Its `Table:` line names, in double quotes, the start of its table's caption in `docs/results.md`. The checker looks the caption up.
 
-A `Commit:` line names the commit a decision landed in. It is information and not evidence, because this repository's history may be recreated. When the git history is present, `kg_check.py` looks each commit up. It reports a miss as a warning and never as a failure.
+A `Commit:` line names the commit a decision landed in. The checker does not treat it as evidence, because this repository's history may be recreated. When the git history is present, `kg_check.py` looks each commit up. It reports a miss as a warning and never as a failure.
 
 ## Upkeep rule
 

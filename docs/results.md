@@ -73,7 +73,7 @@ The learning agent's day-59 elasticity estimates against a true value of 1.5. Ea
 | 1.0 | 1.36 to 1.45 |
 | 2.0 | 1.55 to 1.68 |
 
-The cautious rule with and without a $250 minimum per day of the week, seeds 1 to 20. The band alone is the rule that stayed. Its rejection count includes every candidate ahead of hold at the estimate, and not only those worth $250.
+The cautious rule with and without a $250 minimum per day of the week, seeds 1 to 20. The band alone is the rule that stayed. Its rejection count includes every candidate ahead of hold at the estimate, including those worth less than $250.
 
 | Arm | Band alone: mean gain | Rate changes | Rejected at an end | With a minimum per day of the week: mean gain | Rate changes | Rejected at an end |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |

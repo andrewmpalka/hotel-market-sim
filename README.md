@@ -7,7 +7,7 @@ schedule. Each day the agent flags the stay dates where a signal changed. Code
 scores the rate options for each flag. The model accepts or declines each plan
 and writes the reason for the revenue manager.
 
-The schedule columns follow Cirium's published data dictionary. Every row is
+The schedule columns follow Cirium's published data dictionary, but every row is
 synthetic. The repository has no Cirium data and no affiliation with Cirium.
 
 ## Install and run
@@ -81,8 +81,8 @@ convention and the new flights, produce 96% of the gain.
 
 An agent that learns the price response keeps 43% to 76% of the gain. The start
 value and the cautious rule set the share. The agent uses the simulator's demand
-formula, so the results test the machinery only. They are not a forecast of a
-real market.
+formula, so the results test the machinery. A forecast for a real market would
+need the demand model learned from real bookings.
 
 ## The model as a reviewer
 
@@ -93,11 +93,10 @@ plan and writes the reason in both cases. Code checks the answer against the
 options in the request. The model cannot return a rate that code did not
 compute.
 
-This is the meaning of reviewer in this repository. Every gain is measured
-against a control run with no rate changes. The same seed produces the same
-bookings in both runs, so the accepted plans are the only difference between
-them. The cache returns a stored answer before the model is asked again, so a
-run can be repeated exactly.
+Every gain is measured against a control run with no rate changes. The same seed
+produces the same bookings in both runs, so the accepted plans are the only
+difference between them. The cache returns a stored answer before the model is
+asked again, so a run can be repeated exactly.
 
 The oracle reviewer scores every plan with the simulator's own elasticity. It
 declines the plan when holding scores at least as well. No reviewer can decline
@@ -107,11 +106,10 @@ an oracle, and a reviewer scored on decline precision and recall.
 
 The benchmark runs seeds 1 to 20 in three elasticity modes. Each mode has five
 reviewers: the template, which accepts every plan, the oracle, and the three
-current Claude models. The tables are in docs/results.md. In the true mode,
-every plan is scored with the simulator's own elasticity, so accepting every
-plan is correct. The oracle and the three models accept every plan, and each
-earns the template's +$32,899 a seed. The two modes with a wrong elasticity
-separate the reviewers.
+current Claude models. In the true mode, every plan is scored with the
+simulator's own elasticity, so accepting every plan is correct. The oracle and
+the three models accept every plan, and each earns the template's +$32,899 a
+seed. The two modes with a wrong elasticity separate the reviewers.
 
 At a fixed elasticity of 1.0, accepting every plan earns +$8,438 a seed. The
 oracle earns +$30,588 and accepts 15% of the plans. The difference, $22,150 a
@@ -145,7 +143,7 @@ bookings.
 
 ## Known limits
 
-- All data is synthetic. There is no real market, airline, hotel or booking in
+- All data is synthetic, so no real market, airline, hotel or booking appears in
   it.
 - The agent's demand forecast and booking curve are the simulator's own, held
   equal by a test; the demand level and the curve are never learned.
@@ -165,14 +163,14 @@ bookings.
   scripted shocks.
 - There is one rate per hotel and stay date, with no room types, group blocks,
   cancellations or no-shows.
-- Without an API key, every plan is accepted. A template run measures the plans
-  and not the model's judgement.
-- The benchmark ran the live models on seeds 1 to 20 (docs/results.md). Only
-  Opus declines plans. Learn mode has not run live.
+- Without an API key, every plan is accepted. A template run therefore measures
+  the plans alone.
+- The benchmark ran the live models on seeds 1 to 20 (docs/results.md), and only
+  Opus declined any plan. Learn mode has not run live.
 - The container image has not been built, and the suite has run on Python 3.11,
   3.12 and 3.13 only.
 
 The next version puts each hotel's past rate changes and their outcomes into the
-model request. The model can then compare a plan with the previous ones. The
-next version also reprices when data arrives during the day. Its simulated
-competitors react to the hotels' rate changes.
+model request. The model can then compare a plan with the previous ones. It also
+reprices when data arrives during the day, and its simulated competitors react
+to the hotels' rate changes.
