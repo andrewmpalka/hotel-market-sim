@@ -34,6 +34,9 @@ follows over only the hotel and stay-date pairs where the agent changed a rate.
                                                takes the option too
     hotel-market --seeds 1 20 --react          competitors follow the hotels' rate changes
                                                with a lag; the bench takes it too
+    hotel-market --seeds 1 20 --react --market-elasticity 0.5
+                                               the market's demand answers the comp
+                                               median's level; the agent is told the value
 
 With ANTHROPIC_API_KEY set, the agent asks Claude. Otherwise a template writes the reasons. The
 option --elasticity is true, fixed:X or learn:X. The default is true, where the agent prices with
@@ -45,7 +48,9 @@ market's file, customers/demo.toml by default. The option --target overrides its
 runs. The agent never receives it, and a biased run keeps its cache in a folder of its own. The
 bench tells its oracle the bias, so the oracle stays the simulator's truth. The option --react
 turns the competitors' reaction on in both runs (shops.py), and a reacting run keeps its cache in
-a folder of its own too.
+a folder of its own too. The option --market-elasticity sets the market's response to the comp
+median's level in both runs (demand.py). The agent is told it, every plan record carries it, and
+the oracle re-scores with it and with the reaction's share, so it stays the ceiling.
 
 The bench command (bench.py) runs the fixed-rate run once per seed. It then runs one agent run
 per mode and reviewer, each in its own cache folder. It prints one table per mode with a row per
@@ -88,7 +93,7 @@ from hotel_market.bench import (
 )
 from hotel_market.bookings import Books, simulate
 from hotel_market.customer import TARGETS, Customer, demo, demo_path, load
-from hotel_market.demand import DEMAND_BIAS
+from hotel_market.demand import DEMAND_BIAS, MARKET_ELASTICITY
 from hotel_market.detect import MEDIAN_DOWN, MEDIAN_UP, NEW_EVENT, PACE, SEATS_UP
 from hotel_market.estimate import Estimate
 from hotel_market.model import MODELS, ClaudeClient, Client
@@ -123,14 +128,24 @@ def run(
     customer: Customer | None = None,
     demand_bias: float = DEMAND_BIAS,
     react: bool = False,
+    market_elasticity: float = MARKET_ELASTICITY,
 ) -> tuple[Books, Books, Agent]:
     """The fixed-rate run, the agent run, and the agent. Writes decisions.jsonl. The demand bias
-    and the reaction go to both runs and never to the agent."""
+    and the reaction go to both runs and never to the agent. The market elasticity goes to both
+    runs and to the agent, which is told it."""
     customer = customer or demo()
-    fixed = simulate(seed, customer=customer, demand_bias=demand_bias, react=react)
-    cache_dir = _cache_root(cache_dir, demand_bias, react)
-    agent = Agent(seed, cache_dir, client, elasticity=mode, customer=customer)
-    books = simulate(seed, deciding(agent), customer=customer, demand_bias=demand_bias, react=react)
+    world = {"demand_bias": demand_bias, "react": react, "market_elasticity": market_elasticity}
+    fixed = simulate(seed, customer=customer, **world)
+    cache_dir = _cache_root(cache_dir, demand_bias, react, market_elasticity)
+    agent = Agent(
+        seed,
+        cache_dir,
+        client,
+        elasticity=mode,
+        customer=customer,
+        market_elasticity=market_elasticity,
+    )
+    books = simulate(seed, deciding(agent), customer=customer, **world)
     out.write_text("".join(json.dumps(line) + "\n" for line in agent.log))
     return fixed, books, agent
 
@@ -144,13 +159,22 @@ def replay(
     customer: Customer | None = None,
     demand_bias: float = DEMAND_BIAS,
     react: bool = False,
+    market_elasticity: float = MARKET_ELASTICITY,
 ) -> tuple[list[Entry], list[Advice]]:
     """A day's entries and advice, rebuilt without a model call. They come from the cache when there
     is a client, else from the template.
     """
     customer = customer or demo()
-    cache_dir = _cache_root(cache_dir, demand_bias, react)
-    agent = Agent(seed, cache_dir, client, replay=True, elasticity=mode, customer=customer)
+    cache_dir = _cache_root(cache_dir, demand_bias, react, market_elasticity)
+    agent = Agent(
+        seed,
+        cache_dir,
+        client,
+        replay=True,
+        elasticity=mode,
+        customer=customer,
+        market_elasticity=market_elasticity,
+    )
     simulate(
         seed,
         deciding(agent),
@@ -158,6 +182,7 @@ def replay(
         customer=customer,
         demand_bias=demand_bias,
         react=react,
+        market_elasticity=market_elasticity,
     )
     return (
         [entry for entry in agent.entries if entry.day == day],
@@ -388,28 +413,37 @@ def sweep(
     reviewers: Sequence[Reviewer] = (TEMPLATE,),
     demand_bias: float = DEMAND_BIAS,
     react: bool = False,
+    market_elasticity: float = MARKET_ELASTICITY,
 ) -> list[ArmResult]:
     """Seeds first to last: one fixed-rate run per seed, and one agent run per seed, mode and
     reviewer. Each agent run is compared with the fixed-rate run. The arms come mode by mode, a
     reviewer at a time. Each arm has its own cache folder, because the agent is given the
     reviewer's model. Each seed keeps its entries, its call records and the oracle's labels on
     it. The demand bias goes to every run and to the oracle's labels, and never to the agent.
-    The reaction goes to every run the same way.
+    The reaction goes to every run the same way. The market elasticity goes to every run, to
+    the agent and to the oracle's labels.
     """
     customer = customer or demo()
     hotels = customer.hotels
-    cache_dir = _cache_root(cache_dir, demand_bias, react)
+    cache_dir = _cache_root(cache_dir, demand_bias, react, market_elasticity)
+    world = {"demand_bias": demand_bias, "react": react, "market_elasticity": market_elasticity}
+    truth = (demand_bias, market_elasticity, REACTION_SHARE if react else 0.0)  # the oracle's
     arms: dict[tuple[ElasticityMode, Reviewer], list[SeedResult]] = {
         (mode, reviewer): [] for mode in modes for reviewer in reviewers
     }
     for seed in range(first, last + 1):
-        fixed = simulate(seed, customer=customer, demand_bias=demand_bias, react=react)
+        fixed = simulate(seed, customer=customer, **world)
         for mode, reviewer in arms:
-            agent = Agent(seed, cache_dir, elasticity=mode, customer=customer, model=reviewer.model)
-            agent.client = reviewer.client_for(agent)
-            books = simulate(
-                seed, deciding(agent), customer=customer, demand_bias=demand_bias, react=react
+            agent = Agent(
+                seed,
+                cache_dir,
+                elasticity=mode,
+                customer=customer,
+                model=reviewer.model,
+                market_elasticity=market_elasticity,
             )
+            agent.client = reviewer.client_for(agent)
+            books = simulate(seed, deciding(agent), customer=customer, **world)
             accepted = [entry for entry in agent.entries if entry.action != HOLD]
             shock = [entry for entry in accepted if SHOCK_PLAN_CAUSES & set(entry.causes)]
             other = [entry for entry in accepted if entry not in shock]
@@ -430,7 +464,7 @@ def sweep(
                     _gain_on(fixed, books, other_pairs, hotels, customer.target),
                     list(agent.entries),
                     _calls(agent),
-                    DeclineCounts.of(agent.entries, customer, demand_bias),
+                    DeclineCounts.of(agent.entries, customer, *truth),
                     flags=len(agent.entries),
                     pace_flags=sum(bool(PACE & set(entry.causes)) for entry in agent.entries),
                     median_flags=sum(
@@ -459,16 +493,25 @@ def _calls(agent: Agent) -> list[dict]:
     return counted(records, agent.cache_dir)
 
 
-def _cache_root(cache_dir: Path, demand_bias: float, react: bool = False) -> Path:
+def _cache_root(
+    cache_dir: Path,
+    demand_bias: float,
+    react: bool = False,
+    market_elasticity: float = MARKET_ELASTICITY,
+) -> Path:
     """Where a run's arm folders go. A demand bias other than the default or the reaction changes
     every request. Such runs therefore get a folder of their own under the cache. The agent's
-    own folder name never carries either, because the agent never sees them."""
+    own folder name never carries either, because the agent never sees them. A market elasticity
+    other than the default adds a folder of its own, nested under those."""
     parts = []
     if demand_bias != DEMAND_BIAS:
         parts.append(f"demand-bias-{demand_bias:g}")
     if react:
         parts.append("react")
-    return Path(cache_dir) / "-".join(parts) if parts else Path(cache_dir)
+    root = Path(cache_dir) / "-".join(parts) if parts else Path(cache_dir)
+    if market_elasticity != MARKET_ELASTICITY:
+        root = root / f"market-{market_elasticity:g}"
+    return root
 
 
 def own_median_flags(entries: Iterable[Entry], books: Books) -> int:
@@ -670,6 +713,7 @@ def summary(seed: int, fixed: Books, books: Books, agent: Agent) -> str:
         + ([_target_text(agent)] if not agent.customer.scores_contribution() else [])
         + ([_bias_text(books)] if books.demand_bias != DEMAND_BIAS else [])
         + ([_react_text()] if books.react else [])
+        + ([_market_text(books)] if books.market_elasticity else [])
     )
 
 
@@ -739,6 +783,13 @@ def _bias_text(books: Books) -> str:
     )
 
 
+def _market_text(books: Books) -> str:
+    return (
+        f"The market's demand moved with the comp median's level at an elasticity of "
+        f"{books.market_elasticity:g} in both runs, and the agent was told the value."
+    )
+
+
 def _react_text() -> str:
     return (
         f"Competitors reacted in both runs: {REACTION_LAG} days after a hotel's rate changed, each "
@@ -789,7 +840,8 @@ def main(argv: list[str] | None = None) -> None:
         _bench_main(argv[1:])
         return
     args = _parse_args(argv)
-    customer, world = _customer(args), (args.demand_bias, args.react)
+    customer = _customer(args)
+    world = (args.demand_bias, args.react, args.market_elasticity)
     if args.seeds:
         _print_sweep(*args.seeds, args.modes, customer, *world)
     elif args.replay is not None:
@@ -862,7 +914,8 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
 
 
 def _add_world_options(parser: argparse.ArgumentParser) -> None:
-    """The simulator settings the agent never sees: the demand bias and the reaction."""
+    """The simulator's settings for a run: the demand bias and the reaction, which the agent never
+    sees, and the market elasticity, which it is told."""
     parser.add_argument(
         "--demand-bias",
         dest="demand_bias",
@@ -878,6 +931,15 @@ def _add_world_options(parser: argparse.ArgumentParser) -> None:
         action="store_true",
         help=f"competitors move {share} of a hotel's rate change {REACTION_LAG} days after it "
         f"(default: they never react)",
+    )
+    parser.add_argument(
+        "--market-elasticity",
+        dest="market_elasticity",
+        type=_nonnegative,
+        default=MARKET_ELASTICITY,
+        metavar="E",
+        help=f"the market's demand scales with (comp median / its starting level) ** -E, and "
+        f"the agent is told E (default: {MARKET_ELASTICITY:g}, no market-level response)",
     )
 
 
@@ -1004,6 +1066,17 @@ def demo_path_text() -> str:
         return "customers/demo.toml"
 
 
+def _nonnegative(text: str) -> float:
+    """A market elasticity: a number, zero or more."""
+    try:
+        value = float(text)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"{text!r} is not a number") from None
+    if value < 0:
+        raise argparse.ArgumentTypeError(f"{text} is negative; a market elasticity is zero or more")
+    return value
+
+
 def _factor(text: str) -> float:
     """A factor on the simulator's demand: a number above zero."""
     try:
@@ -1036,9 +1109,16 @@ def _print_run(
     customer: Customer,
     demand_bias: float = DEMAND_BIAS,
     react: bool = False,
+    market_elasticity: float = MARKET_ELASTICITY,
 ) -> None:
     fixed, books, agent = run(
-        seed, client=client, mode=mode, customer=customer, demand_bias=demand_bias, react=react
+        seed,
+        client=client,
+        mode=mode,
+        customer=customer,
+        demand_bias=demand_bias,
+        react=react,
+        market_elasticity=market_elasticity,
     )
     for day in sorted({entry.day for entry in agent.entries}):
         lines = _queue_lines(day, agent.entries, agent.advice)
@@ -1071,9 +1151,17 @@ def _print_replay(
     customer: Customer,
     demand_bias: float = DEMAND_BIAS,
     react: bool = False,
+    market_elasticity: float = MARKET_ELASTICITY,
 ) -> None:
     entries, advice = replay(
-        seed, day, client=client, mode=mode, customer=customer, demand_bias=demand_bias, react=react
+        seed,
+        day,
+        client=client,
+        mode=mode,
+        customer=customer,
+        demand_bias=demand_bias,
+        react=react,
+        market_elasticity=market_elasticity,
     )
     print(f"Day {day} queue, replayed from the cache (seed {seed})\n")
     blocks = [format_entry(e, customer) for e in queue(entries)]
@@ -1088,12 +1176,21 @@ def _print_sweep(
     customer: Customer,
     demand_bias: float = DEMAND_BIAS,
     react: bool = False,
+    market_elasticity: float = MARKET_ELASTICITY,
 ) -> None:
-    arms = sweep(first, last, modes=modes, customer=customer, demand_bias=demand_bias, react=react)
+    arms = sweep(
+        first,
+        last,
+        modes=modes,
+        customer=customer,
+        demand_bias=demand_bias,
+        react=react,
+        market_elasticity=market_elasticity,
+    )
     print(
         f"Seeds {first} to {last}: the agent run against the fixed-rate run, stay dates 0 to 149, "
         f"template reasons, candidates scored on {customer.target}"
-        f"{_world_suffix(demand_bias, react)}"
+        f"{_world_suffix(demand_bias, react, market_elasticity)}"
     )
     if len(arms) == 1:
         print("\n".join(_seed_table(arms[0])))
@@ -1103,32 +1200,39 @@ def _print_sweep(
     print("\n".join(_source_table(arms)))
     if react:
         print()
-        print("\n".join(_reaction_table(arms)))
+        print("\n".join(_reaction_table(arms, market_elasticity=market_elasticity)))
     for arm in arms:
         if arm.mode.kind == "learn":
             print()
             print("\n".join(_estimate_table(arm, customer.hotels)))
 
 
-def _world_suffix(demand_bias: float, react: bool = False) -> str:
-    """What a sweep's or a bench's heading adds when the simulator's demand was biased or its
-    competitors reacted."""
+def _world_suffix(
+    demand_bias: float, react: bool = False, market_elasticity: float = MARKET_ELASTICITY
+) -> str:
+    """What a sweep's or a bench's heading adds when the simulator's demand was biased, its
+    competitors reacted or its market answered the comp median's level."""
     text = ""
     if demand_bias != DEMAND_BIAS:
         text += f", the simulator's demand multiplied by {demand_bias:g} unseen by the agent"
     if react:
         text += ", competitors reacting to the hotels' rate changes"
+    if market_elasticity != MARKET_ELASTICITY:
+        text += f", the market answering the comp median at an elasticity of {market_elasticity:g}"
     return text
 
 
-def _reaction_table(arms: list[ArmResult], named: bool = False) -> list[str]:
+def _reaction_table(
+    arms: list[ArmResult], named: bool = False, market_elasticity: float = MARKET_ELASTICITY
+) -> list[str]:
     """What the reaction did in each arm: the comp-median flags, those the hotels' own changes
     caused, and the stay dates changed twice or more within REPEAT_WINDOW days. The bench names
-    each arm's reviewer."""
+    each arm's reviewer, and the heading names the market elasticity."""
     reviewer_heading = f"{'reviewer':20}" if named else ""
     lines = [
-        f"With competitors reacting: the comp-median flags the hotels' own changes caused, and "
-        f"the stay dates changed twice or more within {REPEAT_WINDOW} days",
+        f"With competitors reacting (market elasticity {market_elasticity:g}): the comp-median "
+        f"flags the hotels' own changes caused, and the stay dates changed twice or more within "
+        f"{REPEAT_WINDOW} days",
         f"{'elasticity':18}{reviewer_heading}{'median flags':>14}{'own changes':>13}"
         f"{'rate changes':>14}{'changed twice':>15}",
     ]
@@ -1222,8 +1326,18 @@ def _source_table(arms: list[ArmResult]) -> list[str]:
 def _bench_main(argv: list[str]) -> None:
     args = _parse_bench_args(argv)
     customer = _customer(args)
-    reviewers = [TEMPLATE, oracle(args.demand_bias)] + [live(model) for model in args.models]
-    _print_bench(*args.seeds, args.modes, reviewers, customer, args.demand_bias, args.react)
+    share = REACTION_SHARE if args.react else 0.0
+    truth = oracle(args.demand_bias, args.market_elasticity, share)
+    reviewers = [TEMPLATE, truth] + [live(model) for model in args.models]
+    _print_bench(
+        *args.seeds,
+        args.modes,
+        reviewers,
+        customer,
+        args.demand_bias,
+        args.react,
+        args.market_elasticity,
+    )
 
 
 def _parse_bench_args(argv: list[str]) -> argparse.Namespace:
@@ -1290,6 +1404,7 @@ def _print_bench(
     customer: Customer,
     demand_bias: float = DEMAND_BIAS,
     react: bool = False,
+    market_elasticity: float = MARKET_ELASTICITY,
 ) -> None:
     arms = sweep(
         first,
@@ -1299,11 +1414,13 @@ def _print_bench(
         reviewers=reviewers,
         demand_bias=demand_bias,
         react=react,
+        market_elasticity=market_elasticity,
     )
+    world = _world_suffix(demand_bias, react, market_elasticity)
     print(
         f"Seeds {first} to {last}: each reviewer against the fixed-rate run, stay dates 0 to 149, "
-        f"candidates scored on {customer.target}{_world_suffix(demand_bias, react)}. Regret is "
-        f"the oracle arm's mean change minus the reviewer's; the rates are pooled over the seeds."
+        f"candidates scored on {customer.target}{world}. Regret is the oracle arm's mean change "
+        f"minus the reviewer's; the rates are pooled over the seeds."
     )
     for mode in modes:
         in_mode = [arm for arm in arms if arm.mode == mode]
@@ -1315,7 +1432,7 @@ def _print_bench(
                 print("\n".join(_estimate_table(arm, customer.hotels, named=True)))
     if react:
         print()
-        print("\n".join(_reaction_table(arms, named=True)))
+        print("\n".join(_reaction_table(arms, named=True, market_elasticity=market_elasticity)))
     print()
     mismatched = [mode for mode in modes if mode.kind != "true"]
     if mismatched:

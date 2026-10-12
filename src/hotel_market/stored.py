@@ -238,6 +238,11 @@ class StoredRateShops(RateShops):
             self._shops[shop_day] = shop
         return self._shops[shop_day]
 
+    def first_median(self, hotel: Hotel, stay_day: int) -> float:
+        """The first shop of the stay date, on the day it entered the window. That is the
+        simulator's starting level unless a shock was already known on that day."""
+        return self.median(max(0, stay_day - (LOOKAHEAD_DAYS - 1)), hotel, stay_day)
+
     def median_history(self, as_of_day: int) -> np.ndarray:
         medians = np.zeros((as_of_day, len(self.hotels), HORIZON_DAYS))
         if as_of_day <= 0:

@@ -82,9 +82,9 @@ and a RES node records the run. A claim that no test can confirm stays [U].
 ### UNK-11 [U] How competitors react to a rate change, and what that does to the revenue-target result
 - Unknown: the simulator's competitors never react ([[CON-03]]). The revenue target's gain ([[RES-07]]) comes from cuts that real competitors might match.
 - Best guess: a matched cut gives back most of the revenue gain. The contribution target's raises are less exposed, because a competitor need not follow a raise.
-- Measured: with --react, competitors move half of a change three days later ([[DEC-51]]). The default mode's gain then rises to +$111,272 a seed ([[RES-24]]). The simulator's demand responds to the rate against the median only.
-- Resolves when: never within this repository; a reaction rule is another modelling choice, and --react is one.
-- Links: [[CON-03]], [[DEC-41]], [[DEC-51]], [[RES-07]], [[RES-24]], [[UNK-05]]
+- Measured: with --react, competitors move half of a change three days later ([[DEC-51]]). At a market elasticity of 0.0 the default mode then earns +$111,272 a seed ([[RES-24]]). At 0.5 it earns +$72,229 and at 1.0 +$43,584 ([[RES-26]]).
+- Resolves when: never within this repository; a reaction rule is another modelling choice, and --react is one. The market's own response is [[UNK-15]].
+- Links: [[CON-03]], [[DEC-41]], [[DEC-51]], [[DEC-52]], [[RES-07]], [[RES-24]], [[RES-26]], [[UNK-05]], [[UNK-15]]
 
 ### UNK-12 [U] The effect of cancellations, no-shows, groups and room types
 - Unknown: the simulator has none of these ([[DAT-07]]). Every booking stays, every room is the same, and the estimate assumes clean Poisson noise ([[CON-09]]).
@@ -103,3 +103,10 @@ and a RES node records the run. A claim that no test can confirm stays [U].
 - Best guess: the bias pulls a real estimate toward zero. The simulator does not show it, because its agent changes rates only on flags.
 - Resolves when: never within this repository; a real estimate would need an instrument or a controlled test ([[FRK-05]]).
 - Links: [[MOD-16]], [[UNK-07]], [[FRK-05]], [[DEC-38]]
+
+### UNK-15 [U] The real market-level price elasticity
+- Unknown: how much a market's total demand falls when every hotel's rate rises together. The simulator's default is 0.0 ([[RUL-87]]), so a matched raise costs no rooms. --market-elasticity sets another value for a run ([[DEC-52]]).
+- Measured: at 0.0, 0.5 and 1.0 with the reaction on, the default mode earns +$111,272, +$72,229 and +$43,584 a seed ([[RES-26]]). The value sets how much of the ratchet is real.
+- Best guess: an inference from general industry knowledge, with nothing here to measure it. Between 0.3 and 1.0 for a city market over 90 days, below the share elasticity of 1.5 ([[RUL-21]]). A guest who must travel still books somewhere.
+- Resolves when: never within this repository; it needs market-level demand against market-level rates, with the shocks held apart.
+- Links: [[RUL-87]], [[DEC-52]], [[RES-26]], [[UNK-07]], [[UNK-11]], [[FRK-08]]

@@ -85,12 +85,14 @@ it differs from what that would write. `README.md` is the legend.
 - RUL-24 [H] CURVE_SHARE — kg/rules.md
 - RUL-25 [H] HOTEL_ROW — kg/rules.md
 - RUL-82 [C] DEMAND_BIAS — src/hotel_market/demand.py
+- RUL-87 [C] MARKET_ELASTICITY — src/hotel_market/demand.py
 - RUL-19 [C] NOISE — src/hotel_market/shops.py
 - RUL-20 [C] NOISE_STREAM — src/hotel_market/shops.py
 - RUL-83 [C] REACTION_SHARE — src/hotel_market/shops.py
 - RUL-84 [C] REACTION_LAG — src/hotel_market/shops.py
 - RUL-21 [C] ELASTICITY — src/hotel_market/bookings.py
 - RUL-22 [C] BOOKING_STREAM — src/hotel_market/bookings.py
+- RUL-88 [C] ORACLE_MARKET_ELASTICITY — src/hotel_market/forecast.py
 - RUL-26 [H] PACE_SHARE — kg/rules.md
 - RUL-27 [H] PACE_NOISE_SD — kg/rules.md
 - RUL-28 [H] SEAT_THRESHOLD — kg/rules.md
@@ -206,6 +208,7 @@ it differs from what that would write. `README.md` is the legend.
 - DEC-49 [C] The benchmark measures the reviewer in the mismatched modes — kg/decisions.md
 - DEC-50 [C] A demand bias the agent never sees is the demand-level twin of a fixed elasticity — kg/decisions.md
 - DEC-51 [C] Competitors can follow the hotel's rate changes, as an opt-in arm — kg/decisions.md
+- DEC-52 [C] The share elasticity alone made a matched raise free, so the market can answer the comp median's level — kg/decisions.md
 
 ### Engineering
 
@@ -253,6 +256,8 @@ it differs from what that would write. `README.md` is the legend.
 - RES-23 [C] The same arms at the default demand bias of 1.0 — kg/results.md
 - RES-24 [C] The competitor reaction on seeds 1 to 20 — kg/results.md
 - RES-25 [C] The comp median's path on seed 7's convention nights with the reaction on — kg/results.md
+- RES-26 [C] The market elasticity with the reaction on, seeds 1 to 20 — kg/results.md
+- RES-27 [C] The day-30 competitor cut on seed 7 at a market elasticity of 0.0 and 0.5 — kg/results.md
 
 ## Open forks (`forks.md`)
 
@@ -263,6 +268,8 @@ it differs from what that would write. `README.md` is the legend.
 - FRK-05 [O] Deliberate price tests, to learn the elasticity faster — kg/forks.md
 - FRK-06 [O] A read-only dashboard over the stored tables — kg/forks.md
 - FRK-07 [O] Reviewers from other providers — kg/forks.md
+- FRK-08 [O] A market response as the default — kg/forks.md
+- FRK-09 [O] A comp move that follows our own change as a flag cause — kg/forks.md
 
 ## Unknowns (`unknowns.md`)
 
@@ -280,3 +287,4 @@ it differs from what that would write. `README.md` is the legend.
 - UNK-12 [U] The effect of cancellations, no-shows, groups and room types — kg/unknowns.md
 - UNK-13 [U] Whether a 5% cut is enough: the largest cut on the menu is 5% — kg/unknowns.md
 - UNK-14 [U] The bias in an elasticity estimate when a real hotel changes its rate in response to demand — kg/unknowns.md
+- UNK-15 [U] The real market-level price elasticity — kg/unknowns.md

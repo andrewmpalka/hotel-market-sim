@@ -23,13 +23,13 @@ error either side (plan.py).
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from hotel_market.customer import Customer, demo
 from hotel_market.detect import AHEAD, detect_numbers, flags
 from hotel_market.estimate import Estimate, estimate_elasticity
-from hotel_market.forecast import peak_night
+from hotel_market.forecast import ORACLE_MARKET_ELASTICITY, peak_night
 from hotel_market.model import MODEL, Client, ask, request_for
 from hotel_market.plan import (
     HOLD,
@@ -110,7 +110,8 @@ class Agent:
 
     `model` names the model the client asks. It is the client's own name when the client has one,
     else model.MODEL. It goes into the cache folder when it is not the default, and into every cache
-    record.
+    record. `market_elasticity` is the run's market price response, handed to the agent as the
+    share elasticity is in the default mode. Every plan record carries it.
     """
 
     def __init__(
@@ -122,9 +123,11 @@ class Agent:
         elasticity: ElasticityMode = TRUE_MODE,
         customer: Customer | None = None,
         model: str | None = None,
+        market_elasticity: float = ORACLE_MARKET_ELASTICITY,
     ):
         self.customer = customer or demo()
         self.model = model or getattr(client, "model", None) or MODEL
+        self.market_elasticity = market_elasticity
         # Another mode, target or model gives other answers, so they live in their own folder.
         folder = f"seed{seed}" if elasticity == TRUE_MODE else f"seed{seed}-{elasticity}"
         if not self.customer.scores_contribution():
@@ -159,7 +162,7 @@ class Agent:
     def plans_for(self, day: int, sources: Sources) -> list[Entry]:
         """Every flag's entry for the day, with its plan, before anything is asked."""
         customer = self.customer
-        table = detect_numbers(day, sources, customer)
+        table = detect_numbers(day, sources, customer, self.market_elasticity)
         pricing = {hotel.key: self._pricing(day, hotel, sources) for hotel in customer.hotels}
         return [
             entry_for(day, flag, table, pricing[flag.hotel], customer)
@@ -182,7 +185,7 @@ class Agent:
 
     def _pricing(self, day: int, hotel: Hotel, sources: Sources) -> Pricing:
         """The elasticity the hotel's estimates assume today, by the agent's mode."""
-        mode = self.elasticity
+        mode, market = self.elasticity, self.market_elasticity
         if mode.kind == "learn":
             estimate = estimate_elasticity(sources, hotel, day, mode.value, self.customer)
             self.estimates[(day, hotel.key)] = estimate
@@ -193,10 +196,11 @@ class Agent:
                 prior=estimate.prior,
                 observations=estimate.observations,
                 cautious=mode.cautious,
+                market_elasticity=market,
             )
         if mode.kind == "fixed":
-            return Pricing(mode.value, "fixed")
-        return TRUE_PRICING
+            return Pricing(mode.value, "fixed", market_elasticity=market)
+        return replace(TRUE_PRICING, market_elasticity=market)
 
     def _decide(self, day: int, hotel: Hotel, entries: list[Entry]) -> None:
         """Ask about the hotel's queued entries, and give every entry its action and reason."""
@@ -235,7 +239,7 @@ class Agent:
             for event in sources.events.known(day):
                 if hotel.key not in event.hotels or (hotel.key, event.name) in self.advised:
                     continue
-                peak = peak_night(hotel, event, sources)
+                peak = peak_night(hotel, event, sources, self.market_elasticity)
                 if entry.first_stay <= peak <= entry.last_stay:
                     self.advised.add((hotel.key, event.name))
                     found.append(

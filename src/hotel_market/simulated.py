@@ -78,6 +78,10 @@ class SimulatedRateShops(RateShops):
     def median(self, shop_day: int, hotel: Hotel, stay_day: int) -> float:
         return self.books.comp_median(shop_day, hotel, stay_day)
 
+    def first_median(self, hotel: Hotel, stay_day: int) -> float:
+        """The shop of day -1: no shock is known yet, and no rate has changed."""
+        return self.books.starting_median(hotel, stay_day)
+
     def median_history(self, as_of_day: int) -> np.ndarray:
         return self.books.daily_medians[:as_of_day]
 

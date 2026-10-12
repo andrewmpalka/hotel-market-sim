@@ -46,6 +46,7 @@ import pandas as pd
 from hotel_market.customer import Customer, demo
 from hotel_market.detect import MEDIAN_DOWN, Flag
 from hotel_market.estimate import ELASTICITY_MAX, ELASTICITY_MIN
+from hotel_market.forecast import ORACLE_MARKET_ELASTICITY
 from hotel_market.world import Hotel, weekday
 
 # The elasticity the default mode prices with. It is the simulator's own value, handed to
@@ -73,6 +74,7 @@ class Pricing:
     prior: float | None = None  # learn only: where the estimate started
     observations: int | None = None  # learn only: the (stay date, booking day) pairs used
     cautious: bool = False  # learn only: a change must also beat hold across the band
+    market_elasticity: float = ORACLE_MARKET_ELASTICITY  # the run's market price response
 
     @property
     def band(self) -> tuple[float, float] | None:
@@ -86,8 +88,8 @@ class Pricing:
         return (low, high)
 
     def to_json(self) -> dict:
-        """The elasticity field of a request and a log line. The cautious fields appear
-        only when the rule is on, so a record without it reads as before."""
+        """The elasticity field of a log line. The cautious fields appear only when the rule is on,
+        so a record without it reads as before. market_elasticity is always there."""
         record = asdict(self)
         if self.cautious:
             record["band"] = Range(*self.band).to_json()
@@ -451,12 +453,27 @@ def rescored(
     elasticity: float,
     cost: float,
     demand_bias: float = 1.0,
+    market_elasticity: float = 0.0,
+    reaction_share: float = 0.0,
 ) -> float:
     """A candidate's estimate made again at another elasticity, from the stay dates the group was
     built from. The cost is the room cost for contribution, 0 for revenue. The demand bias
     multiplies the remaining demand of every stay date. A grader outside the agent's path uses
-    this to score a plan at the simulator's elasticity and demand level."""
-    return _estimate(group.stay_dates, candidate.rates, elasticity, cost, demand_bias)
+    this to score a plan at the simulator's elasticity and demand level.
+
+    With a reaction share, the grader expects the comp median to move that share of the
+    candidate's change from the current rate, and scores the rate against the moved median. With
+    a market elasticity, demand also scales with the moved median over the current one. The
+    remaining demand already carries the current median's level."""
+    return _estimate(
+        group.stay_dates,
+        candidate.rates,
+        elasticity,
+        cost,
+        demand_bias,
+        market_elasticity,
+        reaction_share,
+    )
 
 
 def _estimate(
@@ -465,13 +482,22 @@ def _estimate(
     elasticity: float,
     cost: float,
     demand_bias: float = 1.0,
+    market_elasticity: float = 0.0,
+    reaction_share: float = 0.0,
 ) -> float:
     """Estimated contribution (or revenue, when cost is 0) on the rooms still unsold,
-    summed over the stay dates. The agent's path never passes a demand bias."""
+    summed over the stay dates. The agent's path never passes a demand bias, a market
+    elasticity or a reaction share: it scores every candidate against the median as shopped."""
     total = 0.0
     for s in stay_dates:
         rate = rates[s.stay_day]
-        demand = s.remaining_demand * demand_bias * (rate / s.comp_median) ** -elasticity
+        median = s.comp_median + reaction_share * (rate - s.rate)
+        demand = (
+            s.remaining_demand
+            * demand_bias
+            * (median / s.comp_median) ** -market_elasticity
+            * (rate / median) ** -elasticity
+        )
         total += expected_bookings(demand, s.unsold) * (rate - cost)
     return total
 

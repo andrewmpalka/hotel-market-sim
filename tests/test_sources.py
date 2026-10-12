@@ -109,3 +109,15 @@ def test_the_simulated_rate_shops_carry_the_reaction_the_simulator_used():
     shopped = sources.shops.competitor_rates(9, hotel, 50)
     assert statistics.median(shopped.values()) == pytest.approx(sources.shops.median(9, hotel, 50))
     assert sources.shops.median_history(10)[9, hotel.row, 50] == sources.shops.median(9, hotel, 50)
+
+
+def test_the_simulated_first_median_is_the_shop_before_any_shock():
+    from hotel_market.shops import comp_median
+
+    sources = simulated_sources(simulate(7, last_day=12))
+    convention = DEMO.hotel("convention")
+    assert sources.shops.first_median(convention, 46) == comp_median(-1, convention, 46, seed=7)
+    assert sources.shops.first_median(convention, 46) == sources.shops.median(0, convention, 46)
+    assert sources.shops.median(10, convention, 46) == pytest.approx(
+        1.15 * sources.shops.first_median(convention, 46)
+    )

@@ -86,6 +86,9 @@ def test_the_stored_sources_answer_as_the_simulated_ones_do(in_memory, through_t
                 assert sources.shops.median(day, hotel, stay_day) == simulated.shops.median(
                     day, hotel, stay_day
                 )
+                assert sources.shops.first_median(hotel, stay_day) == simulated.shops.first_median(
+                    hotel, stay_day
+                )
         assert (sources.schedules.seats(day) == simulated.schedules.seats(day)).all()
         assert dict(sources.schedules.seat_change(day)) == dict(
             simulated.schedules.seat_change(day)

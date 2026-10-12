@@ -311,10 +311,20 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Known: the shop on a day reads the hotel's rate in force REACTION_LAG days earlier from the Books' daily log. Nothing is therefore used before it is known ([[RUL-03]]). The agent's rate-shop source carries the same shop ([[MOD-19]]).
 - Default: the reaction is off, so [[DEC-37]] stands for the default run. A fixed-rate run never changes a rate, so it is the same with the reaction on.
 - Flags: a median move of 5% or more is a flag cause and lifts the hold ([[RUL-65]], [[RUL-66]]). A reaction can therefore raise a flag on the dates the hotel just changed. Nothing suppresses that.
-- Oracle: the oracle scores a plan at the simulator's elasticity and demand bias, without the reaction ([[DEC-50]]). With the reaction on it is therefore no longer the ceiling.
+- Oracle: at first the oracle scored a plan without the reaction and lost the ceiling with it on ([[RES-24]]). The command now tells it the reaction's share and the market elasticity, and it is the ceiling again ([[DEC-52]]).
 - Measured: with the reaction on, the default mode earns +$111,272 a seed against +$32,899 without ([[RES-24]], [[RES-25]]).
 - Evidence: test_the_reaction_reads_the_hotels_rate_three_days_back_from_the_log, test_the_simulated_rate_shops_carry_the_reaction_the_simulator_used, test_a_reacting_run_goes_to_both_runs_and_never_to_the_agent
 - Links: [[DEC-37]], [[DEC-50]], [[RUL-83]], [[RUL-84]], [[RUL-85]], [[RES-24]], [[RES-25]], [[UNK-11]], [[CON-03]]
+
+### DEC-52 [C] The share elasticity alone made a matched raise free, so the market can answer the comp median's level
+- Decided: expected demand scales with (the comp median as shopped / its starting level) ** -MARKET_ELASTICITY ([[RUL-87]]). The default is 0.0, so every pinned result stands. --market-elasticity sets it on both commands.
+- Why: bookings follow the hotel's rate against the comp median alone ([[RUL-21]]). A raise the competitors follow therefore costs no rooms, and the reaction run measured the ratchet that makes ([[DEC-51]], [[RES-24]]).
+- Agent: forecast.py mirrors the term and the equality test covers it ([[RUL-88]]). The agent is told the run's value, and every plan record carries it as market_elasticity. A set value changes the request digest.
+- Oracle: the command tells the oracle the value and the reaction's share. It then scores a candidate against the median the reaction moves, with the market's answer. It is the ceiling again.
+- Cache: a run with a market elasticity other than 0 keeps its cache under cache/market-E/ ([[DEC-50]]). That folder nests under the bias and react folders where those apply.
+- Measured: with the reaction on, a market elasticity of 1.0 cuts the default mode's gain to +$43,584 a seed ([[RES-26]], [[RES-27]]).
+- Evidence: test_the_market_elasticity_scales_each_days_draw_by_the_medians_level, test_the_grader_scores_a_raise_against_the_median_the_reaction_moves, test_the_oracle_reviewer_is_told_the_market_elasticity_and_the_reaction
+- Links: [[DEC-51]], [[DEC-50]], [[RUL-87]], [[RUL-88]], [[RES-26]], [[RES-27]], [[UNK-11]], [[UNK-15]], [[FRK-08]], [[FRK-09]]
 
 ## Engineering
 

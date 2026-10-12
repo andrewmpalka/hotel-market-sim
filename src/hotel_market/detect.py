@@ -35,7 +35,7 @@ from dataclasses import dataclass
 import pandas as pd
 
 from hotel_market.customer import Customer, demo
-from hotel_market.forecast import expected_demand, normal_demand
+from hotel_market.forecast import ORACLE_MARKET_ELASTICITY, expected_demand, normal_demand
 from hotel_market.sources import Sources
 from hotel_market.world import Hotel, stay_window
 
@@ -55,9 +55,15 @@ class Flag:
     causes: tuple[str, ...]
 
 
-def detect_numbers(day: int, sources: Sources, customer: Customer | None = None) -> pd.DataFrame:
+def detect_numbers(
+    day: int,
+    sources: Sources,
+    customer: Customer | None = None,
+    market_elasticity: float = ORACLE_MARKET_ELASTICITY,
+) -> pd.DataFrame:
     """The detect numbers for every hotel and stay date in the day's window, one row each. Each row
-    carries the causes the stay date is flagged for."""
+    carries the causes the stay date is flagged for. The market elasticity goes into the expected
+    demand (forecast.py)."""
     customer = customer or demo()
     seats = sources.schedules.seat_change(day)
     revision = sources.schedules.seat_revision(day)
@@ -80,7 +86,9 @@ def detect_numbers(day: int, sources: Sources, customer: Customer | None = None)
                 "pace_threshold": max(
                     customer.pace_share * hotel.rooms, customer.pace_noise_sd * math.sqrt(on_pace)
                 ),
-                "expected_demand": expected_demand(hotel, stay_day, day, sources),
+                "expected_demand": expected_demand(
+                    hotel, stay_day, day, sources, market_elasticity
+                ),
                 "seat_change": seats[stay_day],
                 "seat_revision": revision[stay_day],
                 "rate": float(rates[i, stay_day]),

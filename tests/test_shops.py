@@ -7,7 +7,7 @@ import pytest
 from hotel_market import shops
 from hotel_market.customer import demo
 from hotel_market.schedule import HORIZON_DAYS
-from hotel_market.shops import comp_median, comp_rates
+from hotel_market.shops import comp_median, comp_rates, starting_median
 
 DEMO = demo()
 
@@ -108,3 +108,18 @@ def test_competitors_move_half_of_the_hotels_change_when_they_are_told_it():
         assert comp_rates(shop_day, hotel, stay_day, seed=SEED, hotel_change=0.0) == plain
         cut = comp_rates(shop_day, hotel, stay_day, seed=SEED, hotel_change=-11.0)
         assert all(cut[name] == pytest.approx(plain[name] - 5.5) for name in plain)
+
+
+def test_the_starting_median_is_the_shop_of_day_minus_1_with_no_shock_and_no_reaction():
+    convention = DEMO.hotel("convention")
+    for stay_day in (0, 46, 120):
+        start = starting_median(convention, stay_day, seed=SEED)
+        assert start == comp_median(-1, convention, stay_day, seed=SEED)
+        assert start == comp_median(0, convention, stay_day, seed=SEED)  # nothing known on day 0
+    # On the convention nights the day-10 shop is 15% above it, and a reaction moves it too.
+    assert comp_median(10, convention, 46, seed=SEED) == pytest.approx(
+        1.15 * starting_median(convention, 46, seed=SEED)
+    )
+    assert comp_median(0, convention, 46, seed=SEED, hotel_change=22.0) > starting_median(
+        convention, 46, seed=SEED
+    )

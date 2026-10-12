@@ -36,7 +36,7 @@ which is also the order in which they depend on each other.
 - File: src/hotel_market/demand.py
 - Owns: the simulator's demand per hotel and stay date as known on a day. The formula is rooms x base occupancy x weekday factor x seats x events. Normal demand leaves out seats and events.
 - Holds: the per-filing cache of seat changes (last_filing, known_seat_change). The agent never reads this module. Its own demand model is [[MOD-18]], which matches it by construction for the demo market.
-- Bias: DEMAND_BIAS multiplies both demands for the simulator alone ([[RUL-82]]). The booking loop passes it, and the agent never receives it ([[DEC-50]]).
+- Bias: DEMAND_BIAS multiplies both demands for the simulator alone ([[RUL-82]], [[DEC-50]]). MARKET_ELASTICITY scales expected demand by the median's level, and the agent is told it ([[RUL-87]], [[DEC-52]]).
 - Reads: [[MOD-01]], [[MOD-02]], [[MOD-03]], [[MOD-20]]
 - Writes: nothing stored; the functions are pure functions of what is known on a day
 - Tests: tests/test_demand.py
@@ -44,7 +44,7 @@ which is also the order in which they depend on each other.
 
 ### MOD-05 [C] shops.py
 - File: src/hotel_market/shops.py
-- Owns: the rate shop: each competitor's rate for a stay date as seen on a shop day, and their median ([[DAT-06]]).
+- Owns: the rate shop: each competitor's rate for a stay date as seen on a shop day, and their median ([[DAT-06]]). starting_median() is the median's starting level ([[DEC-52]]).
 - Holds: NOISE ([[RUL-19]]) and NOISE_STREAM ([[RUL-20]]). Rates are flat across the week ([[DEC-16]]). The noise is drawn once per competitor and stay date from the seed ([[DEC-37]]).
 - Reaction: comp_rates() takes the hotel's lagged change in dollars and moves each competitor REACTION_SHARE of it ([[RUL-83]], [[RUL-84]], [[DEC-51]]). The Books pass it ([[DAT-07]]).
 - Reads: [[MOD-01]], [[MOD-02]], [[MOD-03]], [[MOD-20]]
@@ -75,7 +75,7 @@ which is also the order in which they depend on each other.
 - File: src/hotel_market/plan.py
 - Owns: what the agent could do about a flag and what each option is worth. It builds each weekday's candidates ([[DAT-11]], [[DAT-12]]) and their estimates, the flag's numbers ([[DAT-13]]) and the Entry ([[DAT-14]]).
 - Estimate: E[min(N, unsold)] bookings ([[DEC-21]]) on each StayDate ([[DAT-10]]) times the margin, summed over the flag. The elasticity is a Pricing's ([[DAT-21]]), and under a revenue target the rate replaces the margin ([[RUL-58]]).
-- Cautious: under the cautious rule ([[CON-11]], [[DEC-39]]) each estimate is made again at both ends of the pricing's band. A change must beat hold at all three. rescored() makes any estimate again at another elasticity ([[MOD-23]]).
+- Cautious: under the cautious rule ([[CON-11]], [[DEC-39]]) each estimate is made again at both ends of the pricing's band. A change must beat hold at all three. rescored() re-scores for the grader ([[MOD-23]], [[DEC-52]]).
 - Holds: ORACLE_ELASTICITY ([[RUL-56]]), MODES ([[RUL-49]]), BAND_STANDARD_ERRORS ([[RUL-54]]), the candidate names and factors ([[RUL-41]] to [[RUL-45]]). The minimum ([[RUL-67]]) and the target come from the customer.
 - Reads: [[MOD-02]], [[MOD-07]], [[MOD-16]] (the estimator's bounds), [[MOD-20]]; never the simulator ([[DEC-40]])
 - Tests: tests/test_plan.py
@@ -171,6 +171,7 @@ which is also the order in which they depend on each other.
 - File: src/hotel_market/forecast.py
 - Owns: the agent's own demand model. Normal demand is rooms x base occupancy x weekday factor. Expected demand adds the schedule and event feeds as of a day. It also gives the event uplift and an event's peak night ([[DEC-09]]).
 - Limit: it uses the same formula as the simulator's [[MOD-04]]. That is the known limit that the agent's demand model is right by construction. A test holds the two equal for the demo market.
+- Market: expected_demand() takes the market elasticity and scales by the median's level over first_median ([[RUL-88]], [[DEC-52]]). ORACLE_MARKET_ELASTICITY is the run's value, handed to the agent.
 - Reads: [[MOD-02]] (the hotels' settings, the calendar), [[MOD-17]] (the sources)
 - Writes: nothing stored
 - Tests: tests/test_forecast.py
@@ -180,7 +181,7 @@ which is also the order in which they depend on each other.
 - File: src/hotel_market/simulated.py
 - Owns: the simulator as the agent's four sources ([[DEC-40]]). SimulatedBookings reads the Books' daily log ([[DAT-07]]), and SimulatedRateShops the seed and the logged medians.
 - Also: SimulatedSchedules reads the schedule as filed, and SimulatedEvents the events. deciding() wraps an Agent as the simulator's decide hook, and watch() is the fixed-rate run that records every day's flags.
-- Reaction: the rate-shop source passes the Books' lagged hotel change to each shop ([[DEC-51]]). The agent therefore sees the shop the simulator used.
+- Reaction: the rate-shop source passes the Books' lagged hotel change to each shop ([[DEC-51]]). first_median() is the shop of day -1 ([[DEC-52]]). The agent therefore sees the shop the simulator used.
 - Reads: [[MOD-01]], [[MOD-02]], [[MOD-03]], [[MOD-04]], [[MOD-05]], [[MOD-06]], [[MOD-07]], [[MOD-10]], [[MOD-17]], [[MOD-20]]
 - Writes: [[DAT-25]], as their implementation
 - Tests: tests/test_sources.py, tests/test_detect.py
@@ -221,7 +222,7 @@ which is also the order in which they depend on each other.
 - Owns: the benchmark of the model as a reviewer ([[DEC-47]], [[DEC-48]]). The oracle reviewer re-scores each queued plan and hold at ORACLE_ELASTICITY ([[RUL-56]]). It declines the plan when hold scores at least as well.
 - Measures: regret ([[MEA-06]]), the accept rate ([[MEA-07]]), decline precision ([[MEA-08]]), recall ([[MEA-09]]) and F1 ([[MEA-10]]). Also dollar-weighted recall ([[MEA-11]]) and the recovered share ([[MEA-12]]).
 - Counts: DeclineCounts ([[DAT-31]]) pools the counts behind the measures. counted() keeps one call record per digest ([[DAT-30]]); invalid_answers(), failed_requests() and retries() sum them, and cost() prices them ([[RUL-80]]).
-- Scripted: Reviewer ([[DAT-32]]) names an arm's reviewer: TEMPLATE, ORACLE, oracle(demand_bias) or live(model). ScriptedClient plays a model offline, cached as scripted. It answers from a digest dict or declines the keys it is given.
+- Scripted: Reviewer ([[DAT-32]]) names an arm's reviewer: TEMPLATE, ORACLE, oracle(...) or live(model). ScriptedClient plays a model offline, cached as scripted. It answers from a digest dict or declines the keys it is given.
 - Reads: [[MOD-08]] (the entries and rescored()), [[MOD-09]] (the clients and request_digest()), [[MOD-10]] (the day's entries in agent.today), [[MOD-11]], [[MOD-20]]; never the simulator, and nothing in the agent's path imports it
 - Tests: tests/test_bench.py
 - Evidence: test_the_oracle_reviewer_accepts_every_queued_plan_in_true_mode, test_the_oracle_declines_where_hold_scores_at_least_as_well, test_a_scripted_client_declines_chosen_plans_and_is_read_back
@@ -229,6 +230,6 @@ which is also the order in which they depend on each other.
 ### MOD-24 [C] scripts/median_path.py
 - File: scripts/median_path.py
 - Owns: the comp median's path on one hotel's stay dates next to its rate, shop day by shop day. The run is a template run of one seed. median_path() returns the rows, the agent and the Books.
-- Run: the run is the command's template run in the true mode, with --react and --demand-bias as given ([[MOD-12]]). It makes no model call and writes nothing. The table reads the daily log ([[DAT-07]]).
+- Run: the run is the command's template run in the true mode, with --react, --demand-bias and --market-elasticity as given ([[MOD-12]]). It makes no model call and writes nothing. It also prints the rooms each stay date sold.
 - Tests: tests/test_median_path.py
 - Evidence: test_the_median_follows_the_hotels_change_after_the_lag

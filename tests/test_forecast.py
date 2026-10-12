@@ -8,7 +8,12 @@ import pytest
 from hotel_market import demand
 from hotel_market.bookings import Books
 from hotel_market.customer import demo
-from hotel_market.forecast import expected_demand, normal_demand, peak_night
+from hotel_market.forecast import (
+    ORACLE_MARKET_ELASTICITY,
+    expected_demand,
+    normal_demand,
+    peak_night,
+)
 from hotel_market.shocks import EVENTS
 from hotel_market.simulated import simulated_sources
 from hotel_market.sources import Event
@@ -31,6 +36,14 @@ def test_the_forecast_is_the_simulators_demand_for_the_demo_market(as_of_day, so
             assert forecast == demand.expected_demand(hotel, stay_day, as_of_day, demand_bias=1.0)
             # The demand bias is the simulator's alone: the forecast never carries it.
             assert forecast != demand.expected_demand(hotel, stay_day, as_of_day, demand_bias=0.9)
+            # The market term mirrors demand.py's: at a market elasticity the forecast equals
+            # the simulator's demand at the same median ratio.
+            ratio = sources.shops.median(as_of_day, hotel, stay_day) / sources.shops.first_median(
+                hotel, stay_day
+            )
+            assert expected_demand(hotel, stay_day, as_of_day, sources, 0.5) == pytest.approx(
+                demand.expected_demand(hotel, stay_day, as_of_day, 1.0, ratio, 0.5)
+            )
         assert normal_demand(hotel, as_of_day) == demand.normal_demand(hotel, as_of_day, 1.0)
         assert normal_demand(hotel, as_of_day) != demand.normal_demand(hotel, as_of_day, 0.9)
 
@@ -58,3 +71,16 @@ def test_peak_night_uses_what_is_known_on_the_day_the_event_becomes_known(source
     )
     assert peak_night(airport, event, sources) == 49
     assert peak_night(airport, replace(event, known_day=20), sources) == 52
+
+
+def test_the_agents_market_elasticity_starts_at_0_and_lowers_demand_where_the_median_rose(sources):
+    assert ORACLE_MARKET_ELASTICITY == 0.0
+    convention = DEMO.hotel("convention")
+    # Before the convention is known the median is at its start, so the term is 1.
+    assert expected_demand(convention, 46, 9, sources, 0.5) == expected_demand(
+        convention, 46, 9, sources
+    )
+    # From day 10 the competitors are 15% up on the convention nights.
+    assert expected_demand(convention, 46, 10, sources, 0.5) == pytest.approx(
+        expected_demand(convention, 46, 10, sources) * 1.15**-0.5
+    )

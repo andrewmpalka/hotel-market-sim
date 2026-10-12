@@ -73,7 +73,9 @@ every estimate assumes: "assumed" is a value the agent was given, "fixed" a \
 value set for the run, and "learn" one estimated from the bookings, with its \
 standard error. When that field says cautious, each candidate also shows its \
 estimate at the low and the high end of the elasticity band, and the plan \
-changes a rate only where the change beats holding at both ends."""
+changes a rate only where the change beats holding at both ends. When that \
+field has a market_elasticity, the market's demand falls as the comp median \
+rises by that power, and the estimates already count it."""
 
 # The mode the model sees for the default pricing. The command-line option is "true",
 # the simulator's own value; to the model it is a value the agent was given.
@@ -356,6 +358,9 @@ def _pricing_request(pricing: Pricing) -> dict:
     if pricing.cautious:
         request["cautious"] = True
         request["band"] = span(pricing.band, number)
+    if pricing.market_elasticity:
+        # Only when set, so the default request and its digest stay as they were.
+        request["market_elasticity"] = number(pricing.market_elasticity)
     return request
 
 

@@ -286,7 +286,9 @@ ROWS = [
 def test_the_seeds_command_prints_each_seed_and_the_mean_and_range(monkeypatch, capsys):
     monkeypatch.setattr(
         "hotel_market.cli.sweep",
-        lambda first, last, modes, customer, demand_bias, react: [ArmResult(TRUE_MODE, ROWS)],
+        lambda first, last, modes, customer, demand_bias, react, market_elasticity: [
+            ArmResult(TRUE_MODE, ROWS)
+        ],
     )
     main(["--seeds", "1", "3"])
     out = capsys.readouterr().out
@@ -308,7 +310,8 @@ def test_a_revenue_target_arm_counts_wins_and_earnings_in_revenue(monkeypatch, c
     arm = ArmResult(TRUE_MODE, ROWS, "revenue")
     assert arm.wins == 1 and arm.realised == pytest.approx(-5.0)
     monkeypatch.setattr(
-        "hotel_market.cli.sweep", lambda first, last, modes, customer, demand_bias, react: [arm]
+        "hotel_market.cli.sweep",
+        lambda first, last, modes, customer, demand_bias, react, market_elasticity: [arm],
     )
     main(["--seeds", "1", "3", "--target", "revenue"])
     out = capsys.readouterr().out
@@ -334,7 +337,8 @@ def test_the_seeds_command_prints_one_row_per_arm_and_a_learn_arms_estimates(mon
     cautious = replace(learn, cautious=True)
     arms = [ArmResult(TRUE_MODE, ROWS), ArmResult(cautious, learned)]
     monkeypatch.setattr(
-        "hotel_market.cli.sweep", lambda first, last, modes, customer, demand_bias, react: arms
+        "hotel_market.cli.sweep",
+        lambda first, last, modes, customer, demand_bias, react, market_elasticity: arms,
     )
     main(["--seeds", "1", "3", "--elasticity", "true", "--elasticity", "learn:1.0", "--cautious"])
     out = capsys.readouterr().out
@@ -445,7 +449,7 @@ def test_the_bench_command_prints_its_tables(bench_arms, monkeypatch, capsys):
     template, oracle, scripted = arms
     monkeypatch.setattr(
         "hotel_market.cli.sweep",
-        lambda first, last, modes, customer, reviewers, demand_bias, react: arms,
+        lambda first, last, modes, customer, reviewers, demand_bias, react, market_elasticity: arms,
     )
     main(["bench", "--seeds", "1", "2", "--elasticity", "fixed:1.0", "--template"])
     out = capsys.readouterr().out
@@ -565,13 +569,49 @@ def test_a_reacting_sweep_counts_its_own_median_flags_and_the_repeat_changes(fir
     assert arm.repeat_changes == result.repeat_changes and arm.median_flags == result.median_flags
 
 
+def test_a_market_elasticity_goes_to_both_runs_and_to_the_agent(tmp_path):
+    fixed, books, agent = run(
+        SEED, tmp_path / "d.jsonl", tmp_path / "cache", FakeClient(), market_elasticity=0.5
+    )
+    assert fixed.market_elasticity == books.market_elasticity == agent.market_elasticity == 0.5
+    assert agent.cache_dir == tmp_path / "cache" / "market-0.5" / "seed7"
+    plans = [line for line in agent.log if "elasticity" in line]
+    assert plans and all(line["elasticity"]["market_elasticity"] == 0.5 for line in plans)
+    assert "at an elasticity of 0.5 in both runs" in summary(SEED, fixed, books, agent)
+    nested = run(
+        SEED,
+        tmp_path / "n.jsonl",
+        tmp_path / "cache",
+        FakeClient(),
+        demand_bias=0.9,
+        react=True,
+        market_elasticity=0.5,
+    )[2]
+    assert nested.cache_dir == tmp_path / "cache" / "demand-bias-0.9-react" / "market-0.5" / "seed7"
+    plain, _, plain_agent = run(SEED, tmp_path / "p.jsonl", tmp_path / "cache", FakeClient())
+    assert plain.market_elasticity == 0.0 and plain_agent.cache_dir == tmp_path / "cache" / "seed7"
+    assert all(
+        line["elasticity"]["market_elasticity"] == 0.0
+        for line in plain_agent.log
+        if "elasticity" in line
+    )
+
+
 def test_the_command_and_the_bench_take_a_demand_bias(monkeypatch, capsys):
     seen = {}
 
     def fake_sweep(
-        first, last, modes, customer, reviewers=(TEMPLATE,), demand_bias=1.0, react=False
+        first,
+        last,
+        modes,
+        customer,
+        reviewers=(TEMPLATE,),
+        demand_bias=1.0,
+        react=False,
+        market_elasticity=0.0,
     ):
         seen["bias"], seen["reviewers"], seen["react"] = demand_bias, list(reviewers), react
+        seen["market"] = market_elasticity
         return [ArmResult(mode, ROWS, reviewer=r) for mode in modes for r in reviewers]
 
     monkeypatch.setattr("hotel_market.cli.sweep", fake_sweep)
@@ -596,10 +636,20 @@ def test_the_command_and_the_bench_take_a_demand_bias(monkeypatch, capsys):
     main(["--seeds", "1", "3", "--react"])
     out = capsys.readouterr().out
     assert seen["react"] and "competitors reacting to the hotels' rate changes" in out
-    assert "With competitors reacting: the comp-median flags" in out
+    assert "With competitors reacting (market elasticity 0): the comp-median flags" in out
     main(["bench", "--seeds", "1", "3", "--template", "--elasticity", "fixed:1.0", "--react"])
     out = capsys.readouterr().out
     assert seen["react"] and "With competitors reacting" in out and "oracle" in out
+    assert seen["market"] == 0.0 and "(market elasticity 0)" in out
+    # --market-elasticity goes to the sweep and to the oracle, and the headings name it.
+    main(["--seeds", "1", "3", "--react", "--market-elasticity", "0.5"])
+    out = capsys.readouterr().out
+    assert seen["market"] == 0.5 and "at an elasticity of 0.5" in out
+    assert "(market elasticity 0.5)" in out
+    main(["bench", "--seeds", "1", "3", "--template", "--market-elasticity", "0.5"])
+    assert seen["market"] == 0.5 and seen["reviewers"][1] is not ORACLE
+    with pytest.raises(SystemExit):
+        main(["--seeds", "1", "3", "--market-elasticity", "-0.5"])
     for argv in (
         ["--seeds", "1", "3", "--demand-bias", "0"],
         ["bench", "--seeds", "1", "3", "--template", "--demand-bias", "-1"],
@@ -690,6 +740,16 @@ def test_the_reacting_runs_pin_their_headline(tmp_path):
     assert statistics.mean(by_mode["true"].changes) == pytest.approx(111272, abs=1)
     assert statistics.mean(by_mode["learn:1 cautious"].changes) == pytest.approx(298869, abs=1)
     assert by_mode["true"].own_median_flags == 481 and by_mode["true"].repeat_changes == 97
+
+
+@pytest.mark.slow
+def test_the_market_elasticity_runs_pin_their_headline(tmp_path):
+    """The true-mode template arm with the reaction on ends where the recorded runs ended at a
+    market elasticity of 0.5 and 1.0, so the market-elasticity table stays pinned."""
+    for market, mean, twice in ((0.5, 72229, 46), (1.0, 43584, 25)):
+        [arm] = sweep(1, 20, tmp_path / "cache", react=True, market_elasticity=market)
+        assert statistics.mean(arm.changes) == pytest.approx(mean, abs=1)
+        assert arm.repeat_changes == twice
 
 
 def test_a_learn_run_keeps_its_own_cache_and_says_where_its_estimates_ended(tmp_path):

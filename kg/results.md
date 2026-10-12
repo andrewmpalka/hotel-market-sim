@@ -215,7 +215,7 @@ here for the rest.
 - Result: in the true mode every arm earns +$111,272 a seed against the fixed-rate run. The reaction leaves that run as it is. That is 3.4 times the +$32,899 without it ([[RES-01]]). The cautious learn arm earns +$298,869 accepting all.
 - Why: the simulator's bookings follow the hotel's rate against the comp median ([[RUL-21]]). A raise the competitors half follow costs few rooms, and the moved median raises a new flag. The agent then raises again.
 - Repeats: the true mode changes 298 rates against 179 without the reaction. 481 of its 541 comp-median flags follow the hotels' own changes, and 97 stay dates change twice within 14 days. The cautious learn arm changes 734 twice.
-- Oracle: the oracle scores without the reaction ([[DEC-51]]). It accepts 45% of the cautious arm's plans, earns +$129,090 a seed, and so trails accepting all by $169,780. It is not the ceiling here.
+- Oracle: the oracle then scored without the reaction ([[DEC-51]]). It accepted 45% of the cautious arm's plans, earned +$129,090 a seed, and so trailed accepting all by $169,780. Told the reaction, it leads again ([[RES-26]]).
 - Table: docs/results.md, "Seeds 1 to 20 with the reaction on"
 - Evidence: test_the_reacting_runs_pin_their_headline
 - Links: [[DEC-51]], [[DEC-37]], [[RES-01]], [[RES-05]], [[RES-23]], [[RES-25]], [[UNK-11]]
@@ -227,3 +227,21 @@ here for the rest.
 - Table: docs/results.md, "Seed 7 with the reaction on"
 - Evidence: test_the_median_follows_the_hotels_change_after_the_lag
 - Links: [[DEC-51]], [[RES-24]], [[RES-02]], [[SHK-01]], [[MOD-24]]
+
+### RES-26 [C] The market elasticity with the reaction on, seeds 1 to 20
+- Ran: `hotel-market bench --seeds 1 20 --template --react --market-elasticity E --elasticity true` at E = 0.0, 0.5 and 1.0, on 2026-10-12. The same command with `--elasticity learn:1.0 --cautious` ran the cautious arms.
+- Result: the true mode earns +$111,272 a seed at 0.0, +$72,229 at 0.5 and +$43,584 at 1.0. Every arm is ahead in 20 of 20. Its rate changes fall from 298 to 207 and 161. The dates changed twice within 14 days fall from 97 to 46 and 25.
+- Cautious: the cautious learn arm earns +$298,869, +$256,903 and +$149,400 accepting all. Its changes rise with the elasticity, from 890 to 1,259. The dates changed twice rise too, from 734 to 1,322.
+- Oracle: told the reaction and the value, the oracle is the ceiling again. It beats accepting all by $665 to $683 a seed in the cautious arm. In the true mode it accepts every plan and ties.
+- Estimates: the cautious arm's day-59 estimates rise with the elasticity. They are 1.23 to 1.41 by hotel at 0.0 and 1.45 to 1.70 at 1.0. The estimator's baseline carries no market term ([[UNK-07]]).
+- Table: docs/results.md, "Seeds 1 to 20 with the reaction on at a market elasticity"
+- Evidence: test_the_market_elasticity_runs_pin_their_headline
+- Links: [[DEC-52]], [[DEC-51]], [[RES-24]], [[RES-27]], [[UNK-07]], [[UNK-11]], [[UNK-15]]
+
+### RES-27 [C] The day-30 competitor cut on seed 7 at a market elasticity of 0.0 and 0.5
+- Ran: `python scripts/median_path.py --seed 7 --hotel full-service --stays 37 39 --days 29 39 --market-elasticity 0.5` on 2026-10-12. The same command ran at 0.0. The reaction was off.
+- Result: two competitors cut 20% from shop day 30 ([[SHK-03]]). The median falls 9.6% to 9.8% on the three stay dates. The hotel holds $190 and changes nothing on them.
+- Rooms: by day 39 the hotel sells 182, 202 and 161 rooms on stays 37 to 39 at 0.0. At 0.5 it sells 183, 206 and 165. A cheaper market draws more demand at 0.5, so the cut costs the hotel less.
+- Table: docs/results.md, "Seed 7 at a market elasticity of 0.0 and 0.5"
+- Evidence: test_a_market_elasticity_softens_a_competitor_cut_for_the_hotel
+- Links: [[DEC-52]], [[RES-26]], [[SHK-03]], [[MOD-24]]

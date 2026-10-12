@@ -3,7 +3,13 @@
 import pytest
 
 from hotel_market.customer import demo
-from hotel_market.demand import DEMAND_BIAS, expected_demand, known_seat_change, normal_demand
+from hotel_market.demand import (
+    DEMAND_BIAS,
+    MARKET_ELASTICITY,
+    expected_demand,
+    known_seat_change,
+    normal_demand,
+)
 from hotel_market.schedule import seat_change
 from hotel_market.shocks import event_uplift
 from hotel_market.world import stay_window, weekday
@@ -101,3 +107,14 @@ def test_the_demand_bias_multiplies_both_demands_and_is_1_by_default():
             assert expected_demand(hotel, stay_day, 20, 1.1) == pytest.approx(
                 1.1 * expected_demand(hotel, stay_day, 20)
             )
+
+
+def test_the_market_elasticity_scales_demand_with_the_medians_level():
+    assert MARKET_ELASTICITY == 0.0
+    hotel = DEMO.hotel("convention")
+    plain = expected_demand(hotel, 46, 10)
+    assert expected_demand(hotel, 46, 10, median_ratio=1.15) == plain  # at 0.0 the level is nothing
+    assert expected_demand(
+        hotel, 46, 10, median_ratio=1.15, market_elasticity=0.5
+    ) == pytest.approx(plain * 1.15**-0.5)
+    assert expected_demand(hotel, 46, 10, 0.9, 1.15, 1.0) == pytest.approx(0.9 * plain / 1.15)

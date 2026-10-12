@@ -11,6 +11,8 @@ from hotel_market.customer import demo
 from hotel_market.demand import expected_demand
 from hotel_market.detect import AHEAD, Flag, detect_numbers, flags
 from hotel_market.estimate import ELASTICITY_MIN
+from hotel_market.forecast import ORACLE_MARKET_ELASTICITY
+from hotel_market.model import request_digest, request_for
 from hotel_market.plan import (
     HALFWAY,
     HOLD,
@@ -371,3 +373,51 @@ def test_rescoring_with_a_demand_bias_scales_the_remaining_demand(day10):
             assert at_bias <= candidate.estimate
             lower += at_bias < candidate.estimate
     assert lower
+
+
+def test_the_plan_record_carries_the_market_elasticity_and_only_a_set_value_reaches_the_request(
+    day10,
+):
+    _, table = day10
+    airport = DEMO.hotel("airport")
+    flag = Flag(10, "airport", 40, 46, (AHEAD,))
+    plain = entry_for(10, flag, table, Pricing(1.5, "true"))
+    told = entry_for(10, flag, table, Pricing(1.5, "true", market_elasticity=0.5))
+    assert ORACLE_MARKET_ELASTICITY == 0.0
+    assert plain.to_json()["elasticity"]["market_elasticity"] == 0.0
+    assert told.to_json()["elasticity"]["market_elasticity"] == 0.5
+    # The agent scores every candidate against the median as shopped, so the candidates are the
+    # same; the level's effect is already in the remaining demand the detect numbers carry.
+    for a, b in zip(plain.weekdays, told.weekdays):
+        assert [c.estimate for c in a.candidates] == [c.estimate for c in b.candidates]
+    # The request names the value only when it is set, so the default digest stays as it was.
+    before, after = request_for(10, airport, [plain]), request_for(10, airport, [told])
+    assert "market_elasticity" not in before["elasticity"]
+    assert after["elasticity"]["market_elasticity"] == "0.5"
+    assert request_digest(before) != request_digest(after)
+
+
+def test_the_grader_scores_a_raise_against_the_median_the_reaction_moves(day10):
+    _, table = day10
+    airport = DEMO.hotel("airport")
+    entry = entry_for(10, Flag(10, "airport", 40, 46, (AHEAD,)), table, Pricing(1.5, "true"))
+    cost = airport.room_cost
+    base = followed = answered = cut_back = 0.0
+    for group in entry.weekdays:
+        for candidate in group.candidates:
+            if not candidate.name.startswith("raise"):
+                assert rescored(group, candidate, 1.5, cost, reaction_share=0.5) <= rescored(
+                    group, candidate, 1.5, cost
+                )
+                continue
+            base += rescored(group, candidate, 1.5, cost)
+            followed += rescored(group, candidate, 1.5, cost, reaction_share=0.5)
+            answered += rescored(
+                group, candidate, 1.5, cost, market_elasticity=1.0, reaction_share=0.5
+            )
+            cut_back += rescored(
+                group, candidate, 1.5, cost, market_elasticity=2.0, reaction_share=0.5
+            )
+    # Competitors following half of a raise make it worth more. A market that answers the
+    # median's level takes some of that back at 1.0, and at 2.0 more than all of it.
+    assert followed > answered > base > cut_back

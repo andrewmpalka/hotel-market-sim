@@ -15,8 +15,10 @@ The oracle reviewer is the ceiling for a reviewer. It grades; it is not an agent
 a better candidate than the plan, and a single seed's draw can beat it. For each queued entry it
 re-scores the plan and hold with ORACLE_ELASTICITY, the simulator's own value. It declines the
 plan when hold scores at least as well. It stands in as the client the agent asks, so its
-decisions drive a run of their own. The command tells it the simulator's demand bias when it
-builds it (cli.py). The oracle therefore stays the simulator's truth at any bias.
+decisions drive a run of their own. The command tells it the simulator's demand bias, market
+elasticity and reaction share when it builds it (cli.py). The oracle therefore stays the
+simulator's truth at any of those settings. It treats the reaction as immediate, where the
+simulator applies it with a lag.
 
 It also labels the entries of any other run after the fact. Its answers are never cached and
 record the source "oracle". A later live run in the same mode therefore cannot mistake them for
@@ -53,36 +55,50 @@ def key(entry: Entry) -> Key:
 
 
 def oracle_values(
-    entry: Entry, customer: Customer | None = None, demand_bias: float = 1.0
+    entry: Entry,
+    customer: Customer | None = None,
+    demand_bias: float = 1.0,
+    market_elasticity: float = 0.0,
+    reaction_share: float = 0.0,
 ) -> tuple[float, float]:
     """(hold, plan): the worth of holding and of the plan at ORACLE_ELASTICITY, summed over the
     weekdays the plan changes. The plan's own estimate may come from another elasticity. This scores
-    the same candidates with the simulator's value. The demand bias is the simulator's: it scales
-    the remaining demand the entry's estimates were built from."""
+    the same candidates with the simulator's value. The demand bias, the market elasticity and the
+    reaction share are the simulator's too: the command tells the oracle what the run does."""
     customer = customer or demo()
     hotel = customer.hotel(entry.hotel)
     cost = hotel.room_cost if customer.scores_contribution() else 0.0
+    world = (demand_bias, market_elasticity, reaction_share)
     hold = plan = 0.0
     for group in entry.changed_weekdays:
-        hold += rescored(group, group.hold, ORACLE_ELASTICITY, cost, demand_bias)
-        plan += rescored(group, group.best, ORACLE_ELASTICITY, cost, demand_bias)
+        hold += rescored(group, group.hold, ORACLE_ELASTICITY, cost, *world)
+        plan += rescored(group, group.best, ORACLE_ELASTICITY, cost, *world)
     return hold, plan
 
 
 def oracle_declines(
-    entry: Entry, customer: Customer | None = None, demand_bias: float = 1.0
+    entry: Entry,
+    customer: Customer | None = None,
+    demand_bias: float = 1.0,
+    market_elasticity: float = 0.0,
+    reaction_share: float = 0.0,
 ) -> bool:
     """Whether the oracle declines the entry's plan. It does when hold scores at least as well
-    at ORACLE_ELASTICITY and the simulator's demand bias."""
-    hold, plan = oracle_values(entry, customer, demand_bias)
+    at ORACLE_ELASTICITY and the simulator's demand bias, market elasticity and reaction."""
+    hold, plan = oracle_values(entry, customer, demand_bias, market_elasticity, reaction_share)
     return hold >= plan
 
 
 def oracle_labels(
-    entries: Iterable[Entry], customer: Customer | None = None, demand_bias: float = 1.0
+    entries: Iterable[Entry],
+    customer: Customer | None = None,
+    demand_bias: float = 1.0,
+    market_elasticity: float = 0.0,
+    reaction_share: float = 0.0,
 ) -> set[Key]:
     """The queued entries of a run whose plan the oracle declines."""
-    return {key(e) for e in entries if e.queued and oracle_declines(e, customer, demand_bias)}
+    world = (demand_bias, market_elasticity, reaction_share)
+    return {key(e) for e in entries if e.queued and oracle_declines(e, customer, *world)}
 
 
 class OracleReviewer:
@@ -94,9 +110,18 @@ class OracleReviewer:
     name = "oracle"
     cached = False
 
-    def __init__(self, agent: Agent, demand_bias: float = 1.0):
+    def __init__(
+        self,
+        agent: Agent,
+        demand_bias: float = 1.0,
+        market_elasticity: float = 0.0,
+        reaction_share: float = 0.0,
+    ):
         self.agent = agent
-        self.demand_bias = demand_bias  # the simulator's, as the command built the reviewer
+        # The simulator's settings, as the command built the reviewer.
+        self.demand_bias = demand_bias
+        self.market_elasticity = market_elasticity
+        self.reaction_share = reaction_share
 
     def complete(self, system: str, prompt: str, schema: dict) -> str:
         request = json.loads(prompt)
@@ -104,19 +129,31 @@ class OracleReviewer:
         hotel = next(h for h in customer.hotels if h.name == request["hotel"]["name"])
         today = {e.id: e for e in self.agent.today if e.hotel == hotel.key and e.queued}
         decisions = []
+        world = (self.demand_bias, self.market_elasticity, self.reaction_share)
         for asked in request["entries"]:
-            hold, plan = oracle_values(today[asked["id"]], customer, self.demand_bias)
+            hold, plan = oracle_values(today[asked["id"]], customer, *world)
             choice = HOLD if hold >= plan else asked["plan"]
-            reason = _oracle_reason(hold, plan, choice, self.demand_bias)
+            reason = _oracle_reason(hold, plan, choice, *world)
             decisions.append({"id": asked["id"], "choice": choice, "reason": reason})
         return json.dumps({"decisions": decisions})
 
 
-def _oracle_reason(hold: float, plan: float, choice: str, demand_bias: float = 1.0) -> str:
+def _oracle_reason(
+    hold: float,
+    plan: float,
+    choice: str,
+    demand_bias: float = 1.0,
+    market_elasticity: float = 0.0,
+    reaction_share: float = 0.0,
+) -> str:
     verdict = "we hold" if choice == HOLD else "we take the plan"
     truth = f"the simulator's elasticity of {ORACLE_ELASTICITY:g}"
     if demand_bias != 1.0:
         truth += f" and demand bias of {demand_bias:g}"
+    if market_elasticity:
+        truth += f", a market elasticity of {market_elasticity:g}"
+    if reaction_share:
+        truth += f", with competitors following {reaction_share:.0%} of a change"
     return (
         f"At {truth}, holding is estimated at {tens_of_dollars(hold)} and the plan at "
         f"{tens_of_dollars(plan)}, so {verdict}."
@@ -184,12 +221,18 @@ TEMPLATE = Reviewer("template")
 ORACLE = Reviewer("oracle", make=OracleReviewer)
 
 
-def oracle(demand_bias: float = 1.0) -> Reviewer:
-    """The oracle reviewer told the simulator's demand bias. At 1.0 it is ORACLE. The command
-    builds it, the way ORACLE_ELASTICITY names the simulator's elasticity for it."""
-    if demand_bias == 1.0:
+def oracle(
+    demand_bias: float = 1.0, market_elasticity: float = 0.0, reaction_share: float = 0.0
+) -> Reviewer:
+    """The oracle reviewer told the simulator's demand bias, market elasticity and reaction share.
+    At the defaults it is ORACLE. The command builds it, the way ORACLE_ELASTICITY names the
+    simulator's elasticity for it."""
+    if (demand_bias, market_elasticity, reaction_share) == (1.0, 0.0, 0.0):
         return ORACLE
-    return Reviewer("oracle", make=lambda agent: OracleReviewer(agent, demand_bias))
+    return Reviewer(
+        "oracle",
+        make=lambda agent: OracleReviewer(agent, demand_bias, market_elasticity, reaction_share),
+    )
 
 
 def live(model: str) -> Reviewer:
@@ -373,13 +416,16 @@ class DeclineCounts:
         entries: Iterable[Entry],
         customer: Customer | None = None,
         demand_bias: float = 1.0,
+        market_elasticity: float = 0.0,
+        reaction_share: float = 0.0,
     ) -> DeclineCounts:
         queued = reviewed(entries)
-        ours, labels = declined(queued), oracle_labels(queued, customer, demand_bias)
+        world = (demand_bias, market_elasticity, reaction_share)
+        ours, labels = declined(queued), oracle_labels(queued, customer, *world)
         by_key = {key(e): e for e in queued}
 
         def loss(k: Key) -> float:
-            hold, plan = oracle_values(by_key[k], customer, demand_bias)
+            hold, plan = oracle_values(by_key[k], customer, *world)
             return hold - plan
 
         return cls(

@@ -54,3 +54,15 @@ it. None of these is in progress.
 - Needs: a client whose complete(system, prompt, schema) returns JSON that fits the schema. Measured records its usage as it is, and PRICES needs its prices ([[RUL-80]]). The bench then takes it as one more --model ([[DEC-48]]).
 - Links: [[FRK-04]], [[MOD-09]], [[MOD-23]], [[DAT-30]], [[RUL-79]], [[RUL-80]]
 
+### FRK-08 [O] A market response as the default
+- Choice: whether MARKET_ELASTICITY should be above 0.0 by default ([[RUL-87]]). That would move every pinned result and re-pin [[RES-01]] and [[RES-02]].
+- Known: at 0.0 a matched raise is free, and the reaction run measured the ratchet ([[RES-24]]). With the reaction on, 0.5 and 1.0 cut the gain by a third and by more than half ([[RES-26]]).
+- Without: without the reaction, the term acts only where a shock moves the median ([[RES-27]]).
+- Needs: a value with a source ([[UNK-15]]). Then a run of seeds 1 to 20 at it, with and without the reaction. [[RES-01]] and [[RES-02]] would then need new pins, and the README's results would change.
+- Links: [[RUL-87]], [[DEC-52]], [[RES-01]], [[RES-02]], [[RES-24]], [[RES-26]], [[RES-27]], [[UNK-15]]
+
+### FRK-09 [O] A comp move that follows our own change as a flag cause
+- Choice: whether a comp median move that follows our own change should count as a flag cause ([[RUL-65]]). It arrives within REACTION_LAG days on the same stay dates ([[RUL-84]]), so the detector could read it as the reaction.
+- Known: with the reaction on, 481 of the true mode's 541 comp-median flags follow the hotels' own changes ([[RES-24]]). 97 stay dates change twice within 14 days. The flag lifts the hold, so the agent raises again ([[DEC-51]]).
+- Needs: the hotel's own change days per stay date among detect.py's inputs, and a rule for the window. The oracle already scores the followed median ([[DEC-52]]), so the arm would measure the flag alone.
+- Links: [[DEC-51]], [[DEC-52]], [[RUL-65]], [[RUL-84]], [[RUL-85]], [[RES-24]], [[RES-26]]

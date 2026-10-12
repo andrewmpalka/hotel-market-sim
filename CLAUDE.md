@@ -19,8 +19,9 @@ results, and docs/results.md has the tables of every experiment.
 4. Model responses are saved under cache/, keyed by seed, day and hotel. The
    elasticity mode and the model join the key when they are not the defaults.
    A demand bias other than 1.0 or the competitor reaction puts a run's folders
-   under cache/demand-bias-F/, cache/react/ or cache/demand-bias-F-react/. A
-   rerun reads the cache first. Without an API key, model.py writes a template
+   under cache/demand-bias-F/, cache/react/ or cache/demand-bias-F-react/, and
+   a market elasticity other than 0 adds cache/market-E/ under those. A rerun
+   reads the cache first. Without an API key, model.py writes a template
    reason, so the tests run offline. The template's answers are never cached.
 5. The stack is Python 3.11+, numpy, pandas, duckdb, pytest, ruff and the
    anthropic SDK, declared in pyproject.toml. There is no web UI, no database
@@ -46,7 +47,7 @@ with pip install -e ".[dev]" and import it as hotel_market.<module>.
 | customer.py | reads a market's customer file; demo() is customers/demo.toml |
 | sources.py | the four interfaces: Bookings, RateShops, Schedules, Events |
 | shocks.py | the convention (known day 10) and the competitor rate cut (day 30) |
-| demand.py | the simulator's expected and normal demand per hotel and stay date |
+| demand.py | the simulator's expected and normal demand per hotel and stay date, and the market's price response |
 | shops.py | competitor rates and comp medians from a seeded rate shop |
 | bookings.py | the booking curve, the day-0 preload and the daily booking loop |
 | forecast.py | the agent's own demand model, from the hotel's settings and the feeds |

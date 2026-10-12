@@ -57,10 +57,10 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-07 [C] Books
 - File: src/hotel_market/bookings.py
-- Fields: rooms (int, hotels x stay dates), revenue (float, same shape) and rates (float, same shape). Rates start at each hotel's start rate. demand_bias is the factor on demand ([[RUL-82]]), and react turns the reaction on.
+- Fields: rooms (int, hotels x stay dates), revenue and rates (float, same shape), rates starting at the start rate. demand_bias ([[RUL-82]]), react ([[DEC-51]]) and market_elasticity ([[RUL-87]]) are the run's settings.
 - Draws: the random numbers for every draw of the run ([[DEC-22]]). The preload has one per hotel and stay date, and the loop one per day, hotel and stay date.
 - Log: daily_rooms, daily_rates and daily_medians, shape (days, hotels, stay dates), zero outside the day's window. preload holds the rooms loaded before day 0, and [[MOD-19]] serves the agent from the log as of any day.
-- Methods: book(day) and set_rates(changes). hotel_change() and comp_median() serve the reaction ([[DEC-51]]). The measures are occupancy, average_rate, revpar, room_revenue and contribution ([[MEA-01]] to [[MEA-05]]).
+- Methods: book(day) and set_rates(changes). hotel_change() and comp_median() serve the reaction ([[DEC-51]]), and starting_median() the market term ([[DEC-52]]). The five measures are [[MEA-01]] to [[MEA-05]].
 - Written by: [[MOD-06]]; the agent's rate changes arrive through set_rates after each day's bookings
 - Read by: [[MOD-19]], [[MOD-12]]
 - Evidence: test_day_0_starts_with_the_bookings_made_before_the_run, test_contribution_is_revenue_minus_the_cost_of_every_room_sold, test_the_simulated_sources_answer_as_of_the_day
@@ -153,7 +153,7 @@ the plans, the model's request and answer, and what the command writes.
 ### DAT-18 [C] A decisions.jsonl line
 - File: src/hotel_market/plan.py
 - Made by: Entry.to_json() in [[MOD-08]] and Advice.to_json() in [[MOD-10]]. [[MOD-12]] writes one line per entry and advice, by day, entries before advice.
-- Entry line: day, hotel, stays [first, last], causes and numbers ([[DAT-13]], its ranges as named pairs). elasticity is the pricing, with the mode as the command line names it.
+- Entry line: day, hotel, stays [first, last], causes and numbers ([[DAT-13]], its ranges as named pairs). elasticity is the pricing, with the mode as the command line names it and market_elasticity ([[RUL-88]]).
 - More: by_weekday, plan, value_at_stake, queued, action, new_rates (null when held), reason and simulated true. reason_source is "code", "template", "model" or a client's name. The line holds raw numbers, not the request's display strings.
 - By weekday: weekday, stays and the candidates with name, rates as a named pair, estimate, best and gain. Under the cautious rule a candidate's band is named by its ends, and the line adds rejected_at_an_end. A revenue target adds target.
 - Advice line: day, hotel, stays, causes, event, action, value_at_stake null, reason and simulated false.
@@ -180,10 +180,10 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-21 [C] Pricing
 - File: src/hotel_market/plan.py
-- Fields: Pricing(elasticity, mode, standard_error, prior, observations, cautious), frozen: the elasticity a day's estimates assume and where it came from. mode is one of [[RUL-49]].
+- Fields: Pricing(elasticity, mode, standard_error, prior, observations, cautious, market_elasticity), frozen: the elasticity a day's estimates assume and where it came from. mode is one of [[RUL-49]].
 - Learn: standard_error, prior and observations are set in learn mode only. cautious turns on the rule in [[CON-11]]. band is then the elasticities [[RUL-54]] standard errors around the estimate, clamped to [[RUL-51]] and [[RUL-52]].
 - Default: TRUE_PRICING is ORACLE_ELASTICITY ([[RUL-56]]) in mode "true". to_json() is the log line's elasticity field, with the band as a named pair. cautious and band appear only when the rule is on.
-- Request: [[MOD-09]] builds the request's elasticity field from the same record. Every number is a display string, and the mode is named for the model ([[RUL-75]]).
+- Request: [[MOD-09]] builds the request's elasticity field from the same record. Every number is a display string, and the mode is named for the model ([[RUL-75]]). market_elasticity reaches the request only when set ([[DEC-52]]).
 - Written by: [[MOD-10]], once per hotel and day
 - Read by: [[MOD-08]] (the estimate), [[MOD-09]] (the request and the template's sentence), [[MOD-12]] (the printed entry)
 - Evidence: test_each_mode_records_the_elasticity_its_plans_assume, test_the_template_cites_a_fixed_or_learned_elasticity, test_the_cautious_rule_scores_each_candidate_one_standard_error_either_side
@@ -218,7 +218,7 @@ the plans, the model's request and answer, and what the command writes.
 ### DAT-25 [C] The four sources
 - File: src/hotel_market/sources.py
 - Bookings: on_books(as_of_day) by [hotel row, stay day] after that day's bookings, and rates(as_of_day), each hotel's rate in force that day. history(as_of_day) is a [[DAT-26]].
-- RateShops: competitor_rates(shop_day, hotel, stay_day), median(...), the median of those rates, and median_history(as_of_day) by [shop day, hotel row, stay day].
+- RateShops: competitor_rates(shop_day, hotel, stay_day), median(...), the median of those rates, and median_history(as_of_day) by [shop day, hotel row, stay day]. first_median(hotel, stay_day) is the median's starting level ([[DEC-52]]).
 - Schedules: seats(as_of_day), the arriving seats by stay day as filed by the day. From them the interface computes seat_change(as_of_day) against the first schedule known and seat_revision(as_of_day) against the day before.
 - Events: known(as_of_day). Sources(bookings, shops, schedules, events) bundles one of each. Every method returns only what was known on the day it is asked on ([[RUL-03]]).
 - Written by: [[MOD-19]], the simulator's implementation, and [[MOD-21]], the one over the stored tables ([[DAT-28]])
@@ -282,7 +282,7 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-32 [C] Reviewer
 - File: src/hotel_market/bench.py
-- Fields: Reviewer(name, model, make), frozen: an arm's reviewer. name labels the row, model is the model it asks (None when none) and make builds its client. TEMPLATE, ORACLE, oracle(demand_bias) and live(model) are the kinds.
+- Fields: Reviewer(name, model, make), frozen: an arm's reviewer. name labels the row, model is the model it asks (None when none) and make builds its client. TEMPLATE, ORACLE, oracle(bias, market, share) and live(model) are the kinds.
 - Client: client_for(agent) builds the client once the agent exists. The template has none. The oracle reads agent.today ([[DEC-47]]) and takes the demand bias ([[DEC-50]]). A model gets a measured Claude client ([[DAT-30]]).
 - Model: the agent takes the reviewer's model, so the arm's cache folder names it ([[DEC-23]]). live is true when the arm asks a model, and the bench then prints its calls, tokens, latency and cost.
 - Written by: [[MOD-12]] (the bench command, from --model) and tests

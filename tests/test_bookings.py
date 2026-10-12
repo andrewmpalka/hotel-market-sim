@@ -7,9 +7,9 @@ import pytest
 
 from hotel_market.bookings import ELASTICITY, Books, poisson_draw, preload_mean, simulate
 from hotel_market.customer import demo
-from hotel_market.demand import DEMAND_BIAS, expected_demand
+from hotel_market.demand import DEMAND_BIAS, MARKET_ELASTICITY, expected_demand
 from hotel_market.schedule import HORIZON_DAYS
-from hotel_market.shops import REACTION_LAG, REACTION_SHARE, comp_median
+from hotel_market.shops import REACTION_LAG, REACTION_SHARE, comp_median, starting_median
 from hotel_market.world import SIM_DAYS
 
 DEMO = demo()
@@ -267,4 +267,24 @@ def test_the_reaction_reads_the_hotels_rate_three_days_back_from_the_log():
     # The fixed-rate run never changes a rate, so it is the same with the reaction on.
     assert np.array_equal(
         simulate(SEED, last_day=30, react=True).rooms, simulate(SEED, last_day=30).rooms
+    )
+
+
+def test_the_market_elasticity_scales_each_days_draw_by_the_medians_level():
+    convention = DEMO.hotel("convention")
+    plain, market = Books(SEED), Books(SEED, market_elasticity=0.5)
+    assert plain.market_elasticity == MARKET_ELASTICITY == 0.0 and market.market_elasticity == 0.5
+    assert market.starting_median(convention, 46) == starting_median(convention, 46, seed=SEED)
+    # Before the convention is known the median is at its start, so nothing changes. On day 10
+    # the competitors raise 15%, and the market's demand falls by 1.15 ** -0.5.
+    assert market.expected_new_bookings(convention, 46, 9) == pytest.approx(
+        plain.expected_new_bookings(convention, 46, 9)
+    )
+    ratio = plain.comp_median(10, convention, 46) / market.starting_median(convention, 46)
+    assert ratio == pytest.approx(1.15)
+    assert market.expected_new_bookings(convention, 46, 10) == pytest.approx(
+        plain.expected_new_bookings(convention, 46, 10) * ratio**-0.5
+    )
+    assert np.array_equal(
+        simulate(SEED, last_day=30, market_elasticity=0.0).rooms, simulate(SEED, last_day=30).rooms
     )

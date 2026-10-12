@@ -6,10 +6,12 @@ rate, from a template run of one seed.
     python scripts/median_path.py --seed 7 --react --hotel convention --stays 45 48 --days 8 20
 
 The run is the hotel-market command's template run for the seed in the true mode, with the
-simulator settings given (--react and --demand-bias). It makes no model call and writes
-nothing. The table has one row per shop day. For each stay date it shows the hotel's rate in
-force that day and the comp median shopped that day. A rate change the agent accepted shows as
-a new rate from the next day. With --react the median follows it REACTION_LAG days later.
+simulator settings given (--react, --demand-bias and --market-elasticity). It makes no model
+call and writes nothing. The table has one row per shop day. For each stay date it shows the
+hotel's rate in force that day and the comp median shopped that day. A rate change the agent
+accepted shows as a new rate from the next day. With --react the median follows it REACTION_LAG
+days later. The last lines give the rooms each stay date sold by the end of the run, in the
+agent run and in the fixed-rate run.
 """
 
 from __future__ import annotations
@@ -21,7 +23,7 @@ from collections.abc import Sequence
 from hotel_market.agent import Agent
 from hotel_market.bookings import Books, simulate
 from hotel_market.customer import Customer, demo
-from hotel_market.demand import DEMAND_BIAS
+from hotel_market.demand import DEMAND_BIAS, MARKET_ELASTICITY
 from hotel_market.plan import HOLD
 from hotel_market.shops import REACTION_LAG, REACTION_SHARE
 from hotel_market.simulated import deciding
@@ -37,19 +39,15 @@ def median_path(
     react: bool = False,
     demand_bias: float = DEMAND_BIAS,
     customer: Customer | None = None,
-) -> tuple[list[Row], Agent, Books]:
-    """The rows of the table from a template run to the last day asked for, with the agent and
-    the books of that run."""
+    market_elasticity: float = MARKET_ELASTICITY,
+) -> tuple[list[Row], Agent, Books, Books]:
+    """The rows of the table from a template run to the last day asked for, with the agent, the
+    books of that run and the books of the fixed-rate run."""
     customer = customer or demo()
-    agent = Agent(seed, customer=customer)
-    books = simulate(
-        seed,
-        deciding(agent),
-        last_day=max(days),
-        customer=customer,
-        demand_bias=demand_bias,
-        react=react,
-    )
+    agent = Agent(seed, customer=customer, market_elasticity=market_elasticity)
+    world = {"demand_bias": demand_bias, "react": react, "market_elasticity": market_elasticity}
+    books = simulate(seed, deciding(agent), last_day=max(days), customer=customer, **world)
+    fixed = simulate(seed, last_day=max(days), customer=customer, **world)
     row = customer.hotel(hotel_key).row
     rows = [
         (
@@ -61,7 +59,7 @@ def median_path(
         )
         for day in days
     ]
-    return rows, agent, books
+    return rows, agent, books, fixed
 
 
 def lines_for(
@@ -71,9 +69,16 @@ def lines_for(
     days: Sequence[int],
     react: bool,
     demand_bias: float = DEMAND_BIAS,
+    market_elasticity: float = MARKET_ELASTICITY,
 ) -> list[str]:
-    rows, agent, books = median_path(
-        seed, hotel_key, stays, days, react=react, demand_bias=demand_bias
+    rows, agent, books, fixed = median_path(
+        seed,
+        hotel_key,
+        stays,
+        days,
+        react=react,
+        demand_bias=demand_bias,
+        market_elasticity=market_elasticity,
     )
     hotel = books.customer.hotel(hotel_key)
     world = (
@@ -81,6 +86,7 @@ def lines_for(
         if react
         else "competitors never reacting"
     )
+    world += f", market elasticity {market_elasticity:g}"
     found = [
         f"Seed {seed}, {hotel.name}, template run, {world}. For each stay date: the hotel's rate "
         f"in force on the shop day and the comp median shopped that day.",
@@ -100,6 +106,12 @@ def lines_for(
     found.append("")
     found.append("The agent's accepted changes on these stay dates:")
     found.extend(changes or ["none"])
+    found.append("")
+    found.append(f"Rooms sold by day {max(days)}, the agent run and the fixed-rate run:")
+    found.extend(
+        f"stay {s}: {int(books.rooms[hotel.row, s])} / {int(fixed.rooms[hotel.row, s])}"
+        for s in stays
+    )
     return found
 
 
@@ -119,10 +131,20 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument(
         "--demand-bias", dest="demand_bias", type=float, default=DEMAND_BIAS, metavar="F"
     )
+    parser.add_argument(
+        "--market-elasticity",
+        dest="market_elasticity",
+        type=float,
+        default=MARKET_ELASTICITY,
+        metavar="E",
+    )
     args = parser.parse_args(sys.argv[1:] if argv is None else argv)
     stays = range(args.stays[0], args.stays[1] + 1)
     days = range(args.days[0], args.days[1] + 1)
-    print("\n".join(lines_for(args.seed, args.hotel, stays, days, args.react, args.demand_bias)))
+    lines = lines_for(
+        args.seed, args.hotel, stays, days, args.react, args.demand_bias, args.market_elasticity
+    )
+    print("\n".join(lines))
 
 
 if __name__ == "__main__":

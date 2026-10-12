@@ -138,6 +138,13 @@ marked [H], with one line that names the node it moved to.
 - Meaning: a factor on the simulator's demand, the day-0 preload included, that the agent never sees ([[DEC-50]]). --demand-bias sets it for a run. At 1.0 the agent's forecast equals the simulator's demand ([[MOD-18]]).
 - Evidence: test_the_forecast_is_the_simulators_demand_for_the_demo_market, test_the_demand_bias_multiplies_both_demands_and_is_1_by_default
 
+### RUL-87 [C] MARKET_ELASTICITY
+- Value: 0.0
+- File: src/hotel_market/demand.py
+- Kind: parameter
+- Meaning: the market's price response. Expected demand scales with (the comp median as shopped / its starting level) ** -this ([[DEC-52]]). At 0.0 only the rate against the median moves bookings, so a matched raise is free.
+- Evidence: test_the_market_elasticity_scales_demand_with_the_medians_level, test_the_market_elasticity_scales_each_days_draw_by_the_medians_level
+
 ## shops.py
 
 ### RUL-19 [C] NOISE
@@ -183,6 +190,15 @@ marked [H], with one line that names the node it moved to.
 - Kind: parameter
 - Meaning: the random stream for every booking draw of a run. Another stream draws other bookings and other results.
 - Evidence: test_same_seed_gives_the_same_books_and_another_seed_does_not, test_the_default_mode_still_gives_28818_on_seed_7
+
+## forecast.py
+
+### RUL-88 [C] ORACLE_MARKET_ELASTICITY
+- Value: 0.0
+- File: src/hotel_market/forecast.py
+- Kind: parameter
+- Meaning: the market elasticity the agent prices with ([[DEC-52]]). It is the simulator's value handed to it, as [[RUL-56]] hands it the share elasticity. The command sets the run's value, and every plan record carries it.
+- Evidence: test_the_agents_market_elasticity_starts_at_0_and_lowers_demand_where_the_median_rose, test_the_plan_record_carries_the_market_elasticity_and_only_a_set_value_reaches_the_request
 
 ## detect.py
 

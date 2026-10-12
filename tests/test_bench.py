@@ -400,3 +400,32 @@ def test_a_scripted_client_declines_chosen_plans_and_is_read_back(fixed_mode_run
     again = Agent(SEED, tmp_path / "cache", client=ScriptedClient(), replay=True, elasticity=mode)
     simulate(SEED, deciding(again))
     assert declined(again.entries) == {target}
+
+
+def test_the_oracle_reviewer_is_told_the_market_elasticity_and_the_reaction(
+    fixed_mode_run, tmp_path
+):
+    assert oracle(1.0, 0.0, 0.0) is ORACLE and oracle(1.0, 0.5, 0.0) is not ORACLE
+    agent = Agent(SEED, tmp_path, elasticity=ElasticityMode("fixed", 1.0))
+    client = oracle(1.0, 0.5, 0.5).client_for(agent)
+    assert (client.demand_bias, client.market_elasticity, client.reaction_share) == (1.0, 0.5, 0.5)
+    queued = [e for e in fixed_mode_run.entries if e.queued]
+    raises = [e for e in queued if all(part.startswith("raise") for part in e.plan.split("; "))]
+    assert raises
+    # Told that competitors follow half of a raise, the oracle expects it to cost fewer rooms, so
+    # a raise it declines with the reaction is one it declines without it too.
+    for entry in raises:
+        if oracle_declines(entry, reaction_share=0.5):
+            assert oracle_declines(entry)
+    labels = oracle_labels(queued, market_elasticity=0.5, reaction_share=0.5)
+    counts = DeclineCounts.of(
+        fixed_mode_run.entries, demand_bias=1.0, market_elasticity=0.5, reaction_share=0.5
+    )
+    assert counts.oracle == len(labels)
+    agent.client = client
+    simulate(SEED, deciding(agent), last_day=10, react=True, market_elasticity=0.5)
+    reasons = [e.reason for e in agent.entries if e.queued]
+    assert reasons and all(
+        "a market elasticity of 0.5, with competitors following 50% of a change, holding" in r
+        for r in reasons
+    )

@@ -93,3 +93,12 @@ def comp_median(
         shop_day, hotel, stay_day, seed=seed, customer=customer, hotel_change=hotel_change
     )
     return statistics.median(rates.values())
+
+
+def starting_median(
+    hotel: Hotel, stay_day: int, *, seed: int, customer: Customer | None = None
+) -> float:
+    """The comp median's starting level for a stay date: the median with no shock and no reaction,
+    which the seeded noise fixes. It is the shop of day -1, before any shock is known. The
+    market's price response (demand.py) measures the median against it."""
+    return comp_median(-1, hotel, stay_day, seed=seed, customer=customer)

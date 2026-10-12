@@ -15,6 +15,12 @@ DEMAND_BIAS multiplies both functions. The command sets it with --demand-bias, a
 loop passes it to every draw. The agent never receives it, so at a bias other than 1.0 its
 forecast is wrong by that factor. The error is in the demand level alone.
 
+MARKET_ELASTICITY is the market's own price response. Expected demand is multiplied by (the comp
+median as shopped that day / the median's starting level for that stay date) ** -MARKET_ELASTICITY.
+The starting level is the median with no shock and no reaction (shops.starting_median). The
+default of 0.0 keeps every pinned result, and the command sets it with --market-elasticity. The
+agent is told the run's value (forecast.py), as it is told the share elasticity.
+
 Run `python -m hotel_market.demand` to print normal demand as occupancy by day of week.
 """
 
@@ -30,6 +36,9 @@ from hotel_market.world import Hotel, weekday
 
 # A factor on the simulator's demand that the agent never sees; --demand-bias sets it per run.
 DEMAND_BIAS = 1.0
+# The market's price response: demand scales with (comp median / its starting level) ** -this.
+# At 0.0 only the hotel's rate against the median moves bookings, so a matched raise is free.
+MARKET_ELASTICITY = 0.0
 
 
 def dow_factor(hotel: Hotel, stay_day: int) -> float:
@@ -43,14 +52,21 @@ def normal_demand(hotel: Hotel, stay_day: int, demand_bias: float = DEMAND_BIAS)
 
 
 def expected_demand(
-    hotel: Hotel, stay_day: int, as_of_day: int, demand_bias: float = DEMAND_BIAS
+    hotel: Hotel,
+    stay_day: int,
+    as_of_day: int,
+    demand_bias: float = DEMAND_BIAS,
+    median_ratio: float = 1.0,
+    market_elasticity: float = MARKET_ELASTICITY,
 ) -> float:
     """Rooms a hotel expects to sell for a stay date, given what is known on as_of_day. The
-    demand bias multiplies it."""
+    demand bias multiplies it. median_ratio is the comp median as shopped over its starting
+    level, and the market elasticity scales demand by median_ratio ** -market_elasticity."""
     return (
         normal_demand(hotel, stay_day, demand_bias)
         * (1 + hotel.air_share * known_seat_change(as_of_day)[stay_day])
         * (1 + event_uplift(hotel.key, stay_day, as_of_day))
+        * median_ratio**-market_elasticity
     )
 
 
