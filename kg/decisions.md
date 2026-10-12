@@ -343,6 +343,15 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: test_a_level_agent_scales_its_forecast_by_the_fitted_demand_level, test_a_level_scales_one_hotels_pace_baseline_and_expected_demand, test_the_level_factor_is_the_fitted_level_once_the_fit_has_enough_observations
 - Links: [[DEC-38]], [[DEC-50]], [[DEC-52]], [[RUL-96]], [[RUL-97]], [[RUL-98]], [[RES-29]], [[RES-30]], [[RES-31]], [[RES-32]], [[UNK-07]], [[UNK-08]]
 
+### DEC-55 [C] A rule-based control is the fair comparison, because frozen rates never move
+- Decided: --policy pace runs a rule beside each arm on the same seed ([[MOD-25]]). It raises POLICY_STEP where a stay date runs ahead of pace and lowers it where behind ([[RUL-99]]). It keeps the agent's hold, floor and ceiling.
+- Rule: it reads the day through the four sources ([[DAT-25]]). It acts on the flags the detector raises, with no estimate and no model. The sweep reports each arm's gain against it next to its gain against frozen rates ([[DAT-19]]).
+- Reason: a fixed-rate run never moves a rate, so every gain against it includes what a hotel's own rules earn anyway. The rule stands for what a hotel already does, and the agent's margin over it is the claim worth making.
+- Blind spot: the rule is anomaly-driven as the agent is. It acts only on a flag, so a market that is simply larger raises nothing for either ([[FRK-11]]).
+- Measured: in the default world the rule earns +$11,462 a seed, and the agent's gain against it is +$21,437 ([[RES-33]]).
+- Evidence: test_the_rule_raises_ahead_of_pace_and_lowers_behind_by_the_step, test_the_rule_keeps_the_hold_and_reads_only_the_sources, test_a_policy_runs_the_rule_based_control_beside_each_arm
+- Links: [[MOD-25]], [[RUL-99]], [[RES-33]], [[RES-01]], [[DEC-13]], [[FRK-11]], [[UNK-08]]
+
 ## Engineering
 
 ### DEC-23 [C] The cache is keyed by seed, day and hotel, and each file records a digest of its request

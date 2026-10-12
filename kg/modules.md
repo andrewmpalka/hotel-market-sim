@@ -182,7 +182,7 @@ which is also the order in which they depend on each other.
 - File: src/hotel_market/simulated.py
 - Owns: the simulator as the agent's four sources ([[DEC-40]]). SimulatedBookings reads the Books' daily log ([[DAT-07]]), and SimulatedRateShops the seed and the logged medians.
 - Also: SimulatedSchedules reads the schedule as filed under the run's scenario ([[DEC-53]]), and SimulatedEvents the events. deciding() wraps an Agent as the simulator's decide hook, and watch() records a fixed-rate run's flags.
-- Reaction: the rate-shop source passes the Books' lagged hotel change to each shop ([[DEC-51]]). first_median() is the shop of day -1 ([[DEC-52]]). The agent therefore sees the shop the simulator used.
+- Reaction: the rate-shop source passes the Books' lagged hotel change to each shop ([[DEC-51]]). first_median() is the shop of day -1 ([[DEC-52]]). The agent sees the shop the simulator used. deciding() also wraps a policy ([[MOD-25]]).
 - Reads: [[MOD-01]], [[MOD-02]], [[MOD-03]], [[MOD-04]], [[MOD-05]], [[MOD-06]], [[MOD-07]], [[MOD-10]], [[MOD-17]], [[MOD-20]]
 - Writes: [[DAT-25]], as their implementation
 - Tests: tests/test_sources.py, tests/test_detect.py
@@ -234,3 +234,12 @@ which is also the order in which they depend on each other.
 - Run: the run is the command's template run in the true mode, with --react, --demand-bias and --market-elasticity as given ([[MOD-12]]). It makes no model call and writes nothing. It also prints the rooms each stay date sold.
 - Tests: tests/test_median_path.py
 - Evidence: test_the_median_follows_the_hotels_change_after_the_lag
+
+### MOD-25 [C] policy.py
+- File: src/hotel_market/policy.py
+- Owns: the rule-based control ([[DEC-55]]): PacePolicy, a decider with no estimate and no model. decide(day, sources) raises POLICY_STEP ([[RUL-99]]) on every ahead-of-pace flag and lowers it on every behind-pace flag.
+- Hold: it keeps the agent's hold, by the day each stay date last changed. The detector lifts it for a shock cause, as for the agent. It counts the flags it acted on and the pairs it changed.
+- Reads: [[MOD-07]] (the detect numbers and the flags), [[MOD-17]] (the sources), [[MOD-20]]; never the simulator, which wraps it with deciding() ([[MOD-19]])
+- Writes: nothing stored; the sweep reads its run as a SeedResult's control fields ([[DAT-19]])
+- Tests: tests/test_policy.py
+- Evidence: test_the_rule_raises_ahead_of_pace_and_lowers_behind_by_the_step, test_the_rule_keeps_the_hold_and_reads_only_the_sources

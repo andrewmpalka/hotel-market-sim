@@ -87,7 +87,10 @@ The tables of every experiment: [docs/results.md](docs/results.md).
 Contribution increases in all 20 seeds and room revenue decreases. The agent
 raises rates in nearly all accepted plans, so the hotels sell fewer rooms. The
 lost revenue is smaller than the saved cost of the rooms. The two shocks, the
-convention and the new flights, produce 96% of the gain.
+convention and the new flights, produce 96% of the gain. Against a rule that
+prices on the same pace flags with no estimate and no model, the agent earns
++$21,437 a seed, next to the +$32,899 against frozen rates, because the rule
+earns +$11,462 of it by itself (docs/results.md).
 
 An agent that learns the price response keeps 43% to 76% of the gain. The start
 value and the cautious rule set the share. The agent uses the simulator's demand
@@ -166,9 +169,12 @@ bookings.
   1.26 to 1.49 at both biases, so the level error lands in the estimator's
   intercept as designed. With `--level` the agent feeds that intercept back
   into its forecast and learns the level by day 10, but the gain at 0.9 does
-  not recover, because the loss there is the prior elasticity's, which prices
-  a raise as cheaper than it is in a market with a tenth less demand
-  (docs/results.md).
+  not recover, because the opportunity shrank: the gain here comes from
+  scarcity on the shock dates, and a market a tenth smaller has fewer nights
+  that sell out, so the level halved the false pace flags and could not make
+  rooms scarce. At 1.1 the level removes the false flags and the correct
+  raises go with them, because the agent acts only on a flag and a market
+  that is simply larger raises none (docs/results.md).
 - By default the agent is handed the simulator's elasticity of 1.5;
   `--elasticity fixed:X` and `learn:X` take it away.
 - Demand moves by the hotel's share of guests arriving by air times the change

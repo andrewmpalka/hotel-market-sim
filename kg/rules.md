@@ -546,6 +546,15 @@ marked [H], with one line that names the node it moved to.
 - Meaning: list prices in dollars per million input and output tokens, from Anthropic's pricing page on 2026-10-12. cost() prices every attempt's tokens with them. Haiku 5.5's price is for prompts under 100,000 tokens.
 - Evidence: test_a_models_cost_comes_from_the_price_table
 
+## policy.py
+
+### RUL-99 [C] POLICY_STEP
+- Value: 0.05
+- File: src/hotel_market/policy.py
+- Kind: parameter
+- Meaning: the raise the pace rule applies on an ahead-of-pace flag, and the cut on a behind-pace flag ([[DEC-55]]). Both are clamped to the floor and ceiling.
+- Evidence: test_the_rule_raises_ahead_of_pace_and_lowers_behind_by_the_step
+
 ## stored.py
 
 ### RUL-72 [C] TABLES

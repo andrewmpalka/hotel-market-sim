@@ -43,6 +43,9 @@ follows over only the hotel and stay-date pairs where the agent changed a rate.
     hotel-market --seeds 1 20 --scenario upgauge --churn
                                                another set of air-schedule filings, with
                                                weekly revisions below the threshold on top
+    hotel-market --seeds 1 20 --policy pace    the agent's gain against a rule that prices
+                                               on the pace flags, next to its gain against
+                                               frozen rates
 
 With ANTHROPIC_API_KEY set, the agent asks Claude. Otherwise a template writes the reasons. The
 option --elasticity is true, fixed:X or learn:X. The default is true, where the agent prices with
@@ -106,6 +109,7 @@ from hotel_market.detect import MEDIAN_DOWN, MEDIAN_UP, NEW_EVENT, PACE, SEATS_C
 from hotel_market.estimate import Estimate, level_factor
 from hotel_market.model import MODELS, ClaudeClient, Client
 from hotel_market.plan import DAY_NAMES, HOLD, Entry, Pricing
+from hotel_market.policy import POLICIES
 from hotel_market.schedule import DEFAULT_SCENARIO, HORIZON_DAYS, SCENARIOS, Scenario
 from hotel_market.shops import REACTION_LAG, REACTION_SHARE
 from hotel_market.simulated import deciding, simulated_sources
@@ -314,6 +318,9 @@ class SeedResult:
     repeat_changes: int = 0  # stay dates changed twice or more within REPEAT_WINDOW days
     seat_flags: int = 0  # the flags with a seat cause
     filings: int = 0  # the days the airline filed something, through the last decided day
+    control_change: float = 0.0  # --policy only: the rule's contribution change over fixed rates
+    control_revenue_change: float = 0.0  # --policy only: the rule's room revenue change
+    control_changes: int = 0  # --policy only: the (hotel, stay date) pairs the rule changed
 
 
 @dataclass(frozen=True)
@@ -370,6 +377,20 @@ class ArmResult:
     @property
     def seat_flags(self) -> int:
         return sum(result.seat_flags for result in self.seeds)
+
+    @property
+    def control_changes(self) -> list[float]:
+        """Each seed's change in the target for the rule-based control, against fixed rates."""
+        if self.target == "contribution":
+            return [result.control_change for result in self.seeds]
+        return [result.control_revenue_change for result in self.seeds]
+
+    @property
+    def against_control(self) -> list[float]:
+        """Each seed's change in the target against the rule-based control."""
+        return [
+            own - rule for own, rule in zip(self.target_changes, self.control_changes, strict=True)
+        ]
 
     @property
     def filings(self) -> int:
@@ -432,6 +453,7 @@ def sweep(
     market_elasticity: float = MARKET_ELASTICITY,
     scenario: Scenario = DEFAULT_SCENARIO,
     churn: bool = False,
+    policy: str | None = None,
 ) -> list[ArmResult]:
     """Seeds first to last: one fixed-rate run per seed, and one agent run per seed, mode and
     reviewer. Each agent run is compared with the fixed-rate run. The arms come mode by mode, a
@@ -440,6 +462,8 @@ def sweep(
     it. The demand bias goes to every run and to the oracle's labels, and never to the agent.
     The reaction goes to every run the same way. The market elasticity goes to every run, to
     the agent and to the oracle's labels. The scenario and the churn set every run's schedule.
+    With a policy, each seed also runs the rule-based control, and every seed result carries
+    its change against fixed rates.
     """
     customer = customer or demo()
     hotels = customer.hotels
@@ -451,6 +475,7 @@ def sweep(
     }
     for seed in range(first, last + 1):
         fixed = simulate(seed, customer=customer, **world)
+        control = _control(seed, policy, fixed, customer, world)
         for mode, reviewer in arms:
             agent = Agent(
                 seed,
@@ -492,6 +517,7 @@ def sweep(
                     repeat_changes=repeat_changes(agent.entries),
                     seat_flags=sum(bool(SEAT_CAUSES & set(e.causes)) for e in agent.entries),
                     filings=len(books.scenario.filing_days(SIM_DAYS - 1)),
+                    **control,
                 )
             )
     return [
@@ -527,6 +553,24 @@ def _world(
         "market_elasticity": market_elasticity,
         "scenario": scenario,
         "churn": churn,
+    }
+
+
+def _control(seed: int, policy: str | None, fixed: Books, customer: Customer, world: dict) -> dict:
+    """The rule-based control's run for a seed, as the SeedResult fields it fills: its change in
+    contribution and in room revenue against the fixed-rate run, and the pairs it changed. Empty
+    without a policy."""
+    if policy is None:
+        return {}
+    rule = POLICIES[policy](customer)
+    books = simulate(seed, deciding(rule), customer=customer, **world)
+    hotels = customer.hotels
+    return {
+        "control_change": sum(books.contribution(h) - fixed.contribution(h) for h in hotels),
+        "control_revenue_change": sum(
+            books.room_revenue(h) - fixed.room_revenue(h) for h in hotels
+        ),
+        "control_changes": rule.changed,
     }
 
 
@@ -908,12 +952,12 @@ def main(argv: list[str] | None = None) -> None:
         args.churn,
     )
     if args.seeds:
-        _print_sweep(*args.seeds, args.modes, customer, *world)
+        _print_sweep(*args.seeds, args.modes, customer, *world, policy=args.policy)
     elif args.replay is not None:
         client = _client(args.template)
         _print_replay(args.seed, args.replay, client, args.modes[0], customer, *world)
     else:
-        _print_run(args.seed, _client(args.template), args.modes[0], customer, *world)
+        _print_run(args.seed, _client(args.template), args.modes[0], customer, *world, args.policy)
 
 
 def _customer(args: argparse.Namespace) -> Customer:
@@ -1035,6 +1079,13 @@ def _add_world_options(parser: argparse.ArgumentParser) -> None:
         action="store_true",
         help="the airline also files weekly revisions below the detect threshold, drawn from "
         "the seed (default: off)",
+    )
+    parser.add_argument(
+        "--policy",
+        choices=sorted(POLICIES),
+        metavar="NAME",
+        help=f"also run a rule-based control and report the gain against it: "
+        f"{', '.join(sorted(POLICIES))} (default: none)",
     )
 
 
@@ -1208,6 +1259,7 @@ def _print_run(
     market_elasticity: float = MARKET_ELASTICITY,
     scenario: Scenario = DEFAULT_SCENARIO,
     churn: bool = False,
+    policy: str | None = None,
 ) -> None:
     world = _world(demand_bias, react, market_elasticity, scenario, churn)
     fixed, books, agent = run(seed, client=client, mode=mode, customer=customer, **world)
@@ -1217,6 +1269,14 @@ def _print_run(
             print("\n".join(lines))
     print()
     print(summary(seed, fixed, books, agent))
+    if policy:
+        control = _control(seed, policy, fixed, customer, world)
+        own = sum(books.contribution(h) - fixed.contribution(h) for h in customer.hotels)
+        print(
+            f"The {policy} rule earned {control['control_change']:+,.0f} over fixed rates with "
+            f"{control['control_changes']} stay dates changed, so against it the agent earned "
+            f"{own - control['control_change']:+,.0f}."
+        )
 
 
 def _queue_lines(day: int, entries: list[Entry], advice: list[Advice]) -> list[str]:
@@ -1264,9 +1324,10 @@ def _print_sweep(
     market_elasticity: float = MARKET_ELASTICITY,
     scenario: Scenario = DEFAULT_SCENARIO,
     churn: bool = False,
+    policy: str | None = None,
 ) -> None:
     world = _world(demand_bias, react, market_elasticity, scenario, churn)
-    arms = sweep(first, last, modes=modes, customer=customer, **world)
+    arms = sweep(first, last, modes=modes, customer=customer, policy=policy, **world)
     print(
         f"Seeds {first} to {last}: the agent run against the fixed-rate run, stay dates 0 to 149, "
         f"template reasons, candidates scored on {customer.target}"
@@ -1283,6 +1344,9 @@ def _print_sweep(
     if react:
         print()
         print("\n".join(_reaction_table(arms, market_elasticity=market_elasticity)))
+    if policy:
+        print()
+        print("\n".join(_control_table(arms, policy)))
     for arm in arms:
         if arm.mode.kind == "learn":
             print()
@@ -1314,6 +1378,29 @@ def _world_suffix(
     if churn:
         text += ", the airline filing weekly revisions below the threshold"
     return text
+
+
+def _control_table(arms: list[ArmResult], policy: str, named: bool = False) -> list[str]:
+    """Each arm against the rule-based control, next to its gain against fixed rates: the mean
+    changes, the seeds ahead of the rule, and the rule's own mean change and pairs changed."""
+    reviewer_heading = f"{'reviewer':20}" if named else ""
+    lines = [
+        f"Against the {policy} rule, which prices with no estimate and no model: each arm's mean "
+        f"change against fixed rates and against the rule, with the rule's own change",
+        f"{'elasticity':18}{reviewer_heading}{'vs fixed':>12}{'vs the rule':>13}"
+        f"{'ahead of it':>13}{'rule vs fixed':>15}{'rule changes':>14}",
+    ]
+    for arm in arms:
+        reviewer = f"{arm.reviewer.name:20}" if named else ""
+        against = arm.against_control
+        lines.append(
+            f"{str(arm.mode):18}{reviewer}{statistics.mean(arm.target_changes):>+12,.0f}"
+            f"{statistics.mean(against):>+13,.0f}"
+            f"{f'{sum(change > 0 for change in against)}/{len(against)}':>13}"
+            f"{statistics.mean(arm.control_changes):>+15,.0f}"
+            f"{sum(result.control_changes for result in arm.seeds):>14}"
+        )
+    return lines
 
 
 def _revision_table(arms: list[ArmResult], named: bool = False) -> list[str]:
@@ -1451,6 +1538,7 @@ def _bench_main(argv: list[str]) -> None:
         args.market_elasticity,
         SCENARIOS[args.scenario],
         args.churn,
+        args.policy,
     )
 
 
@@ -1521,9 +1609,12 @@ def _print_bench(
     market_elasticity: float = MARKET_ELASTICITY,
     scenario: Scenario = DEFAULT_SCENARIO,
     churn: bool = False,
+    policy: str | None = None,
 ) -> None:
     settings = _world(demand_bias, react, market_elasticity, scenario, churn)
-    arms = sweep(first, last, modes=modes, customer=customer, reviewers=reviewers, **settings)
+    arms = sweep(
+        first, last, modes=modes, customer=customer, reviewers=reviewers, policy=policy, **settings
+    )
     world = _world_suffix(demand_bias, react, market_elasticity, scenario, churn)
     print(
         f"Seeds {first} to {last}: each reviewer against the fixed-rate run, stay dates 0 to 149, "
@@ -1547,6 +1638,9 @@ def _print_bench(
     if churn or scenario.name != DEFAULT_SCENARIO.name:
         print()
         print("\n".join(_revision_table(arms, named=True)))
+    if policy:
+        print()
+        print("\n".join(_control_table(arms, policy, named=True)))
     print()
     mismatched = [mode for mode in modes if mode.kind != "true"]
     if mismatched:

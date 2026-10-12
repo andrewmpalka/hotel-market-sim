@@ -72,3 +72,10 @@ it. None of these is in progress.
 - Known: the rows carry a departure time only ([[DAT-01]]). An airport hotel's demand turns on the arrival hour. The feed page should not claim a departure-only row is the feed's shape.
 - Needs: a block time per distance band and a time-zone offset per origin station on the Route ([[DAT-03]]). build_schedule would write the column. Nothing in the simulator reads it yet.
 - Links: [[DAT-01]], [[DAT-03]], [[MOD-01]], [[DEC-35]], [[UNK-05]]
+
+### FRK-11 [O] A periodic re-plan beside the anomaly flags
+- Choice: whether every stay date should be re-planned on a fixed cadence, beside the flags that an anomaly raises ([[DEC-13]]).
+- Known: at a demand bias of 1.1 the uncorrected learner raised on false pace flags ([[RES-31]]). The raises paid, because the market was larger than the start rates assume. --level removed them and the correct raises too ([[DEC-54]]).
+- Reason: the agent acts only on a flag, and a market that is simply larger raises none. The pace rule of Part D is anomaly-driven in the same way and will share the blind spot.
+- Needs: a cadence, and on it a plan for every stay date with the usual candidates. The queue's minimum would keep the model calls down. The oracle grades such plans as it grades any other.
+- Links: [[DEC-13]], [[DEC-54]], [[RES-31]], [[DEC-55]], [[UNK-08]]

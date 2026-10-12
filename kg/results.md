@@ -287,3 +287,13 @@ here for the rest.
 - Table: docs/results.md, "Seeds 1 to 20 with the reaction on at a market elasticity of 0.5, the same arms"
 - Evidence: test_the_level_runs_pin_their_headline
 - Links: [[DEC-54]], [[DEC-52]], [[RES-26]], [[RES-29]], [[FRK-09]]
+
+### RES-33 [C] The agent against the pace rule on seeds 1 to 20
+- Ran: `hotel-market bench --seeds 1 20 --template --policy pace --demand-bias B --elasticity true` at B = 0.9, 1.0 and 1.1. The same command ran with `--react --market-elasticity 0.5` in place of the bias, on 2026-10-12.
+- Result: in the default world the rule earns +$11,462 a seed over frozen rates from 653 stay dates changed. The agent's +$32,899 is +$21,437 against the rule, ahead in 20 of 20.
+- Biases: at 0.9 the rule earns +$2,015 and the agent -$101 a seed against it, ahead in 7 of 20.
+- Larger: at 1.1 the rule earns +$44,616 from 2,505 changes, since a larger market runs ahead of pace almost everywhere. The agent's +$112,082 is +$67,466 against it.
+- Reacting: with the reaction on at a market elasticity of 0.5, the rule earns +$12,243 from 597 changes. The agent's +$72,229 is +$59,986 against it, ahead in 20 of 20.
+- Table: docs/results.md, "Seeds 1 to 20 in the true mode against the pace rule"
+- Evidence: test_the_rule_based_control_runs_pin_their_headline
+- Links: [[DEC-55]], [[MOD-25]], [[RES-01]], [[RES-21]], [[RES-22]], [[RES-26]], [[FRK-11]]

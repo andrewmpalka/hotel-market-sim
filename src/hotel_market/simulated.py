@@ -21,6 +21,7 @@ from hotel_market.bookings import Books, Decide, simulate
 from hotel_market.customer import Customer, demo
 from hotel_market.demand import last_filing
 from hotel_market.detect import AHEAD, PACE, Flag, detect_numbers, flags, pace_without_shock
+from hotel_market.policy import PacePolicy
 from hotel_market.schedule import DEFAULT_SCENARIO, Scenario, build_schedule, seats_by_day
 from hotel_market.shocks import events_as_of
 from hotel_market.shops import comp_rates
@@ -119,12 +120,13 @@ def simulated_sources(books: Books) -> Sources:
     )
 
 
-def deciding(agent: Agent) -> Decide:
-    """The agent as the simulator's decide hook. After each day's bookings it reads the day through
-    the simulated sources and returns the rate changes for tomorrow."""
+def deciding(decider: Agent | PacePolicy) -> Decide:
+    """The agent, or a rule such as the pace policy, as the simulator's decide hook. After each
+    day's bookings it reads the day through the simulated sources and returns the rate changes
+    for tomorrow."""
 
     def decide(day: int, books: Books) -> dict[tuple[str, int], float]:
-        return agent.decide(day, simulated_sources(books))
+        return decider.decide(day, simulated_sources(books))
 
     return decide
 

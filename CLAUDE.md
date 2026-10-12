@@ -27,9 +27,9 @@ results, and docs/results.md has the tables of every experiment.
    anthropic SDK, declared in pyproject.toml. There is no web UI, no database
    server and no real data; DuckDB is a file the daily commands write.
 6. The agent's modules are detect, forecast, estimate, plan, model, agent, text,
-   stored and bench. They read data only through the four interfaces in
-   sources.py. They never import demand, bookings, shops, schedule, shocks or
-   simulated, and tests/test_sources.py fails if one does.
+   stored, bench and policy. They read data only through the four interfaces
+   in sources.py. They never import demand, bookings, shops, schedule, shocks
+   or simulated, and tests/test_sources.py fails if one does.
 7. Constants that describe the simulator stay in code. Everything specific to a
    market lives in its customer file under customers/.
 8. Nothing from a .env file, cache/, a DuckDB file or an API key is ever
@@ -61,6 +61,7 @@ with pip install -e ".[dev]" and import it as hotel_market.<module>.
 | text.py | wording shared by the template reasons and the reports |
 | cli.py | the hotel-market command, which python -m hotel_market also runs |
 | bench.py | the benchmark of the model as a reviewer: the oracle grader, its measures, the reviewers and the price table |
+| policy.py | the rule-based control: a pace rule with no estimates and no model, for the comparison frozen rates cannot give |
 
 Around the package, tests/ holds one test file per module, conftest.py and
 tests/fixtures/live_seed7/, one recorded live run. customers/demo.toml is the

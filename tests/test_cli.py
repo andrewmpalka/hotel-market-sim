@@ -52,7 +52,9 @@ from hotel_market.detect import NEW_EVENT, PACE, SEATS_UP
 from hotel_market.estimate import Estimate
 from hotel_market.model import Measured
 from hotel_market.plan import HOLD
+from hotel_market.policy import PacePolicy
 from hotel_market.schedule import DEFAULT_SCENARIO, UPGAUGE_SCENARIO
+from hotel_market.simulated import deciding
 
 DEMO = demo()
 
@@ -631,6 +633,25 @@ def test_the_churn_and_the_upgauge_runs_pin_their_headline(tmp_path):
     assert (upgauged.filings, upgauged.seat_flags, upgauged.rate_changes) == (40, 182, 177)
 
 
+def test_a_policy_runs_the_rule_based_control_beside_each_arm(tmp_path, capsys):
+    [arm] = sweep(SEED, SEED, tmp_path / "cache", policy="pace")
+    [result] = arm.seeds
+    rule = PacePolicy()
+    fixed, books = simulate(SEED), simulate(SEED, deciding(rule))
+    assert result.control_change == pytest.approx(
+        sum(books.contribution(h) - fixed.contribution(h) for h in DEMO.hotels)
+    )
+    assert result.control_changes == rule.changed > 0
+    assert arm.against_control == [
+        pytest.approx(result.contribution_change - result.control_change)
+    ]
+    [plain] = sweep(SEED, SEED, tmp_path / "cache")
+    assert plain.seeds[0].control_change == 0.0 and plain.seeds[0].control_changes == 0
+    main(["--seed", str(SEED), "--template", "--policy", "pace"])
+    out = capsys.readouterr().out
+    assert "The pace rule earned" in out and "so against it the agent earned" in out
+
+
 def test_the_command_and_the_bench_take_a_demand_bias(monkeypatch, capsys):
     seen = {}
 
@@ -645,9 +666,11 @@ def test_the_command_and_the_bench_take_a_demand_bias(monkeypatch, capsys):
         market_elasticity=0.0,
         scenario=DEFAULT_SCENARIO,
         churn=False,
+        policy=None,
     ):
         seen["bias"], seen["reviewers"], seen["react"] = demand_bias, list(reviewers), react
         seen["market"], seen["scenario"], seen["churn"] = market_elasticity, scenario, churn
+        seen["policy"] = policy
         return [ArmResult(mode, ROWS, reviewer=r) for mode in modes for r in reviewers]
 
     monkeypatch.setattr("hotel_market.cli.sweep", fake_sweep)
@@ -712,6 +735,15 @@ def test_the_command_and_the_bench_take_a_demand_bias(monkeypatch, capsys):
         main(["--seeds", "1", "3", "--level"])
     with pytest.raises(SystemExit):
         main(["bench", "--seeds", "1", "3", "--template", "--elasticity", "fixed:1.0", "--level"])
+    # --policy adds the rule-based control's table to the sweep and to the bench.
+    main(["--seeds", "1", "3", "--policy", "pace"])
+    out = capsys.readouterr().out
+    assert seen["policy"] == "pace" and "Against the pace rule" in out
+    main(["bench", "--seeds", "1", "3", "--template", "--elasticity", "true", "--policy", "pace"])
+    out = capsys.readouterr().out
+    assert seen["policy"] == "pace" and "Against the pace rule" in out and "oracle" in out
+    with pytest.raises(SystemExit):
+        main(["--seeds", "1", "3", "--policy", "bogus"])
     for argv in (
         ["--seeds", "1", "3", "--demand-bias", "0"],
         ["bench", "--seeds", "1", "3", "--template", "--demand-bias", "-1"],
@@ -827,6 +859,16 @@ def test_the_level_runs_pin_their_headline(tmp_path):
         assert statistics.mean(by_mode["learn:1 cautious level"].changes) == pytest.approx(
             cautious_mean, abs=1
         )
+
+
+@pytest.mark.slow
+def test_the_rule_based_control_runs_pin_their_headline(tmp_path):
+    """The pace rule beside the true-mode template arm ends where the recorded runs ended at the
+    default bias and at 0.9, so the control table stays pinned."""
+    for bias, (rule_mean, margin) in ((1.0, (11462, 21437)), (0.9, (2015, -101))):
+        [arm] = sweep(1, 20, tmp_path / "cache", policy="pace", demand_bias=bias)
+        assert statistics.mean(arm.control_changes) == pytest.approx(rule_mean, abs=1)
+        assert statistics.mean(arm.against_control) == pytest.approx(margin, abs=1)
 
 
 def test_a_learn_run_keeps_its_own_cache_and_says_where_its_estimates_ended(tmp_path):

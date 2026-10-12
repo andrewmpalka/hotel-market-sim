@@ -24,6 +24,7 @@ AGENT_MODULES = (
     "text",
     "stored",
     "bench",
+    "policy",
 )
 TRUTH_MODULES = ("demand", "bookings", "shops", "schedule", "shocks", "simulated")
 TRUTH_NAMES = {

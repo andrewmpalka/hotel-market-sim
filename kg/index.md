@@ -30,6 +30,7 @@ it differs from what that would write. `README.md` is the legend.
 - MOD-22 [C] scripts/live_audit.py — scripts/live_audit.py
 - MOD-23 [C] bench.py — src/hotel_market/bench.py
 - MOD-24 [C] scripts/median_path.py — scripts/median_path.py
+- MOD-25 [C] policy.py — src/hotel_market/policy.py
 
 ## Data (`data.md`)
 
@@ -119,6 +120,7 @@ it differs from what that would write. `README.md` is the legend.
 - RUL-81 [C] BENCH_MODES — src/hotel_market/cli.py
 - RUL-85 [C] REPEAT_WINDOW — src/hotel_market/cli.py
 - RUL-80 [C] PRICES — src/hotel_market/bench.py
+- RUL-99 [C] POLICY_STEP — src/hotel_market/policy.py
 - RUL-58 [C] target — customers/demo.toml
 - RUL-59 [C] floor_share — customers/demo.toml
 - RUL-60 [C] ceiling_share — customers/demo.toml
@@ -221,6 +223,7 @@ it differs from what that would write. `README.md` is the legend.
 - DEC-52 [C] The share elasticity alone made a matched raise free, so the market can answer the comp median's level — kg/decisions.md
 - DEC-53 [C] The air schedule's filings are a named scenario, and the churn files what a feed files — kg/decisions.md
 - DEC-54 [C] A learning agent can feed the fitted demand level back into its forecast — kg/decisions.md
+- DEC-55 [C] A rule-based control is the fair comparison, because frozen rates never move — kg/decisions.md
 
 ### Engineering
 
@@ -275,6 +278,7 @@ it differs from what that would write. `README.md` is the legend.
 - RES-30 [C] The fitted level fed back at the default demand bias — kg/results.md
 - RES-31 [C] The fitted level fed back at a demand bias of 1.1 — kg/results.md
 - RES-32 [C] The fitted level fed back with the reaction on at a market elasticity of 0.5 — kg/results.md
+- RES-33 [C] The agent against the pace rule on seeds 1 to 20 — kg/results.md
 
 ## Open forks (`forks.md`)
 
@@ -288,6 +292,7 @@ it differs from what that would write. `README.md` is the legend.
 - FRK-08 [O] A market response as the default — kg/forks.md
 - FRK-09 [O] A comp move that follows our own change as a flag cause — kg/forks.md
 - FRK-10 [O] An arrival time column — kg/forks.md
+- FRK-11 [O] A periodic re-plan beside the anomaly flags — kg/forks.md
 
 ## Unknowns (`unknowns.md`)
 

@@ -167,7 +167,7 @@ the plans, the model's request and answer, and what the command writes.
 - Meaning: estimated is what the accepted plans were estimated to earn over holding. estimates maps (day, hotel key) to the learned Estimate ([[DAT-23]]) in learn mode. rejected_at_an_end counts the candidates the cautious band rejected.
 - Shocks: the shock fields count the plans whose causes include one of [[RUL-55]] and the target's change on their stay dates. The other fields do the same for every other plan, on the stay dates only those changed.
 - Bench: entries are the run's entries, calls its call records ([[DAT-30]]) and counts the oracle's labels on it ([[DAT-31]]). The bench tables sum them over an arm's seeds.
-- Counts: flags, pace_flags and median_flags count the entries with each cause ([[RUL-86]]). own_median_flags and repeat_changes are the reaction's counts, and seat_flags and filings the schedule's ([[DEC-51]], [[DEC-53]]).
+- Counts: flags, pace_flags and median_flags count the entries by cause ([[RUL-86]]). own_median_flags and repeat_changes are the reaction's, seat_flags and filings the schedule's, and the control_ fields the rule's ([[DEC-55]]).
 - Written by: [[MOD-12]] (sweep). [[MOD-12]] reads it through [[DAT-24]] for the seeds, arm, estimate, bench and reaction tables.
 - Evidence: test_the_sweep_gives_each_seeds_change_over_the_fixed_run, test_a_sweep_counts_the_shock_plans_apart_from_the_other_plans, test_a_sweep_with_reviewers_keeps_each_arms_entries_calls_and_counts
 
