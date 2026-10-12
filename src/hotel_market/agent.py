@@ -112,7 +112,7 @@ class Agent:
 
     `model` names the model the client asks: the client's own name when it has one,
     else model.MODEL. It goes into the cache folder when it is not the default, and
-    into every cache record, so another model's answers never mix with the default's.
+    into every cache record.
     """
 
     def __init__(

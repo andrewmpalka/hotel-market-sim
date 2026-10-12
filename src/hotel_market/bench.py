@@ -10,7 +10,7 @@ reviewer ties there. In the modes where the agent prices with a wrong or a
 learned elasticity, a plan is sometimes worth less than holding, and declining
 it is right. The benchmark runs the reviewers in those modes.
 
-The oracle reviewer is the ceiling for a reviewer: a grader, not an agent. It
+The oracle reviewer is the ceiling for a reviewer. It grades; it is not an agent. It
 cannot pick a better candidate than the plan, and a single seed's draw can beat
 it. For each queued entry it re-scores the plan and hold with ORACLE_ELASTICITY,
 the simulator's own value, and declines the plan when hold scores at least as
@@ -22,20 +22,8 @@ agent.py and nothing in the agent's path imports it, so the simulator's
 elasticity never reaches a decision through it; tests/test_sources.py checks
 its imports with the agent's modules.
 
-The measures follow a fraud benchmark's four detection measures, with a decline
-standing for a block: decline precision, decline recall, their F1 and a
-dollar-weighted recall, plus the regret of an arm against the oracle's arm and
-the accept rate. Each is a function whose docstring gives its formula.
-
-A Reviewer names what decides an arm of the benchmark: the template, the
-oracle or a model behind a measured Claude client, each with its own cache
-folder. cli.py's sweep() runs one arm per mode and reviewer and keeps each
-seed's entries, call records and DeclineCounts, the counts behind the measures
-pooled over the seeds, and the bench command prints them. PRICES turns an
-arm's tokens into a list-price cost. A ScriptedClient plays a model offline:
-it answers from a dict of request digest to decisions, or declines the entries
-it is told to and accepts the rest, and it is cached under the model name
-"scripted", so the whole benchmark runs without a key.
+The measures are regret, the accept rate, decline precision, recall, F1, dollar-weighted
+recall and the recovered share, each a function whose docstring gives its formula.
 """
 
 from __future__ import annotations
@@ -92,7 +80,7 @@ class OracleReviewer:
     """The oracle as the client an agent asks: it answers each request from the day's
     entries, which the agent keeps in agent.today while it asks, and declines a plan when
     hold scores at least as well at the simulator's elasticity. Its reasons are written
-    by code from the two scores, as the rules require. Nothing it answers is cached."""
+    by code from the two scores. Nothing it answers is cached."""
 
     name = "oracle"
     cached = False
@@ -128,8 +116,7 @@ class ScriptedClient:
     of request digest to decisions, when the digest is there. Otherwise it declines the
     entries whose Key is in `declines` and accepts every other plan, with a scripted
     reason. It plays a model: its answers are cached and record source "model", and the
-    record's model field, "scripted", tells them from a real model's. An agent given it
-    therefore keeps its cache in its own folder."""
+    record's model field, "scripted", tells them from a real model's."""
 
     def __init__(
         self,
@@ -205,9 +192,8 @@ PRICES = {
 
 def counted(records: Iterable[dict], folder: Path) -> list[dict]:
     """The call records of an arm that count: one per request digest, and only a digest whose
-    answer is in the arm's cache folder or whose record is marked failed. The file is appended
-    across runs while the cache can be deleted, so without this a rerun after a deleted cache
-    would count a call's tokens and cost twice. A digest's records merge into one that takes
+    answer is in the arm's cache folder or whose record is marked failed. A digest's records
+    merge into one that takes
     its outcome, tokens and time from the last record and sums bad_attempt and retries over
     all of them, so a request that failed in one run and answered in a rerun keeps every bad
     attempt. A record with no digest, from before the field, is kept as it is."""
@@ -322,7 +308,7 @@ def dollar_weighted_recall(
     """Dollar-weighted decline recall = the oracle's loss from accepting, summed over the
     plans both the reviewer and the oracle declined / the same loss summed over every plan
     the oracle declined. The loss is hold minus plan at ORACLE_ELASTICITY (oracle_values),
-    not the plan's own value at stake, which a wrong elasticity overstates. nan when the
+    not the plan's own value at stake. nan when the
     oracle declined nothing."""
     by_key = {key(e): e for e in reviewed(entries)}
 

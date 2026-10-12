@@ -162,9 +162,11 @@ The suite on each Python version, run from a fresh virtual environment on 2026-1
 
 ## The benchmark of the reviewers
 
-`hotel-market bench --seeds 1 20`, run on 2026-10-12. For every seed the command makes the fixed-rate run once, then one agent run per elasticity mode and reviewer: the template, the oracle reviewer and each of claude-opus-5-5, claude-sonnet-5-5 and claude-haiku-5-5, each arm in its own cache folder. The live calls were made first, in parallel chunks of seeds (seeds 1 to 3 as one process per model, then seeds 4 to 20 in seven chunks), and the command that printed the tables read every folder's cache and made no call. The 3,338 calls that count cost $28.42 at list prices. Regret is the oracle arm's mean change minus the reviewer's, the recovered share is the reviewer's gain over the template as a share of the oracle's, and the decline rates are pooled over the seeds against the oracle's labels.
+`hotel-market bench --seeds 1 20`, run on 2026-10-12. For every seed, the command makes the fixed-rate run once. It then makes one agent run per elasticity mode and reviewer. The reviewers are the template, the oracle reviewer, claude-opus-5-5, claude-sonnet-5-5 and claude-haiku-5-5, and each arm has its own cache folder. The live calls were made first, in parallel chunks of seeds: seeds 1 to 3 as one process per model, then seeds 4 to 20 in seven chunks. The command that printed the tables read every folder's cache and made no call. After duplicate records from reruns were dropped, 3,338 calls cost $28.42 at list prices.
 
-Seeds 1 to 20 at a fixed elasticity of 1.0, each reviewer against the fixed-rate run: the mean and range of the contribution change, the seeds ahead of the fixed-rate run, the regret against the oracle arm, the share of the oracle's gain over accept-all that the reviewer recovered, the accept rate, the decline precision, recall, F1 and dollar-weighted recall against the oracle's labels, the calls with a bad attempt, and for a model its calls, tokens, median latency and cost at list prices.
+In every table, mean change and range are the contribution change against the fixed-rate run and ahead counts the seeds where the reviewer beat it. Regret is the oracle arm's mean minus the reviewer's. Recovered is the reviewer's gain over the template as a share of the oracle's. Accept, precision, recall, F1 and $ recall are the decline measures against the oracle's labels, pooled over the seeds. Invalid counts calls with a bad attempt, and calls, tokens, median latency and cost come from the arm's call records at list prices.
+
+Seeds 1 to 20 at a fixed elasticity of 1.0, each reviewer against the fixed-rate run.
 
 | Reviewer | Mean change | Range | Ahead | Regret | Recovered | Accept | Precision | Recall | F1 | $ recall | Invalid | Calls | Tokens in/out | Median s | Cost |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -174,7 +176,7 @@ Seeds 1 to 20 at a fixed elasticity of 1.0, each reviewer against the fixed-rate
 | claude-sonnet-5-5 | +8,438 | -13,029 to +39,143 | 14/20 | +22,150 | 0.00 | 1.00 | - | 0.00 | - | 0.00 | 3 | 484 | 1,279,944/94,336 | 2.5 | $3.50 |
 | claude-haiku-5-5 | +8,438 | -13,029 to +39,143 | 14/20 | +22,150 | 0.00 | 1.00 | - | 0.00 | - | 0.00 | 0 | 484 | 1,268,430/324,033 | 3.9 | $0.29 |
 
-Seeds 1 to 20 at a fixed elasticity of 2.0, each reviewer against the fixed-rate run: the mean and range of the contribution change, the seeds ahead of the fixed-rate run, the regret against the oracle arm, the share of the oracle's gain over accept-all that the reviewer recovered, the accept rate, the decline precision, recall, F1 and dollar-weighted recall against the oracle's labels, the calls with a bad attempt, and for a model its calls, tokens, median latency and cost at list prices.
+Seeds 1 to 20 at a fixed elasticity of 2.0, each reviewer against the fixed-rate run.
 
 | Reviewer | Mean change | Range | Ahead | Regret | Recovered | Accept | Precision | Recall | F1 | $ recall | Invalid | Calls | Tokens in/out | Median s | Cost |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -184,7 +186,7 @@ Seeds 1 to 20 at a fixed elasticity of 2.0, each reviewer against the fixed-rate
 | claude-sonnet-5-5 | +9,551 | -6,734 to +25,474 | 18/20 | +13,507 | 0.00 | 1.00 | - | 0.00 | - | 0.00 | 2 | 456 | 1,262,490/95,932 | 2.8 | $3.48 |
 | claude-haiku-5-5 | +9,551 | -6,734 to +25,474 | 18/20 | +13,507 | 0.00 | 1.00 | - | 0.00 | - | 0.00 | 0 | 456 | 1,255,268/323,231 | 4.0 | $0.29 |
 
-Seeds 1 to 20 in the true mode, each reviewer against the fixed-rate run: the mean and range of the contribution change, the seeds ahead of the fixed-rate run, the regret against the oracle arm, the share of the oracle's gain over accept-all that the reviewer recovered, the accept rate, the decline precision, recall, F1 and dollar-weighted recall against the oracle's labels, the calls with a bad attempt, and for a model its calls, tokens, median latency and cost at list prices.
+Seeds 1 to 20 in the true mode, each reviewer against the fixed-rate run.
 
 | Reviewer | Mean change | Range | Ahead | Regret | Recovered | Accept | Precision | Recall | F1 | $ recall | Invalid | Calls | Tokens in/out | Median s | Cost |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -194,7 +196,7 @@ Seeds 1 to 20 in the true mode, each reviewer against the fixed-rate run: the me
 | claude-sonnet-5-5 | +32,899 | +13,479 to +52,809 | 20/20 | +0 | - | 1.00 | - | - | - | - | 1 | 174 | 482,097/34,791 | 2.5 | $1.31 |
 | claude-haiku-5-5 | +32,899 | +13,479 to +52,809 | 20/20 | +0 | - | 1.00 | - | - | - | - | 0 | 174 | 477,553/125,061 | 4.2 | $0.11 |
 
-The reviewers ranked across the mismatched modes, fixed:1.0 and fixed:2.0, on seeds 1 to 20: the mean and range of the contribution change, the seeds ahead of the fixed-rate run, the regret against the oracle arm, the share of the oracle's gain over accept-all that the reviewer recovered, the accept rate, the decline precision, recall, F1 and dollar-weighted recall against the oracle's labels, the calls with a bad attempt, and for a model its calls, tokens, median latency and cost at list prices.
+The reviewers ranked across the mismatched modes, fixed:1.0 and fixed:2.0, on seeds 1 to 20.
 
 | Rank | Reviewer | Mean change | Range | Ahead | Regret | Recovered | Accept | Precision | Recall | F1 | $ recall | Invalid | Calls | Tokens in/out | Median s | Cost |
 | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -204,5 +206,4 @@ The reviewers ranked across the mismatched modes, fixed:1.0 and fixed:2.0, on se
 | 4 | claude-sonnet-5-5 | +8,994 | -13,029 to +39,143 | 32/40 | +17,829 | 0.00 | 1.00 | - | 0.00 | - | 0.00 | 5 | 940 | 2,542,434/190,268 | 2.6 | $6.99 |
 | 5 | claude-haiku-5-5 | +8,994 | -13,029 to +39,143 | 32/40 | +17,829 | 0.00 | 1.00 | - | 0.00 | - | 0.00 | 0 | 940 | 2,523,698/647,264 | 4.0 | $0.58 |
 
-Opus declined 47 plans at a fixed elasticity of 1.0, 36 of them the day-40 plan to raise 10% on every day of the week on stay dates 70 to 90 after the seat cut, and every declined plan was a raise; the oracle agreed with every one. At 2.0 it declined one plan, a 5% cut on a date ahead of pace. Sonnet and Haiku declined nothing in any mode. Sonnet answered for one entry when the request held two in seven calls across six of its 1,114 requests; a retry fixed five of them at once, and the sixth request failed three tries in one run and answered on the rerun, so the table counts it twice.
-
+Opus declined 47 plans at a fixed elasticity of 1.0, and the oracle agreed with every one. 36 of the 47 were the day-40 plan to raise 10% on every day of the week on stay dates 70 to 90 after the seat cut. Every declined plan was a raise. At a fixed elasticity of 2.0, Opus declined one plan, a 5% cut on a date ahead of pace. Sonnet and Haiku declined no plan in any mode. Sonnet answered for one entry when the request held two in seven calls across six of its 1,114 requests. A retry fixed five of them at once. The sixth request failed three tries in one run and answered on the rerun, so the table counts it twice.

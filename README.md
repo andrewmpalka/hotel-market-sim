@@ -1,14 +1,14 @@
 # Hotel market simulator
 
-This is a simulator of one hotel market and an agent that prices in it. Four
-hotels of one brand share the market, which produces daily bookings, competitor
-rate shops, one convention and two changes to the air schedule. Each day the
-agent flags the stay dates where something changed, and code scores the rate
-options for each flag. That leaves the model one job, which is to accept or
-decline a plan and write the reason for the revenue manager. The schedule
-columns follow Cirium's published data dictionary, because that is the shape
-real schedule data arrives in. Every row here is synthetic, and the repository
-has no Cirium data and no affiliation with Cirium.
+This repository holds a simulator of one hotel market and an agent that sets
+rates in it. Four hotels of one brand share the market. The market produces
+daily bookings, competitor rate shops, one convention and two changes to the air
+schedule. Each day the agent flags the stay dates where a signal changed. Code
+scores the rate options for each flag. The model accepts or declines each plan
+and writes the reason for the revenue manager.
+
+The schedule columns follow Cirium's published data dictionary. Every row is
+synthetic. The repository has no Cirium data and no affiliation with Cirium.
 
 ## Install and run
 
@@ -50,7 +50,7 @@ With Docker:
 
 ## Results
 
-Seeds 1 to 20: the agent run against the fixed-rate run over stay dates 0 to 149, template reasons, the simulator's elasticity.
+Seeds 1 to 20, the agent run against the fixed-rate run over stay dates 0 to 149. The reasons are the template's and the elasticity is the simulator's.
 
 | Measure | Value |
 | --- | ---: |
@@ -74,84 +74,87 @@ Seed 7: room revenue and contribution per hotel, the fixed-rate run against the 
 
 The tables of every experiment: [docs/results.md](docs/results.md).
 
-Contribution rises in all 20 seeds while room revenue falls, because the agent
-almost always raises rates, which sells fewer rooms. That loses some revenue,
-but it saves more in the cost of servicing those rooms. Almost all of the gain,
-96% of it, comes from the two shocks, the convention and the new flights. An
-agent that has to learn price response for itself keeps between 43% and 76% of
-that gain, and where it lands in that range depends on the value it starts from
-and on whether the cautious rule is on. The agent shares the simulator's own
-demand formula, so these numbers only show that the machinery works. A forecast
-for a real market would need the demand model learned from real bookings.
+Contribution increases in all 20 seeds and room revenue decreases. The agent
+raises rates in nearly all accepted plans, so the hotels sell fewer rooms. The
+lost revenue is smaller than the saved cost of the rooms. The two shocks, the
+convention and the new flights, produce 96% of the gain.
+
+An agent that learns the price response keeps 43% to 76% of the gain. The start
+value and the cautious rule set the share. The agent uses the simulator's demand
+formula, so the results test the machinery only. They are not a forecast of a
+real market.
 
 ## The model as a reviewer
 
-The model never sets a rate. Code works out every candidate action for a hotel
-and estimates what each one would earn, and only then does the model see
-anything. What it sees is one hotel's queue of plans for the day. For each plan
-it accepts or declines, and it writes the reason either way. Its answer is
-checked against the options it was given, so it cannot invent a rate the code
-did not compute, and that is why this repository calls it a reviewer. Every gain
-is measured against a control run that changes no rate at all. The same seed
-draws the same bookings in both runs, so the only difference between them is the
-plans the agent put through, and because a cached answer is read back before the
-model is asked again, a run can be repeated exactly. The oracle reviewer is the
-ceiling for this job, because it scores every plan with the simulator's own
-elasticity and declines whenever holding scores at least as well, which is the
-best decline decision anyone could make with these candidates. The comparison, a
-control arm and an oracle with decline precision and recall, takes its shape
-from Coinbase's series on building and evaluating a fraud agent.
+The model does not set rates. Code computes every candidate action for a hotel
+and estimates the contribution of each one before the model is asked. The model
+then sees one hotel's queue of plans for the day. It accepts or declines each
+plan and writes the reason in both cases. Code checks the answer against the
+options in the request. The model cannot return a rate that code did not
+compute.
 
-The benchmark ran seeds 1 to 20 in three elasticity modes, with five reviewers
-in each mode: the template that accepts everything, the oracle, and the three
-current Claude models. The tables are in docs/results.md. In the true mode there
-was nothing to find out, because every plan is already scored with the
-simulator's own elasticity, so accepting all of them is right. The oracle and
-all three models did exactly that, and every one of them earned the template's
-+$32,899 a seed. The two modes where the code's elasticity is wrong are the ones
-that tell the reviewers apart. At a fixed elasticity of 1.0, accepting every
-plan earns +$8,438 a seed, and the oracle earns +$30,588 while accepting only
-15% of the plans. That gap of $22,150 a seed is what a good reviewer could
-recover.
+This is the meaning of reviewer in this repository. Every gain is measured
+against a control run with no rate changes. The same seed produces the same
+bookings in both runs, so the accepted plans are the only difference between
+them. The cache returns a stored answer before the model is asked again, so a
+run can be repeated exactly.
 
-Opus recovered 28% of it. It earned +$14,584 a seed and came out ahead of the
-fixed-rate run in 17 seeds of 20. It got there by declining 47 plans, and every
-one of them was a plan the oracle also declined, so its precision is 1.00. But
-it caught only one in seven of the plans the oracle declined, so its recall is
-0.14, and its dollar-weighted recall of 0.25 says the ones it did catch were the
-costlier ones. Almost all of its declines are one plan. On day 40, after the
-seat cut, the code wants to raise rates 10% on every day of the week for stay
-dates 70 to 90, and Opus held instead in 36 of the 47 cases. Its reasons say the
-estimate rests on an elasticity "fixed for the run rather than learned from our
-bookings" while the dates are behind pace and already priced above the median.
-At a fixed elasticity of 2.0 it declined one plan in twenty seeds and finished
-level with accept-all, +$9,557 against +$9,551, with the oracle at +$23,058.
+The oracle reviewer scores every plan with the simulator's own elasticity. It
+declines the plan when holding scores at least as well. No reviewer can decline
+better with these candidates, so the oracle is the ceiling. The comparison
+follows the shape of Coinbase's series on a fraud agent. It has a control arm,
+an oracle, and a reviewer scored on decline precision and recall.
 
-Sonnet and Haiku declined nothing in any mode, so their runs are the template's
-runs. The one model that beat accept-all did it by $6,146 a seed at a fixed
-elasticity of 1.0 and by nothing at 2.0, and it cost $0.41 per seed to ask. For
-the other two the value of the run is entirely in the code, and the model is
-there to write the reasons.
+The benchmark runs seeds 1 to 20 in three elasticity modes. Each mode has five
+reviewers: the template, which accepts every plan, the oracle, and the three
+current Claude models. The tables are in docs/results.md. In the true mode,
+every plan is scored with the simulator's own elasticity, so accepting every
+plan is correct. The oracle and the three models accept every plan, and each
+earns the template's +$32,899 a seed. The two modes with a wrong elasticity
+separate the reviewers.
 
-There is no post-training in this repository, because the world here is one the
-repository wrote. A model trained on these runs would learn the simulator's
-Poisson draws and its elasticity of 1.5, and it would learn nothing about
-hotels, so anything it gained would say nothing about a real market. The
-learning a pricing system can honestly do in a world like this is what
-estimate.py does, which is to fit one parameter to the bookings it has seen.
+At a fixed elasticity of 1.0, accepting every plan earns +$8,438 a seed. The
+oracle earns +$30,588 and accepts 15% of the plans. The difference, $22,150 a
+seed, is the value a reviewer can recover. Opus recovers 28% of it. It earns
++$14,584 a seed and beats the fixed-rate run in 17 of 20 seeds.
+
+Opus declines 47 plans, and the oracle declines every one of them, so its
+precision is 1.00. It catches one in seven of the oracle's declines, so its
+recall is 0.14. Its dollar-weighted recall is 0.25, so its declines are the
+costlier ones. The declines cluster on one plan. After the day-40 seat cut, code
+plans a 10% raise on all seven days for stay dates 70 to 90. Opus holds instead
+in 36 of the 47 cases.
+
+Its reasons state that the estimate rests on an elasticity "fixed for the run
+rather than learned from our bookings". They also state that the dates are
+behind pace and priced above the median. At a fixed elasticity of 2.0, Opus
+declines one plan in 20 seeds. It ties with accept-all, +$9,557 against +$9,551,
+and the oracle earns +$23,058.
+
+Sonnet and Haiku decline no plan in any mode, so their runs equal the template's
+runs. One model beats accept-all, by $6,146 a seed at a fixed elasticity of 1.0
+and by nothing at 2.0. Its calls cost $0.41 per seed. For the other two models,
+the value of the run is in the code, and the model writes the reasons.
+
+This repository does no post-training. Every booking in this world comes from
+code in this repository. A model trained on these runs learns the simulator's
+Poisson draws and its elasticity of 1.5 and nothing about hotels. Its gains say
+nothing about a real market. The only learning that carries over to a real
+market is the kind in estimate.py. It fits one parameter to the observed
+bookings.
 
 ## Known limits
 
-- All data is synthetic, so there is no real market, airline, hotel or booking
-  in it.
+- All data is synthetic. There is no real market, airline, hotel or booking in
+  it.
 - The agent's demand forecast and booking curve are the simulator's own, held
   equal by a test; the demand level and the curve are never learned.
 - By default the agent is handed the simulator's elasticity of 1.5;
   `--elasticity fixed:X` and `learn:X` take it away.
 - Demand moves by the hotel's share of guests arriving by air times the change
   in arriving seats; that link is a modelling choice.
-- The minimum-stay recommendation is advice only, because the simulator has no
-  length of stay, and it is left out of every estimate and result.
+- The minimum-stay recommendation is advice only. The simulator has no length
+  of stay, and the advice is not in any estimate or result.
 - The estimates assume the simulator's Poisson booking noise; real bookings
   arrive less evenly, with groups, cancellations and no-shows.
 - The cost of an occupied room is one third of the start rate, which makes the
@@ -162,14 +165,14 @@ estimate.py does, which is to fit one parameter to the bookings it has seen.
   scripted shocks.
 - There is one rate per hotel and stay date, with no room types, group blocks,
   cancellations or no-shows.
-- Without an API key every plan is accepted, so a template run measures the
-  plans and leaves the model's judgement out.
-- The live models were benchmarked on seeds 1 to 20 (docs/results.md); only
-  Opus ever declines a plan, and learn mode has not been run live.
+- Without an API key, every plan is accepted. A template run measures the plans
+  and not the model's judgement.
+- The benchmark ran the live models on seeds 1 to 20 (docs/results.md). Only
+  Opus declines plans. Learn mode has not run live.
 - The container image has not been built, and the suite has run on Python 3.11,
   3.12 and 3.13 only.
 
-The next version puts each hotel's past rate changes and what they earned into
-the model request, so the model can weigh a plan against the last ones. It also
-reprices when data arrives during the day, and its simulated competitors react
-to the hotels' rate changes.
+The next version puts each hotel's past rate changes and their outcomes into the
+model request. The model can then compare a plan with the previous ones. The
+next version also reprices when data arrives during the day. Its simulated
+competitors react to the hotels' rate changes.

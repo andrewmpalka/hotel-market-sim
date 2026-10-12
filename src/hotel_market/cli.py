@@ -39,8 +39,7 @@ learn arm of the command. --customer names the market's file
 
 The bench command (bench.py) runs the fixed-rate run once per seed, then one
 agent run per mode and reviewer, each in its own cache folder, and prints one
-table per mode with a row per reviewer, then a ranking over the mismatched
-modes, where the code's elasticity is wrong and declining is sometimes right.
+table per mode with a row per reviewer, then a ranking over the mismatched modes.
 
 The two daily commands run the agent one day at a time against the tables
 sql/schema.sql defines (stored.py). run-day plays the simulator to the day
@@ -1088,8 +1087,7 @@ def _bench_table(mode: ElasticityMode, arms: list[ArmResult]) -> list[str]:
 
 
 def _ranking_table(modes: Sequence[ElasticityMode], arms: list[ArmResult]) -> list[str]:
-    """The reviewers pooled over the mismatched modes, the highest mean change first, since the
-    question is which reviewer is the better one when the code's elasticity is wrong."""
+    """The reviewers pooled over the mismatched modes, the highest mean change first."""
     names = list(dict.fromkeys(arm.reviewer.name for arm in arms))
     pooled = []
     for name in names:

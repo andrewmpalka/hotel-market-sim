@@ -12,7 +12,7 @@ numbers; the template is a function of the request, so it is never cached,
 and nothing here needs an API key. A replay only reads the cache. Each record
 names the model asked, and an agent given another model keeps its answers in
 their own folder (agent.py). A Measured client wraps any client, records every
-call to a calls.jsonl and asks again after a refusal or an invalid answer.
+call to a calls.jsonl and asks again after an SDK error or an invalid answer.
 """
 
 from __future__ import annotations
@@ -85,8 +85,7 @@ def schema_for(request: dict) -> dict:
     choosing from the request's own ids and options, and at least as many
     decisions as entries, so the API cannot return a choice the code would
     reject or leave an entry out. The API rejects maxItems on an array, so the
-    pairing check in _check() still catches a duplicated id. The schema is not
-    part of the request, so it changes no digest and no cache."""
+    pairing check in _check() still catches a duplicated id."""
     entries = request["entries"]
     options = sorted({option for entry in entries for option in entry["options"]})
     return {
@@ -209,12 +208,9 @@ class Measured:
     again after a backoff; an invalid answer, asked again at once; or a refusal,
     which the API has already re-run on the fallback model, so it is not asked
     again. When the retries run out the record is written and then the error is
-    raised, so that a rate limit or an overload never ends a run with no record
-    of the call. The records are kept in `calls` and appended to a calls.jsonl
+    raised. The records are kept in `calls` and appended to a calls.jsonl
     when a path is given, so that an arm's calls sit beside its cache. The
-    client's model, name and cached flag pass through, so a measured oracle
-    stays uncached and an agent still finds the model's name for its cache
-    folder.
+    client's model, name and cached flag pass through.
     """
 
     def __init__(
