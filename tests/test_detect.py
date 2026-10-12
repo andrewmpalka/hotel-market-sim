@@ -159,3 +159,30 @@ def test_shock_known_follows_what_is_known_on_the_day():
     assert not shock_known(airport, 46, 25, s)  # convention is downtown only
     assert not shock_known(convention, 46, 9, s) and shock_known(convention, 46, 10, s)
     assert not shock_known(full_service, 38, 29, s) and shock_known(full_service, 38, 30, s)
+
+
+def test_pace_causes_follow_the_gap_against_the_threshold(run):
+    _, _, tables = run
+    for table in tables.values():
+        for gap, threshold, causes in zip(
+            table["pace_gap"], table["pace_threshold"], table["causes"]
+        ):
+            assert (AHEAD in causes) == (gap > threshold)
+            assert (BEHIND in causes) == (gap < -threshold)
+    assert any(AHEAD in causes for table in tables.values() for causes in table["causes"])
+    # Seed 7 never falls behind pace at fixed rates, so empty three stay dates by hand.
+    books = Books(SEED)
+    for day in range(11):
+        books.book(day)
+    convention = DEMO.hotel("convention")
+    i = convention.row
+    books.preload[i, 40:43] = 0
+    books.daily_rooms[:, i, 40:43] = 0
+    books.rooms[i, 40:43] = 0
+    table = detect_numbers(10, simulated_sources(books))
+    rows = table.set_index(["hotel", "stay_day"])
+    for stay_day in (40, 41, 42):
+        row = rows.loc[("convention", stay_day)]
+        assert row["pace_gap"] < -row["pace_threshold"] and BEHIND in row["causes"]
+    behind = [f for f in flags(10, table) if f.hotel == "convention" and BEHIND in f.causes]
+    assert behind == [Flag(10, "convention", 40, 42, (BEHIND,))]

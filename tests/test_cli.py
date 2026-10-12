@@ -10,6 +10,7 @@ import pytest
 from hotel_market.agent import MIN_STAY, TRUE_MODE, ElasticityMode
 from hotel_market.cli import (
     REPORT_DAYS,
+    SHOCK_PLAN_CAUSES,
     ArmResult,
     SeedResult,
     _gain_on,
@@ -23,6 +24,7 @@ from hotel_market.cli import (
     sweep,
 )
 from hotel_market.customer import demo
+from hotel_market.detect import NEW_EVENT, SEATS_UP
 from hotel_market.estimate import Estimate
 from hotel_market.plan import HOLD
 
@@ -365,3 +367,21 @@ def test_a_cautious_run_says_so_and_shows_the_band_on_each_change(tmp_path):
     assert changed
     printed = format_entry(changed[0], DEMO)
     assert "across the band" in printed and "cautious: a change must also win at" in printed
+
+
+def test_a_sweep_counts_the_shock_plans_apart_from_the_other_plans(first, tmp_path):
+    # The plans the convention and the new flights raised, against every other plan.
+    _, fixed, books, agent = first
+    [arm] = sweep(SEED, SEED, tmp_path / "cache")
+    [result] = arm.seeds
+    assert SHOCK_PLAN_CAUSES == {NEW_EVENT, SEATS_UP}
+    accepted = [e for e in agent.entries if e.action != HOLD]
+    shock = [e for e in accepted if {NEW_EVENT, SEATS_UP} & set(e.causes)]
+    assert shock and len(shock) < len(accepted)
+    assert (result.shock_changes, result.other_changes) == (len(shock), len(accepted) - len(shock))
+    shock_pairs = {(e.hotel, s) for e in shock for s in e.new_rates}
+    other_pairs = {(e.hotel, s) for e in accepted if e not in shock for s in e.new_rates}
+    other_pairs -= shock_pairs
+    assert result.shock_gain == pytest.approx(_gain_on(fixed, books, shock_pairs, DEMO.hotels))
+    assert result.other_gain == pytest.approx(_gain_on(fixed, books, other_pairs, DEMO.hotels))
+    assert result.shock_gain + result.other_gain == pytest.approx(result.contribution_change)

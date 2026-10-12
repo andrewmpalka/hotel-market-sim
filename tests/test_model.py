@@ -9,6 +9,7 @@ import pytest
 from hotel_market.customer import demo
 from hotel_market.detect import flags
 from hotel_market.model import (
+    SYSTEM,
     CacheMiss,
     ClaudeClient,
     ModelRefused,
@@ -319,3 +320,19 @@ def test_the_three_values_reach_the_model_request(day10, tmp_path):
     assert decision["reason"].endswith(
         "Each change also beats holding with the elasticity at both ends of the band 1.2 to 1.8."
     )
+
+
+def test_the_system_prompt_tells_the_model_how_to_choose_and_write():
+    for phrase in (
+        'choose the plan to recommend it, or "hold" to decline it',
+        'Write as "we"',
+        "State only what the entry shows",
+        "make no claim about price sensitivity or risk",
+        "Copy these phrases whole",
+        "do not quote one end of a range on its own",
+        '"more than holding" may be written once',
+        "Write an event's name in lower case",
+        '"assumed" is a value the agent was given',
+        "beats holding at both ends",
+    ):
+        assert phrase in SYSTEM, phrase

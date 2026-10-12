@@ -8,7 +8,7 @@ import pytest
 from hotel_market.agent import Agent
 from hotel_market.bookings import Books, simulate
 from hotel_market.cli import main
-from hotel_market.customer import DEMO_FILE, demo, load
+from hotel_market.customer import CUSTOMER_VARIABLE, DEMO_FILE, demo, demo_path, load
 from hotel_market.detect import detect_numbers, flags
 from hotel_market.model import request_for
 from hotel_market.plan import entry_for
@@ -91,3 +91,13 @@ def test_without_a_customer_the_demo_market_is_the_default(tmp_path):
     assert Books(7).customer == DEMO and simulate(7, last_day=0).customer == DEMO
     table = detect_numbers(10, simulated_sources(Books(7)))
     assert set(table["hotel"]) == {h.key for h in DEMO.hotels}
+
+
+def test_the_customer_variable_names_the_default_file(tmp_path, monkeypatch):
+    copy = tmp_path / "market.toml"
+    copy.write_text((ROOT / DEMO_FILE).read_text().replace('name = "demo"', 'name = "copy"'))
+    monkeypatch.setenv(CUSTOMER_VARIABLE, str(copy))
+    assert demo_path() == copy and load(demo_path()).name == "copy"
+    monkeypatch.delenv(CUSTOMER_VARIABLE)
+    monkeypatch.chdir(tmp_path)  # no customers/demo.toml here, so the repository root's is found
+    assert demo_path() == ROOT / DEMO_FILE
