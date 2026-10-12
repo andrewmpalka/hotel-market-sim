@@ -1,0 +1,19 @@
+# Written by the simulator
+cache/
+schedule.csv
+/decisions.jsonl
+/calls.jsonl
+*.duckdb
+*.duckdb.wal
+
+# Python packaging and test leftovers
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+.venv/
+
+# Local secrets, never committed
+.env
