@@ -12,12 +12,14 @@ It reports a problem when:
 - a source file has no MOD node,
 - a node marked [C] cites no evidence, or cites something that is not a test,
 - a cited test name does not exist in tests/,
-- a node marked [H] names no node that replaced it,
+- a node marked [H] names no node that replaced, closed or moved it,
 - a constant's value in kg/rules.md differs from the value in the code or in the
   customer file (a RUL node with a .toml File names its Key),
 - a constant in kg/rules.md has no Kind, or one that is not parameter or label,
 - a public constant in the code, or a setting in the customer file, has no RUL node,
 - a measure's Function does not exist,
+- a RES node names no table in docs/results.md, or names one that is not there,
+- a [C] node gives "review" as its evidence but is not a policy node (Kind: policy),
 - a decision sits outside the two groups the index is built from,
 - kg/index.md differs from what --write-index would write.
 
@@ -52,13 +54,20 @@ NODE_FILES = {
     "measures.md": "Measures",
     "sources.md": "Sources",
     "decisions.md": "Decisions",
+    "results.md": "Results",
     "forks.md": "Open forks",
     "unknowns.md": "Unknowns",
 }
-PREFIXES = ("MOD", "DAT", "RUL", "SHK", "CON", "MEA", "SRC", "DEC", "FRK", "UNK")
+PREFIXES = ("MOD", "DAT", "RUL", "SHK", "CON", "MEA", "SRC", "DEC", "RES", "FRK", "UNK")
 STATUSES = "CTPOUH"
 KINDS = ("parameter", "label")
 DECISION_GROUPS = ("Market and agent design", "Engineering")
+HISTORY_KEYS = ("Replaced by", "Closed by", "Moved to")  # what an [H] node must link to
+REVIEW, POLICY = "review", "policy"  # the evidence a policy node may give, and its Kind
+FIELD_LIMIT = 240  # characters in one field line
+FIELD_COUNT_LIMIT = 8  # field lines in one node
+RESULTS_FILE = "docs/results.md"  # where a RES node's table lives
+TABLE_CAPTION = re.compile(r'"([^"]+)"')  # how a Table field names a caption in that file
 
 _ID = rf"(?:{'|'.join(PREFIXES)})-\d+"
 HEADING = re.compile(rf"^### (?P<id>{_ID}) \[(?P<status>[{STATUSES}])\] (?P<name>.+?)\s*$")
@@ -87,6 +96,7 @@ class Node:
     line: int
     section: str = ""  # the ## heading above the node, if any
     fields: dict[str, str] = field(default_factory=dict)
+    field_lines: list[tuple[int, str, int]] = field(default_factory=list)  # (line, key, length)
 
     @property
     def path(self) -> str:
@@ -118,6 +128,7 @@ def read_nodes(kg_dir: Path = KG_DIR) -> list[Node]:
                 node = None  # any other heading ends the node before it
             elif node is not None and (found := FIELD.match(line)):
                 node.fields[found["key"]] = found["value"].strip()
+                node.field_lines.append((number, found["key"], len(line)))
     return nodes
 
 
@@ -139,6 +150,7 @@ def problems(kg_dir: Path = KG_DIR, root: Path = ROOT) -> list[str]:
     found += _bad_kinds(nodes)
     found += _unlisted_constants(nodes, root)
     found += _missing_functions(nodes)
+    found += _missing_tables(nodes, root)
     found += _ungrouped_decisions(nodes)
     found += _index_differs(kg_dir, nodes)
     return found
@@ -230,11 +242,20 @@ def _missing_modules(nodes: list[Node], root: Path) -> list[str]:
 
 
 def _bad_evidence(nodes: list[Node]) -> list[str]:
-    """A [C] node cites tests, and only tests; an [H] node names what replaced it."""
+    """A [C] node cites tests, and only tests, unless it is a policy node reviewed by a
+    person; an [H] node links to the node that replaced, closed or moved it."""
     found = []
     for node in nodes:
         if node.status == "C":
-            cited = _tokens(node.fields.get("Evidence", ""))
+            evidence = node.fields.get("Evidence", "")
+            if evidence.strip() == REVIEW:
+                if node.fields.get("Kind") != POLICY:
+                    found.append(
+                        f"{node.where} cites review as its evidence but is not a policy node "
+                        f"(Kind: {POLICY})"
+                    )
+                continue
+            cited = _tokens(evidence)
             if not cited:
                 found.append(f"{node.where} is [C] but cites no test")
             found += [
@@ -242,8 +263,29 @@ def _bad_evidence(nodes: list[Node]) -> list[str]:
                 for token in cited
                 if not TEST_NAME.fullmatch(token)
             ]
-        elif node.status == "H" and not LINK.search(node.fields.get("Replaced by", "")):
+        elif node.status == "H" and not any(
+            LINK.search(node.fields.get(key, "")) for key in HISTORY_KEYS
+        ):
             found.append(f"{node.where} is [H] but names no node that replaced it")
+    return found
+
+
+def _missing_tables(nodes: list[Node], root: Path) -> list[str]:
+    """Every RES node names, in double quotes, the start of a caption line in docs/results.md."""
+    path = root / RESULTS_FILE
+    lines = path.read_text().splitlines() if path.exists() else []
+    found = []
+    for node in nodes:
+        if not node.id.startswith("RES-"):
+            continue
+        captions = TABLE_CAPTION.findall(node.fields.get("Table", ""))
+        if not captions:
+            found.append(f"{node.where} names no table in {RESULTS_FILE}")
+        found += [
+            f'{node.where} names the table "{caption}", which is not in {RESULTS_FILE}'
+            for caption in captions
+            if not any(line.startswith(caption) for line in lines)
+        ]
     return found
 
 

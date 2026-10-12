@@ -73,12 +73,12 @@ The learning agent's day-59 elasticity estimates, as the range over the four hot
 | 1.0 | 1.36 to 1.45 |
 | 2.0 | 1.55 to 1.68 |
 
-The cautious rule with and without a $250 minimum per day of the week, seeds 1 to 20; the band alone is the rule that stayed.
+The cautious rule with and without a $250 minimum per day of the week, seeds 1 to 20; the band alone is the rule that stayed, and its rejection count includes every candidate ahead of hold at the estimate rather than only those worth $250.
 
-| Arm | Band alone | Band and a minimum per day of the week |
-| --- | ---: | ---: |
-| learn:1.0 --cautious | +$25,076 | +$25,084 |
-| learn:2.0 --cautious | +$17,634 | +$17,618 |
+| Arm | Band alone: mean gain | Rate changes | Rejected at an end | With a minimum per day of the week: mean gain | Rate changes | Rejected at an end |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| learn:1.0 --cautious | +$25,076 | 299 | 3,294 | +$25,084 | 299 | 1,205 |
+| learn:2.0 --cautious | +$17,634 | 240 | 2,681 | +$17,618 | 229 | 766 |
 
 Seeds 1 to 20 with the simulator's elasticity and the template, each target against the same fixed-rate runs; the last two columns are in the target's own measure.
 
@@ -109,3 +109,53 @@ The recorded live run of seed 7.
 | Cost at list prices | $0.12 |
 | Prompt cache read or written | none |
 | Contribution change | +$28,818, the template run's |
+
+Seed 7 with fixed rates: occupancy by hotel over stay dates 0 to 59 and over stay dates 140 to 149, with the emptiest of those last ten nights.
+
+| Hotel | Occupancy, stay dates 0 to 59 | Occupancy, stay dates 140 to 149 | Emptiest night, 140 to 149 |
+| --- | ---: | ---: | ---: |
+| Downtown convention hotel | 75.7% | 83.4% | 70% (stay date 144) |
+| Downtown full-service hotel | 76.0% | 84.2% | 73% (stay date 146) |
+| Lifestyle hotel | 76.6% | 77.9% | 57% (stay date 147) |
+| Airport hotel | 83.7% | 91.2% | 79% (stay date 145) |
+
+Seed 7 under earlier designs, before the current estimate; the last row is the current design, and the 20-seed mean is for the same design over seeds 1 to 20.
+
+| Design | Contribution change, seed 7 | Rate changes | Flags held under the minimum | 20-seed mean |
+| --- | ---: | ---: | ---: | ---: |
+| Weekday rate factors, one candidate per flag, no minimum, estimate capped at the unsold rooms | +$26,420 | 23 (8 lost money) | | |
+| Flat rates, a plan per day of the week, the $250 minimum, estimate capped at the unsold rooms | +$22,894 | 10 | 22 | +$27,350 |
+| The same with the exact estimate E[min(N, unsold)] | +$28,818 | 7 | 57 | +$32,899 |
+
+The estimator against known elasticities: seed 7 in learn mode from a prior of 1.5, with the simulator's elasticity set to each true value in turn; the day-59 estimate at each hotel, with its standard error in brackets.
+
+| True elasticity | Downtown convention | Downtown full-service | Lifestyle | Airport |
+| ---: | ---: | ---: | ---: | ---: |
+| 1.0 | 1.25 (0.16) | 0.85 (0.20) | 0.99 (0.21) | 1.28 (0.31) |
+| 1.5 | 1.56 (0.17) | 1.64 (0.22) | 1.48 (0.22) | 1.50 (0.30) |
+| 2.0 | 1.98 (0.17) | 2.03 (0.21) | 1.64 (0.25) | 1.61 (0.31) |
+
+Spread of the log rate ratio in the estimator's observations, fixed-rate run of seed 7 as of day 59, by hotel.
+
+| Hotel | Standard deviation of log(rate / comp median) | Observations |
+| --- | ---: | ---: |
+| Downtown convention hotel | 0.025 | 5,307 |
+| Downtown full-service hotel | 0.027 | 5,305 |
+| Lifestyle hotel | 0.011 | 5,305 |
+| Airport hotel | 0.013 | 5,306 |
+
+Timings of the stored tables, measured once during development on the development machine.
+
+| Operation | Time |
+| --- | --- |
+| One day through `hotel-market run-day` | under a second, most of it the simulator's playback |
+| Days 0 to 59 through `hotel-market run-day --from 0` | about 6 seconds |
+| Inserting a day's rows one statement at a time (replaced by one frame per day) | 2.5 seconds per 3,000 rows |
+| Reading the events table once per detect row (replaced by one read per day) | 2 seconds a day |
+
+The suite on each Python version, run from a fresh virtual environment on 2026-10-12 with numpy 2.5.4, pandas 3.0.6, duckdb 1.5.6 and anthropic 1.13.0.
+
+| Python | Command | Result |
+| --- | --- | --- |
+| 3.12.6 | `python -m pytest --slow` | 235 passed |
+| 3.13.7 | `python -m pytest --slow` | 235 passed |

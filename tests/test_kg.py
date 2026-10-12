@@ -152,3 +152,46 @@ def test_a_commit_missing_from_the_history_is_a_warning_not_a_problem(kg_copy):
         "DEC-01 names the commit 0000000, which is not in the history" in warning
         for warning in kg_check.warnings(kg_copy)
     )
+
+
+def _set_field(path: Path, node_id: str, key: str, value: str | None) -> None:
+    """Replace, add or, with None, remove one field of a node in a kg/ copy."""
+    lines = path.read_text().splitlines(keepends=True)
+    start = next(i for i, line in enumerate(lines) if line.startswith(f"### {node_id} "))
+    end = start + 1
+    while end < len(lines) and lines[end].startswith("- "):
+        end += 1
+    kept = [line for line in lines[start + 1 : end] if not line.startswith(f"- {key}: ")]
+    if value is not None:
+        kept.append(f"- {key}: {value}\n")
+    path.write_text("".join(lines[: start + 1] + kept + lines[end:]))
+
+
+def _problem_with(kg_copy: Path, *texts: str) -> bool:
+    return any(all(text in problem for text in texts) for problem in kg_check.problems(kg_copy))
+
+
+def test_review_as_evidence_is_accepted_only_on_a_policy_node(kg_copy):
+    _set_field(kg_copy / "shocks.md", "SHK-01", "Evidence", "review")
+    assert _problem_with(kg_copy, "SHK-01 cites review as its evidence but is not a policy node")
+    _set_field(kg_copy / "shocks.md", "SHK-01", "Kind", "policy")
+    assert not _problem_with(kg_copy, "SHK-01 cites review")
+
+
+def test_a_results_node_names_a_table_that_is_in_docs_results_md(kg_copy):
+    results = kg_copy / "results.md"
+    _set_field(results, "RES-01", "Table", 'docs/results.md, "A table that is not there"')
+    assert _problem_with(
+        kg_copy, 'RES-01 names the table "A table that is not there"', "not in docs/results.md"
+    )
+    _set_field(results, "RES-01", "Table", None)
+    assert _problem_with(kg_copy, "RES-01 names no table in docs/results.md")
+
+
+def test_a_closed_fork_names_what_closed_it(kg_copy):
+    forks = kg_copy / "forks.md"
+    _set_field(forks, "FRK-01", "Replaced by", None)
+    _set_field(forks, "FRK-01", "Closed by", "[[DEC-41]]")
+    assert not _problem_with(kg_copy, "FRK-01 is [H]")
+    _set_field(forks, "FRK-01", "Closed by", "the customer file")
+    assert _problem_with(kg_copy, "FRK-01 is [H] but names no node that replaced it")

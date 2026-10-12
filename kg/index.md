@@ -199,6 +199,24 @@ it differs from what that would write. `README.md` is the legend.
 - DEC-41 [C] Everything specific to the market is a customer file, and the target is one of its settings — kg/decisions.md
 - DEC-42 [C] The feeds and the agent's output are stored tables keyed by as_of_day, and the agent can run one day at a time against them — kg/decisions.md
 
+## Results (`results.md`)
+
+- RES-01 [C] The default agent on seeds 1 to 20 — kg/results.md
+- RES-02 [C] Seed 7 in the default mode — kg/results.md
+- RES-03 [O] A wrong elasticity, fixed:1.0 and fixed:2.0, on seeds 1 to 20 — kg/results.md
+- RES-04 [O] A learned elasticity, learn:1.0 and learn:2.0, on seeds 1 to 20 — kg/results.md
+- RES-05 [O] The cautious rule on seeds 1 to 20 — kg/results.md
+- RES-06 [O] Where the gain came from, by arm — kg/results.md
+- RES-07 [O] The revenue target on seeds 1 to 20 — kg/results.md
+- RES-08 [C] Four live runs of seed 7, one per request format — kg/results.md
+- RES-09 [C] The recorded live run of seed 7, measured — kg/results.md
+- RES-10 [C] The estimator against known elasticities — kg/results.md
+- RES-11 [H] Seed 7 under the first agent designs — kg/results.md
+- RES-12 [H] Seed 7 and seeds 1 to 20 with the capped estimate — kg/results.md
+- RES-13 [H] The cautious rule as first built — kg/results.md
+- RES-14 [O] The stored tables' timings — kg/results.md
+- RES-15 [O] The suite on each Python version — kg/results.md
+
 ## Open forks (`forks.md`)
 
 - FRK-01 [H] Revenue or contribution as the target — kg/forks.md
