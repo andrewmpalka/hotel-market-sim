@@ -7,6 +7,7 @@
 #   make bench FIRST=1 LAST=3   benchmark the reviewers; make bench BENCH=--template runs it offline
 #   make day SEED=7 DAY=20   run day 20 through the stored tables; make day-replay DAY=20 replays it
 #   make demo SEED=7     write demo.duckdb from the recorded run and start the demo page (installs streamlit)
+#   make screenshots     screenshot the demo page at 1440 by 900 and fail if a page is taller than the window
 #   make image          build the Docker image hotel-market:py3.12; make docker-run SEED=7 runs it
 #   make image PYTHON=3.11   the same on another Python, tagged hotel-market:py3.11
 #   make help           list every target
@@ -39,7 +40,7 @@ STAMP := $(VENV)/.installed
 
 .DEFAULT_GOAL := help
 .PHONY: help setup test test-all lint check run live live-audit replay sweep bench day day-replay \
-        demo clean clean-run clean-all image docker-test docker-run docker-live
+        demo screenshots clean clean-run clean-all image docker-test docker-run docker-live
 
 help: ## List the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  make %-10s %s\n", $$1, $$2}'
@@ -100,12 +101,17 @@ demo: $(STAMP) ## Write demo.duckdb for seed SEED from the recorded live run and
 	$(BIN)/hotel-market demo-data --seed $(SEED) --out demo.duckdb
 	HOTEL_MARKET_DEMO_FILE=demo.duckdb $(BIN)/streamlit run src/hotel_market/demo_page.py
 
+screenshots: $(STAMP) ## Open the demo page at 1440 by 900 in a Chromium-based browser, save three screenshots under screenshots/, and fail if a page is taller than the window
+	@$(BIN)/python -c 'import streamlit' 2>/dev/null || $(BIN)/python -m pip install -e ".[demo]"
+	@test -f demo.duckdb || $(BIN)/hotel-market demo-data --seed $(SEED) --out demo.duckdb
+	$(BIN)/python scripts/demo_screenshots.py --file demo.duckdb --out screenshots
+
 clean: ## Remove Python and test leftovers
 	rm -rf .pytest_cache .ruff_cache src/*.egg-info
 	find src tests -name __pycache__ -type d -exec rm -rf {} +
 
-clean-run: ## Remove what a run writes: cache/ (the model's answers), decisions.jsonl, calls.jsonl, schedule.csv, hotel_market.duckdb, demo.duckdb
-	rm -rf cache decisions.jsonl calls.jsonl schedule.csv hotel_market.duckdb hotel_market.duckdb.wal demo.duckdb demo.duckdb.wal
+clean-run: ## Remove what a run writes: cache/ (the model's answers), decisions.jsonl, calls.jsonl, schedule.csv, hotel_market.duckdb, demo.duckdb, screenshots/
+	rm -rf cache decisions.jsonl calls.jsonl schedule.csv hotel_market.duckdb hotel_market.duckdb.wal demo.duckdb demo.duckdb.wal screenshots
 
 clean-all: clean clean-run ## Also remove .venv
 	rm -rf $(VENV)

@@ -510,8 +510,18 @@ design keeps its node, marked [H], and names the decision that replaced it.
 ### DEC-57 [C] A read-only demo page over a file code writes
 - Decided: the demo page ([[MOD-27]]) is a Streamlit app, the optional extra demo. It reads one DuckDB file ([[DAT-33]]) that hotel-market demo-data writes ([[MOD-26]]) and computes nothing.
 - Reasons: the file's reasons come from the recorded live run of seed 7 ([[DAT-29]]). The daily path replays it ([[DEC-42]]) with a client that never answers. The page needs no API key. A seed with no recording gets the template's.
-- Scorecard: to date means every booking made through the day, over stay dates 0 to 149, for both runs. On day 59 it holds the bookings so far; the README's figures count the bookings to day 149 ([[RES-02]]).
+- Scorecard: the file holds the nights already stayed as of each day, stay dates 0 to the day before, and the outcome once every stay date is complete, which is the README's seed-7 table ([[RES-02]], [[DEC-58]]).
 - Guard: a test parses the page and fails on an import from the package, an arithmetic operator or an aggregate call. Every figure the page shows is a row code wrote ([[RUL-01]]).
 - Replaces: CLAUDE.md's rule 5 allowed no web UI. It now allows this page, and nothing else.
 - Evidence: test_the_page_imports_nothing_from_the_package_or_the_simulator, test_the_page_does_no_arithmetic_on_a_figure, test_the_reasons_come_from_the_recorded_live_run
-- Links: [[MOD-26]], [[MOD-27]], [[DAT-33]], [[DAT-28]], [[DAT-29]], [[DEC-42]], [[RUL-01]], [[RES-02]]
+- Links: [[MOD-26]], [[MOD-27]], [[DAT-33]], [[DAT-28]], [[DAT-29]], [[DEC-42]], [[DEC-58]], [[RUL-01]], [[RES-02]]
+
+### DEC-58 [C] The demo page fits one window, and every date on it is a calendar date
+- Decided: the page fits 1440 by 900 pixels with nothing cut off: the title, the news, both charts, the queue and the scorecard. scripts/demo_screenshots.py ([[MOD-28]]) screenshots three pages headless and fails when one is taller.
+- Dates: every stay date reads as a calendar date with its day of the week and the day number in brackets, on the axes and in the text ([[DAT-33]]). The model's recorded reasons keep their day numbers, so the brackets tie the two together.
+- Plan: on the day a plan is accepted, the rate chart draws the new rate as a dashed line beside the current one. A held day of the week keeps the current rate on that line.
+- Held: the held flags are open by default. Each shows its stay dates, its cause, the best alternative and how far it fell short of holding, or of the minimum when its plan beats holding ([[RUL-67]]).
+- Text: the page escapes the markdown marks in every reason and plan, so a pair of dollar amounts is not read as a formula. The scorecard's tiles write a change that rounds to nothing as "0", which shows no arrow.
+- Layout: the charts sit side by side, the queue beside the scorecard, and the toolbar is hidden. The rate chart's y axis runs from 75% to 125% of the start rate ([[RUL-109]]), and each chart spans the window's dates only.
+- Evidence: test_the_three_pages_fit_the_window, test_every_date_reads_as_a_calendar_date_with_its_day_number_in_brackets, test_a_held_flag_names_the_best_alternative_and_how_far_it_fell_short
+- Links: [[DEC-57]], [[MOD-26]], [[MOD-27]], [[MOD-28]], [[DAT-33]], [[RUL-67]], [[RUL-109]]

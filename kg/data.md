@@ -292,10 +292,10 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-33 [C] The demo file
 - File: sql/demo.sql
-- Tables: five, beside the seven stored tables ([[DAT-28]]) for days 0 to 59 in the same DuckDB file. Every table but hotels is keyed by as_of_day and hotel, the page's two choices.
-- Hotels and news: hotels (position, key, name, rooms). news (as_of_day, hotel, position, kind, text) holds what became known that day in plain words. One row says nothing did.
-- Chart: stay_dates (as_of_day, hotel, stay_day, rate, comp_median, rooms_on_books, pace, flagged, causes), one row per stay date in the day's window.
-- Queue: queue (as_of_day, hotel, position, stays, causes, plan, value, value_text, reason, reason_source, queued, outcome). The outcome is accepted, declined or held.
-- Scorecard: scorecard (as_of_day, hotel, run, occupancy, adr, revpar, room_revenue, contribution), with run agent, fixed or delta. The figures are to date, every booking made through the day.
-- Used by: written by [[MOD-26]] and read by [[MOD-27]], which computes nothing from it ([[DEC-57]])
-- Evidence: test_the_file_holds_the_stored_tables_for_every_day_and_the_pages_five, test_the_chart_rows_mark_the_flagged_stay_dates, test_the_scorecard_is_to_date_and_the_delta_is_the_agent_run_minus_the_fixed_one
+- Tables: eight, beside the seven stored tables ([[DAT-28]]) for days 0 to 59 in the same DuckDB file. Every date is a calendar date with its day of the week and the day number in brackets, such as "Thu 18 Feb [45]" ([[DEC-58]]).
+- Hotels and days: hotels (position, key, name, rooms, start_rate, rate_axis_low, rate_axis_high). days (as_of_day, label, stay_window). news (as_of_day, hotel, position, kind, text) holds what became known, and one row says nothing did.
+- Chart: stay_dates (as_of_day, hotel, stay_day, label, tick, rate, comp_median, rooms_on_books, pace, flagged, causes, flag, planned_rate), one row per stay date in the window. planned_rate is NULL without an accepted plan.
+- Queue: queue (as_of_day, hotel, position, stays, causes, plan, value, value_text, reason, reason_source, queued, outcome, alternative, alternative_text). The outcome is accepted, declined or held. A held flag names its best alternative.
+- Scorecard: scorecard (as_of_day, hotel, title, nights, position, measure, agent, fixed, delta, value_text, delta_text) for the nights already stayed, none on day 0. outcome holds the same tiles once every stay date is complete.
+- Gains: gains (hotel, title, stay_day, label, tick, agent, fixed, difference), the contribution by stay date once complete. The scorecard tables hold each hotel and all together, under the key all ([[RUL-107]]).
+- Evidence: test_the_file_holds_the_stored_tables_for_every_day_and_the_pages_tables, test_the_chart_rows_mark_the_flagged_stay_dates_and_carry_the_planned_rate, test_the_scorecard_counts_the_nights_already_stayed

@@ -65,15 +65,17 @@ with pip install -e ".[dev]" and import it as hotel_market.<module>.
 | cli.py | the hotel-market command, which python -m hotel_market also runs |
 | bench.py | the benchmark of the model as a reviewer: the oracle grader, its measures, the reviewers and the price table |
 | policy.py | the rule-based control: a pace rule with no estimates and no model, for the comparison frozen rates cannot give |
-| demo_data.py | the demo page's file: the stored tables for days 0 to 59 and the page's five tables, every figure computed here |
-| demo_page.py | the read-only demo page: a Streamlit app that reads that file and computes nothing |
+| demo_data.py | the demo page's file: the stored tables for days 0 to 59 and the page's eight tables, every figure and every date computed here |
+| demo_page.py | the read-only demo page: a Streamlit app that reads that file, computes nothing and fits one 1440 by 900 window |
 
 Around the package, tests/ holds one test file per module, conftest.py and
 tests/fixtures/live_seed7/, one recorded live run. customers/demo.toml is the
 demo market, sql/schema.sql defines the seven stored tables and sql/demo.sql the
-demo page's five.
+demo page's eight.
 scripts/live_audit.py runs and audits a live seed, and scripts/median_path.py
-prints a comp median's path next to the hotel's rate. kg/ and kg_check.py are
+prints a comp median's path next to the hotel's rate. scripts/demo_screenshots.py
+opens the demo page in a Chromium-based browser at 1440 by 900, saves three
+screenshots and fails when a page is taller than the window. kg/ and kg_check.py are
 the knowledge graph and its checker. Makefile and Dockerfile wrap the setup.
 docs/results.md holds the experiment tables, and docs/schedule-feed.md describes
 the air schedule feed as modelled.
@@ -90,6 +92,7 @@ the air schedule feed as modelled.
     make bench FIRST=1 LAST=3  # the reviewers benchmarked (ANTHROPIC_API_KEY); BENCH=--template runs it offline
     make day SEED=7 DAY=20     # one day through the stored tables; make day-replay DAY=20 replays it
     make demo SEED=7           # demo.duckdb from the recorded run, then the demo page (installs streamlit)
+    make screenshots           # the demo page at 1440 by 900: three screenshots under screenshots/, a failure if one is taller
     make image                 # the Docker image; make docker-test and docker-run SEED=7 use it
     python kg_check.py         # the graph against the code; --write-index rewrites kg/index.md
 

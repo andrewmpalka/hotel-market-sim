@@ -2,9 +2,12 @@
 arithmetic on a figure; every figure it shows is a row code wrote."""
 
 import ast
+import shutil
 from pathlib import Path
 
 import pytest
+
+from hotel_market import stored
 
 PAGE = Path(__file__).resolve().parents[1] / "src" / "hotel_market" / "demo_page.py"
 ARITHMETIC = (ast.Add, ast.Sub, ast.Mult, ast.Div, ast.FloorDiv, ast.Mod, ast.Pow, ast.MatMult)
@@ -14,10 +17,32 @@ FIGURE_FUNCTIONS = {
     "pct_change", "add", "sub", "mul", "div", "truediv", "agg", "aggregate", "prod", "quantile",
 }  # fmt: skip
 ALLOWED_IMPORTS = {"os", "pathlib", "altair", "duckdb", "streamlit"}
+CONVENTION_DAY_10 = (  # the plan line, then the model's recorded reason, its dollar signs escaped
+    "**Accepted:** raise 5% on Fri; raise 10% on Thu, Sat for Thu 18 Feb [45] to Sun 21 Feb "
+    "[48], \\$8,050 more than holding. A convention has been announced for stay dates 45 to 48 "
+    "and the competitor median is up 15.0%, leaving our \\$220 rate 10.7% to 14.6% below the median"
+)
 
 
 def _tree() -> ast.Module:
     return ast.parse(PAGE.read_text())
+
+
+def _page(testing, monkeypatch, file, hotel: str | None = None, day: int | None = None):
+    """The page run on the file, opened at the hotel and day the query string names."""
+    monkeypatch.setenv("HOTEL_MARKET_DEMO_FILE", str(file))
+    page = testing.AppTest.from_file(str(PAGE), default_timeout=60)
+    if hotel is not None:
+        page.query_params["hotel"] = hotel
+    if day is not None:
+        page.query_params["day"] = str(day)
+    page.run()
+    assert not page.exception
+    return page
+
+
+def _text(page) -> str:
+    return "\n".join(block.value for block in page.markdown)
 
 
 def test_the_page_imports_nothing_from_the_package_or_the_simulator():
@@ -43,24 +68,75 @@ def test_the_page_does_no_arithmetic_on_a_figure():
 
 def test_the_page_shows_the_convention_hotel_on_day_10(demo_file, monkeypatch):
     testing = pytest.importorskip("streamlit.testing.v1")
-    monkeypatch.setenv("HOTEL_MARKET_DEMO_FILE", str(demo_file))
-    page = testing.AppTest.from_file(str(PAGE), default_timeout=60)
-    page.run()
-    assert not page.exception
+    page = _page(testing, monkeypatch, demo_file)
+    assert page.subheader[0].value == "Downtown convention hotel, Mon 4 Jan 2027 [day 0]"
     page.sidebar.selectbox[0].select("Downtown convention hotel")
     page.sidebar.slider[0].set_value(10)
     page.run()
     assert not page.exception
-    assert page.subheader[0].value == "Downtown convention hotel, day 10"
-    text = "\n".join(block.value for block in page.markdown)
-    assert "An event, the convention, was announced for stay dates 45 to 48." in text
-    assert "The comp set median is up 15.0% for stay dates 45 to 48." in text
+    assert page.subheader[0].value == "Downtown convention hotel, Thu 14 Jan 2027 [day 10]"
+    text = _text(page)
+    assert "An event, the convention, was announced for Thu 18 Feb [45] to Sun 21 Feb [48]." in text
+    assert "The comp set median is up 15.0% for Thu 18 Feb [45] to Sun 21 Feb [48]." in text
+    assert "**Stay dates ahead, Thu 14 Jan [10] to Tue 13 Apr [99].**" in text
+    assert CONVENTION_DAY_10 in text
+    assert "No flag was held today." in text and not page.expander
+    # The scorecard: the nights already stayed and the complete result, for the hotel and for
+    # all four, each labelled; five tiles each, and a zero change written "0" (no arrow).
+    assert [caption.value for caption in page.main.caption] == [
+        "Downtown convention hotel: nights already stayed, Mon 4 Jan [0] to Wed 13 Jan [9]",
+        "Downtown convention hotel: once every stay date is complete, "
+        "Mon 4 Jan [0] to Wed 2 Jun [149]",
+        "All four hotels: nights already stayed, Mon 4 Jan [0] to Wed 13 Jan [9]",
+        "All four hotels: once every stay date is complete, Mon 4 Jan [0] to Wed 2 Jun [149]",
+        "Contribution difference by stay date, once every stay date is complete",
+    ]
+    labels = ["Occupancy", "ADR", "RevPAR", "Room revenue", "Contribution"]
+    assert [metric.label for metric in page.metric] == labels * 4
+    assert page.metric[1].value == "$220.00" and page.metric[1].delta == "0"
+    assert page.metric[9].value == "$6,917,488" and page.metric[9].delta == "+$3,915"
+    assert page.metric[19].value == "$14,728,311" and page.metric[19].delta == "+$28,818"
+
+
+def test_the_query_string_opens_a_hotel_and_a_day_and_the_held_flags_are_open(
+    demo_file, monkeypatch
+):
+    testing = pytest.importorskip("streamlit.testing.v1")
+    page = _page(testing, monkeypatch, demo_file, "full-service", 30)
+    assert page.subheader[0].value == "Downtown full-service hotel, Wed 3 Feb 2027 [day 30]"
+    assert page.sidebar.slider[0].value == 30
+    text = _text(page)
+    assert "No plan was queued today." in text
+    assert page.expander[0].label == "Held flags: 2" and page.expander[0].proto.expanded
+    held = "\n".join(block.value for block in page.expander[0].markdown)
     assert (
-        "**Accepted:** raise 5% on Fri; raise 10% on Thu, Sat for stay dates 45 to 48, "
-        "$8,050 more than holding. A convention has been announced"
-    ) in text
-    assert [metric.label for metric in page.metric] == [
-        "Occupancy", "ADR", "RevPAR", "Room revenue", "Contribution"
-    ]  # fmt: skip
-    assert page.metric[1].value == "$220.00" and page.metric[1].delta == "+0.00"
-    assert page.expander[0].label == "Held flags: 0"
+        "Wed 10 Feb [37] to Fri 12 Feb [39], comp median down. The best alternative, raise 5% "
+        "on Wed, Fri; lower halfway to the new median on Thu, is \\$20 less than holding."
+    ) in held
+    assert "Sun 21 Feb [48], ahead of pace. The best alternative, raise 5% on Sun, is" in held
+    # A day with no night stayed, and a query string the file does not know.
+    page = _page(testing, monkeypatch, demo_file, "airport", 0)
+    assert page.main.caption[0].value == "Airport hotel: nights already stayed, none yet"
+    assert len(page.metric) == 10
+    page = _page(testing, monkeypatch, demo_file, "nowhere", 999)
+    assert page.subheader[0].value == "Downtown convention hotel, Mon 4 Jan 2027 [day 0]"
+
+
+def test_a_reason_with_two_dollar_amounts_shows_both_as_written(demo_file, monkeypatch, tmp_path):
+    # Streamlit's markdown reads a pair of dollar signs as a formula. The page escapes them, so
+    # the markdown holds "\$120" and the reader sees "$120".
+    testing = pytest.importorskip("streamlit.testing.v1")
+    file = tmp_path / "demo.duckdb"
+    shutil.copy(demo_file, file)
+    connection = stored.connect(file)
+    try:
+        connection.execute(
+            "UPDATE queue SET reason = 'A $120 raise earns $1,000 more than holding.' "
+            "WHERE as_of_day = 10 AND hotel = 'convention' AND queued"
+        )
+    finally:
+        connection.close()
+    page = _page(testing, monkeypatch, file, "convention", 10)
+    text = _text(page)
+    assert "\\$8,050 more than holding. A \\$120 raise earns \\$1,000 more than holding." in text
+    assert "$120 raise earns $1,000" not in text

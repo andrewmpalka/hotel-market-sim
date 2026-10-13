@@ -247,20 +247,30 @@ which is also the order in which they depend on each other.
 
 ### MOD-26 [C] demo_data.py
 - File: src/hotel_market/demo_data.py
-- Owns: the demo file ([[DAT-33]], [[DEC-57]]). build() runs days 0 to 59 through run_days ([[MOD-12]]) with the recorded run as the cache. An observe hook collects the page's rows, and a second pass of simulate gives the fixed-rate run.
-- Rows: _news_rows writes what became known in plain words from the feeds and the detect numbers ([[MOD-07]], [[MOD-11]]). _stay_rows, _queue_rows and _scorecard_row fill the other tables; _delta_rows subtracts the fixed run.
-- Holds: DEMO_FILE, DEMO_SCHEMA_FILE and RECORDED_RUNS, the paths, DEMO_TABLES ([[RUL-103]]) and NOTHING_NEW ([[RUL-104]]). Recorded is the client that never answers, so a request outside the recording stops the command.
-- Reads: [[MOD-06]], [[MOD-07]], [[MOD-10]], [[MOD-11]], [[MOD-19]], [[MOD-20]], [[MOD-21]], and run_days from [[MOD-12]] inside build(), because cli imports this module
-- Writes: [[DAT-33]], beside [[DAT-28]]'s tables for days 0 to 59
+- Owns: the demo file ([[DAT-33]], [[DEC-57]], [[DEC-58]]). build() runs days 0 to 59 through run_days ([[MOD-12]]) with the recorded run as the cache, and both runs book on to day 149. An observe hook collects the page's rows.
+- Rows: _news_rows, _stay_rows and _queue_rows fill the day's tables from the feeds, the detect numbers and the entries ([[MOD-07]], [[MOD-11]]). _stay_rows adds an accepted plan's rate, and _alternative names a held flag's best one.
+- Scorecard: figures() gives the five measures over hotels and stay dates together ([[MEA-01]] to [[MEA-05]]). _stayed takes stay dates 0 to the day before, _outcome_rows every stay date, and _gain_rows the contribution by stay date.
+- Dates: stay_label, stay_span and day_label write a date as "Thu 18 Feb [45]" from SIM_START ([[RUL-01]]). tiles(), value_text and delta_text write the tiles' texts; a change that rounds to nothing is "0".
+- Holds: DEMO_FILE, DEMO_SCHEMA_FILE and RECORDED_RUNS, the paths, and DEMO_TABLES, NOTHING_NEW, ALL, MEASURES, RATE_AXIS, GAIN_TICK_DAYS and NUMBER_WORDS ([[RUL-103]], [[RUL-104]], [[RUL-107]] to [[RUL-111]]).
 - Tests: tests/test_demo_data.py
-- Evidence: test_the_file_holds_the_stored_tables_for_every_day_and_the_pages_five, test_the_reasons_come_from_the_recorded_live_run, test_the_news_names_the_convention_the_filings_and_the_comp_set_cut
+- Evidence: test_the_file_holds_the_stored_tables_for_every_day_and_the_pages_tables, test_the_reasons_come_from_the_recorded_live_run, test_the_outcome_is_the_result_once_every_stay_date_is_complete
 
 ### MOD-27 [C] demo_page.py
 - File: src/hotel_market/demo_page.py
-- Owns: the read-only demo page ([[DEC-57]]), a Streamlit app over [[DAT-33]]. The sidebar picks a hotel and a day. It shows the day's news, a chart of the stay dates ahead, the queue with reasons and the scorecard.
-- Chart: our rate and the comp set median, then rooms on the books against the pace curve, by stay date. Rules mark the flagged stay dates. The held flags sit in a collapsed list with their causes.
-- Holds: FILE_VARIABLE ([[RUL-105]]) and DEFAULT_FILE ([[RUL-106]]). The page formats figures and draws them. It computes nothing, and a test parses it for an arithmetic operator or an aggregate call.
-- Reads: nothing in the package; streamlit, altair and duckdb only. Streamlit is the optional extra demo in pyproject.toml.
-- Writes: nothing
-- Tests: tests/test_demo_page.py
-- Evidence: test_the_page_imports_nothing_from_the_package_or_the_simulator, test_the_page_does_no_arithmetic_on_a_figure, test_the_page_shows_the_convention_hotel_on_day_10
+- Owns: the read-only demo page ([[DEC-57]], [[DEC-58]]), a Streamlit app over [[DAT-33]]. The sidebar picks a hotel and a day, and the query string can name them. It shows the day's news, two charts, the queue and the scorecard.
+- Charts: our rate, the comp set median and an accepted plan's rate as a dashed line, then the rooms on the books against the pace curve, side by side. The x axis is the window's dates, the Mondays labelled. The legends sit above the lines.
+- Queue: each queued plan with its reason, and the held flags open, each with its stay dates, its cause, the best alternative and how far it fell short. plain() escapes the markdown marks, so a dollar sign shows as written.
+- Scorecard: for the hotel and for all together, the nights already stayed and the complete outcome as five tiles each, then the small line of the contribution difference by stay date. A change of "0" shows no arrow.
+- Holds: FILE_VARIABLE, DEFAULT_FILE, HOTEL_PARAMETER, DAY_PARAMETER, ALL, PLOT_HEIGHTS, COLORS and MARKDOWN_MARKS ([[RUL-105]], [[RUL-106]], [[RUL-112]] to [[RUL-117]]), and STYLE, the CSS that fits the page in 900 pixels.
+- Reads: nothing in the package; streamlit, altair and duckdb only, the optional extra demo. The page computes nothing, and a test parses it for an arithmetic operator or an aggregate call. Tests: tests/test_demo_page.py.
+- Evidence: test_the_page_imports_nothing_from_the_package_or_the_simulator, test_the_page_does_no_arithmetic_on_a_figure, test_the_page_shows_the_convention_hotel_on_day_10, test_a_reason_with_two_dollar_amounts_shows_both_as_written
+
+### MOD-28 [C] scripts/demo_screenshots.py
+- File: scripts/demo_screenshots.py
+- Owns: the check that the demo page fits one window ([[DEC-58]]). It starts the page's server on a free port, opens three pages in a headless Chromium-based browser at 1440 by 900, saves a screenshot of each and measures the content.
+- Pages: PAGES names them: the convention hotel on day 10, the airport hotel on day 20 and the full-service hotel on day 30. The command fails when a page's content is taller than the window or its main section scrolls.
+- Browser: find_browser() takes the path in HOTEL_MARKET_BROWSER, else the first of BROWSERS found: a Chromium under /Applications or in Playwright's cache, Google Chrome, or a chromium or chrome on the PATH.
+- Driver: the Browser class drives it over the DevTools pipe, file descriptors 3 and 4, with no package beyond the standard library. MEASURE is the script the browser runs to measure the page once it has rendered.
+- Reads: [[MOD-27]] as the page it runs; nothing from the package
+- Tests: tests/test_demo_screenshots.py
+- Evidence: test_a_page_is_too_tall_when_its_content_passes_the_window_or_it_scrolls, test_the_browser_is_the_named_one_or_the_first_found, test_the_three_pages_fit_the_window

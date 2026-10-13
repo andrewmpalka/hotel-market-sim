@@ -721,11 +721,11 @@ hotels themselves are data ([[DAT-04]]).
 - Evidence: test_curve_matches_the_points_and_is_linear_in_between
 
 ### RUL-103 [C] DEMO_TABLES
-- Value: ("hotels", "news", "stay_dates", "queue", "scorecard")
+- Value: ("hotels", "days", "news", "stay_dates", "queue", "scorecard", "outcome", "gains")
 - File: src/hotel_market/demo_data.py
 - Kind: label
-- Meaning: the five tables sql/demo.sql defines for the demo page ([[DAT-33]]), in the order build() fills them.
-- Evidence: test_the_file_holds_the_stored_tables_for_every_day_and_the_pages_five
+- Meaning: the eight tables sql/demo.sql defines for the demo page ([[DAT-33]]), in the order build() fills them.
+- Evidence: test_the_file_holds_the_stored_tables_for_every_day_and_the_pages_tables
 
 ### RUL-104 [C] NOTHING_NEW
 - Value: "Nothing new became known today."
@@ -747,3 +747,80 @@ hotels themselves are data ([[DAT-04]]).
 - Kind: label
 - Meaning: the file the page reads when the variable is not set, the one hotel-market demo-data writes by default ([[MOD-26]]).
 - Evidence: test_the_page_shows_the_convention_hotel_on_day_10
+
+### RUL-107 [C] ALL
+- Value: "all"
+- File: src/hotel_market/demo_data.py
+- Kind: label
+- Meaning: the hotel key of the scorecard rows that count every hotel together ([[DAT-33]]). The page holds the same value ([[RUL-114]]).
+- Evidence: test_the_scorecard_counts_the_nights_already_stayed
+
+### RUL-108 [C] MEASURES
+- Value: ("Occupancy", "ADR", "RevPAR", "Room revenue", "Contribution")
+- File: src/hotel_market/demo_data.py
+- Kind: label
+- Meaning: the scorecard's five tiles in order, the measures [[MEA-01]] to [[MEA-05]]. tiles() writes one row per measure.
+- Evidence: test_the_tiles_texts_round_and_a_change_that_rounds_to_nothing_is_zero
+
+### RUL-109 [C] RATE_AXIS
+- Value: (0.75, 1.25)
+- File: src/hotel_market/demo_data.py
+- Kind: parameter
+- Meaning: the rate chart's y axis as shares of the hotel's start rate ([[DEC-58]]). build() writes the two bounds into the hotels table.
+- Evidence: test_the_chart_rows_mark_the_flagged_stay_dates_and_carry_the_planned_rate
+
+### RUL-110 [C] GAIN_TICK_DAYS
+- Value: 28
+- File: src/hotel_market/demo_data.py
+- Kind: parameter
+- Meaning: the small line labels a stay date every this many days from day 0, every fourth Monday ([[DAT-33]]).
+- Evidence: test_the_outcome_is_the_result_once_every_stay_date_is_complete
+
+### RUL-111 [C] NUMBER_WORDS
+- Value: ("no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine")
+- File: src/hotel_market/demo_data.py
+- Kind: label
+- Meaning: the words for the hotel count in the title of the rows for all hotels together, "All four hotels". Ten or more hotels read as a number.
+- Evidence: test_the_scorecard_counts_the_nights_already_stayed
+
+### RUL-112 [C] HOTEL_PARAMETER
+- Value: "hotel"
+- File: src/hotel_market/demo_page.py
+- Kind: label
+- Meaning: the query parameter that opens the page at a hotel, by its key ([[MOD-27]]). The screenshot script uses it ([[MOD-28]]). An unknown key opens the first hotel.
+- Evidence: test_the_query_string_opens_a_hotel_and_a_day_and_the_held_flags_are_open
+
+### RUL-113 [C] DAY_PARAMETER
+- Value: "day"
+- File: src/hotel_market/demo_page.py
+- Kind: label
+- Meaning: the query parameter that opens the page at a day ([[MOD-27]]). A day the file does not hold opens day 0.
+- Evidence: test_the_query_string_opens_a_hotel_and_a_day_and_the_held_flags_are_open
+
+### RUL-114 [C] ALL
+- Value: "all"
+- File: src/hotel_market/demo_page.py
+- Kind: label
+- Meaning: the key the page reads the scorecard rows for all hotels together by, the same value as [[RUL-107]].
+- Evidence: test_the_page_shows_the_convention_hotel_on_day_10
+
+### RUL-115 [C] PLOT_HEIGHTS
+- Value: {"chart": 110, "small": 50}
+- File: src/hotel_market/demo_page.py
+- Kind: parameter
+- Meaning: the plot areas in pixels: each stay-date chart, and the scorecard's small line. The legend and the axis add to them. They keep the page in 900 pixels ([[DEC-58]]).
+- Evidence: test_the_three_pages_fit_the_window
+
+### RUL-116 [C] COLORS
+- Value: {"blue": "#2a78d6", "orange": "#eb6834", "aqua": "#1baf7a", "red": "#e34948"}
+- File: src/hotel_market/demo_page.py
+- Kind: label
+- Meaning: the lines' colours and the red of the flagged bands. Blue is our rate and the hotel, orange the comp set median and the pace curve, aqua the rooms on the books and all hotels together.
+- Evidence: test_the_three_pages_fit_the_window
+
+### RUL-117 [C] MARKDOWN_MARKS
+- Value: ("\\", "$", "*", "_", "`")
+- File: src/hotel_market/demo_page.py
+- Kind: label
+- Meaning: the characters plain() escapes in a reason, a plan or a date, so the markdown shows them as written ([[DEC-58]]). The backslash goes first.
+- Evidence: test_a_reason_with_two_dollar_amounts_shows_both_as_written
