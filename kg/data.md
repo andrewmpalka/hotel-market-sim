@@ -289,3 +289,13 @@ the plans, the model's request and answer, and what the command writes.
 - Written by: [[MOD-12]] (the bench command, from --model) and tests
 - Read by: [[MOD-12]] (sweep)
 - Evidence: test_the_three_kinds_of_reviewer_make_their_clients, test_a_sweep_with_reviewers_keeps_each_arms_entries_calls_and_counts
+
+### DAT-33 [C] The demo file
+- File: sql/demo.sql
+- Tables: five, beside the seven stored tables ([[DAT-28]]) for days 0 to 59 in the same DuckDB file. Every table but hotels is keyed by as_of_day and hotel, the page's two choices.
+- Hotels and news: hotels (position, key, name, rooms). news (as_of_day, hotel, position, kind, text) holds what became known that day in plain words. One row says nothing did.
+- Chart: stay_dates (as_of_day, hotel, stay_day, rate, comp_median, rooms_on_books, pace, flagged, causes), one row per stay date in the day's window.
+- Queue: queue (as_of_day, hotel, position, stays, causes, plan, value, value_text, reason, reason_source, queued, outcome). The outcome is accepted, declined or held.
+- Scorecard: scorecard (as_of_day, hotel, run, occupancy, adr, revpar, room_revenue, contribution), with run agent, fixed or delta. The figures are to date, every booking made through the day.
+- Used by: written by [[MOD-26]] and read by [[MOD-27]], which computes nothing from it ([[DEC-57]])
+- Evidence: test_the_file_holds_the_stored_tables_for_every_day_and_the_pages_five, test_the_chart_rows_mark_the_flagged_stay_dates, test_the_scorecard_is_to_date_and_the_delta_is_the_agent_run_minus_the_fixed_one

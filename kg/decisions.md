@@ -506,3 +506,12 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Measured: the three learn:1.0 cautious arms reran on seeds 1 to 20 and declined nothing. Each ties with the template at +$25,076 a seed ([[RES-35]]). The 852 calls cost $10.48.
 - Evidence: test_a_band_end_gain_under_ten_dollars_reads_to_the_dollar, test_the_band_verdict_states_the_cautious_rules_result, test_the_three_values_reach_the_model_request, test_the_recorded_live_run_replays_without_a_key_and_gives_28818
 - Links: [[DEC-44]], [[DEC-39]], [[DEC-23]], [[DAT-16]], [[DAT-29]], [[MOD-09]], [[MOD-11]], [[RUL-47]], [[RES-35]], [[UNK-01]]
+
+### DEC-57 [C] A read-only demo page over a file code writes
+- Decided: the demo page ([[MOD-27]]) is a Streamlit app, the optional extra demo. It reads one DuckDB file ([[DAT-33]]) that hotel-market demo-data writes ([[MOD-26]]) and computes nothing.
+- Reasons: the file's reasons come from the recorded live run of seed 7 ([[DAT-29]]). The daily path replays it ([[DEC-42]]) with a client that never answers. The page needs no API key. A seed with no recording gets the template's.
+- Scorecard: to date means every booking made through the day, over stay dates 0 to 149, for both runs. On day 59 it holds the bookings so far; the README's figures count the bookings to day 149 ([[RES-02]]).
+- Guard: a test parses the page and fails on an import from the package, an arithmetic operator or an aggregate call. Every figure the page shows is a row code wrote ([[RUL-01]]).
+- Replaces: CLAUDE.md's rule 5 allowed no web UI. It now allows this page, and nothing else.
+- Evidence: test_the_page_imports_nothing_from_the_package_or_the_simulator, test_the_page_does_no_arithmetic_on_a_figure, test_the_reasons_come_from_the_recorded_live_run
+- Links: [[MOD-26]], [[MOD-27]], [[DAT-33]], [[DAT-28]], [[DAT-29]], [[DEC-42]], [[RUL-01]], [[RES-02]]

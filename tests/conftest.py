@@ -51,6 +51,16 @@ def books_through():
 
 
 @pytest.fixture(scope="session")
+def demo_file(tmp_path_factory):
+    """The demo page's file for the recorded seed, built once for the session."""
+    from hotel_market.demo_data import build
+
+    path = tmp_path_factory.mktemp("demo") / "demo.duckdb"
+    assert build(7, path), "the recorded run of seed 7 was not found"
+    return path
+
+
+@pytest.fixture(scope="session")
 def day10(books_through):
     """The books after day 10's bookings at fixed rates, and that day's detect numbers."""
     books = books_through(10)

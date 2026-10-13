@@ -31,6 +31,8 @@ it differs from what that would write. `README.md` is the legend.
 - MOD-23 [C] bench.py — src/hotel_market/bench.py
 - MOD-24 [C] scripts/median_path.py — scripts/median_path.py
 - MOD-25 [C] policy.py — src/hotel_market/policy.py
+- MOD-26 [C] demo_data.py — src/hotel_market/demo_data.py
+- MOD-27 [C] demo_page.py — src/hotel_market/demo_page.py
 
 ## Data (`data.md`)
 
@@ -66,6 +68,7 @@ it differs from what that would write. `README.md` is the legend.
 - DAT-30 [C] The call record — src/hotel_market/model.py
 - DAT-31 [C] DeclineCounts — src/hotel_market/bench.py
 - DAT-32 [C] Reviewer — src/hotel_market/bench.py
+- DAT-33 [C] The demo file — sql/demo.sql
 
 ## Rules and constants (`rules.md`)
 
@@ -134,7 +137,7 @@ it differs from what that would write. `README.md` is the legend.
 - RUL-67 [C] min_value_at_stake — customers/demo.toml
 - RUL-68 [C] days_out — customers/demo.toml
 - RUL-69 [C] share — customers/demo.toml
-- Labels: RUL-06, RUL-07, RUL-08, RUL-09, RUL-10, RUL-89, RUL-93, RUL-31, RUL-32, RUL-33, RUL-34, RUL-35, RUL-36, RUL-37, RUL-38, RUL-41, RUL-42, RUL-44, RUL-45, RUL-49, RUL-46, RUL-47, RUL-75, RUL-78, RUL-79, RUL-48, RUL-55, RUL-74, RUL-86, RUL-94, RUL-100, RUL-101, RUL-72, RUL-73, RUL-70, RUL-71, RUL-57
+- Labels: RUL-06, RUL-07, RUL-08, RUL-09, RUL-10, RUL-89, RUL-93, RUL-31, RUL-32, RUL-33, RUL-34, RUL-35, RUL-36, RUL-37, RUL-38, RUL-41, RUL-42, RUL-44, RUL-45, RUL-49, RUL-46, RUL-47, RUL-75, RUL-78, RUL-79, RUL-48, RUL-55, RUL-74, RUL-86, RUL-94, RUL-100, RUL-101, RUL-72, RUL-73, RUL-70, RUL-71, RUL-57, RUL-103, RUL-104, RUL-105, RUL-106
 
 ## Shocks (`shocks.md`)
 
@@ -247,6 +250,7 @@ it differs from what that would write. `README.md` is the legend.
 - DEC-47 [C] The oracle reviewer is a grader outside the agent's path — kg/decisions.md
 - DEC-48 [C] The bench is one sweep with a reviewer per arm — kg/decisions.md
 - DEC-56 [C] The cautious band's verdict is a display field, and a band-end gain under $10 reads to the dollar — kg/decisions.md
+- DEC-57 [C] A read-only demo page over a file code writes — kg/decisions.md
 
 ## Results (`results.md`)
 

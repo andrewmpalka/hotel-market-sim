@@ -114,7 +114,7 @@ which is also the order in which they depend on each other.
 
 ### MOD-12 [C] cli.py
 - File: src/hotel_market/cli.py
-- Owns: the hotel-market command: the fixed-rate and agent runs, decisions.jsonl ([[DAT-18]]), the replay of a day and the bench ([[DEC-48]]). It prints the queues and the summary tables ([[DAT-20]]) and checks the arguments.
+- Owns: the hotel-market command: the fixed-rate and agent runs, decisions.jsonl ([[DAT-18]]), the replay of a day and the bench ([[DEC-48]]). It prints the queues and the summary tables ([[DAT-20]]). demo-data hands off to [[MOD-26]].
 - Sweep: sweep() runs one arm per seed, mode ([[DAT-24]]) and reviewer ([[DAT-32]]). bench runs the template, the oracle and each --model in every --elasticity mode. It prints a table per mode, a ranking and the groups of [[MEA-13]].
 - Daily: run_days() plays the simulator to a day with the stored changes and writes the feeds. A fresh agent then runs on the tables ([[MOD-21]]). replay_day() rebuilds a day's plans from the tables and checks them ([[DEC-42]]).
 - Holds: REPORT_DAYS ([[RUL-53]]), SHOCK_PLAN_CAUSES ([[RUL-55]]), DAILY_COMMANDS ([[RUL-74]]), BENCH_MODES ([[RUL-81]]) and DEFAULT_DB, the daily commands' table file. --customer and --target name the market and its target ([[DEC-41]]).
@@ -244,3 +244,23 @@ which is also the order in which they depend on each other.
 - Writes: nothing stored; the sweep reads its run as a SeedResult's control fields ([[DAT-19]])
 - Tests: tests/test_policy.py
 - Evidence: test_the_rule_raises_ahead_of_pace_and_lowers_behind_by_the_step, test_the_rules_policy_adds_the_event_and_seat_rules_and_skips_a_conflict, test_the_rule_keeps_the_hold_and_reads_only_the_sources
+
+### MOD-26 [C] demo_data.py
+- File: src/hotel_market/demo_data.py
+- Owns: the demo file ([[DAT-33]], [[DEC-57]]). build() runs days 0 to 59 through run_days ([[MOD-12]]) with the recorded run as the cache. An observe hook collects the page's rows, and a second pass of simulate gives the fixed-rate run.
+- Rows: _news_rows writes what became known in plain words from the feeds and the detect numbers ([[MOD-07]], [[MOD-11]]). _stay_rows, _queue_rows and _scorecard_row fill the other tables; _delta_rows subtracts the fixed run.
+- Holds: DEMO_FILE, DEMO_SCHEMA_FILE and RECORDED_RUNS, the paths, DEMO_TABLES ([[RUL-103]]) and NOTHING_NEW ([[RUL-104]]). Recorded is the client that never answers, so a request outside the recording stops the command.
+- Reads: [[MOD-06]], [[MOD-07]], [[MOD-10]], [[MOD-11]], [[MOD-19]], [[MOD-20]], [[MOD-21]], and run_days from [[MOD-12]] inside build(), because cli imports this module
+- Writes: [[DAT-33]], beside [[DAT-28]]'s tables for days 0 to 59
+- Tests: tests/test_demo_data.py
+- Evidence: test_the_file_holds_the_stored_tables_for_every_day_and_the_pages_five, test_the_reasons_come_from_the_recorded_live_run, test_the_news_names_the_convention_the_filings_and_the_comp_set_cut
+
+### MOD-27 [C] demo_page.py
+- File: src/hotel_market/demo_page.py
+- Owns: the read-only demo page ([[DEC-57]]), a Streamlit app over [[DAT-33]]. The sidebar picks a hotel and a day. It shows the day's news, a chart of the stay dates ahead, the queue with reasons and the scorecard.
+- Chart: our rate and the comp set median, then rooms on the books against the pace curve, by stay date. Rules mark the flagged stay dates. The held flags sit in a collapsed list with their causes.
+- Holds: FILE_VARIABLE ([[RUL-105]]) and DEFAULT_FILE ([[RUL-106]]). The page formats figures and draws them. It computes nothing, and a test parses it for an arithmetic operator or an aggregate call.
+- Reads: nothing in the package; streamlit, altair and duckdb only. Streamlit is the optional extra demo in pyproject.toml.
+- Writes: nothing
+- Tests: tests/test_demo_page.py
+- Evidence: test_the_page_imports_nothing_from_the_package_or_the_simulator, test_the_page_does_no_arithmetic_on_a_figure, test_the_page_shows_the_convention_hotel_on_day_10

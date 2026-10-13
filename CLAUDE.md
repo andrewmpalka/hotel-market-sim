@@ -24,8 +24,11 @@ results, and docs/results.md has the tables of every experiment.
    reads the cache first. Without an API key, model.py writes a template
    reason, so the tests run offline. The template's answers are never cached.
 5. The stack is Python 3.11+, numpy, pandas, duckdb, pytest, ruff and the
-   anthropic SDK, declared in pyproject.toml. There is no web UI, no database
-   server and no real data; DuckDB is a file the daily commands write.
+   anthropic SDK, declared in pyproject.toml. The one UI is the read-only demo
+   page, a Streamlit app installed by the optional extra demo. It reads a
+   DuckDB file the demo-data command writes and computes nothing. There is no
+   database server and no real data; DuckDB is a file the daily commands and
+   the demo-data command write.
 6. The agent's modules are detect, forecast, estimate, plan, model, agent, text,
    stored, bench and policy. They read data only through the four interfaces
    in sources.py. They never import demand, bookings, shops, schedule, shocks
@@ -62,10 +65,13 @@ with pip install -e ".[dev]" and import it as hotel_market.<module>.
 | cli.py | the hotel-market command, which python -m hotel_market also runs |
 | bench.py | the benchmark of the model as a reviewer: the oracle grader, its measures, the reviewers and the price table |
 | policy.py | the rule-based control: a pace rule with no estimates and no model, for the comparison frozen rates cannot give |
+| demo_data.py | the demo page's file: the stored tables for days 0 to 59 and the page's five tables, every figure computed here |
+| demo_page.py | the read-only demo page: a Streamlit app that reads that file and computes nothing |
 
 Around the package, tests/ holds one test file per module, conftest.py and
 tests/fixtures/live_seed7/, one recorded live run. customers/demo.toml is the
-demo market, and sql/schema.sql defines the seven stored tables.
+demo market, sql/schema.sql defines the seven stored tables and sql/demo.sql the
+demo page's five.
 scripts/live_audit.py runs and audits a live seed, and scripts/median_path.py
 prints a comp median's path next to the hotel's rate. kg/ and kg_check.py are
 the knowledge graph and its checker. Makefile and Dockerfile wrap the setup.
@@ -83,6 +89,7 @@ the air schedule feed as modelled.
     make live-audit SEED=7     # the live run, measured, then its audit
     make bench FIRST=1 LAST=3  # the reviewers benchmarked (ANTHROPIC_API_KEY); BENCH=--template runs it offline
     make day SEED=7 DAY=20     # one day through the stored tables; make day-replay DAY=20 replays it
+    make demo SEED=7           # demo.duckdb from the recorded run, then the demo page (installs streamlit)
     make image                 # the Docker image; make docker-test and docker-run SEED=7 use it
     python kg_check.py         # the graph against the code; --write-index rewrites kg/index.md
 

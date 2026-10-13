@@ -719,3 +719,31 @@ hotels themselves are data ([[DAT-04]]).
 - Kind: parameter
 - Meaning: the share of final bookings on the books at each pinned days-out, linear in between.
 - Evidence: test_curve_matches_the_points_and_is_linear_in_between
+
+### RUL-103 [C] DEMO_TABLES
+- Value: ("hotels", "news", "stay_dates", "queue", "scorecard")
+- File: src/hotel_market/demo_data.py
+- Kind: label
+- Meaning: the five tables sql/demo.sql defines for the demo page ([[DAT-33]]), in the order build() fills them.
+- Evidence: test_the_file_holds_the_stored_tables_for_every_day_and_the_pages_five
+
+### RUL-104 [C] NOTHING_NEW
+- Value: "Nothing new became known today."
+- File: src/hotel_market/demo_data.py
+- Kind: label
+- Meaning: the one news row of a day with no event, filing or comp set move for the hotel ([[DAT-33]]).
+- Evidence: test_the_news_names_the_convention_the_filings_and_the_comp_set_cut
+
+### RUL-105 [C] FILE_VARIABLE
+- Value: "HOTEL_MARKET_DEMO_FILE"
+- File: src/hotel_market/demo_page.py
+- Kind: label
+- Meaning: the environment variable that names the demo file the page reads ([[DAT-33]]). make demo sets it, and the page test sets it to the file it built.
+- Evidence: test_the_page_shows_the_convention_hotel_on_day_10
+
+### RUL-106 [C] DEFAULT_FILE
+- Value: "demo.duckdb"
+- File: src/hotel_market/demo_page.py
+- Kind: label
+- Meaning: the file the page reads when the variable is not set, the one hotel-market demo-data writes by default ([[MOD-26]]).
+- Evidence: test_the_page_shows_the_convention_hotel_on_day_10

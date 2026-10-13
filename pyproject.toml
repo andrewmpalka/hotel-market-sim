@@ -17,6 +17,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest", "ruff"]
+demo = ["streamlit>=1.50"]
 
 [project.scripts]
 hotel-market = "hotel_market.cli:main"

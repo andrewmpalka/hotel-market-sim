@@ -30,6 +30,9 @@ Python 3.11 or later, from the repository root:
     hotel-market run-day --seed 7 --as-of 20 --from 0   # days 0 to 20, one day at a time, through stored tables
     hotel-market replay --as-of 20                      # day 20's plans again, from the stored tables alone
     python scripts/live_audit.py --seed 7               # a live run, every model call measured, then audited
+    hotel-market demo-data --seed 7                     # demo.duckdb: the stored tables and the demo page's tables, reasons from the recorded run
+    pip install -e ".[demo]" && HOTEL_MARKET_DEMO_FILE=demo.duckdb streamlit run src/hotel_market/demo_page.py
+                                                        # the read-only demo page over that file; no API key
     hotel-market bench --seeds 1 20 --template          # the template and the oracle reviewer, in three modes, offline
     hotel-market bench --seeds 1 3                      # the same with each Claude model reviewing (needs ANTHROPIC_API_KEY)
     hotel-market bench --seeds 1 20 --template --demand-bias 0.9 --elasticity true --elasticity learn:1.0
@@ -49,6 +52,7 @@ With make, on a Mac or Linux machine:
     make run SEED=7            # the template run; make live SEED=7 uses the model
     make bench FIRST=1 LAST=3  # the reviewers benchmarked; make bench BENCH=--template runs it offline
     make day SEED=7 DAY=20     # a day through the stored tables; make day-replay DAY=20 replays it
+    make demo SEED=7           # write demo.duckdb from the recorded run and start the demo page
     make help                  # every target
 
 With Docker:

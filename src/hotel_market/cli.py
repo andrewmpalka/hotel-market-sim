@@ -83,7 +83,7 @@ import math
 import os
 import statistics
 import sys
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 
@@ -214,6 +214,7 @@ def run_days(
     client: Client | None = None,
     mode: ElasticityMode = TRUE_MODE,
     customer: Customer | None = None,
+    observe: Callable[[int, Books, Agent], None] | None = None,
 ) -> tuple[list[Entry], list[Advice]]:
     """Days first to last through the stored tables, in one pass of the simulator.
 
@@ -221,7 +222,8 @@ def run_days(
     changes the tables already hold. On each day from `first` to `last`, its position is written to
     the feed tables as that day's snapshot. A fresh agent then picks up the state the stored
     decisions left and decides the day from the tables alone. Its flags, plans and decisions are
-    written. Returns the last day's entries and advice.
+    written. observe, if given, sees each decided day's books and agent; the demo data uses it.
+    Returns the last day's entries and advice.
     """
     customer = customer or demo()
     connection = stored.connect(db)
@@ -246,6 +248,8 @@ def run_days(
         changes = agent.decide(day, stored.stored_sources(connection, customer))
         stored.write_decisions(connection, day, agent.entries, agent.advice)
         outcome["entries"], outcome["advice"] = agent.entries, agent.advice
+        if observe is not None:
+            observe(day, books, agent)
         return changes
 
     try:
@@ -944,6 +948,11 @@ def main(argv: list[str] | None = None) -> None:
     if argv[:1] == ["bench"]:
         _bench_main(argv[1:])
         return
+    if argv[:1] == ["demo-data"]:
+        from hotel_market import demo_data  # here, because demo_data imports run_days
+
+        demo_data.main(argv[1:])
+        return
     args = _parse_args(argv)
     customer = _customer(args)
     world = (
@@ -972,7 +981,8 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         prog="hotel-market",
         description="Run the hotel market with fixed rates and with the agent.",
         epilog="hotel-market run-day and hotel-market replay run the agent one day at a time "
-        "against stored tables; see hotel-market run-day --help.",
+        "against stored tables; see hotel-market run-day --help. hotel-market demo-data writes "
+        "the demo page's file; see hotel-market demo-data --help.",
     )
     which = parser.add_mutually_exclusive_group(required=True)
     which.add_argument("--seed", type=_seed)
