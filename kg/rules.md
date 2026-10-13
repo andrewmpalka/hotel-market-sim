@@ -552,8 +552,22 @@ marked [H], with one line that names the node it moved to.
 - Value: 0.05
 - File: src/hotel_market/policy.py
 - Kind: parameter
-- Meaning: the raise the pace rule applies on an ahead-of-pace flag, and the cut on a behind-pace flag ([[DEC-55]]). Both are clamped to the floor and ceiling.
+- Meaning: the raise a policy applies on a raising cause, and the cut on a lowering cause ([[DEC-55]]). Both are clamped to the floor and ceiling.
 - Evidence: test_the_rule_raises_ahead_of_pace_and_lowers_behind_by_the_step
+
+### RUL-100 [C] RAISE
+- Value: 1
+- File: src/hotel_market/policy.py
+- Kind: label
+- Meaning: the direction a policy's rules map a raising cause to ([[DEC-55]]). Ahead of pace raises for both policies. An event or seats up raises for rules.
+- Evidence: test_the_rules_policy_adds_the_event_and_seat_rules_and_skips_a_conflict
+
+### RUL-101 [C] LOWER
+- Value: -1
+- File: src/hotel_market/policy.py
+- Kind: label
+- Meaning: the direction a policy's rules map a lowering cause to: behind pace for both policies, seats cut for rules ([[DEC-55]]).
+- Evidence: test_the_rules_policy_adds_the_event_and_seat_rules_and_skips_a_conflict
 
 ## stored.py
 

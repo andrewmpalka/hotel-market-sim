@@ -398,19 +398,27 @@ The level is learned at once and exactly. By day 10 the factor is 0.90 at a bias
 
 ## The rule-based control
 
-`hotel-market bench --seeds 1 20 --template --policy pace --demand-bias B --elasticity true` at B = 0.9, 1.0 and 1.1, and the same command with `--react --market-elasticity 0.5` in place of the bias, run on 2026-10-12. The pace rule raises 5% on every stay date that runs ahead of pace by the detect threshold and lowers 5% on every one behind it, with the same hold, floor and ceiling as the agent, and no estimate and no model. It runs beside each arm on the same seed, and the table gives each arm's gain against frozen rates next to its gain against the rule. Ahead of the rule counts the seeds where the arm beat it, and rule changes the stay dates the rule changed over the 20 seeds.
+`hotel-market bench --seeds 1 20 --template --policy P --demand-bias B --elasticity true` at B = 0.9, 1.0 and 1.1, and the same command with `--react --market-elasticity 0.5` in place of the bias, for P = pace and P = rules, run on 2026-10-12. The pace policy raises 5% on every stay date that runs ahead of pace by the detect threshold and lowers 5% on every one behind it, with the same hold, floor and ceiling as the agent, and no estimate and no model. The rules policy keeps those steps and adds the rules the agent's first design retired: it raises 5% on an event flag's dates and on a seat-up flag's dates, and lowers 5% on a seat-cut flag's dates. Each policy runs beside each arm on the same seed, and the table gives each arm's gain against frozen rates next to its gain against the policy. Ahead counts the seeds where the arm beat the policy, and changes the stay dates the policy changed over the 20 seeds.
 
-Seeds 1 to 20 in the true mode against the pace rule, under each demand bias and in the reacting market, the template and the oracle, each against the fixed-rate run and against the rule.
+Seeds 1 to 20 in the true mode against the pace and the rules policies, under each demand bias and in the reacting market, the template and the oracle, each against the fixed-rate run and against the policy.
 
-| World | Reviewer | Against frozen rates | Against the rule | Ahead of the rule | The rule against frozen rates | Rule changes |
-| --- | --- | ---: | ---: | ---: | ---: | ---: |
-| bias 0.9 | template | +1,913 | -101 | 7/20 | +2,015 | 694 |
-| bias 0.9 | oracle | +2,334 | +319 | 8/20 | +2,015 | 694 |
-| bias 1.0 | template | +32,899 | +21,437 | 20/20 | +11,462 | 653 |
-| bias 1.0 | oracle | +32,899 | +21,437 | 20/20 | +11,462 | 653 |
-| bias 1.1 | template | +112,082 | +67,466 | 20/20 | +44,616 | 2505 |
-| bias 1.1 | oracle | +112,082 | +67,466 | 20/20 | +44,616 | 2505 |
-| react, market 0.5 | template | +72,229 | +59,986 | 20/20 | +12,243 | 597 |
-| react, market 0.5 | oracle | +72,229 | +59,986 | 20/20 | +12,243 | 597 |
+| Policy | World | Reviewer | Against frozen rates | Against the policy | Ahead of it | The policy against frozen rates | Policy changes |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
+| pace | bias 0.9 | template | +1,913 | -101 | 7/20 | +2,015 | 694 |
+| pace | bias 0.9 | oracle | +2,334 | +319 | 8/20 | +2,015 | 694 |
+| pace | bias 1.0 | template | +32,899 | +21,437 | 20/20 | +11,462 | 653 |
+| pace | bias 1.0 | oracle | +32,899 | +21,437 | 20/20 | +11,462 | 653 |
+| pace | bias 1.1 | template | +112,082 | +67,466 | 20/20 | +44,616 | 2505 |
+| pace | bias 1.1 | oracle | +112,082 | +67,466 | 20/20 | +44,616 | 2505 |
+| pace | react, market 0.5 | template | +72,229 | +59,986 | 20/20 | +12,243 | 597 |
+| pace | react, market 0.5 | oracle | +72,229 | +59,986 | 20/20 | +12,243 | 597 |
+| rules | bias 0.9 | template | +1,913 | +1,256 | 13/20 | +657 | 7277 |
+| rules | bias 0.9 | oracle | +2,334 | +1,677 | 13/20 | +657 | 7277 |
+| rules | bias 1.0 | template | +32,899 | +10,043 | 17/20 | +22,856 | 7123 |
+| rules | bias 1.0 | oracle | +32,899 | +10,043 | 17/20 | +22,856 | 7123 |
+| rules | bias 1.1 | template | +112,082 | +32,214 | 20/20 | +79,869 | 8385 |
+| rules | bias 1.1 | oracle | +112,082 | +32,214 | 20/20 | +79,869 | 8385 |
+| rules | react, market 0.5 | template | +72,229 | -32,914 | 0/20 | +105,144 | 7091 |
+| rules | react, market 0.5 | oracle | +72,229 | -32,914 | 0/20 | +105,144 | 7091 |
 
-A fixed-rate run is a control that never moves, so every gain against it includes what a hotel's own rules would have earned anyway. The pace rule is the fairer yardstick. In the default world it earns +$11,462 a seed from the same flags with no estimate and no model, and the agent's +$32,899 against frozen rates is +$21,437 against the rule, ahead in 20 of 20. At a bias of 0.9 the rule earns +$2,015 and the agent earns -$101 a seed against it, because the opportunity there is small for both. At 1.1 the rule earns +$44,616 a seed from 2,505 stay dates changed, because a market a tenth larger runs ahead of pace almost everywhere, and the agent's +$112,082 is +$67,466 against it. In the reacting market the rule earns +$12,243 and the agent's +$72,229 is +$59,986 against it, ahead in 20 of 20. The rule is anomaly-driven as the agent is: it acts only on a flag, so it shares the blind spot FRK-11 records, and a market that is simply larger raises nothing for either.
+A fixed-rate run is a control that never moves, so every gain against it includes what a hotel's own rules would have earned anyway. A policy that acts on the same flags is the fairer yardstick, and the rules policy is the one the README quotes, because the pace policy skips every flag that is not a pace flag. It cannot act on the convention or the new flights when they become known, and those two shocks carry 96% of the default gain, so against it the agent was beaten on the part of the problem the control was never given. In the default world the rules policy earns +$22,856 a seed from 7,123 stay dates changed, and the agent's +$32,899 against frozen rates is +$10,043 against it, ahead in 17 of 20. The pace policy earns +$11,462 there, from the pace flags alone. At a bias of 0.9 the rules policy earns +$657 and the agent +$1,256 against it, because the opportunity there is small for both. At 1.1 the rules policy earns +$79,869 from 8,385 stay dates changed, because a market a tenth larger runs ahead of pace almost everywhere, and the agent's +$112,082 is +$32,214 against it. In the reacting market the rules policy earns +$105,144 and the agent's +$72,229 is -$32,914 against it, behind in every seed: the policy changes 7,091 stay dates against the agent's 207 and rides the ratchet further. Both policies are anomaly-driven as the agent is: they act only on a flag, so they share the blind spot FRK-11 records, and a market that is simply larger raises nothing for any of them.

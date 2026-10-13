@@ -133,7 +133,7 @@ it differs from what that would write. `README.md` is the legend.
 - RUL-67 [C] min_value_at_stake — customers/demo.toml
 - RUL-68 [C] days_out — customers/demo.toml
 - RUL-69 [C] share — customers/demo.toml
-- Labels: RUL-06, RUL-07, RUL-08, RUL-09, RUL-10, RUL-89, RUL-93, RUL-31, RUL-32, RUL-33, RUL-34, RUL-35, RUL-36, RUL-37, RUL-38, RUL-41, RUL-42, RUL-44, RUL-45, RUL-49, RUL-46, RUL-47, RUL-75, RUL-78, RUL-79, RUL-48, RUL-55, RUL-74, RUL-86, RUL-94, RUL-72, RUL-73, RUL-70, RUL-71, RUL-57
+- Labels: RUL-06, RUL-07, RUL-08, RUL-09, RUL-10, RUL-89, RUL-93, RUL-31, RUL-32, RUL-33, RUL-34, RUL-35, RUL-36, RUL-37, RUL-38, RUL-41, RUL-42, RUL-44, RUL-45, RUL-49, RUL-46, RUL-47, RUL-75, RUL-78, RUL-79, RUL-48, RUL-55, RUL-74, RUL-86, RUL-94, RUL-100, RUL-101, RUL-72, RUL-73, RUL-70, RUL-71, RUL-57
 
 ## Shocks (`shocks.md`)
 
@@ -278,7 +278,7 @@ it differs from what that would write. `README.md` is the legend.
 - RES-30 [C] The fitted level fed back at the default demand bias — kg/results.md
 - RES-31 [C] The fitted level fed back at a demand bias of 1.1 — kg/results.md
 - RES-32 [C] The fitted level fed back with the reaction on at a market elasticity of 0.5 — kg/results.md
-- RES-33 [C] The agent against the pace rule on seeds 1 to 20 — kg/results.md
+- RES-33 [C] The agent against the pace and the rules policies on seeds 1 to 20 — kg/results.md
 
 ## Open forks (`forks.md`)
 

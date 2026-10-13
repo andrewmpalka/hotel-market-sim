@@ -344,13 +344,13 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Links: [[DEC-38]], [[DEC-50]], [[DEC-52]], [[RUL-96]], [[RUL-97]], [[RUL-98]], [[RES-29]], [[RES-30]], [[RES-31]], [[RES-32]], [[UNK-07]], [[UNK-08]]
 
 ### DEC-55 [C] A rule-based control is the fair comparison, because frozen rates never move
-- Decided: --policy pace runs a rule beside each arm on the same seed ([[MOD-25]]). It raises POLICY_STEP where a stay date runs ahead of pace and lowers it where behind ([[RUL-99]]). It keeps the agent's hold, floor and ceiling.
-- Rule: it reads the day through the four sources ([[DAT-25]]). It acts on the flags the detector raises, with no estimate and no model. The sweep reports each arm's gain against it next to its gain against frozen rates ([[DAT-19]]).
+- Decided: --policy runs a rule-based control beside each arm ([[MOD-25]]). pace raises POLICY_STEP where a stay date runs ahead of pace and lowers it where behind ([[RUL-99]]). Both keep the agent's hold, floor and ceiling.
+- Rules: rules keeps the pace steps and adds the retired rules of [[DEC-11]]. It raises on an event or seat-up flag and lowers on a seat-cut flag. A flag whose causes point both ways is left alone. The README quotes it.
+- Why rules: pace skips every flag that is not a pace flag. It cannot act on the two shocks that carry most of the gain ([[RES-06]]). Against it the agent was beaten on the part of the problem the control was never given.
 - Reason: a fixed-rate run never moves a rate, so every gain against it includes what a hotel's own rules earn anyway. The rule stands for what a hotel already does, and the agent's margin over it is the claim worth making.
-- Blind spot: the rule is anomaly-driven as the agent is. It acts only on a flag, so a market that is simply larger raises nothing for either ([[FRK-11]]).
-- Measured: in the default world the rule earns +$11,462 a seed, and the agent's gain against it is +$21,437 ([[RES-33]]).
-- Evidence: test_the_rule_raises_ahead_of_pace_and_lowers_behind_by_the_step, test_the_rule_keeps_the_hold_and_reads_only_the_sources, test_a_policy_runs_the_rule_based_control_beside_each_arm
-- Links: [[MOD-25]], [[RUL-99]], [[RES-33]], [[RES-01]], [[DEC-13]], [[FRK-11]], [[UNK-08]]
+- Measured: in the default world the rules policy earns +$22,856 a seed, and the agent's gain against it is +$10,043 ([[RES-33]]). Both policies act only on a flag and share the blind spot of [[FRK-11]].
+- Evidence: test_the_rule_raises_ahead_of_pace_and_lowers_behind_by_the_step, test_the_rules_policy_adds_the_event_and_seat_rules_and_skips_a_conflict, test_a_policy_runs_the_rule_based_control_beside_each_arm
+- Links: [[MOD-25]], [[RUL-99]], [[RES-33]], [[RES-01]], [[RES-06]], [[DEC-11]], [[DEC-13]], [[FRK-11]], [[UNK-08]]
 
 ## Engineering
 

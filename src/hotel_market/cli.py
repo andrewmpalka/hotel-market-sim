@@ -1273,7 +1273,7 @@ def _print_run(
         control = _control(seed, policy, fixed, customer, world)
         own = sum(books.contribution(h) - fixed.contribution(h) for h in customer.hotels)
         print(
-            f"The {policy} rule earned {control['control_change']:+,.0f} over fixed rates with "
+            f"The {policy} policy earned {control['control_change']:+,.0f} over fixed rates with "
             f"{control['control_changes']} stay dates changed, so against it the agent earned "
             f"{own - control['control_change']:+,.0f}."
         )
@@ -1385,8 +1385,8 @@ def _control_table(arms: list[ArmResult], policy: str, named: bool = False) -> l
     changes, the seeds ahead of the rule, and the rule's own mean change and pairs changed."""
     reviewer_heading = f"{'reviewer':20}" if named else ""
     lines = [
-        f"Against the {policy} rule, which prices with no estimate and no model: each arm's mean "
-        f"change against fixed rates and against the rule, with the rule's own change",
+        f"Against the {policy} policy, which prices with no estimate and no model: each arm's "
+        f"mean change against fixed rates and against the policy, with the policy's own change",
         f"{'elasticity':18}{reviewer_heading}{'vs fixed':>12}{'vs the rule':>13}"
         f"{'ahead of it':>13}{'rule vs fixed':>15}{'rule changes':>14}",
     ]

@@ -87,10 +87,12 @@ The tables of every experiment: [docs/results.md](docs/results.md).
 Contribution increases in all 20 seeds and room revenue decreases. The agent
 raises rates in nearly all accepted plans, so the hotels sell fewer rooms. The
 lost revenue is smaller than the saved cost of the rooms. The two shocks, the
-convention and the new flights, produce 96% of the gain. Against a rule that
-prices on the same pace flags with no estimate and no model, the agent earns
-+$21,437 a seed, next to the +$32,899 against frozen rates, because the rule
-earns +$11,462 of it by itself (docs/results.md).
+convention and the new flights, produce 96% of the gain. Against a rule-based
+control that prices on the same flags with no estimate and no model, raising
+5% on a pace, event or seat-up flag and lowering 5% on a behind-pace or
+seat-cut flag, the agent earns +$10,043 a seed, next to the +$32,899 against
+frozen rates, because the control earns +$22,856 of it by itself
+(docs/results.md).
 
 An agent that learns the price response keeps 43% to 76% of the gain. The start
 value and the cautious rule set the share. The agent uses the simulator's demand

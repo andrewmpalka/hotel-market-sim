@@ -649,7 +649,7 @@ def test_a_policy_runs_the_rule_based_control_beside_each_arm(tmp_path, capsys):
     assert plain.seeds[0].control_change == 0.0 and plain.seeds[0].control_changes == 0
     main(["--seed", str(SEED), "--template", "--policy", "pace"])
     out = capsys.readouterr().out
-    assert "The pace rule earned" in out and "so against it the agent earned" in out
+    assert "The pace policy earned" in out and "so against it the agent earned" in out
 
 
 def test_the_command_and_the_bench_take_a_demand_bias(monkeypatch, capsys):
@@ -738,10 +738,10 @@ def test_the_command_and_the_bench_take_a_demand_bias(monkeypatch, capsys):
     # --policy adds the rule-based control's table to the sweep and to the bench.
     main(["--seeds", "1", "3", "--policy", "pace"])
     out = capsys.readouterr().out
-    assert seen["policy"] == "pace" and "Against the pace rule" in out
+    assert seen["policy"] == "pace" and "Against the pace policy" in out
     main(["bench", "--seeds", "1", "3", "--template", "--elasticity", "true", "--policy", "pace"])
     out = capsys.readouterr().out
-    assert seen["policy"] == "pace" and "Against the pace rule" in out and "oracle" in out
+    assert seen["policy"] == "pace" and "Against the pace policy" in out and "oracle" in out
     with pytest.raises(SystemExit):
         main(["--seeds", "1", "3", "--policy", "bogus"])
     for argv in (
@@ -865,8 +865,14 @@ def test_the_level_runs_pin_their_headline(tmp_path):
 def test_the_rule_based_control_runs_pin_their_headline(tmp_path):
     """The pace rule beside the true-mode template arm ends where the recorded runs ended at the
     default bias and at 0.9, so the control table stays pinned."""
-    for bias, (rule_mean, margin) in ((1.0, (11462, 21437)), (0.9, (2015, -101))):
-        [arm] = sweep(1, 20, tmp_path / "cache", policy="pace", demand_bias=bias)
+    pins = {
+        ("pace", 1.0): (11462, 21437),
+        ("pace", 0.9): (2015, -101),
+        ("rules", 1.0): (22856, 10043),
+        ("rules", 0.9): (657, 1256),
+    }
+    for (policy, bias), (rule_mean, margin) in pins.items():
+        [arm] = sweep(1, 20, tmp_path / "cache", policy=policy, demand_bias=bias)
         assert statistics.mean(arm.control_changes) == pytest.approx(rule_mean, abs=1)
         assert statistics.mean(arm.against_control) == pytest.approx(margin, abs=1)
 

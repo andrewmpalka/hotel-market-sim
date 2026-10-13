@@ -237,9 +237,10 @@ which is also the order in which they depend on each other.
 
 ### MOD-25 [C] policy.py
 - File: src/hotel_market/policy.py
-- Owns: the rule-based control ([[DEC-55]]): PacePolicy, a decider with no estimate and no model. decide(day, sources) raises POLICY_STEP ([[RUL-99]]) on every ahead-of-pace flag and lowers it on every behind-pace flag.
+- Owns: the rule-based controls ([[DEC-55]]): PacePolicy and RulesPolicy, deciders with no estimate and no model. Each maps the flag causes it acts on to a direction. decide() moves a flag's dates by POLICY_STEP that way ([[RUL-99]]).
+- Rules: pace acts on the two pace causes. rules adds the event and seat-up causes as raises and the seat-cut cause as a cut ([[DEC-11]]). A flag whose causes point both ways is left alone. POLICIES maps each name to its class.
 - Hold: it keeps the agent's hold, by the day each stay date last changed. The detector lifts it for a shock cause, as for the agent. It counts the flags it acted on and the pairs it changed.
 - Reads: [[MOD-07]] (the detect numbers and the flags), [[MOD-17]] (the sources), [[MOD-20]]; never the simulator, which wraps it with deciding() ([[MOD-19]])
 - Writes: nothing stored; the sweep reads its run as a SeedResult's control fields ([[DAT-19]])
 - Tests: tests/test_policy.py
-- Evidence: test_the_rule_raises_ahead_of_pace_and_lowers_behind_by_the_step, test_the_rule_keeps_the_hold_and_reads_only_the_sources
+- Evidence: test_the_rule_raises_ahead_of_pace_and_lowers_behind_by_the_step, test_the_rules_policy_adds_the_event_and_seat_rules_and_skips_a_conflict, test_the_rule_keeps_the_hold_and_reads_only_the_sources
