@@ -440,7 +440,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Links: [[MOD-15]], [[MOD-01]]
 
 ### DEC-34 [C] The answer schema lists the request's own entry ids and options as enums
-- Decided: schema_for(request) builds the structured-output schema. It limits "id" to the entry ids and "choice" to the plans and "hold" in that request. It sets the array's minimum length to the entries' count; the API rejects a maximum.
+- Decided: schema_for(request) builds the answer schema as an object with one required decision per entry id. Each is limited to that entry's plan and "hold". An answer cannot leave an entry out or borrow a plan.
 - Replaces: a fixed schema that typed id and choice as free strings.
 - Reason: with free strings a schema-valid answer such as "Hold" failed the check, and the run aborted with nothing cached. With enums the API cannot return a choice the code would reject. The pairing check stays as the backstop.
 - Commit: abef71f

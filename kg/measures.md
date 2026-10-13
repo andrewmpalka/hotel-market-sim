@@ -80,3 +80,15 @@ the agent changed.
 - Tie: nan when the oracle and the template tie, as in the true mode, since there is nothing to recover ([[DEC-47]]).
 - Used by: the bench report ([[MOD-23]]), per mode and pooled over the mismatched modes. It is the one figure that says how much of the value a reviewer could recover this one did.
 - Evidence: test_the_recovered_share_is_the_gain_over_the_template_as_a_share_of_the_oracles
+
+### MEA-13 [C] Decline rate by standard-error group
+- Formula: per group of STANDARD_ERROR_EDGES ([[RUL-102]]): the plans declined over the plans queued with a standard error in the group. A plan with no standard error is left out.
+- Function: hotel_market.bench.by_standard_error
+- Used by: the bench report ([[MOD-12]]) for every live learn arm that declined a plan. It says whether a reviewer declines more where the estimate is less sure ([[UNK-07]], [[RES-38]]).
+- Evidence: test_the_decline_rate_by_standard_error_groups_a_learn_arms_queue
+
+### MEA-14 [C] Plans on recently changed dates
+- Formula: the queued plans whose stay dates include one the hotel changed in the previous REPEAT_WINDOW days ([[RUL-85]]). The held count is those among them the reviewer declined. A change is an accepted plan.
+- Function: hotel_market.bench.on_recent_changes
+- Used by: the reaction table ([[MOD-12]]) as recent shown and recent held. It says whether a reviewer catches the second raise the detector cannot ([[FRK-09]], [[RES-37]]).
+- Evidence: test_the_plans_on_recently_changed_dates_are_counted_with_their_declines

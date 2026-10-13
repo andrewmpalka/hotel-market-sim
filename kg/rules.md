@@ -569,6 +569,13 @@ marked [H], with one line that names the node it moved to.
 - Meaning: the direction a policy's rules map a lowering cause to: behind pace for both policies, seats cut for rules ([[DEC-55]]).
 - Evidence: test_the_rules_policy_adds_the_event_and_seat_rules_and_skips_a_conflict
 
+### RUL-102 [C] STANDARD_ERROR_EDGES
+- Value: (0.15, 0.25, 0.35)
+- File: src/hotel_market/bench.py
+- Kind: parameter
+- Meaning: the standard errors that bound the groups of by_standard_error. A learn arm's queued plans are grouped by how little their elasticity was pinned down when the reviewer saw them.
+- Evidence: test_the_decline_rate_by_standard_error_groups_a_learn_arms_queue
+
 ## stored.py
 
 ### RUL-72 [C] TABLES

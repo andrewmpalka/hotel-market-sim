@@ -696,6 +696,7 @@ def test_the_command_and_the_bench_take_a_demand_bias(monkeypatch, capsys):
     out = capsys.readouterr().out
     assert seen["react"] and "competitors reacting to the hotels' rate changes" in out
     assert "With competitors reacting (market elasticity 0): the comp-median flags" in out
+    assert "recent shown" in out and "recent held" in out
     main(["bench", "--seeds", "1", "3", "--template", "--elasticity", "fixed:1.0", "--react"])
     out = capsys.readouterr().out
     assert seen["react"] and "With competitors reacting" in out and "oracle" in out
@@ -859,6 +860,52 @@ def test_the_level_runs_pin_their_headline(tmp_path):
         assert statistics.mean(by_mode["learn:1 cautious level"].changes) == pytest.approx(
             cautious_mean, abs=1
         )
+
+
+@pytest.mark.slow
+def test_the_learn_arms_pin_their_headline(tmp_path):
+    """The template and oracle arms of the learned modes end where the recorded live benchmark put
+    them, with and without the cautious rule and in the reacting market, so the learn-mode tables
+    stay pinned. The live arms are not pinned, because the cache is not committed."""
+    from hotel_market.bench import on_recent_changes, oracle
+    from hotel_market.shops import REACTION_SHARE
+
+    pins = {
+        (False, "learn:1"): (14141, 30828, 0.21),
+        (False, "learn:2"): (16258, 24794, 0.50),
+        (True, "learn:1 cautious"): (25076, 31042, 0.34),
+        (True, "learn:2 cautious"): (17634, 18599, 0.52),
+    }
+    for cautious in (False, True):
+        modes = [ElasticityMode("learn", value, cautious=cautious) for value in (1.0, 2.0)]
+        arms = sweep(1, 20, tmp_path / "cache", modes, reviewers=[TEMPLATE, ORACLE])
+        by_arm = {(str(arm.mode), arm.reviewer.name): arm for arm in arms}
+        for (_, mode), (template_mean, oracle_mean, accept) in pins.items():
+            if (mode.endswith("cautious")) != cautious:
+                continue
+            template, truth = by_arm[(mode, "template")], by_arm[(mode, "oracle")]
+            assert statistics.mean(template.changes) == pytest.approx(template_mean, abs=1)
+            assert statistics.mean(truth.changes) == pytest.approx(oracle_mean, abs=1)
+            assert round(truth.counts.accept_rate, 2) == accept
+    # The reacting arm's oracle is told the reaction and the market elasticity, as the bench
+    # command tells it.
+    cautious = ElasticityMode("learn", 1.0, cautious=True)
+    truth = oracle(demand_bias=1.0, market_elasticity=0.5, reaction_share=REACTION_SHARE)
+    arms = sweep(
+        1,
+        20,
+        tmp_path / "cache",
+        [cautious],
+        reviewers=[TEMPLATE, truth],
+        react=True,
+        market_elasticity=0.5,
+    )
+    by_name = {arm.reviewer.name: arm for arm in arms}
+    assert statistics.mean(by_name["template"].changes) == pytest.approx(198089, abs=1)
+    assert statistics.mean(by_name["oracle"].changes) == pytest.approx(198488, abs=1)
+    for name, held in (("template", 0), ("oracle", 1)):
+        counts = [on_recent_changes(r.entries, REPEAT_WINDOW) for r in by_name[name].seeds]
+        assert (sum(c[0] for c in counts), sum(c[1] for c in counts)) == (556, held)
 
 
 @pytest.mark.slow

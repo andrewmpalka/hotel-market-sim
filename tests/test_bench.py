@@ -3,6 +3,7 @@ covers the pooled counts, the price table and the scripted client."""
 
 import json
 import math
+from dataclasses import replace
 
 import pytest
 
@@ -16,6 +17,7 @@ from hotel_market.bench import (
     Reviewer,
     ScriptedClient,
     accept_rate,
+    by_standard_error,
     cost,
     counted,
     decline_f1,
@@ -27,6 +29,7 @@ from hotel_market.bench import (
     invalid_answers,
     key,
     live,
+    on_recent_changes,
     oracle,
     oracle_declines,
     oracle_labels,
@@ -44,6 +47,7 @@ from hotel_market.plan import (
     Candidate,
     Entry,
     FlagNumbers,
+    Pricing,
     Range,
     StayDate,
     WeekdayGroup,
@@ -429,3 +433,55 @@ def test_the_oracle_reviewer_is_told_the_market_elasticity_and_the_reaction(
         "a market elasticity of 0.5, with competitors following 50% of a change, holding" in r
         for r in reasons
     )
+
+
+def _learned(day, first, action, standard_error, hotel="airport"):
+    """A hand-built queued entry priced in learn mode with the given standard error."""
+    entry = _entry(day, first, 400.0, action=action, hotel=hotel)
+    pricing = Pricing(1.3, "learn", standard_error=standard_error, prior=1.0, observations=800)
+    return replace(entry, pricing=pricing)
+
+
+def test_the_decline_rate_by_standard_error_groups_a_learn_arms_queue():
+    entries = [
+        _learned(10, 40, HOLD, 0.10),
+        _learned(10, 41, "lower 5%", 0.12),
+        _learned(11, 42, HOLD, 0.20),
+        _learned(12, 43, HOLD, 0.30),
+        _learned(12, 44, "lower 5%", 0.30),
+        _learned(13, 45, "lower 5%", 0.50),
+        _entry(14, 46, 400.0, action=HOLD),  # a true-mode plan has no standard error: left out
+    ]
+    rows = by_standard_error(entries)
+    assert [row[0] for row in rows] == [
+        "under 0.15",
+        "0.15 to 0.25",
+        "0.25 to 0.35",
+        "0.35 and over",
+    ]
+    assert [(queued, declined) for _, queued, declined, _ in rows] == [
+        (2, 1),
+        (1, 1),
+        (2, 1),
+        (1, 0),
+    ]
+    assert [round(rate, 2) for *_, rate in rows] == [0.5, 1.0, 0.5, 0.0]
+    [(_, queued, declined, rate)] = by_standard_error(entries[:1], edges=())
+    assert (queued, declined, rate) == (1, 1, 1.0)
+    assert all(math.isnan(rate) for *_, rate in by_standard_error([]))
+
+
+def test_the_plans_on_recently_changed_dates_are_counted_with_their_declines():
+    # Day 10 changes stay 40. Day 20's plan on 40 is within 14 days of it; day 25's is not.
+    # Day 20's declined plan on 41 is on an untouched date, so it is shown elsewhere.
+    entries = [
+        _entry(10, 40, 400.0, action="lower 5%"),
+        _entry(20, 40, 400.0, action=HOLD),
+        _entry(20, 41, 400.0, action=HOLD),
+        _entry(22, 40, 400.0, action="lower 5%"),
+        _entry(25, 40, 400.0, action="lower 5%"),
+        _entry(30, 40, 400.0, action="lower 5%"),
+    ]
+    assert on_recent_changes(entries) == (4, 1)  # days 20, 22, 25 and 30; day 20 on 41 is not
+    assert on_recent_changes(entries, window=5) == (2, 0)  # days 25 and 30 after day 22
+    assert on_recent_changes([]) == (0, 0)

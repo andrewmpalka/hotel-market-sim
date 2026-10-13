@@ -27,7 +27,10 @@ The simulator's elasticity therefore never reaches a decision through it. tests/
 checks its imports with the agent's modules.
 
 The measures are regret, the accept rate, decline precision, recall, F1, dollar-weighted recall
-and the recovered share. Each is a function whose docstring gives its formula.
+and the recovered share. Each is a function whose docstring gives its formula. Two more read a
+learn arm's queue: by_standard_error gives the decline rate by how little the elasticity was
+pinned down, and on_recent_changes counts the plans shown on stay dates the run changed within
+the previous fortnight, and the declines among them.
 """
 
 from __future__ import annotations
@@ -463,6 +466,61 @@ class DeclineCounts:
     @property
     def dollar_recall(self) -> float:
         return self.caught / self.loss if self.loss else math.nan
+
+
+# The standard errors that bound the groups of by_standard_error: a learn arm's queued plans
+# are grouped by how little their elasticity was pinned down when the reviewer saw them.
+STANDARD_ERROR_EDGES = (0.15, 0.25, 0.35)
+
+
+def by_standard_error(
+    entries: Iterable[Entry], edges: tuple[float, ...] = STANDARD_ERROR_EDGES
+) -> list[tuple[str, int, int, float]]:
+    """The decline rate of a reviewer's queued plans by the standard error of their pricing: one
+    row per group as (label, queued, declined, rate), the groups bounded by the edges. A plan
+    whose pricing has no standard error, as a fixed or true mode's has not, is left out. The
+    rate is nan in an empty group."""
+    bounds = (0.0, *edges, math.inf)
+    rows = []
+    for low, high in zip(bounds, bounds[1:]):
+        if high == math.inf:
+            label = f"{low:g} and over"
+        elif low == 0.0:
+            label = f"under {high:g}"
+        else:
+            label = f"{low:g} to {high:g}"
+        group = [
+            e
+            for e in reviewed(entries)
+            if e.pricing.standard_error is not None and low <= e.pricing.standard_error < high
+        ]
+        held = sum(e.action == HOLD for e in group)
+        rows.append((label, len(group), held, held / len(group) if group else math.nan))
+    return rows
+
+
+def on_recent_changes(entries: Iterable[Entry], window: int = 14) -> tuple[int, int]:
+    """(shown, declined): the queued plans whose stay dates the same run changed within the
+    `window` days before the plan's day, and how many of those the reviewer declined. A plan on
+    day d counts when an accepted plan of the same hotel changed one of its stay dates on a day
+    from d - window to d - 1. That is the loop a reaction feeds: the competitors' answer to the
+    hotel's own change raises a new flag on the same dates."""
+    changed: dict[tuple[str, int], list[int]] = {}
+    for entry in entries:
+        if entry.action != HOLD:
+            for stay_day in entry.new_rates:
+                changed.setdefault((entry.hotel, stay_day), []).append(entry.day)
+    shown = declined = 0
+    for entry in reviewed(entries):
+        recent = any(
+            entry.day - window <= day < entry.day
+            for stay_day in range(entry.first_stay, entry.last_stay + 1)
+            for day in changed.get((entry.hotel, stay_day), ())
+        )
+        if recent:
+            shown += 1
+            declined += entry.action == HOLD
+    return shown, declined
 
 
 def invalid_answers(calls: Iterable[dict]) -> int:

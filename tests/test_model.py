@@ -18,6 +18,7 @@ from hotel_market.model import (
     Measured,
     ModelRefused,
     StaleCache,
+    as_decision_list,
     ask,
     request_digest,
     request_for,
@@ -179,17 +180,31 @@ def _number_paths(value, path="") -> set[str]:
 def test_the_schema_limits_ids_and_choices_to_the_requests_options(convention_request):
     request, [entry] = convention_request
     decisions = schema_for(request)["properties"]["decisions"]
-    decision = decisions["items"]["properties"]
-    assert decision["id"]["enum"] == [entry.id]
-    assert decision["choice"]["enum"] == sorted([entry.plan, HOLD])
-    # At least one decision per entry, so an answer that leaves an entry out is
-    # unrepresentable; the API rejects maxItems, so the pairing check catches a duplicate.
-    assert decisions["minItems"] == 1 and "maxItems" not in decisions
+    # One required decision per entry id, each limited to that entry's plan and hold: an answer
+    # cannot leave an entry out or borrow another's plan. The API allows required properties
+    # and not an array bound above one, which is why the decisions are an object.
+    assert decisions["type"] == "object" and decisions["required"] == [entry.id]
+    assert decisions["additionalProperties"] is False
+    decision = decisions["properties"][entry.id]
+    assert decision["properties"]["choice"]["enum"] == sorted([entry.plan, HOLD])
+    assert decision["required"] == ["choice", "reason"]
     two = json.loads(json.dumps(request))
-    two["entries"].append({**two["entries"][0], "id": "50-52"})
+    two["entries"].append({**two["entries"][0], "id": "50-52", "plan": "raise 5% on Mon"})
+    two["entries"][1]["options"] = ["raise 5% on Mon", HOLD]
     decisions = schema_for(two)["properties"]["decisions"]
-    assert decisions["minItems"] == 2
-    assert decisions["items"]["properties"]["id"]["enum"] == [entry.id, "50-52"]
+    assert decisions["required"] == [entry.id, "50-52"]
+    assert decisions["properties"]["50-52"]["properties"]["choice"]["enum"] == sorted(
+        ["raise 5% on Mon", HOLD]
+    )
+
+
+def test_the_client_turns_the_answer_object_back_into_the_decision_list():
+    answer = {"decisions": {"45-48": {"choice": HOLD, "reason": "We hold."}}}
+    listed = json.loads(as_decision_list(json.dumps(answer)))
+    assert listed == {"decisions": [{"id": "45-48", "choice": HOLD, "reason": "We hold."}]}
+    already = json.dumps({"decisions": [{"id": "45-48", "choice": HOLD, "reason": "x"}]})
+    assert as_decision_list(already) == already  # a list passes through
+    assert as_decision_list("not json") == "not json"  # the check rejects it later
 
 
 def test_ask_calls_the_model_once_and_then_reads_the_cache(convention_request, tmp_path):

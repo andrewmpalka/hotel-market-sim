@@ -115,7 +115,7 @@ which is also the order in which they depend on each other.
 ### MOD-12 [C] cli.py
 - File: src/hotel_market/cli.py
 - Owns: the hotel-market command: the fixed-rate and agent runs, decisions.jsonl ([[DAT-18]]), the replay of a day and the bench ([[DEC-48]]). It prints the queues and the summary tables ([[DAT-20]]) and checks the arguments.
-- Sweep: sweep() runs seeds, one arm per --elasticity mode ([[DAT-24]]) and reviewer ([[DAT-32]]), --cautious on the learn arms. bench runs the template, the oracle and each --model in every mode. It prints a table per mode and a ranking.
+- Sweep: sweep() runs one arm per seed, mode ([[DAT-24]]) and reviewer ([[DAT-32]]). bench runs the template, the oracle and each --model in every --elasticity mode. It prints a table per mode, a ranking and the groups of [[MEA-13]].
 - Daily: run_days() plays the simulator to a day with the stored changes and writes the feeds. A fresh agent then runs on the tables ([[MOD-21]]). replay_day() rebuilds a day's plans from the tables and checks them ([[DEC-42]]).
 - Holds: REPORT_DAYS ([[RUL-53]]), SHOCK_PLAN_CAUSES ([[RUL-55]]), DAILY_COMMANDS ([[RUL-74]]), BENCH_MODES ([[RUL-81]]) and DEFAULT_DB, the daily commands' table file. --customer and --target name the market and its target ([[DEC-41]]).
 - Reads: [[MOD-01]], [[MOD-02]], [[MOD-06]], [[MOD-08]], [[MOD-09]], [[MOD-10]], [[MOD-11]], [[MOD-16]], [[MOD-19]], [[MOD-20]], [[MOD-21]], [[MOD-23]]
@@ -221,7 +221,7 @@ which is also the order in which they depend on each other.
 ### MOD-23 [C] bench.py
 - File: src/hotel_market/bench.py
 - Owns: the benchmark of the model as a reviewer ([[DEC-47]], [[DEC-48]]). The oracle reviewer re-scores each queued plan and hold at ORACLE_ELASTICITY ([[RUL-56]]). It declines the plan when hold scores at least as well.
-- Measures: regret ([[MEA-06]]), the accept rate ([[MEA-07]]), decline precision ([[MEA-08]]), recall ([[MEA-09]]) and F1 ([[MEA-10]]). Also dollar-weighted recall ([[MEA-11]]) and the recovered share ([[MEA-12]]).
+- Measures: regret ([[MEA-06]]), accept rate ([[MEA-07]]), decline precision, recall and F1 ([[MEA-08]] to [[MEA-10]]), dollar recall ([[MEA-11]]) and recovered share ([[MEA-12]]). Also [[MEA-13]] and [[MEA-14]] for the learn arms.
 - Counts: DeclineCounts ([[DAT-31]]) pools the counts behind the measures. counted() keeps one call record per digest ([[DAT-30]]); invalid_answers(), failed_requests() and retries() sum them, and cost() prices them ([[RUL-80]]).
 - Scripted: Reviewer ([[DAT-32]]) names an arm's reviewer: TEMPLATE, ORACLE, oracle(...) or live(model). ScriptedClient plays a model offline, cached as scripted. It answers from a digest dict or declines the keys it is given.
 - Reads: [[MOD-08]] (the entries and rescored()), [[MOD-09]] (the clients and request_digest()), [[MOD-10]] (the day's entries in agent.today), [[MOD-11]], [[MOD-20]]; never the simulator, and nothing in the agent's path imports it

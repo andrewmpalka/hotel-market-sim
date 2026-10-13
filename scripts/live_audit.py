@@ -43,11 +43,13 @@ import json
 import re
 import statistics
 import time
+from dataclasses import replace
 from pathlib import Path
 
 from hotel_market.agent import TRUE_MODE, Agent, ElasticityMode
 from hotel_market.bench import PRICES
-from hotel_market.cli import run, summary
+from hotel_market.cli import cache_root, run, summary
+from hotel_market.demand import DEMAND_BIAS, MARKET_ELASTICITY
 from hotel_market.model import HOLD, MODEL, ClaudeClient, Measured
 
 # The default model's list prices, dollars per million tokens, from the bench's price table;
@@ -146,7 +148,7 @@ def report_calls(calls: list[dict]) -> None:
         f"Cost at list prices (${INPUT_PRICE:.2f} in, ${OUTPUT_PRICE:.2f} out per million "
         f"tokens): ${cost:.2f}."
     )
-    stops = sorted({c["stop_reason"] for c in calls})
+    stops = sorted({str(c.get("stop_reason")) for c in calls})  # None on a failed call
     models = sorted({c["model"] for c in calls})
     print(
         f"Stop reasons: {', '.join(stops)}. Models that answered: {', '.join(models)}. "
@@ -270,9 +272,25 @@ def main(argv: list[str] | None = None) -> None:
         metavar="MODE",
         help="the arm's mode, true (the default), fixed:X or learn:X; it names the cache folder",
     )
+    parser.add_argument(
+        "--cautious", action="store_true", help="the arm ran the cautious rule (learn only)"
+    )
+    parser.add_argument("--react", action="store_true", help="the arm ran with --react")
+    parser.add_argument(
+        "--market-elasticity",
+        dest="market_elasticity",
+        type=float,
+        default=MARKET_ELASTICITY,
+        metavar="E",
+        help="the arm's market elasticity, which names its cache folder",
+    )
     args = parser.parse_args(argv)
-    # The arm's folder, as the agent names it; a bench arm keeps its calls.jsonl inside it.
-    cache_dir = Agent(args.seed, args.out / "cache", elasticity=args.elasticity).cache_dir
+    if args.cautious:
+        args.elasticity = replace(args.elasticity, cautious=True)
+    # The arm's folder, as the command and the agent name it; a bench arm keeps its calls.jsonl
+    # inside it.
+    root = cache_root(args.out / "cache", DEMAND_BIAS, args.react, args.market_elasticity)
+    cache_dir = Agent(args.seed, root, elasticity=args.elasticity).cache_dir
     calls_file = next(
         (p for p in (cache_dir / "calls.jsonl", args.out / "calls.jsonl") if p.exists()), None
     )

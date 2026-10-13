@@ -149,6 +149,22 @@ runs. One model beats accept-all, by $6,146 a seed at a fixed elasticity of 1.0
 and by nothing at 2.0. Its calls cost $0.41 per seed. For the other two models,
 the value of the run is in the code, and the model writes the reasons.
 
+The learned modes then ran live, from a prior of 1.0 and of 2.0, with and
+without the cautious rule. One arm ran in the reacting market at a market
+elasticity of 0.5. From a prior of 1.0, accepting every plan earns +$14,141 a
+seed and the oracle +$30,828. The $16,687 a seed between them is open to a
+reviewer, and Opus recovers 4% of it. It declines 7 plans, six of them the
+day-40 raise it held at the fixed elasticity. The oracle agrees with every
+one. With the cautious rule the three models decline 2 to 10 plans each, and
+most share one reading. The request rounds a gain to the nearest $10. A gain
+under $5 at an end of the elasticity band therefore reads "the same as
+holding". The models take that for a failed rule. Those declines leave every
+cautious run within $130 a seed of accepting all. In the reacting market Opus
+held 43 of the 556 second raises it was shown. The oracle held one, because
+the simulator pays the second raise. Opus's reasons cite the band and never
+the earlier raise, which the request does not carry. The holds cost $5,824 a
+seed. The five commands made 3,553 calls for $46.76 (docs/results.md).
+
 This repository does no post-training. Every booking in this world comes from
 code in this repository. A model trained on these runs learns the simulator's
 Poisson draws and its elasticity of 1.5 and nothing about hotels. Its gains say
@@ -205,8 +221,12 @@ bookings.
   cancellations or no-shows.
 - Without an API key, every plan is accepted. A template run therefore measures
   the plans alone.
-- The benchmark ran the live models on seeds 1 to 20 (docs/results.md), and only
-  Opus declined any plan. Learn mode has not run live.
+- The benchmark ran the live models on seeds 1 to 20 in the fixed and the
+  learned modes (docs/results.md). No reviewer recovered more than 28% of the
+  oracle's margin in a fixed mode or 4% in a learned one. Most declines in the
+  cautious arms read a rounded gain as a failed rule. In the reacting market
+  Opus held 43 of 556 second raises for reasons that never name the earlier
+  raise.
 - The container image was built on Python 3.11, 3.12 and 3.14 and passed the
   suite on each. A seed-7 run inside it matches the native run (docs/results.md).
 

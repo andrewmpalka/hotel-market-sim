@@ -85,33 +85,52 @@ MODE_NAMES = {"true": "assumed"}
 
 
 def schema_for(request: dict) -> dict:
-    """The shape of an answer to this request. Each decision chooses from the request's own ids and
-    options, and there are at least as many decisions as entries. The API therefore cannot return
-    a choice the code would reject or leave an entry out. The API rejects maxItems on an array,
-    so the pairing check in _check() still catches a duplicated id."""
+    """The shape of an answer to this request: one required decision per entry, keyed by the
+    entry's id, each choosing between that entry's plan and hold. An answer therefore cannot leave
+    an entry out or borrow another entry's plan. The API allows a required property per key and
+    not an array bound above one, which is why the decisions are an object. ClaudeClient turns
+    the object back into the list the cache and the check read."""
     entries = request["entries"]
-    options = sorted({option for entry in entries for option in entry["options"]})
+    decisions = {
+        entry["id"]: {
+            "type": "object",
+            "properties": {
+                "choice": {"type": "string", "enum": sorted(entry["options"])},
+                "reason": {"type": "string"},
+            },
+            "required": ["choice", "reason"],
+            "additionalProperties": False,
+        }
+        for entry in entries
+    }
     return {
         "type": "object",
         "properties": {
             "decisions": {
-                "type": "array",
-                "minItems": len(entries),  # maxItems is not supported by the API
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "id": {"type": "string", "enum": [entry["id"] for entry in entries]},
-                        "choice": {"type": "string", "enum": options},
-                        "reason": {"type": "string"},
-                    },
-                    "required": ["id", "choice", "reason"],
-                    "additionalProperties": False,
-                },
+                "type": "object",
+                "properties": decisions,
+                "required": [entry["id"] for entry in entries],
+                "additionalProperties": False,
             },
         },
         "required": ["decisions"],
         "additionalProperties": False,
     }
+
+
+def as_decision_list(text: str) -> str:
+    """The model's answer with its decisions as the list the cache and the check read. The schema
+    asks for an object keyed by entry id; a list, as a fake or an older answer gives it, passes
+    through. Text that is not JSON passes through too, for the check to reject."""
+    try:
+        answer = json.loads(text)
+    except ValueError:
+        return text
+    decisions = answer.get("decisions") if isinstance(answer, dict) else None
+    if not isinstance(decisions, dict):
+        return text
+    answer["decisions"] = [{"id": key, **value} for key, value in decisions.items()]
+    return json.dumps(answer)
 
 
 class Client(Protocol):
@@ -181,7 +200,7 @@ class ClaudeClient:
             raise ModelRefused(f"the model declined: {response.stop_details}")
         if response.stop_reason == "max_tokens":
             raise ValueError("the model's answer was cut off at max_tokens")
-        return _answer_text(list(response.content))
+        return as_decision_list(_answer_text(list(response.content)))
 
 
 RETRIES = 2  # how many times a Measured client asks again after an SDK error or an invalid answer

@@ -121,6 +121,7 @@ it differs from what that would write. `README.md` is the legend.
 - RUL-85 [C] REPEAT_WINDOW — src/hotel_market/cli.py
 - RUL-80 [C] PRICES — src/hotel_market/bench.py
 - RUL-99 [C] POLICY_STEP — src/hotel_market/policy.py
+- RUL-102 [C] STANDARD_ERROR_EDGES — src/hotel_market/bench.py
 - RUL-58 [C] target — customers/demo.toml
 - RUL-59 [C] floor_share — customers/demo.toml
 - RUL-60 [C] ceiling_share — customers/demo.toml
@@ -173,6 +174,8 @@ it differs from what that would write. `README.md` is the legend.
 - MEA-10 [C] Decline F1 — kg/measures.md
 - MEA-11 [C] Dollar-weighted decline recall — kg/measures.md
 - MEA-12 [C] Recovered share — kg/measures.md
+- MEA-13 [C] Decline rate by standard-error group — kg/measures.md
+- MEA-14 [C] Plans on recently changed dates — kg/measures.md
 
 ## Sources (`sources.md`)
 
@@ -279,6 +282,12 @@ it differs from what that would write. `README.md` is the legend.
 - RES-31 [C] The fitted level fed back at a demand bias of 1.1 — kg/results.md
 - RES-32 [C] The fitted level fed back with the reaction on at a market elasticity of 0.5 — kg/results.md
 - RES-33 [C] The agent against the pace and the rules policies on seeds 1 to 20 — kg/results.md
+- RES-34 [C] The reviewers at learn:1.0 on seeds 1 to 20 — kg/results.md
+- RES-35 [C] The reviewers at learn:1.0 with the cautious rule on seeds 1 to 20 — kg/results.md
+- RES-36 [C] The reviewers at learn:2.0, with and without the cautious rule, on seeds 1 to 20 — kg/results.md
+- RES-37 [C] The reviewers at learn:1.0 cautious with the reaction on at a market elasticity of 0.5 — kg/results.md
+- RES-38 [O] The decline rate by standard-error group in the learn arms — kg/results.md
+- RES-39 [O] The reviewers ranked across the learned modes, and the learn arms' cost — kg/results.md
 
 ## Open forks (`forks.md`)
 

@@ -154,6 +154,27 @@ def test_the_audit_finds_a_bench_arms_cache_and_its_calls(tmp_path, capsys, day1
         audit.main(["--audit-only", "--seed", "7", "--out", str(tmp_path)])
 
 
+def test_the_audit_finds_a_cautious_reacting_arms_cache(tmp_path, capsys, day10):
+    # A reacting arm at a market elasticity keeps its cache under cache/react/market-E/, and the
+    # cautious rule joins the folder name; the three options name the folder the way the bench does.
+    _, table = day10
+    hotel = demo().hotel("convention")
+    entries = [entry_for(10, f, table) for f in flags(10, table) if f.hotel == "convention"]
+    request = request_for(10, hotel, entries)
+    [decision] = template_decisions(request)
+    decision["choice"] = HOLD
+    arm = tmp_path / "cache" / "react" / "market-0.5" / "seed7-learn-1-cautious"
+    arm.mkdir(parents=True)
+    record = {"request_digest": "x", "request": request, "source": "model", "decisions": [decision]}
+    (arm / "day010_convention.json").write_text(json.dumps(record))
+    options = ["--elasticity", "learn:1.0", "--cautious", "--react", "--market-elasticity", "0.5"]
+    audit.main(["--audit-only", "--seed", "7", *options, "--out", str(tmp_path)])
+    out = capsys.readouterr().out
+    assert "1 model calls, 1 entries decided, 1 declined." in out
+    with pytest.raises(SystemExit):  # the same arm with no reaction has no folder
+        audit.main(["--audit-only", "--seed", "7", *options[:3], "--out", str(tmp_path)])
+
+
 # ---- the recorded live run ------------------------------------------------------
 
 FIXTURE = ROOT / "tests" / "fixtures" / "live_seed7"

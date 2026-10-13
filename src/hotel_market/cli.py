@@ -94,10 +94,12 @@ from hotel_market.bench import (
     TEMPLATE,
     DeclineCounts,
     Reviewer,
+    by_standard_error,
     cost,
     counted,
     invalid_answers,
     live,
+    on_recent_changes,
     oracle,
     recovered_share,
     regret,
@@ -151,7 +153,7 @@ def run(
     customer = customer or demo()
     world = _world(demand_bias, react, market_elasticity, scenario, churn)
     fixed = simulate(seed, customer=customer, **world)
-    cache_dir = _cache_root(cache_dir, demand_bias, react, market_elasticity, scenario, churn)
+    cache_dir = cache_root(cache_dir, demand_bias, react, market_elasticity, scenario, churn)
     agent = Agent(
         seed,
         cache_dir,
@@ -182,7 +184,7 @@ def replay(
     is a client, else from the template.
     """
     customer = customer or demo()
-    cache_dir = _cache_root(cache_dir, demand_bias, react, market_elasticity, scenario, churn)
+    cache_dir = cache_root(cache_dir, demand_bias, react, market_elasticity, scenario, churn)
     agent = Agent(
         seed,
         cache_dir,
@@ -467,7 +469,7 @@ def sweep(
     """
     customer = customer or demo()
     hotels = customer.hotels
-    cache_dir = _cache_root(cache_dir, demand_bias, react, market_elasticity, scenario, churn)
+    cache_dir = cache_root(cache_dir, demand_bias, react, market_elasticity, scenario, churn)
     world = _world(demand_bias, react, market_elasticity, scenario, churn)
     truth = (demand_bias, market_elasticity, REACTION_SHARE if react else 0.0)  # the oracle's
     arms: dict[tuple[ElasticityMode, Reviewer], list[SeedResult]] = {
@@ -574,7 +576,7 @@ def _control(seed: int, policy: str | None, fixed: Books, customer: Customer, wo
     }
 
 
-def _cache_root(
+def cache_root(
     cache_dir: Path,
     demand_bias: float,
     react: bool = False,
@@ -1430,17 +1432,36 @@ def _reaction_table(
     reviewer_heading = f"{'reviewer':20}" if named else ""
     lines = [
         f"With competitors reacting (market elasticity {market_elasticity:g}): the comp-median "
-        f"flags the hotels' own changes caused, and the stay dates changed twice or more within "
-        f"{REPEAT_WINDOW} days",
+        f"flags the hotels' own changes caused, the stay dates changed twice or more within "
+        f"{REPEAT_WINDOW} days, and the plans shown on dates changed within the previous "
+        f"{REPEAT_WINDOW} days, with the declines among them",
         f"{'elasticity':18}{reviewer_heading}{'median flags':>14}{'own changes':>13}"
-        f"{'rate changes':>14}{'changed twice':>15}",
+        f"{'rate changes':>14}{'changed twice':>15}{'recent shown':>14}{'recent held':>13}",
     ]
     for arm in arms:
         reviewer = f"{arm.reviewer.name:20}" if named else ""
+        shown = held = 0
+        for result in arm.seeds:
+            seed_shown, seed_held = on_recent_changes(result.entries, REPEAT_WINDOW)
+            shown, held = shown + seed_shown, held + seed_held
         lines.append(
             f"{str(arm.mode):18}{reviewer}{arm.median_flags:>14}{arm.own_median_flags:>13}"
-            f"{arm.rate_changes:>14}{arm.repeat_changes:>15}"
+            f"{arm.rate_changes:>14}{arm.repeat_changes:>15}{shown:>14}{held:>13}"
         )
+    return lines
+
+
+def _standard_error_table(arm: ArmResult) -> list[str]:
+    """A learn arm's decline rate by the standard error of its plans' pricing, pooled over the
+    seeds: one row per group of STANDARD_ERROR_EDGES."""
+    entries = [entry for result in arm.seeds for entry in result.entries]
+    lines = [
+        f"Elasticity {arm.mode}, {arm.reviewer.name}: the decline rate by the standard error of "
+        f"the plan's elasticity, pooled over the seeds",
+        f"{'standard error':>16}{'queued':>9}{'declined':>10}{'rate':>7}",
+    ]
+    for label, queued, declined, rate in by_standard_error(entries):
+        lines.append(f"{label:>16}{queued:>9}{declined:>10}{_rate(rate):>7}")
     return lines
 
 
@@ -1632,6 +1653,9 @@ def _print_bench(
                 if mode.level:
                     print()
                     print("\n".join(_level_table(arm, customer.hotels, named=True)))
+                if arm.reviewer.live and arm.counts.declined:
+                    print()
+                    print("\n".join(_standard_error_table(arm)))
     if react:
         print()
         print("\n".join(_reaction_table(arms, named=True, market_elasticity=market_elasticity)))

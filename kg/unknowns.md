@@ -10,16 +10,17 @@ and a RES node records the run. A claim that no test can confirm stays [U].
 - Before: four live runs of seed 7 in the default mode with claude-opus-5-5 accepted all 28 plans ([[RES-08]]). The decisions and the contribution change were therefore the template's each time.
 - Reasons: the reasons differed by request format. The fourth format, with each range as one phrase, copied every phrase whole ([[DEC-44]]).
 - Kept: the figures here come from one recorded run of seed 7, the fourth, kept as [[DAT-29]]. The first three runs are quoted from the session that made them.
-- Measured: on seeds 1 to 20, Opus declines 47 plans at fixed:1.0 and 1 at fixed:2.0 ([[RES-16]], [[RES-17]]). Sonnet and Haiku decline none in 120 arms, and none declines in the true mode ([[RES-18]]). Learn mode is not run.
+- Measured: on seeds 1 to 20, Opus declines 47 plans at fixed:1.0 and 1 at fixed:2.0 ([[RES-16]], [[RES-17]]). Sonnet and Haiku decline none in 120 arms, and none declines in the true mode ([[RES-18]]).
+- Learn: Opus declines 21 plans in the four arms with no reaction and 49 in the reacting one ([[RES-34]] to [[RES-37]]). Haiku declines 17 and Sonnet 2, all in the cautious arms. Most read a rounded gain as a failed rule.
 - Evidence: test_the_recorded_live_run_of_seed_7_passes_the_audit, test_the_recorded_live_run_replays_without_a_key_and_gives_28818
-- Links: [[MOD-09]], [[MOD-22]], [[DAT-29]], [[DEC-36]], [[DEC-44]], [[FRK-04]], [[RES-08]], [[RES-16]], [[RES-17]], [[RES-18]]
+- Links: [[MOD-09]], [[MOD-22]], [[DAT-29]], [[DEC-36]], [[DEC-44]], [[FRK-04]], [[RES-08]], [[RES-16]], [[RES-17]], [[RES-18]], [[RES-34]], [[RES-35]], [[RES-36]], [[RES-37]]
 
 ### UNK-02 [C] Whether the enum schema behaves as expected against the live API
 - Was unknown: the per-request schema ([[DEC-34]]) had been tested with a fake client only.
 - Measured: in the recorded live run of seed 7 ([[DAT-29]]), all 7 answers parsed as JSON and chose an allowed option. The check of the answer therefore never raised ([[RES-09]]).
 - Calls: every call ended with the stop reason end_turn, none was refused and none fell back to another model. The three earlier runs of the same seed, not kept, did the same over 21 calls.
 - Invalid: Sonnet gave the first invalid answer seen live, on seed 1 at fixed:1.0, day 40. It left an entry out; a retry fixed it. It did so in six requests, one of them twice, in a failed run and its rerun. Opus and Haiku never did.
-- Schema: the schema now sets the decisions array's minimum length to the entries' count ([[DEC-34]]). An answer that leaves one out is unrepresentable, and the API rejects maxItems. Whether Sonnet's omission stops is not yet measured.
+- Schema: the decisions are an object with one required property per entry id ([[DEC-34]]). The API refused an array bound of 2 with a 400 on 2026-10-12, and allows a required property. An omission is now unrepresentable.
 - Evidence: test_the_recorded_live_run_of_seed_7_passes_the_audit, test_the_schema_limits_ids_and_choices_to_the_requests_options, test_claude_client_sends_the_request_and_handles_a_refusal
 - Links: [[DEC-34]], [[MOD-09]], [[MOD-22]], [[DAT-29]], [[RES-09]], [[RES-18]]
 
@@ -49,9 +50,9 @@ and a RES node records the run. A claim that no test can confirm stays [U].
 
 ### UNK-07 [U] The real price elasticity, and what the learned estimate does and does not settle
 - Unknown: the real elasticity of any hotel. 1.5 is assumed in the simulator ([[RUL-21]]) and, in the default mode, handed to the agent as an oracle ([[RUL-56]]).
-- Settled: inside this simulator the agent can recover a value it is not told ([[DEC-38]], [[RES-10]]). From a prior of 1.0 or 2.0, its day-59 estimates land at 1.36 to 1.68 by hotel ([[RES-04]]). Their standard errors are 0.12 to 0.31.
+- Settled: the agent recovers a value it is not told ([[DEC-38]], [[RES-10]]). Day-59 estimates from 1.0 or 2.0 land at 1.36 to 1.68 ([[RES-04]]). What a wrong value costs is measured ([[RES-03]] to [[RES-05]]), which closed [[FRK-02]].
 - Reacting: the simulator's 1.5 fits a hotel whose competitors never move. Under the reaction the true mode is too timid. The learner's lower estimate raises more and is right to ([[RES-26]]). A reacting market needs the effective one.
-- Cost: what a wrong value costs, and what learning wins back, is measured ([[RES-03]], [[RES-04]], [[RES-05]]). That closed [[FRK-02]].
+- Live: the live reviewers' declines do not follow the standard error. The rate per group is flat ([[RES-38]]). It is 0% to 4% with no reaction and 6% to 9% in the reacting arm. The declines key on the cause and the band's display.
 - Not settled: whether a real market's bookings obey one elasticity at all ([[UNK-14]]). The same one across stay dates, days out and guest segments is less likely still.
 - Measured: a constant level error lands in the intercept ([[DEC-50]]). --level feeds it back, and the factor is 0.90 by day 10 at a bias of 0.9 ([[DEC-54]], [[RES-29]]). The baseline must carry the market term ([[RES-26]]).
 - Best guess: between 1 and 2 at a real hotel, different by hotel and by distance to arrival. It is not recoverable from a run in which the hotel's own rate barely moves. The estimate needs the rate to move to learn anything.
