@@ -396,6 +396,7 @@ marked [H], with one line that names the node it moved to.
 - Writing: the model writes as "we" and states only what the entry shows. It makes no claim about price sensitivity or risk that the entry does not contain ([[DEC-44]]).
 - Figures: every figure is written as a report writes it, with its direction in words. The model copies the phrases whole, with no sign, direction word or rounding of its own. It quotes no end of a range alone.
 - Allowed: "more than holding" may be written once in a sentence that lists several gains. An event's name is written in lower case inside a sentence. The prompt also explains the modes "assumed", "fixed" and "learn".
+- Band: under the cautious rule each candidate's band_verdict states the rule's result ([[DEC-56]]). The prompt tells the model to copy it as written.
 - Evidence: test_the_system_prompt_tells_the_model_how_to_choose_and_write
 
 ### RUL-75 [C] MODE_NAMES

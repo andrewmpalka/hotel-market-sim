@@ -29,6 +29,7 @@ from hotel_market.detect import MEDIAN_DOWN, MEDIAN_UP, NEW_EVENT, SEATS_CUT, SE
 from hotel_market.plan import DAY_NAMES, HOLD, Candidate, Entry, FlagNumbers, Pricing, WeekdayGroup
 from hotel_market.text import (
     against_median_range,
+    band_verdict,
     capitalize_first,
     dollars,
     money_range,
@@ -39,6 +40,7 @@ from hotel_market.text import (
     span,
     tens_of_dollars,
     versus_holding,
+    versus_holding_at_end,
 )
 from hotel_market.world import Hotel
 
@@ -73,7 +75,9 @@ every estimate assumes: "assumed" is a value the agent was given, "fixed" a \
 value set for the run, and "learn" one estimated from the bookings, with its \
 standard error. When that field says cautious, each candidate also shows its \
 estimate at the low and the high end of the elasticity band, and the plan \
-changes a rate only where the change beats holding at both ends. When that \
+changes a rate only where the change beats holding at both ends. Each \
+candidate's band_verdict states that rule's result for it; copy the verdict \
+as written. When that \
 field has a market_elasticity, the market's demand falls as the comp median \
 rises by that power, and the estimates already count it. When it has a level, \
 the agent scaled its demand forecast by that factor, learned from the \
@@ -445,21 +449,26 @@ def _weekday_request(group: WeekdayGroup) -> dict:
 def _band_request(candidate: Candidate, group: WeekdayGroup) -> dict:
     """Cautious only. The estimate, and its value over hold, at each end of the band. All three
     values the rule used then reach the model. Each is named by the end of the band, because the
-    low elasticity can give the higher estimate."""
+    low elasticity can give the higher estimate. The value over hold at an end reads to the dollar
+    under $10, and every candidate but hold carries the rule's verdict as a phrase (text.py). The
+    model copies the verdict in place of reading it off the rounded gains."""
     if candidate.band is None:
         return {}
     low, high = candidate.band
-    hold_low, hold_high = group.hold.band
-    return {
+    gain_low, gain_mid, gain_high = group.gains(candidate)
+    request = {
         "estimated_contribution_band": {
             "at_low_elasticity": tens_of_dollars(low),
             "at_high_elasticity": tens_of_dollars(high),
         },
         "versus_hold_band": {
-            "at_low_elasticity": versus_holding(low - hold_low),
-            "at_high_elasticity": versus_holding(high - hold_high),
+            "at_low_elasticity": versus_holding_at_end(gain_low),
+            "at_high_elasticity": versus_holding_at_end(gain_high),
         },
     }
+    if candidate is not group.hold:
+        request["band_verdict"] = band_verdict(gain_low, gain_mid, gain_high)
+    return request
 
 
 def ask(

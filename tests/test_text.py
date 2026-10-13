@@ -5,6 +5,7 @@ import pytest
 from hotel_market.text import (
     against_median,
     against_median_range,
+    band_verdict,
     dollars,
     money_range,
     number,
@@ -17,6 +18,7 @@ from hotel_market.text import (
     stay_range,
     tens_of_dollars,
     versus_holding,
+    versus_holding_at_end,
 )
 
 
@@ -80,3 +82,22 @@ def test_the_report_ranges_round_to_the_dollar_and_the_whole_percent(helper, val
 
 def test_stay_wording():
     assert stay_range(46, 46) == "stay date 46" and stay_range(45, 48) == "stay dates 45 to 48"
+
+
+def test_a_band_end_gain_under_ten_dollars_reads_to_the_dollar():
+    # The estimate still reads to the nearest $10; only the band's ends read to the dollar, so a
+    # gain the band passed never reads "the same as holding".
+    assert versus_holding(3.4) == "the same as holding"
+    assert versus_holding_at_end(3.4) == "$3 more than holding"
+    assert versus_holding_at_end(-4.6) == "$5 less than holding"
+    assert versus_holding_at_end(0.2) == "the same as holding"
+    assert versus_holding_at_end(9.7) == "$10 more than holding"
+    assert versus_holding_at_end(339.45) == "$340 more than holding"
+
+
+def test_the_band_verdict_states_the_cautious_rules_result():
+    assert band_verdict(12.0, 360.0, 3.0) == "beats holding at both ends of the band"
+    assert band_verdict(12.0, 360.0, 0.0) == "does not beat holding at the high end of the band"
+    assert band_verdict(-5.0, 360.0, 3.0) == "does not beat holding at the low end of the band"
+    assert band_verdict(-5.0, 360.0, -1.0) == "does not beat holding at either end of the band"
+    assert band_verdict(5.0, -1.0, 3.0) == "does not beat holding at the estimate"

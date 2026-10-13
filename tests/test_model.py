@@ -588,6 +588,18 @@ def test_the_three_values_reach_the_model_request(day10, tmp_path):
             assert all(value.endswith("holding") for value in versus.values())
             assert candidate["estimated_contribution"] == plain_candidate["estimated_contribution"]
             assert "estimated_contribution_band" not in plain_candidate
+            assert "band_verdict" not in plain_candidate
+    # The rule's verdict is stated for every candidate but hold, and it says "beats" exactly where
+    # the rule passed the candidate, so the model copies the result instead of inferring it.
+    [queued] = [entry_for(10, f, table, cautious) for f in convention]
+    for group, weekday in zip(queued.weekdays, entry["by_day_of_week"]):
+        for candidate, shown in zip(group.candidates, weekday["candidates"]):
+            if candidate is group.hold:
+                assert "band_verdict" not in shown
+                continue
+            passes = shown["band_verdict"] == "beats holding at both ends of the band"
+            assert passes == group.replaces_hold(candidate)
+            assert shown["band_verdict"].startswith(("beats holding", "does not beat holding"))
     assert "cautious" not in other["elasticity"]
     assert request_digest(request) != request_digest(other)
     [decision] = ask(request, tmp_path / "t.json")["decisions"]
@@ -608,5 +620,6 @@ def test_the_system_prompt_tells_the_model_how_to_choose_and_write():
         "Write an event's name in lower case",
         '"assumed" is a value the agent was given',
         "beats holding at both ends",
+        "band_verdict states that rule's result",
     ):
         assert phrase in SYSTEM, phrase

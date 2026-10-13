@@ -155,15 +155,20 @@ elasticity of 0.5. From a prior of 1.0, accepting every plan earns +$14,141 a
 seed and the oracle +$30,828. The $16,687 a seed between them is open to a
 reviewer, and Opus recovers 4% of it. It declines 7 plans, six of them the
 day-40 raise it held at the fixed elasticity. The oracle agrees with every
-one. With the cautious rule the three models decline 2 to 10 plans each, and
-most share one reading. The request rounds a gain to the nearest $10. A gain
-under $5 at an end of the elasticity band therefore reads "the same as
-holding". The models take that for a failed rule. Those declines leave every
-cautious run within $130 a seed of accepting all. In the reacting market Opus
-held 43 of the 556 second raises it was shown. The oracle held one, because
-the simulator pays the second raise. Opus's reasons cite the band and never
-the earlier raise, which the request does not carry. The holds cost $5,824 a
-seed. The five commands made 3,553 calls for $46.76 (docs/results.md).
+one. The uncertainty shown in the request did not change any model's
+declines. The decline rate was the same at every standard error. In the
+cautious arms three models agreed on a wrong decline because of a rounding in
+the display. The request rounded a gain of a few dollars at an end of the band
+to "the same as holding". Each model read that as a failed rule. That was the
+request's fault, and the benchmark found it. The request now states the
+rule's verdict and writes those gains to the dollar. Rerun on seeds 1 to 20,
+the three models declined nothing and tie with accept-all at +$25,076 a seed.
+In the reacting arm Opus held 43 of the 556 second raises it was shown. The
+oracle held one, because the simulator pays the second raise. Opus did not
+decline the second raise as such. The reason is that the request carries no
+history of the hotel's own changes, which the next version adds. The holds
+cost $5,824 a seed. The first run's five commands made 3,553 calls for
+$46.76, and the rerun 852 calls for $10.48 (docs/results.md).
 
 This repository does no post-training. Every booking in this world comes from
 code in this repository. A model trained on these runs learns the simulator's
@@ -223,10 +228,10 @@ bookings.
   the plans alone.
 - The benchmark ran the live models on seeds 1 to 20 in the fixed and the
   learned modes (docs/results.md). No reviewer recovered more than 28% of the
-  oracle's margin in a fixed mode or 4% in a learned one. Most declines in the
-  cautious arms read a rounded gain as a failed rule. In the reacting market
-  Opus held 43 of 556 second raises for reasons that never name the earlier
-  raise.
+  oracle's margin in a fixed mode or 4% in a learned one. The cautious arms'
+  declines came from a rounding in the request, and the fixed request removed
+  them. In the reacting market Opus held 43 of 556 second raises for reasons
+  that never name the earlier raise.
 - The container image was built on Python 3.11, 3.12 and 3.14 and passed the
   suite on each. A seed-7 run inside it matches the native run (docs/results.md).
 

@@ -136,7 +136,7 @@ the plans, the model's request and answer, and what the command writes.
 - File: src/hotel_market/model.py
 - Made by: request_for(day, hotel, entries) writes day, hotel (name, rooms, floor, ceiling, cost_per_occupied_room) and elasticity, the shared pricing ([[DAT-21]]). It adds target only when it is revenue ([[RUL-58]]), then the entries.
 - Entry: id, stay_dates, what_changed, numbers ([[DAT-13]]), by_day_of_week, plan, value_at_stake and options [plan, "hold"].
-- Weekday: day, stay_dates, best and the candidates with rates, estimated_contribution and versus_hold. Under the cautious rule each candidate also carries its band values.
+- Weekday: day, stay_dates, best and the candidates with rates, estimated_contribution and versus_hold. Under the cautious rule each candidate also carries its band values, and all but hold the band_verdict ([[DEC-56]]).
 - Figures: every figure is a display string from [[MOD-11]] in place of the raw number ([[DEC-44]]). Every number in it comes from code ([[RUL-01]]), and the mode reads "assumed" for the default pricing ([[RUL-75]]).
 - Digest: a change of elasticity or target changes the request, and the sorted-keys JSON is digested for the cache key ([[DEC-23]]).
 - Used by: written by [[MOD-09]], and read by the model, the template and [[MOD-09]]'s check of the answer

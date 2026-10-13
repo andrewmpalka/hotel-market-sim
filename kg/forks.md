@@ -67,7 +67,8 @@ it. None of these is in progress.
 - Needs: the hotel's own change days per stay date among detect.py's inputs, and a rule for the window. The oracle already scores the followed median ([[DEC-52]]), so the arm would measure the flag alone.
 - Live: the reviewer arm at 0.5 shows Opus 556 plans on dates changed within 14 days. It holds 43 ([[RES-37]], [[MEA-14]]). Its reasons cite the cautious band's display and never the earlier raise, which the request does not carry.
 - Before: the simulator pays the second raise, so the oracle holds 1 of the 556. Opus's holds therefore cost $5,824 a seed. Opus does not decline the second raise as such. The 43 holds are the before measurement for this fix.
-- Links: [[DEC-51]], [[DEC-52]], [[RUL-65]], [[RUL-84]], [[RUL-85]], [[RES-24]], [[RES-26]], [[RES-37]], [[MEA-14]]
+- History: Opus did not decline the second raise as such, because the request carries no history of the hotel's own changes. [[DEC-45]] adds that history, so it is where a reviewer could first see the earlier raise.
+- Links: [[DEC-45]], [[DEC-51]], [[DEC-52]], [[RUL-65]], [[RUL-84]], [[RUL-85]], [[RES-24]], [[RES-26]], [[RES-37]], [[MEA-14]]
 
 ### FRK-10 [O] An arrival time column
 - Choice: whether each row should carry PASSENGER_ARRIVAL_TIME_LOCAL. It would come from the departure time, a block time from the distance and the origin's time-zone offset.

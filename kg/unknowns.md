@@ -11,7 +11,7 @@ and a RES node records the run. A claim that no test can confirm stays [U].
 - Reasons: the reasons differed by request format. The fourth format, with each range as one phrase, copied every phrase whole ([[DEC-44]]).
 - Kept: the figures here come from one recorded run of seed 7, the fourth, kept as [[DAT-29]]. The first three runs are quoted from the session that made them.
 - Measured: on seeds 1 to 20, Opus declines 47 plans at fixed:1.0 and 1 at fixed:2.0 ([[RES-16]], [[RES-17]]). Sonnet and Haiku decline none in 120 arms, and none declines in the true mode ([[RES-18]]).
-- Learn: Opus declines 21 plans in the four arms with no reaction and 49 in the reacting one ([[RES-34]] to [[RES-37]]). Haiku declines 17 and Sonnet 2, all in the cautious arms. Most read a rounded gain as a failed rule.
+- Learn: Opus declines 16 plans in the four arms with no reaction and 49 reacting ([[RES-34]] to [[RES-37]]). Haiku declines 7 and Sonnet none. [[DEC-56]] removed every learn:1.0 cautious decline.
 - Evidence: test_the_recorded_live_run_of_seed_7_passes_the_audit, test_the_recorded_live_run_replays_without_a_key_and_gives_28818
 - Links: [[MOD-09]], [[MOD-22]], [[DAT-29]], [[DEC-36]], [[DEC-44]], [[FRK-04]], [[RES-08]], [[RES-16]], [[RES-17]], [[RES-18]], [[RES-34]], [[RES-35]], [[RES-36]], [[RES-37]]
 

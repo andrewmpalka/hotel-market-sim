@@ -105,7 +105,7 @@ which is also the order in which they depend on each other.
 ### MOD-11 [C] text.py
 - File: src/hotel_market/text.py
 - Owns: the wording the template reasons and the printed reports share, so that a number reads the same wherever it appears. The shared helpers are stay_range, money_range, percent_range, pace_text and capitalize_first.
-- Strings: the display strings the request carries in place of every figure ([[DEC-44]]): dollars, tens_of_dollars, percent_change, against_median, versus_holding, rooms and number.
+- Strings: the display strings of the request ([[DEC-44]]): dollars, tens_of_dollars, percent_change, against_median, versus_holding, rooms and number. The cautious band adds versus_holding_at_end and band_verdict ([[DEC-56]]).
 - Ranges: span, money_range, percent_change_range and against_median_range write a range as one phrase. They write the single value when both ends read the same. A signed quantity reads with its direction in words.
 - Reads: nothing in the package
 - Writes: nothing

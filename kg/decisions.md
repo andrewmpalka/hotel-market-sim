@@ -265,7 +265,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 ### DEC-44 [C] The request carries a display string in place of every figure, with its direction in words and each range as one phrase, and the prompt tells the model to copy the phrases whole and state only what the entry shows
 - Decided: every figure in the request ([[DAT-16]], built by [[MOD-09]]) is a display string written by code ([[MOD-11]]). The raw number stays in the log line and the stored tables ([[DAT-13]], [[DAT-18]]).
 - Phrases: a signed quantity reads as a phrase with its direction in words and no sign. A range reads as one phrase, and as the single value when both ends read the same.
-- Format: a rate, a median, a floor, a ceiling or a cost reads to the dollar. An estimate reads to the nearest $10, rooms to the room, and an elasticity with up to two decimals.
+- Format: a rate, a median, a floor, a ceiling or a cost reads to the dollar. An estimate reads to the nearest $10, rooms to the room, and an elasticity with up to two decimals. A band-end gain under $10 reads to the dollar ([[DEC-56]]).
 - Prompt: the system prompt ([[RUL-47]]) tells the model to write as "we" and to copy the phrases whole. It states only what the entry shows and writes event names in lower case. It may write "more than holding" once for several gains.
 - Replaces: bare numbers, which the model rounded and reformatted as it pleased, and three later formats ([[RES-08]]). It also replaced the mode name "true" ([[RUL-75]]) and the prompt line "use only numbers that appear in the entry".
 - Reason: the model copied figures only when the request held them as finished phrases. Each format was tried in a live run of seed 7 ([[RES-08]], [[UNK-01]]).
@@ -277,8 +277,8 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Replaces: nothing built; today the model sees only the day's entries ([[DAT-16]]).
 - Reason: a revenue manager judges a recommendation against the last ones, and the model cannot.
 - Needs: a record of each accepted plan's realised gain on its stay dates. The changed-pairs comparison already computes that per run ([[RES-02]]). The request and the cache digest need a place for it ([[DEC-23]]).
-- Measured: before this change, Opus recovers 0.28 of the oracle's gain over accept-all at fixed:1.0 ([[RES-16]]). It earns +$14,584 a seed against +$8,438 and +$30,588. Its reasons cite the fixed elasticity and no past outcome.
-- Links: [[DAT-16]], [[MOD-09]], [[MOD-10]], [[DEC-44]], [[RES-16]]
+- Measured: Opus recovers 0.28 of the oracle's gain at fixed:1.0 and cites no past outcome ([[RES-16]]). In the reacting arm it did not decline the second raise as such ([[RES-37]]). The request carries no history of its own changes.
+- Links: [[DAT-16]], [[MOD-09]], [[MOD-10]], [[DEC-44]], [[RES-16]], [[RES-37]], [[FRK-09]]
 
 ### DEC-46 [T] The agent reprices when data arrives during the day
 - Decided: the agent will run again within a day when a feed delivers new data.
@@ -496,3 +496,13 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Commit: e15c32d
 - Evidence: test_a_sweep_with_reviewers_keeps_each_arms_entries_calls_and_counts, test_the_bench_command_prints_its_tables, test_a_duplicate_call_record_is_counted_once
 - Links: [[MOD-12]], [[MOD-23]], [[DAT-19]], [[DAT-24]], [[DAT-32]], [[DEC-47]]
+
+### DEC-56 [C] The cautious band's verdict is a display field, and a band-end gain under $10 reads to the dollar
+- Decided: each candidate but hold in a cautious request carries band_verdict ([[DAT-16]], [[MOD-11]]). An example is "beats holding at both ends of the band". A gain over hold at an end of the band under $10 reads to the dollar.
+- Replaces: the ends read to the nearest $10 as every estimate does ([[DEC-44]]). A gain of $3 the rule had passed therefore read "the same as holding". The model inferred the rule's result from the rounded gains.
+- Reason: on seed 7, day 29, Opus, Sonnet and Haiku each declined the same airport raise ([[RES-35]]). Each read "the same as holding" at the high end as a failed rule. That was the natural reading of what code wrote.
+- Digest: the cautious requests change, so their digests and caches change ([[DEC-23]]). The recorded seed-7 run ([[DAT-29]]) is the default mode, which has no band, and is unaffected.
+- Prompt: the system prompt ([[RUL-47]]) tells the model to copy the verdict as written.
+- Measured: the three learn:1.0 cautious arms reran on seeds 1 to 20 and declined nothing. Each ties with the template at +$25,076 a seed ([[RES-35]]). The 852 calls cost $10.48.
+- Evidence: test_a_band_end_gain_under_ten_dollars_reads_to_the_dollar, test_the_band_verdict_states_the_cautious_rules_result, test_the_three_values_reach_the_model_request, test_the_recorded_live_run_replays_without_a_key_and_gives_28818
+- Links: [[DEC-44]], [[DEC-39]], [[DEC-23]], [[DAT-16]], [[DAT-29]], [[MOD-09]], [[MOD-11]], [[RUL-47]], [[RES-35]], [[UNK-01]]

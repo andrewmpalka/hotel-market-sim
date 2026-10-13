@@ -246,6 +246,7 @@ it differs from what that would write. `README.md` is the legend.
 - DEC-42 [C] The feeds and the agent's output are stored tables keyed by as_of_day, and the agent can run one day at a time against them — kg/decisions.md
 - DEC-47 [C] The oracle reviewer is a grader outside the agent's path — kg/decisions.md
 - DEC-48 [C] The bench is one sweep with a reviewer per arm — kg/decisions.md
+- DEC-56 [C] The cautious band's verdict is a display field, and a band-end gain under $10 reads to the dollar — kg/decisions.md
 
 ## Results (`results.md`)
 

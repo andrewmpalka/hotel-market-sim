@@ -11,6 +11,10 @@ the median", "up 15.0%", "44 rooms ahead of pace" and "$120 less than holding". 
 one phrase. Examples are "10.7% to 14.6% below the median", "up 17.0% to 21.6%" and "2.5% below
 to 2.5% above the median". When both ends read the same, the single value stands for the range.
 The model then copies a phrase that already reads correctly.
+
+The cautious band is the exception to the nearest $10. A gain over hold at an end of the band
+under $10 reads to the dollar, and the rule's result for each candidate is a phrase of its own,
+band_verdict. The model copies the verdict in place of reading it off the rounded gains.
 """
 
 from __future__ import annotations
@@ -133,6 +137,33 @@ def versus_holding(amount: float) -> str:
     if tens == 0:
         return "the same as holding"
     return f"{_dollars(abs(tens))} {'more' if tens > 0 else 'less'} than holding"
+
+
+def versus_holding_at_end(amount: float) -> str:
+    """An estimate against hold's at an end of the cautious band. Under $10 it reads to the dollar,
+    such as "$3 more than holding", so a gain the band passed does not read "the same as holding".
+    From $10 it reads to the nearest $10, as versus_holding does."""
+    if abs(amount) >= 10:
+        return versus_holding(amount)
+    units = round(amount)
+    if units == 0:
+        return "the same as holding"
+    return f"{_dollars(abs(units))} {'more' if units > 0 else 'less'} than holding"
+
+
+def band_verdict(low: float, mid: float, high: float) -> str:
+    """The cautious rule's result for a candidate, stated outright for the model to copy. The
+    arguments are its gains over hold at the low end of the band, at the estimate and at the high
+    end. It reads "beats holding at both ends of the band" when the rule passes the candidate,
+    and otherwise names where the candidate falls short."""
+    if low > 0 and mid > 0 and high > 0:
+        return "beats holding at both ends of the band"
+    short = [end for end, gain in (("low", low), ("high", high)) if gain <= 0]
+    if len(short) == 2:
+        return "does not beat holding at either end of the band"
+    if short:
+        return f"does not beat holding at the {short[0]} end of the band"
+    return "does not beat holding at the estimate"
 
 
 def rooms(count: float) -> str:
