@@ -28,14 +28,17 @@ def _tree() -> ast.Module:
     return ast.parse(PAGE.read_text())
 
 
-def _page(testing, monkeypatch, file, hotel: str | None = None, day: int | None = None):
-    """The page run on the file, opened at the hotel and day the query string names."""
+def _page(testing, monkeypatch, file, hotel=None, day=None, end=False):
+    """The page run on the file, opened at the hotel and day the query string names, with the
+    end-of-run result turned on by the query string when asked."""
     monkeypatch.setenv("HOTEL_MARKET_DEMO_FILE", str(file))
     page = testing.AppTest.from_file(str(PAGE), default_timeout=60)
     if hotel is not None:
         page.query_params["hotel"] = hotel
     if day is not None:
         page.query_params["day"] = str(day)
+    if end:
+        page.query_params["end"] = "1"
     page.run()
     assert not page.exception
     return page
@@ -43,6 +46,11 @@ def _page(testing, monkeypatch, file, hotel: str | None = None, day: int | None 
 
 def _text(page) -> str:
     return "\n".join(block.value for block in page.markdown)
+
+
+def _rate_chart_spec(page) -> str:
+    """The rate chart's Vega-Lite spec, the first chart on the page."""
+    return page.get("vega_lite_chart")[0].proto.spec
 
 
 def test_the_page_imports_nothing_from_the_package_or_the_simulator():
@@ -70,6 +78,7 @@ def test_the_page_shows_the_convention_hotel_on_day_10(demo_file, monkeypatch):
     testing = pytest.importorskip("streamlit.testing.v1")
     page = _page(testing, monkeypatch, demo_file)
     assert page.subheader[0].value == "Downtown convention hotel, Mon 4 Jan 2027 [day 0]"
+    assert '"planned_rate"' not in _rate_chart_spec(page)  # no accepted plan, no legend entry
     page.sidebar.selectbox[0].select("Downtown convention hotel")
     page.sidebar.slider[0].set_value(10)
     page.run()
@@ -81,30 +90,46 @@ def test_the_page_shows_the_convention_hotel_on_day_10(demo_file, monkeypatch):
     assert "**Stay dates ahead, Thu 14 Jan [10] to Tue 13 Apr [99].**" in text
     assert CONVENTION_DAY_10 in text
     assert "No flag was held today." in text and not page.expander
-    # The scorecard: the nights already stayed and the complete result, for the hotel and for
-    # all four, each labelled; five tiles each, and a zero change written "0" (no arrow).
-    assert [caption.value for caption in page.main.caption] == [
+    # The accepted plan's rate is a dashed line in its own colour, with a legend entry.
+    spec = _rate_chart_spec(page)
+    assert '"planned_rate"' in spec and "#1baf7a" in spec and "#2a78d6" in spec
+    # The scorecard: the nights already stayed for the hotel and for all four, each labelled;
+    # five tiles each, and a zero change written "0" (no arrow). The end-of-run result is off.
+    stayed = [
         "Downtown convention hotel: nights already stayed, Mon 4 Jan [0] to Wed 13 Jan [9]",
+        "All four hotels: nights already stayed, Mon 4 Jan [0] to Wed 13 Jan [9]",
+    ]
+    assert [caption.value for caption in page.main.caption] == stayed
+    labels = ["Occupancy", "ADR", "RevPAR", "Room revenue", "Contribution"]
+    assert [metric.label for metric in page.metric] == labels * 2
+    assert page.metric[1].value == "$220.00" and page.metric[1].delta == "0"
+    assert not page.sidebar.checkbox[0].value and len(page.get("vega_lite_chart")) == 2
+    # The checkbox adds the complete result for both scopes and the contribution line.
+    page.sidebar.checkbox[0].check()
+    page.run()
+    assert not page.exception
+    assert [caption.value for caption in page.main.caption] == [
+        stayed[0],
         "Downtown convention hotel: once every stay date is complete, "
         "Mon 4 Jan [0] to Wed 2 Jun [149]",
-        "All four hotels: nights already stayed, Mon 4 Jan [0] to Wed 13 Jan [9]",
+        stayed[1],
         "All four hotels: once every stay date is complete, Mon 4 Jan [0] to Wed 2 Jun [149]",
         "Contribution difference by stay date, once every stay date is complete",
     ]
-    labels = ["Occupancy", "ADR", "RevPAR", "Room revenue", "Contribution"]
     assert [metric.label for metric in page.metric] == labels * 4
-    assert page.metric[1].value == "$220.00" and page.metric[1].delta == "0"
     assert page.metric[9].value == "$6,917,488" and page.metric[9].delta == "+$3,915"
     assert page.metric[19].value == "$14,728,311" and page.metric[19].delta == "+$28,818"
+    assert len(page.get("vega_lite_chart")) == 3
 
 
 def test_the_query_string_opens_a_hotel_and_a_day_and_the_held_flags_are_open(
     demo_file, monkeypatch
 ):
     testing = pytest.importorskip("streamlit.testing.v1")
-    page = _page(testing, monkeypatch, demo_file, "full-service", 30)
+    page = _page(testing, monkeypatch, demo_file, "full-service", 30, end=True)
     assert page.subheader[0].value == "Downtown full-service hotel, Wed 3 Feb 2027 [day 30]"
     assert page.sidebar.slider[0].value == 30
+    assert page.sidebar.checkbox[0].value and len(page.metric) == 20  # ?end=1 turns it on
     text = _text(page)
     assert "No plan was queued today." in text
     assert page.expander[0].label == "Held flags: 2" and page.expander[0].proto.expanded
@@ -117,7 +142,7 @@ def test_the_query_string_opens_a_hotel_and_a_day_and_the_held_flags_are_open(
     # A day with no night stayed, and a query string the file does not know.
     page = _page(testing, monkeypatch, demo_file, "airport", 0)
     assert page.main.caption[0].value == "Airport hotel: nights already stayed, none yet"
-    assert len(page.metric) == 10
+    assert len(page.metric) == 0 and not page.sidebar.checkbox[0].value
     page = _page(testing, monkeypatch, demo_file, "nowhere", 999)
     assert page.subheader[0].value == "Downtown convention hotel, Mon 4 Jan 2027 [day 0]"
 

@@ -9,10 +9,11 @@ The page reads the file and computes nothing. Every figure it shows is a row cod
 imports anything from the package or does arithmetic on a figure. The sidebar picks one hotel and
 one day, and the query string can name them (?hotel=convention&day=10). The page then shows what
 became known that day, the stay dates ahead as two charts side by side, the day's queue with its
-reasons and held flags, and the scorecard: the nights already stayed, the result once every stay
-date is complete, and the contribution difference by stay date, for the hotel and for all the
-hotels together. Everything fits a 1440 by 900 window, which scripts/demo_screenshots.py checks.
-Streamlit is an optional extra: pip install -e ".[demo]".
+reasons and held flags, and the scorecard: the nights already stayed for the hotel and for all
+the hotels together. A sidebar checkbox, off by default, adds the end-of-run result: the tiles
+once every stay date is complete and the contribution difference by stay date. The query string
+can turn it on (&end=1). Everything fits a 1440 by 900 window in both states, which
+scripts/demo_screenshots.py checks. Streamlit is an optional extra: pip install -e ".[demo]".
 """
 
 import os
@@ -26,11 +27,18 @@ FILE_VARIABLE = "HOTEL_MARKET_DEMO_FILE"  # the environment variable that names 
 DEFAULT_FILE = "demo.duckdb"  # the file when the variable is not set
 HOTEL_PARAMETER = "hotel"  # the query parameter that names the hotel, by its key
 DAY_PARAMETER = "day"  # the query parameter that names the day
+END_PARAMETER = "end"  # the query parameter that turns the end-of-run result on
+ON_VALUES = ("1", "true", "on", "yes")  # what the end parameter reads as on
 ALL = "all"  # the scorecard's key for the hotels together, as demo_data writes it
 PLOT_HEIGHTS = {
     "chart": 110,
     "small": 50,
 }  # the plot areas, in pixels: a stay-date chart, the small line
+AXIS_LABEL_SIZE = 12  # the axes' tick labels, in points
+TILE_SIZES = {
+    "compact": (0.75, 1.1),
+    "large": (0.9, 1.5),
+}  # a tile's label and value font sizes in rem: with the end-of-run result shown, and without
 COLORS = {"blue": "#2a78d6", "orange": "#eb6834", "aqua": "#1baf7a", "red": "#e34948"}  # the lines
 
 # The Deploy button and the menu go, the header shrinks, and the tiles and gaps tighten so the
@@ -43,13 +51,12 @@ STYLE = """<style>
 h3 {padding-top: 0 !important; padding-bottom: 0.25rem !important;}
 [data-testid="stMetric"] {padding: 0;}
 [data-testid="stMetricLabel"] {line-height: 1.1;}
-[data-testid="stMetricLabel"] p {font-size: 0.75rem;}
-[data-testid="stMetricValue"] {font-size: 1.1rem; line-height: 1.15; padding-bottom: 0;}
+[data-testid="stMetricValue"] {line-height: 1.15; padding-bottom: 0;}
 [data-testid="stMetricValue"] div {line-height: 1.15;}
-[data-testid="stMetricDelta"] {font-size: 0.75rem; padding-bottom: 0;}
-[data-testid="stMetricDelta"] svg {width: 0.8rem; height: 0.8rem;}
+[data-testid="stMetricDelta"] {padding-bottom: 0;}
+[data-testid="stMetricDelta"] svg {width: 0.9rem; height: 0.9rem;}
 [data-testid="stCaptionContainer"] {margin-bottom: 0 !important;}
-[data-testid="stCaptionContainer"] p {margin-bottom: 0; line-height: 1.25;}
+[data-testid="stCaptionContainer"] p {font-size: 1rem; margin-bottom: 0; line-height: 1.25;}
 [data-testid="stExpander"] details summary {padding: 0.25rem 0.5rem;}
 </style>"""
 
@@ -72,6 +79,18 @@ def plain(text: str) -> str:
     return text
 
 
+def _tile_style(size: str) -> str:
+    """The tiles' font sizes: compact with the end-of-run result shown, large without."""
+    label, value = TILE_SIZES[size]
+    return (
+        "<style>"
+        f'[data-testid="stMetricLabel"] p {{font-size: {label}rem;}}'
+        f'[data-testid="stMetricValue"] {{font-size: {value}rem;}}'
+        f'[data-testid="stMetricDelta"] {{font-size: {label}rem;}}'
+        "</style>"
+    )
+
+
 def _axis(order: list[str], ticks: list[str]) -> alt.X:
     """The stay-date axis: every date in the window in order, the Mondays labelled, and the
     labels that would overlap left out."""
@@ -80,10 +99,19 @@ def _axis(order: list[str], ticks: list[str]) -> alt.X:
         sort=order,
         title=None,
         axis=alt.Axis(
-            values=ticks, labelAngle=0, labelFontSize=10, labelOverlap=True, labelSeparation=8
+            values=ticks,
+            labelAngle=0,
+            labelFontSize=AXIS_LABEL_SIZE,
+            labelOverlap=True,
+            labelSeparation=8,
         ),
         scale=alt.Scale(paddingInner=0, paddingOuter=0),
     )
+
+
+def _y(field: str, title: str | None, **axis) -> alt.Y:
+    """A value axis with the page's label size."""
+    return alt.Y(field, title=title, axis=alt.Axis(labelFontSize=AXIS_LABEL_SIZE, **axis))
 
 
 def _legend(label_expr: str | None = None, orient: str = "top") -> alt.Legend:
@@ -101,18 +129,20 @@ def _legend(label_expr: str | None = None, orient: str = "top") -> alt.Legend:
     return legend
 
 
-def _series(domain: list[str], colors: list[str], dashes: list[list[int]], names: dict) -> dict:
-    """The color and dash encodings of one chart's lines, sharing one legend."""
-    label = " : ".join(f"datum.label == '{key}' ? '{name}'" for key, name in names.items())
+def _series(lines: dict) -> dict:
+    """The color and dash encodings of one chart's lines, sharing one legend. lines maps each
+    line's field to its legend name, its color's name and its dash."""
+    label = " : ".join(f"datum.label == '{key}' ? '{name}'" for key, (name, _, _) in lines.items())
+    domain = list(lines)
     return {
         "color": alt.Color(
             "line:N",
-            scale=alt.Scale(domain=domain, range=colors),
+            scale=alt.Scale(domain=domain, range=[COLORS[color] for _, color, _ in lines.values()]),
             legend=_legend(f"{label} : datum.label"),
         ),
         "strokeDash": alt.StrokeDash(
             "line:N",
-            scale=alt.Scale(domain=domain, range=dashes),
+            scale=alt.Scale(domain=domain, range=[dash for _, _, dash in lines.values()]),
             legend=_legend(f"{label} : datum.label"),
         ),
     }
@@ -148,6 +178,7 @@ def main() -> None:
     numbers = days["as_of_day"].tolist()
     wanted_hotel = st.query_params.get(HOTEL_PARAMETER)
     wanted_day = st.query_params.get(DAY_PARAMETER)
+    wanted_end = str(st.query_params.get(END_PARAMETER)).lower()
     first_hotel = keys.index(wanted_hotel) if wanted_hotel in keys else 0
     first_day = numbers[0]
     if wanted_day is not None and wanted_day.isdigit() and int(wanted_day) in numbers:
@@ -156,10 +187,12 @@ def main() -> None:
         st.header("Hotel market demo")
         name = st.selectbox("Hotel", hotels["name"].tolist(), index=first_hotel)
         day = st.slider("Day", min_value=numbers[0], max_value=numbers[-1], value=first_day)
+        show_end = st.checkbox("Show the end-of-run result", value=wanted_end in ON_VALUES)
         st.caption(
             "Seed 7 of the simulated market. The reasons are the model's, from the recorded "
             "live run. The page reads a file code wrote and computes nothing."
         )
+    st.markdown(_tile_style("compact" if show_end else "large"), unsafe_allow_html=True)
     hotel = hotels.loc[hotels["name"] == name].iloc[0]
     key = hotel["key"]
     today = days.loc[days["as_of_day"] == day].iloc[0]
@@ -187,16 +220,17 @@ def main() -> None:
         .mark_rect(color=COLORS["red"], opacity=0.2)
         .encode(x=axis, tooltip=[alt.Tooltip("label:N", title="Flagged"), "causes:N"])
     )
-    rate_lines = _series(
-        ["rate", "comp_median", "planned_rate"],
-        [COLORS["blue"], COLORS["orange"], COLORS["blue"]],
-        [[1, 0], [1, 0], [6, 4]],
-        {"rate": "Our rate", "comp_median": "Comp set median", "planned_rate": "Planned rate"},
-    )
-    dollars = alt.Y(
-        "dollars:Q",
-        title="Rate ($)",
-        scale=alt.Scale(domain=[float(hotel["rate_axis_low"]), float(hotel["rate_axis_high"])]),
+    # The planned rate joins the lines and the legend only on a day with an accepted plan.
+    rate_lines = {
+        "rate": ("Our rate", "blue", [1, 0]),
+        "comp_median": ("Comp set median", "orange", [1, 0]),
+    }
+    if not planned.empty:
+        rate_lines["planned_rate"] = ("Planned rate", "aqua", [6, 4])
+    rate_series = _series(rate_lines)
+    dollars = _y("dollars:Q", "Rate ($)")
+    dollars["scale"] = alt.Scale(
+        domain=[float(hotel["rate_axis_low"]), float(hotel["rate_axis_high"])]
     )
     stay_date = alt.Tooltip("label:N", title="Stay date")
     rates = (
@@ -207,25 +241,30 @@ def main() -> None:
             x=axis,
             y=dollars,
             tooltip=[stay_date, alt.Tooltip("dollars:Q", format="$,.0f")],
-            **rate_lines,
+            **rate_series,
         )
     )
-    plan = (
-        alt.Chart(planned)
-        .mark_line(strokeWidth=2, clip=True)
-        .encode(
-            x=axis,
-            y=alt.Y("planned_rate:Q", title="Rate ($)"),
-            detail="flag:N",
-            tooltip=[stay_date, alt.Tooltip("planned_rate:Q", title="Planned", format="$,.0f")],
-            **rate_lines,
+    layers = [marks, rates]
+    if not planned.empty:
+        layers.append(
+            alt.Chart(planned)
+            .mark_line(strokeWidth=2, clip=True)
+            .encode(
+                x=axis,
+                y=_y("planned_rate:Q", "Rate ($)"),
+                detail="flag:N",
+                tooltip=[
+                    stay_date,
+                    alt.Tooltip("planned_rate:Q", title="Planned", format="$,.0f"),
+                ],
+                **rate_series,
+            )
         )
-    )
-    room_lines = _series(
-        ["rooms_on_books", "pace"],
-        [COLORS["aqua"], COLORS["orange"]],
-        [[1, 0], [1, 0]],
-        {"rooms_on_books": "Rooms on the books", "pace": "Pace curve"},
+    room_series = _series(
+        {
+            "rooms_on_books": ("Rooms on the books", "aqua", [1, 0]),
+            "pace": ("Pace curve", "orange", [1, 0]),
+        }
     )
     rooms = (
         alt.Chart(stays)
@@ -233,9 +272,9 @@ def main() -> None:
         .mark_line(strokeWidth=2)
         .encode(
             x=axis,
-            y=alt.Y("rooms:Q", title="Rooms"),
+            y=_y("rooms:Q", "Rooms"),
             tooltip=[stay_date, alt.Tooltip("rooms:Q", format=",.0f")],
-            **room_lines,
+            **room_series,
         )
     )
     st.markdown(
@@ -244,7 +283,7 @@ def main() -> None:
     )
     left, right = st.columns(2)
     height = PLOT_HEIGHTS["chart"]
-    left.altair_chart(_sized(alt.layer(marks, rates, plan), height), width="stretch")
+    left.altair_chart(_sized(alt.layer(*layers), height), width="stretch")
     right.altair_chart(_sized(alt.layer(marks, rooms), height), width="stretch")
 
     # ---- today's queue and the scorecard, side by side ----------------------------------------
@@ -299,41 +338,47 @@ def main() -> None:
             else:
                 st.caption(f"{title}: nights already stayed, {own.iloc[0]['nights']}")
                 _tiles(own)
-            st.caption(f"{title}: once every stay date is complete, {final.iloc[0]['nights']}")
-            _tiles(final)
-        gains = rows(
-            "SELECT hotel, title, stay_day, label, tick, difference FROM gains "
-            "WHERE hotel IN (?, ?) ORDER BY stay_day, hotel",
-            key,
-            ALL,
-        )
-        own_gains = gains.loc[gains["hotel"] == key]
-        together = gains.loc[gains["hotel"] == ALL]
-        st.caption("Contribution difference by stay date, once every stay date is complete")
-        line = (
-            alt.Chart(gains)
-            .mark_line(strokeWidth=1.5)
-            .encode(
-                x=_axis(
-                    own_gains["label"].tolist(), own_gains.loc[own_gains["tick"], "label"].tolist()
+            if show_end:
+                st.caption(f"{title}: once every stay date is complete, {final.iloc[0]['nights']}")
+                _tiles(final)
+        if show_end:
+            _gain_line(rows, key, stay_date)
+
+
+def _gain_line(rows, key: str, stay_date: alt.Tooltip) -> None:
+    """The small line: the contribution difference by stay date once every stay date is
+    complete, for the hotel and for all together."""
+    gains = rows(
+        "SELECT hotel, title, stay_day, label, tick, difference FROM gains "
+        "WHERE hotel IN (?, ?) ORDER BY stay_day, hotel",
+        key,
+        ALL,
+    )
+    own = gains.loc[gains["hotel"] == key]
+    together = gains.loc[gains["hotel"] == ALL]
+    st.caption("Contribution difference by stay date, once every stay date is complete")
+    line = (
+        alt.Chart(gains)
+        .mark_line(strokeWidth=1.5)
+        .encode(
+            x=_axis(own["label"].tolist(), own.loc[own["tick"], "label"].tolist()),
+            y=_y("difference:Q", None, format="$,.0f"),
+            color=alt.Color(
+                "title:N",
+                scale=alt.Scale(
+                    domain=[own.iloc[0]["title"], together.iloc[0]["title"]],
+                    range=[COLORS["blue"], COLORS["aqua"]],
                 ),
-                y=alt.Y("difference:Q", title=None, axis=alt.Axis(format="$,.0f")),
-                color=alt.Color(
-                    "title:N",
-                    scale=alt.Scale(
-                        domain=[own_gains.iloc[0]["title"], together.iloc[0]["title"]],
-                        range=[COLORS["blue"], COLORS["aqua"]],
-                    ),
-                    legend=_legend(orient="right"),
-                ),
-                tooltip=[
-                    alt.Tooltip("title:N", title="Scope"),
-                    stay_date,
-                    alt.Tooltip("difference:Q", title="Difference", format="$,.0f"),
-                ],
-            )
+                legend=_legend(orient="right"),
+            ),
+            tooltip=[
+                alt.Tooltip("title:N", title="Scope"),
+                stay_date,
+                alt.Tooltip("difference:Q", title="Difference", format="$,.0f"),
+            ],
         )
-        st.altair_chart(_sized(line, PLOT_HEIGHTS["small"]), width="stretch")
+    )
+    st.altair_chart(_sized(line, PLOT_HEIGHTS["small"]), width="stretch")
 
 
 def _tiles(frame) -> None:

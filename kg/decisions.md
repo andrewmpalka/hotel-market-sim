@@ -522,6 +522,6 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Plan: on the day a plan is accepted, the rate chart draws the new rate as a dashed line beside the current one. A held day of the week keeps the current rate on that line.
 - Held: the held flags are open by default. Each shows its stay dates, its cause, the best alternative and how far it fell short of holding, or of the minimum when its plan beats holding ([[RUL-67]]).
 - Text: the page escapes the markdown marks in every reason and plan, so a pair of dollar amounts is not read as a formula. The scorecard's tiles write a change that rounds to nothing as "0", which shows no arrow.
-- Layout: the charts sit side by side, the queue beside the scorecard, and the toolbar is hidden. The rate chart's y axis runs from 75% to 125% of the start rate ([[RUL-109]]), and each chart spans the window's dates only.
+- Layout: the charts sit side by side, the queue beside the scorecard, and the toolbar is hidden. The end-of-run result is behind a checkbox, off by default, so the page does not show the future. Both states fit the window.
 - Evidence: test_the_three_pages_fit_the_window, test_every_date_reads_as_a_calendar_date_with_its_day_number_in_brackets, test_a_held_flag_names_the_best_alternative_and_how_far_it_fell_short
 - Links: [[DEC-57]], [[MOD-26]], [[MOD-27]], [[MOD-28]], [[DAT-33]], [[RUL-67]], [[RUL-109]]

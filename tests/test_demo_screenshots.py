@@ -34,6 +34,7 @@ def test_a_page_is_too_tall_when_its_content_passes_the_window_or_it_scrolls(scr
     assert screenshots.too_tall({**fits, "content": 901})
     assert screenshots.too_tall({**fits, "scroll": 901})
     assert screenshots.PAGES == (("convention", 10), ("airport", 20), ("full-service", 30))
+    assert screenshots.STATES == (("off", ""), ("on", "&end=1"))
     assert (screenshots.WIDTH, screenshots.HEIGHT) == (1440, 900)
 
 
@@ -44,8 +45,12 @@ def test_the_three_pages_fit_the_window(screenshots, demo_file, tmp_path):
     if browser is None:
         pytest.skip("no Chromium-based browser found")
     results = screenshots.shoot(demo_file, tmp_path / "shots", browser)
-    assert [(hotel, day) for hotel, day, _, _ in results] == list(screenshots.PAGES)
-    for hotel, day, measured, path in results:
+    assert [(hotel, day, state) for hotel, day, state, _, _ in results] == [
+        (hotel, day, state) for hotel, day in screenshots.PAGES for state, _ in screenshots.STATES
+    ]
+    assert results[0][4].name == "convention-day10.png"
+    assert results[1][4].name == "convention-day10-end.png"
+    for hotel, day, state, measured, path in results:
         assert path.exists() and path.stat().st_size > 10_000
-        assert measured["window"] == 900 and measured["metrics"] == 20
-        assert not screenshots.too_tall(measured), (hotel, day, measured)
+        assert measured["window"] == 900 and measured["metrics"] == (20 if state == "on" else 10)
+        assert not screenshots.too_tall(measured), (hotel, day, state, measured)

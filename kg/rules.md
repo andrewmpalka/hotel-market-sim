@@ -815,7 +815,7 @@ hotels themselves are data ([[DAT-04]]).
 - Value: {"blue": "#2a78d6", "orange": "#eb6834", "aqua": "#1baf7a", "red": "#e34948"}
 - File: src/hotel_market/demo_page.py
 - Kind: label
-- Meaning: the lines' colours and the red of the flagged bands. Blue is our rate and the hotel, orange the comp set median and the pace curve, aqua the rooms on the books and all hotels together.
+- Meaning: the lines' colours and the red of the flagged bands. Blue is our rate and the hotel, orange the comp set median and the pace curve, aqua the planned rate, the rooms on the books and all hotels together.
 - Evidence: test_the_three_pages_fit_the_window
 
 ### RUL-117 [C] MARKDOWN_MARKS
@@ -824,3 +824,31 @@ hotels themselves are data ([[DAT-04]]).
 - Kind: label
 - Meaning: the characters plain() escapes in a reason, a plan or a date, so the markdown shows them as written ([[DEC-58]]). The backslash goes first.
 - Evidence: test_a_reason_with_two_dollar_amounts_shows_both_as_written
+
+### RUL-118 [C] END_PARAMETER
+- Value: "end"
+- File: src/hotel_market/demo_page.py
+- Kind: label
+- Meaning: the query parameter that turns the end-of-run result on, as the sidebar checkbox does ([[MOD-27]], [[DEC-58]]). The screenshot script uses it for the second state of each page ([[MOD-28]]).
+- Evidence: test_the_query_string_opens_a_hotel_and_a_day_and_the_held_flags_are_open
+
+### RUL-119 [C] ON_VALUES
+- Value: ("1", "true", "on", "yes")
+- File: src/hotel_market/demo_page.py
+- Kind: label
+- Meaning: the values of the end parameter that read as on, in lower case. Any other value, or none, leaves the checkbox off.
+- Evidence: test_the_query_string_opens_a_hotel_and_a_day_and_the_held_flags_are_open
+
+### RUL-120 [C] AXIS_LABEL_SIZE
+- Value: 12
+- File: src/hotel_market/demo_page.py
+- Kind: parameter
+- Meaning: the font size in points of the tick labels on every axis of the page's charts ([[DEC-58]]).
+- Evidence: test_the_three_pages_fit_the_window
+
+### RUL-121 [C] TILE_SIZES
+- Value: {"compact": (0.75, 1.1), "large": (0.9, 1.5)}
+- File: src/hotel_market/demo_page.py
+- Kind: parameter
+- Meaning: a tile's label and value font sizes in rem. The large size shows the nights already stayed alone, and the compact size fits the end-of-run result under them ([[DEC-58]]).
+- Evidence: test_the_three_pages_fit_the_window

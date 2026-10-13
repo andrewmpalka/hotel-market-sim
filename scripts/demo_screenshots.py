@@ -1,18 +1,20 @@
 """demo_screenshots.py
 
 Opens the demo page in a Chromium-based browser at 1440 by 900, saves a screenshot of three
-pages, and fails when a page's content is taller than the window.
+pages, each with the end-of-run result off and on, and fails when a page's content is taller
+than the window.
 
     python scripts/demo_screenshots.py                       # demo.duckdb, screenshots/
     python scripts/demo_screenshots.py --file FILE --out DIR
 
 The pages are the convention hotel on day 10, the airport hotel on day 20 and the full-service
-hotel on day 30. The script starts the page's Streamlit server on a free port, drives the
-browser headless over the DevTools pipe, and needs no package beyond the standard library and
-Streamlit. The browser is the first found of: the path in HOTEL_MARKET_BROWSER, a Chromium under
-/Applications or in Playwright's cache, Google Chrome, or a chromium or chrome on the PATH. The
-content height is the bottom edge of the page's main block, the title to the scorecard, which
-must fit in the window with nothing cut off.
+hotel on day 30, first as the page opens and then with the sidebar checkbox on (&end=1). The
+script starts the page's Streamlit server on a free port, drives the browser headless over the
+DevTools pipe, and needs no package beyond the standard library and Streamlit. The browser is the
+first found of: the path in HOTEL_MARKET_BROWSER, a Chromium under /Applications or in
+Playwright's cache, Google Chrome, or a chromium or chrome on the PATH. The content height is the
+bottom edge of the page's main block, the title to the scorecard, which must fit in the window
+with nothing cut off.
 """
 
 from __future__ import annotations
@@ -35,6 +37,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PAGE = ROOT / "src" / "hotel_market" / "demo_page.py"
 WIDTH, HEIGHT = 1440, 900
 PAGES = (("convention", 10), ("airport", 20), ("full-service", 30))  # (hotel key, day)
+STATES = (("off", ""), ("on", "&end=1"))  # the end-of-run result: its name, and its query string
 BROWSER_VARIABLE = "HOTEL_MARKET_BROWSER"
 BROWSERS = (
     "/Applications/Chromium.app/Contents/MacOS/Chromium",
@@ -240,8 +243,8 @@ def start_server(file: Path, port: int) -> subprocess.Popen:
     raise TimeoutError("the Streamlit server did not start in 60s")
 
 
-def shoot(file: Path, out: Path, browser_path: str) -> list[tuple[str, int, dict, Path]]:
-    """Each page's measurements and screenshot path."""
+def shoot(file: Path, out: Path, browser_path: str) -> list[tuple[str, int, str, dict, Path]]:
+    """Each page's measurements and screenshot path, with the end-of-run result off and on."""
     out.mkdir(parents=True, exist_ok=True)
     port = free_port()
     server = start_server(file, port)
@@ -250,10 +253,12 @@ def shoot(file: Path, out: Path, browser_path: str) -> list[tuple[str, int, dict
     try:
         browser = Browser(browser_path)
         for hotel, day in PAGES:
-            measured = browser.open(f"http://127.0.0.1:{port}/?hotel={hotel}&day={day}")
-            path = out / f"{hotel}-day{day}.png"
-            browser.screenshot(path)
-            results.append((hotel, day, measured, path))
+            for state, query in STATES:
+                url = f"http://127.0.0.1:{port}/?hotel={hotel}&day={day}{query}"
+                measured = browser.open(url)
+                path = out / f"{hotel}-day{day}{'-end' if query else ''}.png"
+                browser.screenshot(path)
+                results.append((hotel, day, state, measured, path))
     finally:
         if browser is not None:
             browser.close()
@@ -281,12 +286,12 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     print(f"Browser: {browser_path}")
     failed = False
-    for hotel, day, measured, path in shoot(args.file, args.out, browser_path):
+    for hotel, day, state, measured, path in shoot(args.file, args.out, browser_path):
         verdict = "too tall" if too_tall(measured) else "fits"
         failed = failed or too_tall(measured)
         print(
-            f"{hotel} day {day}: content {measured['content']} px of {measured['window']} "
-            f"({verdict}), {path}"
+            f"{hotel} day {day}, end-of-run result {state}: content {measured['content']} px "
+            f"of {measured['window']} ({verdict}), {path}"
         )
     return 1 if failed else 0
 

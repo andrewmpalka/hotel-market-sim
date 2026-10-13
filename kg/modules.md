@@ -257,18 +257,18 @@ which is also the order in which they depend on each other.
 
 ### MOD-27 [C] demo_page.py
 - File: src/hotel_market/demo_page.py
-- Owns: the read-only demo page ([[DEC-57]], [[DEC-58]]), a Streamlit app over [[DAT-33]]. The sidebar picks a hotel and a day, and the query string can name them. It shows the day's news, two charts, the queue and the scorecard.
-- Charts: our rate, the comp set median and an accepted plan's rate as a dashed line, then the rooms on the books against the pace curve, side by side. The x axis is the window's dates, the Mondays labelled. The legends sit above the lines.
+- Owns: the read-only demo page ([[DEC-57]], [[DEC-58]]), a Streamlit app over [[DAT-33]]. The sidebar picks a hotel and a day, and a checkbox shows the end-of-run result. The query string can set all three.
+- Charts: our rate, the comp set median and an accepted plan's rate as a dashed aqua line, then the rooms on the books against the pace curve, side by side. The planned rate joins the legend only on a day with an accepted plan.
 - Queue: each queued plan with its reason, and the held flags open, each with its stay dates, its cause, the best alternative and how far it fell short. plain() escapes the markdown marks, so a dollar sign shows as written.
-- Scorecard: for the hotel and for all together, the nights already stayed and the complete outcome as five tiles each, then the small line of the contribution difference by stay date. A change of "0" shows no arrow.
-- Holds: FILE_VARIABLE, DEFAULT_FILE, HOTEL_PARAMETER, DAY_PARAMETER, ALL, PLOT_HEIGHTS, COLORS and MARKDOWN_MARKS ([[RUL-105]], [[RUL-106]], [[RUL-112]] to [[RUL-117]]), and STYLE, the CSS that fits the page in 900 pixels.
+- Scorecard: the nights already stayed for the hotel and for all together, as five large tiles each. With the checkbox on, the complete outcome's tiles follow each, in a compact size, and then the small line of the contribution difference.
+- Holds: FILE_VARIABLE, DEFAULT_FILE, HOTEL_PARAMETER, DAY_PARAMETER, END_PARAMETER, ON_VALUES, ALL, PLOT_HEIGHTS, AXIS_LABEL_SIZE, TILE_SIZES, COLORS and MARKDOWN_MARKS ([[RUL-105]], [[RUL-106]], [[RUL-112]] to [[RUL-121]]), and STYLE.
 - Reads: nothing in the package; streamlit, altair and duckdb only, the optional extra demo. The page computes nothing, and a test parses it for an arithmetic operator or an aggregate call. Tests: tests/test_demo_page.py.
 - Evidence: test_the_page_imports_nothing_from_the_package_or_the_simulator, test_the_page_does_no_arithmetic_on_a_figure, test_the_page_shows_the_convention_hotel_on_day_10, test_a_reason_with_two_dollar_amounts_shows_both_as_written
 
 ### MOD-28 [C] scripts/demo_screenshots.py
 - File: scripts/demo_screenshots.py
 - Owns: the check that the demo page fits one window ([[DEC-58]]). It starts the page's server on a free port, opens three pages in a headless Chromium-based browser at 1440 by 900, saves a screenshot of each and measures the content.
-- Pages: PAGES names them: the convention hotel on day 10, the airport hotel on day 20 and the full-service hotel on day 30. The command fails when a page's content is taller than the window or its main section scrolls.
+- Pages: PAGES names them: the convention hotel on day 10, the airport hotel on day 20 and the full-service hotel on day 30, each with the end-of-run result off and on. The command fails when a page's content is taller than the window.
 - Browser: find_browser() takes the path in HOTEL_MARKET_BROWSER, else the first of BROWSERS found: a Chromium under /Applications or in Playwright's cache, Google Chrome, or a chromium or chrome on the PATH.
 - Driver: the Browser class drives it over the DevTools pipe, file descriptors 3 and 4, with no package beyond the standard library. MEASURE is the script the browser runs to measure the page once it has rendered.
 - Reads: [[MOD-27]] as the page it runs; nothing from the package

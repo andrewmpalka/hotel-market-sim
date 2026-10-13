@@ -74,8 +74,9 @@ demo market, sql/schema.sql defines the seven stored tables and sql/demo.sql the
 demo page's eight.
 scripts/live_audit.py runs and audits a live seed, and scripts/median_path.py
 prints a comp median's path next to the hotel's rate. scripts/demo_screenshots.py
-opens the demo page in a Chromium-based browser at 1440 by 900, saves three
-screenshots and fails when a page is taller than the window. kg/ and kg_check.py are
+opens the demo page in a Chromium-based browser at 1440 by 900, saves six
+screenshots, three pages with the end-of-run result off and on, and fails when a
+page is taller than the window. kg/ and kg_check.py are
 the knowledge graph and its checker. Makefile and Dockerfile wrap the setup.
 docs/results.md holds the experiment tables, and docs/schedule-feed.md describes
 the air schedule feed as modelled.
@@ -92,7 +93,7 @@ the air schedule feed as modelled.
     make bench FIRST=1 LAST=3  # the reviewers benchmarked (ANTHROPIC_API_KEY); BENCH=--template runs it offline
     make day SEED=7 DAY=20     # one day through the stored tables; make day-replay DAY=20 replays it
     make demo SEED=7           # demo.duckdb from the recorded run, then the demo page (installs streamlit)
-    make screenshots           # the demo page at 1440 by 900: three screenshots under screenshots/, a failure if one is taller
+    make screenshots           # the demo page at 1440 by 900: six screenshots under screenshots/, a failure if one is taller
     make image                 # the Docker image; make docker-test and docker-run SEED=7 use it
     python kg_check.py         # the graph against the code; --write-index rewrites kg/index.md
 
