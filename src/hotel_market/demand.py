@@ -7,9 +7,9 @@ uses what is known on as_of_day.
     x (1 + air share x seat_change for that stay date)
     x (1 + event uplift, from events known by as_of_day)
 
-normal_demand leaves out seats and events. The agent never reads this module. Its own demand
-model is forecast.py, which uses the same formula from the feeds. At the default demand bias the
-agent's demand model is therefore right by construction. That is a known limit.
+normal_demand leaves out seats and events. The agent never reads this module. Its own demand model
+is forecast.py, which uses the same formula from the feeds. At the default demand bias the agent's
+demand model is therefore right by construction, which is a known limit.
 
 DEMAND_BIAS multiplies both functions. The command sets it with --demand-bias, and the booking
 loop passes it to every draw. The agent never receives it, so at a bias other than 1.0 its

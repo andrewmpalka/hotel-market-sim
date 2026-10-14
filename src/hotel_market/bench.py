@@ -11,14 +11,13 @@ is then right, and every reviewer ties there. In the modes with a wrong or a lea
 a plan is sometimes worth less than holding. Declining it is then right. The benchmark runs the
 reviewers in those modes.
 
-The oracle reviewer is the ceiling for a reviewer. It grades; it is not an agent. It cannot pick
+The oracle reviewer is the ceiling for a reviewer. It grades and is not an agent, so it cannot pick
 a better candidate than the plan, and a single seed's draw can beat it. For each queued entry it
-re-scores the plan and hold with ORACLE_ELASTICITY, the simulator's own value. It declines the
-plan when hold scores at least as well. It stands in as the client the agent asks, so its
-decisions drive a run of their own. The command tells it the simulator's demand bias, market
-elasticity and reaction share when it builds it (cli.py). The oracle therefore stays the
-simulator's truth at any of those settings. It treats the reaction as immediate, where the
-simulator applies it with a lag.
+re-scores the plan and hold with ORACLE_ELASTICITY, the simulator's own value. It declines the plan
+when hold scores at least as well. It stands in as the client the agent asks, so its decisions drive
+a run of their own. The command tells it the simulator's demand bias, market elasticity and reaction
+share when it builds it (cli.py). The oracle therefore stays the simulator's truth at any of those
+settings. It treats the reaction as immediate, where the simulator applies it with a lag.
 
 It also labels the entries of any other run after the fact. Its answers are never cached and
 record the source "oracle". A later live run in the same mode therefore cannot mistake them for
@@ -325,8 +324,8 @@ def recovered_share(template_change: float, oracle_change: float, change: float)
 
     It is the share of the value a reviewer could recover over accept-all that this one did. The
     oracle's share is 1 and accept-all's is 0. A reviewer that lost money against accept-all is
-    below 0. It is nan when the oracle and the template tie, as in the true mode. There is then
-    nothing to recover.
+    below 0. It is nan when the oracle and the template tie, as in the true mode, because there is
+    then nothing to recover.
     """
     room = oracle_change - template_change
     if room == 0:

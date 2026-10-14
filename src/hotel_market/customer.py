@@ -6,10 +6,10 @@ holds the cost share and rate limits. The detect thresholds, the hold period and
 value at stake follow. The booking curve and the target the agent scores candidates on,
 "contribution" or "revenue", complete it.
 
-Both sides read it: the simulator to make the market, the agent to know its hotels and settings.
-The constants of the simulator itself stay in the code. They are the calendar, the elasticity,
-the noise, the schedule and the shocks. The demo file is the default wherever no customer is
-given, so the demo market runs with no arguments.
+Both sides read it: the simulator to make the market, the agent to know its hotels and settings. The
+constants of the simulator itself, the calendar, the elasticity, the noise, the schedule and the
+shocks, stay in the code. The demo file is the default wherever no customer is given, so the demo
+market runs with no arguments.
 """
 
 from __future__ import annotations

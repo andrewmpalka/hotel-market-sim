@@ -2,17 +2,16 @@
 
 The agent's daily loop. After each day's bookings it reads the detect numbers and builds an entry
 for every flag. It queues the plans worth the minimum and asks the model, or the template, about
-each hotel's queue. It returns the accepted rate changes. The simulator applies them from the
+each hotel's queue. It returns the accepted rate changes, and the simulator applies them from the
 next day and then holds the changed stay dates for 7 days.
 
-It also gives the one piece of advice it does not simulate. That is a two-night minimum stay on
-an event's peak night when that night is ahead of pace. It gives it once per hotel and event.
+It also gives the one piece of advice it does not simulate, a two-night minimum stay on an event's
+peak night when that night is ahead of pace, once per hotel and event.
 
-The elasticity the agent prices with comes from one of three modes. In the default mode, true, it
-is ORACLE_ELASTICITY, the simulator's own value. The agent is then never wrong about price
-response. With fixed:X it is X for the whole run. With learn:X it starts from the prior X. The
-agent then re-estimates it every day for every hotel from the bookings made before that day
-(estimate.py).
+The elasticity the agent prices with comes from one of three modes. In the default mode, true, it is
+ORACLE_ELASTICITY, the simulator's own value. The agent is then never wrong about price response.
+With fixed:X it is X for the whole run. With learn:X it starts from the prior X, and the agent then
+re-estimates it every day for every hotel from the bookings made before that day (estimate.py).
 
 Every entry records the elasticity it was estimated with, and the request carries it. The reason
 can therefore cite it, and a change of mode changes the cache key. With --cautious, a learning

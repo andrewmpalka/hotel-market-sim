@@ -12,8 +12,8 @@ contribution each candidate would earn on the rooms still unsold:
     estimated bookings     = E[min(N, unsold rooms)], N Poisson with that mean
     estimated contribution = estimated bookings x (rate - cost per occupied room)
 
-The bookings still to come arrive at random, as the simulator draws them, and stop when the hotel
-is full. A night expected to come close to full therefore still sells out fairly often. The
+The bookings still to come arrive at random, as the simulator draws them, and stop when the hotel is
+full. A night expected to come close to full therefore still sells out fairly often, and the
 estimate counts that.
 
 Within a flag, the best candidate is chosen for each day of the week on its own. A plan can
@@ -334,8 +334,8 @@ def _candidate_json(candidate: Candidate) -> dict:
 
 
 def band_json(band: tuple[float, float]) -> dict:
-    """A candidate's estimates at the two ends of the elasticity band, as a named pair.
-    Not a lowest-highest range: the low elasticity can give the higher estimate."""
+    """A candidate's estimates at the two ends of the elasticity band, as a named pair. It is not a
+    lowest-highest range, because the low elasticity can give the higher estimate."""
     low, high = band
     return {"at_low_elasticity": round(low, 2), "at_high_elasticity": round(high, 2)}
 

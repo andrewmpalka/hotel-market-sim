@@ -7,10 +7,9 @@ therefore reads data shaped like a real feed. Every row is synthetic: the carrie
 numbers and the destination airports do not exist. This repository contains no Cirium data and
 has no affiliation with Cirium.
 
-The rows hold three traps that give a wrong seat count if the code ignores them. The first is
-codeshare rows that repeat another carrier's seats. The second is a bus link sold under a flight
-number, service type U. The third is a second airport, QMS, that shares the city code QMC.
-seats_by_day handles all three.
+The rows hold three traps that give a wrong seat count if the code ignores them: codeshare rows that
+repeat another carrier's seats, a bus link sold under a flight number with service type U, and a
+second airport, QMS, that shares the city code QMC. seats_by_day handles all three.
 
 The table has one row per flight per operating date. A schedule also has an "as of" day. A hotel
 knows about a flight only after the airline has filed it. build_schedule(as_of_day) returns the

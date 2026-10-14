@@ -11,7 +11,7 @@ writes a reason from the entry's numbers. The template is a function of the requ
 never cached. Nothing here needs an API key. Each record names the model asked, and an agent
 given another model keeps its answers in their own folder (agent.py).
 
-A replay only reads the cache. A Measured client wraps any client. It records every call to a
+A replay only reads the cache. A Measured client wraps any client, records every call to a
 calls.jsonl and asks again after an SDK error or an invalid answer.
 """
 

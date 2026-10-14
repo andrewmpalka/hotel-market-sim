@@ -7,8 +7,8 @@ an Agent as the simulator's decide hook.
 
 The sources are made for a day, the as_of_day the simulator is deciding. A question about a later
 day raises ValueError, so the agent cannot read tomorrow through them even by mistake, and every
-array they hand out is a copy, so nothing the agent does reaches the simulator's own log. Made
-with no day, as a test may make them, they answer any day.
+array they hand out is a copy, so nothing the agent does reaches the simulator's own log. When they
+are made with no day, as a test may make them, they answer any day.
 
 Run `python -m hotel_market.simulated --seed 7` to print the flags of a fixed-rate run.
 """

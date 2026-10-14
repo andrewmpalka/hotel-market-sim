@@ -12,21 +12,20 @@ applies unless --elasticity says otherwise. It makes both simulations, decisions
 cache. A Measured client (model.py) records each call's tokens, time, stop reason and answering
 model to calls.jsonl.
 
-The audit then reads the cache. It prints every reason the model wrote and every plan it
-declined. It also prints every figure in a reason that is not in the request.
+The audit then reads the cache and prints every reason the model wrote, every plan it declined and
+every figure in a reason that is not in the request.
 
 Every figure in the request is a display string written by code. Examples are "$8,050 more than
 holding", "10.7% to 14.6% below the median" and "1,188". The model is told to copy each one
 whole, so the audit matches phrases sentence by sentence.
 
-A figure in a reason counts as quoted in three cases. The first case is a display string that
-holds the figure and appears whole in the same sentence. The second case is a whole number that
-the request holds as it is, such as a day. A figure inside a name, such as "raise 5%", also
-counts.
+A figure in a reason counts as quoted in three cases: a display string that holds the figure and
+appears whole in the same sentence, a whole number that the request holds as it is, such as a day,
+and a bare dollar figure in a sentence with "more than holding". A figure inside a name, such as
+"raise 5%", also counts.
 
-The third case is a bare dollar figure in a sentence with "more than holding". It counts if the
-request holds "<figure> more than holding". The prompt lets that phrase be written once for
-several gains.
+The bare dollar figure counts if the request holds "<figure> more than holding". The prompt lets
+that phrase be written once for several gains.
 
 A range written as "12–14%" or "$217 to $220" counts as its two ends, each with the shared unit.
 The audit lists every other figure with its reason for a person to judge. These include a sign or

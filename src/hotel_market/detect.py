@@ -10,10 +10,9 @@ detect numbers and a flag where a number crosses its threshold.
     median change   the comp median against yesterday's shop
     new event       an event that became known today and covers the date
 
-A stay date is flagged in four cases. The first is a pace gap beyond a share of the hotel's rooms
-and some standard deviations of booking noise. The second is a seat_revision beyond its threshold
-either way. The third is a comp median that moved beyond its threshold since yesterday. The
-fourth is an event that became known today.
+A stay date is flagged in four cases: a pace gap beyond a share of the hotel's rooms and some
+standard deviations of booking noise, a seat_revision beyond its threshold either way, a comp median
+that moved beyond its threshold since yesterday, and an event that became known today.
 
 On a stay date under the hold, a pace gap alone raises no flag. The thresholds and the hold
 period are the customer's settings (customer.py). For the demo market they are 10% of rooms, 3
@@ -164,8 +163,8 @@ def _held(
 
 def shock_known(hotel: Hotel, stay_day: int, as_of_day: int, sources: Sources) -> bool:
     """Whether a shock known by as_of_day moves demand or competitor rates for this hotel and stay
-    date. That is true when the seats have changed or a known event covers the date. It is also
-    true when today's comp median differs from the first shop.
+    date. That is true when the seats have changed, a known event covers the date or today's comp
+    median differs from the first shop.
     """
     return (
         sources.schedules.seat_change(as_of_day)[stay_day] != 0

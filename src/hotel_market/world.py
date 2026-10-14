@@ -1,10 +1,10 @@
 """world.py
 
 The types a market is described with, and the calendar the simulation runs on. A Hotel carries
-everything the agent and the simulator need to know about it. That is its rooms, starting rate,
-share of guests arriving by air and rooms sold on a normal night. It also has its demand factors
-across the week, rate floor and ceiling, cost per occupied room and comp set. The hotels
-themselves, and the rest of a market's settings, come from a customer file (customer.py).
+everything the agent and the simulator need to know about it: its rooms, starting rate, share of
+guests arriving by air and rooms sold on a normal night. It also has its demand factors across the
+week, rate floor and ceiling, cost per occupied room and comp set. The hotels themselves, and the
+rest of a market's settings, come from a customer file (customer.py).
 
 Nothing here is random. The seed only matters once competitor rates and bookings are drawn.
 """

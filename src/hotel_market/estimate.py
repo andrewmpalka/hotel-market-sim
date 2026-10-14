@@ -4,9 +4,9 @@ The agent learns the price elasticity from the bookings it has seen, instead of 
 simulator's value.
 
 Each (stay date, booking day) pair of a hotel is one observation. It holds the rooms that day's
-bookings took and the hotel's rate that day, from the bookings feed. It holds the competitor
-median shopped that day, from the rate shops. It also holds the baseline, the bookings expected
-at a rate ratio of 1.
+bookings took and the hotel's rate that day, from the bookings feed, and the competitor median
+shopped that day, from the rate shops. It also holds the baseline, the bookings expected at a rate
+ratio of 1.
 
 The baseline is the agent's own forecast as of the booking day. It is multiplied by the booking
 curve's rise from the day before. The forecast (forecast.py) is normal demand with its weekday
@@ -20,16 +20,15 @@ elasticity is the negative of the slope. A learn:X --level agent feeds the inter
 scales its forecast by exp(intercept) once the fit has enough observations (level_factor). The
 baseline stays unscaled, so the intercept keeps measuring the level against the raw forecast.
 
-A normal prior on the elasticity keeps the estimate sensible while the rate ratio has barely
-moved. The prior is centred on the value the agent is given, with standard deviation PRIOR_SD.
-The ratio has barely moved most of the time. With flat rates it moves only when a shock moves a
+A normal prior on the elasticity keeps the estimate sensible while the rate ratio has barely moved.
+The prior is centred on the value the agent is given, with standard deviation PRIOR_SD. The ratio
+has barely moved most of the time, because with flat rates it moves only when a shock moves a
 competitor median or the agent changes a rate. The estimate is clamped to ELASTICITY_MIN to
 ELASTICITY_MAX.
 
-Three things are left out. The first is every booking made on or after as_of_day. The second is a
-stay date's observations from the day it sold out. Rooms, and not price, capped those bookings.
-The third is the day-0 preload. The simulator draws it around normal demand x curve with no price
-response at all.
+Three things are left out: every booking made on or after as_of_day, a stay date's observations from
+the day it sold out, and the day-0 preload. Rooms, and not price, capped the sold-out bookings, and
+the simulator draws the preload around normal demand x curve with no price response at all.
 """
 
 from __future__ import annotations

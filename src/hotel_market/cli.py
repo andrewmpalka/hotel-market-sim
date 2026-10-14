@@ -463,13 +463,12 @@ def sweep(
 ) -> list[ArmResult]:
     """Seeds first to last: one fixed-rate run per seed, and one agent run per seed, mode and
     reviewer. Each agent run is compared with the fixed-rate run. The arms come mode by mode, a
-    reviewer at a time. Each arm has its own cache folder, because the agent is given the
-    reviewer's model. Each seed keeps its entries, its call records and the oracle's labels on
-    it. The demand bias goes to every run and to the oracle's labels, and never to the agent.
-    The reaction goes to every run the same way. The market elasticity goes to every run, to
-    the agent and to the oracle's labels. The scenario and the churn set every run's schedule.
-    With a policy, each seed also runs the rule-based control, and every seed result carries
-    its change against fixed rates.
+    reviewer at a time. Each arm has its own cache folder, because the agent is given the reviewer's
+    model. Each seed keeps its entries, its call records and the oracle's labels on it. The demand
+    bias and the reaction go to every run and to the oracle's labels, and never to the agent. The
+    market elasticity goes to every run, to the agent and to the oracle's labels. The scenario and
+    the churn set every run's schedule. With a policy, each seed also runs the rule-based control,
+    and every seed result carries its change against fixed rates.
     """
     customer = customer or demo()
     hotels = customer.hotels
@@ -1694,9 +1693,9 @@ _BENCH_HEADER = (
 
 
 def _bench_table(mode: ElasticityMode, arms: list[ArmResult]) -> list[str]:
-    """One mode's arms, a row per reviewer. Each row holds the mean realised change and its range.
-    It holds the seeds ahead of the fixed-rate run and the regret against the oracle arm. It
-    counts the flags raised, those with a pace cause and the plans that changed a rate.
+    """One mode's arms, a row per reviewer. Each row holds the mean realised change and its range,
+    the seeds ahead of the fixed-rate run and the regret against the oracle arm. It counts the flags
+    raised, those with a pace cause and the plans that changed a rate.
 
     It also holds the recovered share of the oracle's gain over the template's and the accept
     rate. Then come the decline precision, recall, F1 and dollar-weighted recall. The last

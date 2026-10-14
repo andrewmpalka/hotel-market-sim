@@ -8,10 +8,10 @@ starting rate. It uses what the feeds say on a day.
     x (1 + uplift of every known event that covers the date)
 
 normal_demand leaves out seats and events, and pace is measured against it. The weekday factors,
-base occupancy and air share are the hotel's own settings. The seat change comes from the
-schedule feed and the events from the events feed. The simulator books with the same formula
-(demand.py). That is the known limit: the agent's demand model is right by construction. The
-agent never reads demand.py.
+base occupancy and air share are the hotel's own settings. The seat change comes from the schedule
+feed and the events from the events feed. The simulator books with the same formula (demand.py), so
+the agent's demand model is right by construction, which is the known limit. The agent never reads
+demand.py.
 
 The market's price response mirrors demand.py's term: expected demand times (the comp median as
 shopped / its starting level) ** -market elasticity. ORACLE_MARKET_ELASTICITY is the run's value,

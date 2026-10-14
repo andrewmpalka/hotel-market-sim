@@ -1,7 +1,7 @@
 """bookings.py
 
-The daily booking loop. For every hotel and stay date, the books hold three things. They are the
-rooms on the books, the room revenue booked and the rate the hotel charges.
+The daily booking loop. For every hotel and stay date, the books hold three things: the rooms on the
+books, the room revenue booked and the rate the hotel charges.
 
 Before day 0's bookings, each stay date in the window is loaded with the bookings made before the
 run starts. That load is a draw around normal_demand x curve(days out + 1) at the hotel's
