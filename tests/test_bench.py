@@ -205,6 +205,26 @@ def test_a_models_cost_comes_from_the_price_table():
     assert math.isnan(cost(calls, "scripted"))
 
 
+def test_a_call_a_fallback_model_answered_is_priced_at_that_model():
+    # The API's fallback can answer with another model than the one asked; the record names it.
+    calls = [
+        {"model": "claude-opus-5-5", "input_tokens": 1000, "output_tokens": 100},
+        {
+            "model": "claude-sonnet-5-5",
+            "input_tokens": 1000,
+            "output_tokens": 100,
+            "fallback": True,
+        },
+        {"input_tokens": 1000, "output_tokens": 100},  # no model field: priced at the one asked
+    ]
+    opus, sonnet = (1000 * 4.00 + 100 * 20.00) / 1e6, (1000 * 2.00 + 100 * 10.00) / 1e6
+    assert cost(calls, "claude-opus-5-5") == pytest.approx(opus + sonnet + opus)
+    assert cost(calls, "claude-haiku-5-5") == pytest.approx(
+        opus + sonnet + (1000 * 0.10 + 100 * 0.50) / 1e6
+    )
+    assert math.isnan(cost([{"model": "scripted", "input_tokens": 1}], "claude-opus-5-5"))
+
+
 def test_a_duplicate_call_record_is_counted_once(tmp_path):
     # An arm's calls.jsonl is appended across runs while its cache can be deleted, so a rerun
     # after deleting the cache writes a second record for the same request. The report keeps

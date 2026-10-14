@@ -293,15 +293,19 @@ def counted(records: Iterable[dict], folder: Path) -> list[dict]:
 
 
 def cost(calls: Iterable[dict], model: str) -> float:
-    """The list-price cost of the calls in dollars at the model's PRICES. Every attempt's input
-    and output tokens count, since each was paid for. nan for a model not in the table."""
-    if model not in PRICES:
-        return math.nan
-    input_price, output_price = PRICES[model]
-    calls = list(calls)
-    tokens_in = sum(int(call.get("input_tokens", 0)) for call in calls)
-    tokens_out = sum(int(call.get("output_tokens", 0)) for call in calls)
-    return (tokens_in * input_price + tokens_out * output_price) / 1_000_000
+    """The list-price cost of the calls in dollars. Each call is priced at the model that answered
+    it, the record's model field, because the API's fallback can hand a request to another model
+    than the one asked. A record with no model field is priced at `model`. Every attempt's input
+    and output tokens count, since each was paid for. nan when a model is not in the table."""
+    total = 0.0
+    for call in calls:
+        answered = call.get("model") or model
+        if answered not in PRICES:
+            return math.nan
+        input_price, output_price = PRICES[answered]
+        tokens_in, tokens_out = int(call.get("input_tokens", 0)), int(call.get("output_tokens", 0))
+        total += tokens_in * input_price + tokens_out * output_price
+    return total / 1_000_000
 
 
 # ---- the measures -------------------------------------------------------------

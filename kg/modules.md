@@ -222,11 +222,11 @@ which is also the order in which they depend on each other.
 - File: src/hotel_market/bench.py
 - Owns: the benchmark of the model as a reviewer ([[DEC-47]], [[DEC-48]]). The oracle reviewer re-scores each queued plan and hold at ORACLE_ELASTICITY ([[RUL-56]]). It declines the plan when hold scores at least as well.
 - Measures: regret ([[MEA-06]]), accept rate ([[MEA-07]]), decline precision, recall and F1 ([[MEA-08]] to [[MEA-10]]), dollar recall ([[MEA-11]]) and recovered share ([[MEA-12]]). Also [[MEA-13]] and [[MEA-14]] for the learn arms.
-- Counts: DeclineCounts ([[DAT-31]]) pools the counts behind the measures. counted() keeps one call record per digest ([[DAT-30]]); invalid_answers(), failed_requests() and retries() sum them, and cost() prices them ([[RUL-80]]).
+- Counts: DeclineCounts ([[DAT-31]]) pools the counts behind the measures. counted() keeps one call record per digest ([[DAT-30]]), and cost() prices each call at the model that answered it ([[RUL-80]]).
 - Scripted: Reviewer ([[DAT-32]]) names an arm's reviewer: TEMPLATE, ORACLE, oracle(...) or live(model). ScriptedClient plays a model offline, cached as scripted. It answers from a digest dict or declines the keys it is given.
 - Reads: [[MOD-08]] (the entries and rescored()), [[MOD-09]] (the clients and request_digest()), [[MOD-10]] (the day's entries in agent.today), [[MOD-11]], [[MOD-20]]; never the simulator, and nothing in the agent's path imports it
 - Tests: tests/test_bench.py
-- Evidence: test_the_oracle_reviewer_accepts_every_queued_plan_in_true_mode, test_the_oracle_declines_where_hold_scores_at_least_as_well, test_a_scripted_client_declines_chosen_plans_and_is_read_back
+- Evidence: test_the_oracle_reviewer_accepts_every_queued_plan_in_true_mode, test_the_oracle_declines_where_hold_scores_at_least_as_well, test_a_call_a_fallback_model_answered_is_priced_at_that_model
 
 ### MOD-24 [C] scripts/median_path.py
 - File: scripts/median_path.py
