@@ -5,6 +5,11 @@ simulator knew on that day. The bookings come from the Books' daily log and the 
 the shops the simulator used. The schedule and event records are as of that day. deciding() wraps
 an Agent as the simulator's decide hook.
 
+The sources are made for a day, the as_of_day the simulator is deciding. A question about a later
+day raises ValueError, so the agent cannot read tomorrow through them even by mistake, and every
+array they hand out is a copy, so nothing the agent does reaches the simulator's own log. Made
+with no day, as a test may make them, they answer any day.
+
 Run `python -m hotel_market.simulated --seed 7` to print the flags of a fixed-rate run.
 """
 
@@ -37,35 +42,54 @@ from hotel_market.sources import (
 from hotel_market.world import SIM_DAYS, Hotel
 
 
-class SimulatedBookings(Bookings):
-    """The Books' daily log, read as of a day."""
+class Limited:
+    """A source made for a day. It refuses a question about a later day."""
 
-    def __init__(self, books: Books):
+    as_of_day: int | None = None  # the day the sources were made for; None answers any day
+
+    def _known(self, day: int, before: bool = False) -> None:
+        """Refuse a day after as_of_day. A question about the bookings before a day, as history()
+        asks, may name the day after as_of_day, because today's bookings are in."""
+        latest = day - 1 if before else day
+        if self.as_of_day is not None and latest > self.as_of_day:
+            raise ValueError(f"asked about day {day} on day {self.as_of_day}: it is not known yet")
+
+
+class SimulatedBookings(Limited, Bookings):
+    """The Books' daily log, read as of a day, as copies."""
+
+    def __init__(self, books: Books, as_of_day: int | None = None):
         self.books = books
+        self.as_of_day = as_of_day
 
     def on_books(self, as_of_day: int) -> np.ndarray:
+        self._known(as_of_day)
         return self.books.preload + self.books.daily_rooms[: as_of_day + 1].sum(axis=0)
 
     def rates(self, as_of_day: int) -> np.ndarray:
-        return self.books.daily_rates[as_of_day]
+        self._known(as_of_day)
+        return self.books.daily_rates[as_of_day].copy()
 
     def history(self, as_of_day: int) -> BookingHistory:
+        self._known(as_of_day, before=True)
         return BookingHistory(
-            self.books.daily_rooms[:as_of_day],
-            self.books.daily_rates[:as_of_day],
-            self.books.preload,
+            self.books.daily_rooms[:as_of_day].copy(),
+            self.books.daily_rates[:as_of_day].copy(),
+            self.books.preload.copy(),
         )
 
 
-class SimulatedRateShops(RateShops):
+class SimulatedRateShops(Limited, RateShops):
     """The rate shops the simulator draws from the seed, and the log of the medians it used. With
     the reaction on, each shop carries the Books' lagged hotel change, so the agent sees the
     shop the simulator used."""
 
-    def __init__(self, books: Books):
+    def __init__(self, books: Books, as_of_day: int | None = None):
         self.books = books
+        self.as_of_day = as_of_day
 
     def competitor_rates(self, shop_day: int, hotel: Hotel, stay_day: int) -> dict[str, float]:
+        self._known(shop_day)
         books = self.books
         return comp_rates(
             shop_day,
@@ -77,6 +101,7 @@ class SimulatedRateShops(RateShops):
         )
 
     def median(self, shop_day: int, hotel: Hotel, stay_day: int) -> float:
+        self._known(shop_day)
         return self.books.comp_median(shop_day, hotel, stay_day)
 
     def first_median(self, hotel: Hotel, stay_day: int) -> float:
@@ -84,17 +109,20 @@ class SimulatedRateShops(RateShops):
         return self.books.starting_median(hotel, stay_day)
 
     def median_history(self, as_of_day: int) -> np.ndarray:
-        return self.books.daily_medians[:as_of_day]
+        self._known(as_of_day, before=True)
+        return self.books.daily_medians[:as_of_day].copy()
 
 
-class SimulatedSchedules(Schedules):
+class SimulatedSchedules(Limited, Schedules):
     """The schedule as filed by a day under a scenario, counted to arriving seats. The schedule
     only changes on filing days, so the seats are counted once per filing and reused."""
 
-    def __init__(self, scenario: Scenario = DEFAULT_SCENARIO):
+    def __init__(self, scenario: Scenario = DEFAULT_SCENARIO, as_of_day: int | None = None):
         self.scenario = scenario
+        self.as_of_day = as_of_day
 
     def seats(self, as_of_day: int) -> np.ndarray:
+        self._known(as_of_day)
         return _seats(last_filing(as_of_day, self.scenario), self.scenario)
 
 
@@ -105,18 +133,23 @@ def _seats(filing_day: int, scenario: Scenario) -> np.ndarray:
     return seats
 
 
-class SimulatedEvents(Events):
+class SimulatedEvents(Limited, Events):
+    def __init__(self, as_of_day: int | None = None):
+        self.as_of_day = as_of_day
+
     def known(self, as_of_day: int) -> list[Event]:
+        self._known(as_of_day)
         return events_as_of(as_of_day)
 
 
-def simulated_sources(books: Books) -> Sources:
-    """The four sources, answering from these books and their seed."""
+def simulated_sources(books: Books, as_of_day: int | None = None) -> Sources:
+    """The four sources, answering from these books and their seed, made for as_of_day: a
+    question about a later day is refused. With no day they answer any day."""
     return Sources(
-        SimulatedBookings(books),
-        SimulatedRateShops(books),
-        SimulatedSchedules(books.scenario),
-        SimulatedEvents(),
+        SimulatedBookings(books, as_of_day),
+        SimulatedRateShops(books, as_of_day),
+        SimulatedSchedules(books.scenario, as_of_day),
+        SimulatedEvents(as_of_day),
     )
 
 
@@ -126,7 +159,7 @@ def deciding(decider: Agent | PacePolicy) -> Decide:
     for tomorrow."""
 
     def decide(day: int, books: Books) -> dict[tuple[str, int], float]:
-        return decider.decide(day, simulated_sources(books))
+        return decider.decide(day, simulated_sources(books, day))
 
     return decide
 
@@ -147,7 +180,7 @@ def watch(
     found: list[Flag] = []
 
     def record(day: int, books: Books) -> dict:
-        tables[day] = detect_numbers(day, simulated_sources(books), customer)
+        tables[day] = detect_numbers(day, simulated_sources(books, day), customer)
         found.extend(flags(day, tables[day], customer=customer))
         return {}
 

@@ -9,7 +9,7 @@ import pytest
 import hotel_market
 from hotel_market.bookings import simulate
 from hotel_market.customer import demo
-from hotel_market.simulated import simulated_sources
+from hotel_market.simulated import deciding, simulated_sources
 
 DEMO = demo()
 
@@ -131,3 +131,46 @@ def test_the_simulated_schedules_follow_the_runs_scenario():
     sources = simulated_sources(simulate(7, last_day=16, scenario=UPGAUGE_SCENARIO))
     assert sources.schedules.seats(14)[52] == 4244 and sources.schedules.seats(15)[52] == 4514
     assert SimulatedSchedules().seats(20)[55] == 4964  # the default, as before
+
+
+def test_the_simulated_sources_refuse_a_later_day_and_hand_out_copies():
+    books = simulate(7, last_day=20)
+    sources = simulated_sources(books, 20)
+    hotel = DEMO.hotels[0]
+    assert sources.bookings.on_books(20).shape == books.rooms.shape
+    assert sources.bookings.history(21).taken.shape[0] == 21  # today's bookings are in
+    assert sources.shops.median_history(21).shape[0] == 21
+    for ask in (
+        lambda: sources.bookings.on_books(21),
+        lambda: sources.bookings.rates(21),
+        lambda: sources.bookings.history(22),
+        lambda: sources.shops.competitor_rates(21, hotel, 50),
+        lambda: sources.shops.median(21, hotel, 50),
+        lambda: sources.shops.median_history(22),
+        lambda: sources.schedules.seats(21),
+        lambda: sources.events.known(21),
+    ):
+        with pytest.raises(ValueError, match="day 2[12] on day 20"):
+            ask()
+    assert simulated_sources(books).events.known(59)  # made with no day, as a test may
+    # The arrays are copies, so writing to them leaves the simulator's log alone.
+    history = sources.bookings.history(20)
+    history.taken[0, hotel.row, 0] = 999
+    history.opening[hotel.row, 0] = 999
+    assert books.daily_rooms[0, hotel.row, 0] != 999 and books.preload[hotel.row, 0] != 999
+    rates = sources.bookings.rates(20)
+    rates[hotel.row, 25] = 1.0
+    assert books.daily_rates[20, hotel.row, 25] != 1.0
+    medians = sources.shops.median_history(20)
+    medians[0, hotel.row, 0] = 1.0
+    assert books.daily_medians[0, hotel.row, 0] != 1.0
+    # The simulator makes the day's sources for the day it is deciding.
+    seen = []
+
+    class Spy:
+        def decide(self, day, sources):
+            seen.append((day, sources.bookings.as_of_day, sources.events.as_of_day))
+            return {}
+
+    simulate(7, deciding(Spy()), last_day=2)
+    assert seen == [(0, 0, 0), (1, 1, 1), (2, 2, 2)]

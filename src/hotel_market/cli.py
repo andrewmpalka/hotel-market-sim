@@ -239,7 +239,7 @@ def run_days(
     def decide(day: int, books: Books) -> dict[tuple[str, int], float]:
         if day < first:
             return earlier.get(day, {})
-        feed = simulated_sources(books)
+        feed = simulated_sources(books, day)
         if day == 0:
             stored.write_snapshot(connection, stored.OPENING_DAY, feed, customer)
         stored.write_snapshot(connection, day, feed, customer)

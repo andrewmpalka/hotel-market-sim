@@ -111,7 +111,7 @@ def build(seed: int, out: Path = DEMO_FILE, customer: Customer | None = None) ->
     final: dict[str, Books] = {}
 
     def observe(day: int, books: Books, agent: Agent) -> None:
-        feed = simulated_sources(books)
+        feed = simulated_sources(books, day)
         table = detect_numbers(day, feed, customer)
         entries = [entry for entry in agent.entries if entry.day == day]
         for hotel in customer.hotels:
