@@ -56,9 +56,9 @@ is ahead in 17 seeds of 20, so the control wins 3. Against the same rule with
 
 **What the model adds, and what learns.** In the default run the model adds
 nothing, because every reviewer accepts every plan. As a reviewer in a mode
-where the agent's elasticity is wrong, Opus recovers a share of 0.28 of what a
-perfect reviewer could at a fixed elasticity of 1.0 and 4% in a learned mode,
-and Sonnet and Haiku decline nothing. The one piece that learns from the
+where the agent's elasticity is wrong, Opus recovers 28% of what a perfect
+reviewer could at a fixed elasticity of 1.0 and 4% in a learned mode, and
+Sonnet and Haiku decline nothing. The one piece that learns from the
 bookings is the elasticity estimator, a Poisson regression with a prior, and
 the agent that uses it keeps 43% to 76% of the gain, set by the prior and the
 cautious rule (docs/reviewers.md for the reviewers, docs/results.md for the

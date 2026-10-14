@@ -15,7 +15,8 @@ asked again, so a run can be repeated exactly.
 The oracle reviewer scores every plan with the simulator's own elasticity. It
 declines the plan when holding scores at least as well. The oracle is the
 ceiling in expectation over the agent's own candidates; a single seed's draw
-can beat it, and at a demand bias of 0.9 it is ahead in 13 seeds of 20. The
+can beat it, and at a demand bias of 0.9 it is ahead of the fixed-rate run in
+13 seeds of 20. The
 control arm follows the shape of [Coinbase's post on its fraud agent](https://www.coinbase.com/blog/part-one-how-coinbase-built-evaluated-and-post-trained-a-fraud-agent).
 The oracle and the decline precision and recall are this repository's own.
 

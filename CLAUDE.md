@@ -122,7 +122,8 @@ to its nodes go together. A [C] claim cites a test that fails when the claim is
 false. A Commit line names a commit of this history.
 
 Every node is Simplified Technical English: one fact a line, no sentence over 20
-words, active voice and present tense. A field line has at most 240 characters,
+words, active voice and present tense. Prose outside kg/ (README, docs,
+docstrings and comments) is plain written English, not STE. A field line has at most 240 characters,
 and a node has at most 8 fields. A claim no test can confirm is a policy node,
 with Kind: policy and Evidence: review.
 
