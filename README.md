@@ -17,7 +17,7 @@ Python 3.11 or later, from the repository root:
 
     pip install -e ".[dev]"                  # the package, its dependencies, pytest and ruff
     python -m pytest                         # the tests, offline; the nine slow tests are skipped
-    python -m pytest --slow                  # every test, the nine slow tests included: 20-seed sweeps, about 20 minutes on a laptop
+    python -m pytest --slow                  # every test; nine slow tests, about twenty minutes
     ruff check . && ruff format --check .    # the linter and the formatter, as a check
     python kg_check.py                       # the knowledge graph against the code
 
