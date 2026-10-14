@@ -14,9 +14,9 @@ experiment.
 2. Every run takes a seed. Two runs with the same seed and settings produce the
    same bookings and the same decisions.jsonl.
 3. Nothing may use information before the day it becomes known. Every lookup
-   takes as_of_day. A flight counts from the day the airline files it, and an
-   event from the day it is announced. A competitor's rate counts from the day
-   it is shopped.
+   takes as_of_day. A flight counts from the day the airline files it, an
+   event from the day it is announced, and a competitor's rate from the day it
+   is shopped.
 4. Model responses are saved under cache/, keyed by seed, day and hotel. The
    elasticity mode and the model join the key when they are not the defaults.
    A demand bias other than 1.0 or the competitor reaction puts a run's folders
@@ -72,16 +72,15 @@ with pip install -e ".[dev]" and import it as hotel_market.<module>.
 Around the package, tests/ holds one test file per module, conftest.py and
 tests/fixtures/live_seed7/, one recorded live run. customers/demo.toml is the
 demo market, sql/schema.sql defines the seven stored tables and sql/demo.sql the
-demo page's eight.
-scripts/live_audit.py runs and audits a live seed, and scripts/median_path.py
-prints a comp median's path next to the hotel's rate. scripts/demo_screenshots.py
-opens the demo page in a Chromium-based browser at 1440 by 900, saves six
-screenshots, three pages with the end-of-run result off and on, and fails when a
-page is taller than the window. kg/ and kg_check.py are
+demo page's eight. scripts/live_audit.py runs and audits a live seed, and
+scripts/median_path.py prints a comp median's path next to the hotel's rate.
+scripts/demo_screenshots.py opens the demo page in a Chromium-based browser at
+1440 by 900, saves six screenshots, three pages with the end-of-run result off
+and on, and fails when a page is taller than the window. kg/ and kg_check.py are
 the knowledge graph and its checker. Makefile and Dockerfile wrap the setup.
 docs/results.md holds the experiment tables, docs/commands.md every command,
 docs/reviewers.md the model as a reviewer, docs/limits.md the known limits, and
-docs/schedule-feed.md describes the air schedule feed as modelled.
+docs/schedule-feed.md the air schedule feed as modelled.
 
 ## Commands
 
@@ -117,15 +116,15 @@ kg/ is a map of this repository for agents. Read kg/index.md before opening
 source files, and follow the [[ID]] links to the nodes you need. kg/README.md is
 the legend.
 
-Update the graph in the same commit as the code. A change to code and the change
-to its nodes go together. A [C] claim cites a test that fails when the claim is
-false. A Commit line names a commit of this history.
+Update the graph in the same commit as the code, so a change to code and the
+change to its nodes go together. A [C] claim cites a test that fails when the
+claim is false. A Commit line names a commit of this history.
 
 Every node is Simplified Technical English: one fact a line, no sentence over 20
 words, active voice and present tense. Prose outside kg/ (README, docs,
-docstrings and comments) is plain written English, not STE. A field line has at most 240 characters,
-and a node has at most 8 fields. A claim no test can confirm is a policy node,
-with Kind: policy and Evidence: review.
+docstrings and comments) is plain written English, not STE. A field line has at
+most 240 characters, and a node has at most 8 fields. A claim no test can
+confirm is a policy node, with Kind: policy and Evidence: review.
 
 Measured figures live in RES nodes in kg/results.md. Each experiment has one,
 with its command and its table in docs/results.md. A decision keeps one headline
