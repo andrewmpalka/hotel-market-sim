@@ -22,7 +22,7 @@ It reports a problem when:
 - a [C] node gives "review" as its evidence but is not a policy node (Kind: policy),
 - a field line is longer than 240 characters, or a node has more than 8 fields,
 - a decision sits outside the two groups the index is built from,
-- kg/index.md differs from what --write-index would write.
+- kg/index.md differs from what --write-index would write, or has over 3,000 words.
 
 A Commit field is information and not evidence. When the git history is present and a cited commit
 is not in it, the checker warns. It never fails on that, because the history may be recreated.
@@ -78,11 +78,14 @@ TEST_NAME = re.compile(r"\btest_[a-z0-9_]+\b(?!\.py)")
 COMMIT_HASH = re.compile(r"^[0-9a-f]{7,40}$")
 SIMPLE_REPR_LIMIT = 400  # a constant whose repr is longer than this is data, not a value
 
+INDEX_WORD_LIMIT = 3000  # words in kg/index.md, as len(text.split()); the check fails above it
 INDEX_HEADER = """# Index
 
-Every node on one line: ID, status, name and file. `python kg_check.py
---write-index` writes this file from the node files, and the check fails when
-it differs from what that would write. `README.md` is the legend.
+Every node on one line: ID, status and name, with the file for a constant.
+`python kg_check.py --write-index` writes this file from the node files, and
+the check fails when it differs from what that would write or when this file
+passes 3,000 words. `README.md` is the legend. The table counts each file's
+nodes and its words, len(text.split()) over the file.
 """
 
 
@@ -155,6 +158,7 @@ def problems(kg_dir: Path = KG_DIR, root: Path = ROOT) -> list[str]:
     found += _bad_fields(nodes)
     found += _ungrouped_decisions(nodes)
     found += _index_differs(kg_dir, nodes)
+    found += _index_too_long(kg_dir)
     return found
 
 
@@ -184,9 +188,38 @@ def warnings(kg_dir: Path = KG_DIR, root: Path = ROOT) -> list[str]:
     return found
 
 
-def render_index(nodes: list[Node]) -> str:
-    """kg/index.md as it should read for these nodes."""
-    lines = [INDEX_HEADER]
+def render_index(nodes: list[Node], kg_dir: Path = KG_DIR) -> str:
+    """kg/index.md as it should read for these nodes: the header, the size table and the
+    sections. The index's own row counts this file as written. A number is one word whatever
+    its digits, so the count of a draft with a placeholder is the count of the final text."""
+    body = _index_sections(nodes)
+    draft = INDEX_HEADER + "\n" + "\n".join(_size_table(kg_dir, nodes, 0)) + "\n\n" + body
+    table = _size_table(kg_dir, nodes, len(draft.split()))
+    return INDEX_HEADER + "\n" + "\n".join(table) + "\n\n" + body
+
+
+def _size_table(kg_dir: Path, nodes: list[Node], index_words: int) -> list[str]:
+    """Each node file with its node count and word count, then the whole graph and the index."""
+    rows = ["| File | Nodes | Words |", "| --- | ---: | ---: |"]
+    total_nodes = total_words = 0
+    for file in NODE_FILES:
+        count = sum(1 for node in nodes if node.file == file)
+        words = _words(kg_dir / file)
+        total_nodes += count
+        total_words += words
+        rows.append(f"| {file} | {count} | {words:,} |")
+    rows.append(f"| every node file | {total_nodes} | {total_words:,} |")
+    rows.append(f"| index.md | | {index_words:,} |")
+    return rows
+
+
+def _words(path: Path) -> int:
+    return len(path.read_text().split()) if path.exists() else 0
+
+
+def _index_sections(nodes: list[Node]) -> str:
+    """The node lines of the index, grouped by file."""
+    lines = []
     for file, title in NODE_FILES.items():
         in_file = [node for node in nodes if node.file == file]
         lines += [f"## {title} (`{file}`)", ""]
@@ -208,11 +241,13 @@ def render_index(nodes: list[Node]) -> str:
 
 
 def write_index(kg_dir: Path = KG_DIR) -> None:
-    (kg_dir / "index.md").write_text(render_index(read_nodes(kg_dir)))
+    (kg_dir / "index.md").write_text(render_index(read_nodes(kg_dir), kg_dir))
 
 
 def _index_line(node: Node) -> str:
-    return f"- {node.id} [{node.status}] {node.name} — {node.path}"
+    """ID, status and name; a constant also names its file, since the section does not."""
+    line = f"- {node.id} [{node.status}] {node.name}"
+    return line + (f" — {node.path}" if node.id.startswith("RUL-") else "")
 
 
 def _add_to_path(root: Path) -> None:
@@ -593,9 +628,16 @@ def _ungrouped_decisions(nodes: list[Node]) -> list[str]:
 def _index_differs(kg_dir: Path, nodes: list[Node]) -> list[str]:
     path = kg_dir / "index.md"
     on_disk = path.read_text() if path.exists() else ""
-    if on_disk == render_index(nodes):
+    if on_disk == render_index(nodes, kg_dir):
         return []
     return ["kg/index.md differs from the generated index; run python kg_check.py --write-index"]
+
+
+def _index_too_long(kg_dir: Path) -> list[str]:
+    words = _words(kg_dir / "index.md")
+    if words <= INDEX_WORD_LIMIT:
+        return []
+    return [f"kg/index.md has {words:,} words; the limit is {INDEX_WORD_LIMIT:,}"]
 
 
 def main(argv: list[str] | None = None) -> int:

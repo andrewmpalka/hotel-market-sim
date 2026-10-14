@@ -229,3 +229,22 @@ def test_a_module_that_cannot_import_is_skipped_with_a_warning():
     lines = result.stdout.splitlines()
     assert lines[0] == "0", result.stdout
     assert any("demo_page.py: not checked" in line for line in lines[1:]), result.stdout
+
+
+def test_the_index_counts_each_files_words_and_a_long_index_is_reported(kg_copy):
+    """The index opens with each file's node and word counts and its own, as len(text.split())
+    over the file, and the check holds the index under its word limit."""
+    index = (ROOT / "kg" / "index.md").read_text()
+    nodes = kg_check.read_nodes()
+    for file in kg_check.NODE_FILES:
+        words = len((ROOT / "kg" / file).read_text().split())
+        count = sum(1 for node in nodes if node.file == file)
+        assert f"| {file} | {count} | {words:,} |" in index
+    assert f"| index.md | | {len(index.split()):,} |" in index
+    assert len(index.split()) <= kg_check.INDEX_WORD_LIMIT
+    # A stale count differs from the generated index, and a long index is reported as such.
+    _replace(kg_copy / "index.md", "| index.md | |", "| index.md | | 1 |")
+    assert _reported(kg_copy, "kg/index.md differs from the generated index")
+    padded = kg_check.render_index(kg_check.read_nodes(kg_copy), kg_copy) + "word " * 3001
+    (kg_copy / "index.md").write_text(padded)
+    assert _problem_with(kg_copy, "kg/index.md has", "words; the limit is 3,000")
