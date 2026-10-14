@@ -206,7 +206,7 @@ which is also the order in which they depend on each other.
 - Holds: TABLES ([[RUL-72]]) and OPENING_DAY ([[RUL-73]]). connect() opens the DuckDB file and creates the tables from sql/schema.sql. It imports nothing from the simulator and is one of the modules the import test covers.
 - Reads: [[MOD-02]], [[MOD-08]] (the Entry, for the plan and decision rows), [[MOD-17]] (the interfaces), [[MOD-20]]; never the simulator ([[DEC-40]])
 - Tests: tests/test_stored.py
-- Evidence: test_a_60_day_run_through_the_tables_gives_the_same_decisions_file, test_the_stored_sources_answer_as_the_simulated_ones_do, test_replaying_a_past_day_reproduces_its_plans_exactly
+- Evidence: test_a_60_day_run_through_the_tables_gives_the_same_decisions_file, test_the_stored_sources_answer_as_the_simulated_ones_do, test_a_failed_day_write_rolls_the_earlier_tables_back
 
 ### MOD-22 [C] scripts/live_audit.py
 - File: scripts/live_audit.py

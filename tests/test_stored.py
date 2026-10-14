@@ -3,6 +3,7 @@
 import pytest
 
 from hotel_market import stored
+from hotel_market.bookings import simulate
 from hotel_market.cli import format_entry, main, queue, replay_day, run, run_day, run_days
 from hotel_market.customer import demo
 from hotel_market.plan import HOLD
@@ -151,3 +152,33 @@ def test_the_daily_commands_run_a_day_and_replay_it(tmp_path, capsys):
     assert "The rebuilt plans match the stored plans." in out
     with pytest.raises(SystemExit):
         main(["run-day", "--seed", str(SEED), "--as-of", "60", "--db", str(db)])
+
+
+def test_a_failed_day_write_rolls_the_earlier_tables_back(tmp_path, monkeypatch):
+    """write_snapshot deletes and rewrites a day's rows table by table inside one transaction.
+    When a later table's insert fails, the rollback gives the earlier table its day back."""
+    db = tmp_path / "run.duckdb"
+    run_days(SEED, 0, 2, db, cache_dir=tmp_path / "cache")
+    feed = simulated_sources(simulate(SEED, last_day=2))
+    original = stored._replace_day
+
+    def failing(connection, table, day, rows):
+        if table == "daily_bookings":
+            original(connection, table, day, [])  # the day deleted and nothing written back
+        elif table == "rate_shops":
+            raise RuntimeError("the second table's insert failed")
+        else:
+            original(connection, table, day, rows)
+
+    connection = stored.connect(db)
+    try:
+        day2 = "SELECT * FROM daily_bookings WHERE as_of_day = 2 ORDER BY ALL"
+        before = connection.execute(day2).fetchall()
+        assert before
+        monkeypatch.setattr(stored, "_replace_day", failing)
+        with pytest.raises(RuntimeError, match="second table"):
+            stored.write_snapshot(connection, 2, feed)
+        assert connection.execute(day2).fetchall() == before
+        assert stored.stored_days(connection) == [0, 1, 2]
+    finally:
+        connection.close()
