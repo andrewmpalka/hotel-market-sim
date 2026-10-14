@@ -3,6 +3,7 @@
 import importlib.util
 from pathlib import Path
 
+import duckdb
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -54,3 +55,18 @@ def test_the_three_pages_fit_the_window(screenshots, demo_file, tmp_path):
         assert path.exists() and path.stat().st_size > 10_000
         assert measured["window"] == 900 and measured["metrics"] == (20 if state == "on" else 10)
         assert not screenshots.too_tall(measured), (hotel, day, state, measured)
+
+
+def test_a_page_that_does_not_render_prints_the_servers_log(screenshots, tmp_path, capsys):
+    # A file with no tables makes the page fail. Needs a browser; skipped without one.
+    pytest.importorskip("streamlit")
+    browser = screenshots.find_browser()
+    if browser is None:
+        pytest.skip("no Chromium-based browser found")
+    empty = tmp_path / "empty.duckdb"
+    duckdb.connect(str(empty)).close()
+    with pytest.raises(TimeoutError):
+        screenshots.shoot(empty, tmp_path / "shots", browser, timeout=15)
+    out = capsys.readouterr().out
+    assert "did not render" in out and "server.log" in out and "hotels" in out
+    assert (tmp_path / "shots" / screenshots.SERVER_LOG).exists()

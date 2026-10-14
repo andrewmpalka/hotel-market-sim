@@ -104,7 +104,7 @@ demo: $(STAMP) ## Write demo.duckdb for seed SEED from the recorded live run and
 
 screenshots: $(STAMP) ## Open the demo page at 1440 by 900 in a Chromium-based browser, save six screenshots under screenshots/ (three pages, the end-of-run result off and on), and fail if one is taller than the window
 	@$(BIN)/python -c 'import streamlit' 2>/dev/null || $(BIN)/python -m pip install -e ".[demo]"
-	@test -f demo.duckdb || $(BIN)/hotel-market demo-data --seed $(SEED) --out demo.duckdb
+	$(BIN)/hotel-market demo-data --seed $(SEED) --out demo.duckdb
 	$(BIN)/python scripts/demo_screenshots.py --file demo.duckdb --out screenshots
 
 clean: ## Remove Python and test leftovers

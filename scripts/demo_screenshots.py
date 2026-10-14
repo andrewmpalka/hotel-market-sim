@@ -53,6 +53,7 @@ BROWSERS = (
     "chrome",
 )
 RENDER_TIMEOUT = 90  # seconds for a page to render and settle
+SERVER_LOG = "server.log"  # the server's output, written beside the screenshots
 
 # What the browser measures once the page has rendered. The content height is the bottom edge of
 # the main block, which holds everything from the title to the scorecard. Streamlit scrolls the
@@ -215,25 +216,27 @@ def free_port() -> int:
         return opened.getsockname()[1]
 
 
-def start_server(file: Path, port: int) -> subprocess.Popen:
-    """The page's Streamlit server, headless, on the port; returns once it answers."""
+def start_server(file: Path, port: int, log: Path) -> subprocess.Popen:
+    """The page's Streamlit server, headless, on the port, with everything it prints going to
+    the log file; returns once it answers."""
     environment = dict(os.environ, HOTEL_MARKET_DEMO_FILE=str(file))
-    process = subprocess.Popen(
-        [
-            sys.executable, "-m", "streamlit", "run", str(PAGE),
-            "--server.headless", "true",
-            "--server.port", str(port),
-            "--server.fileWatcherType", "none",
-            "--browser.gatherUsageStats", "false",
-        ],
-        env=environment,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )  # fmt: skip
+    with log.open("wb") as handle:
+        process = subprocess.Popen(
+            [
+                sys.executable, "-m", "streamlit", "run", str(PAGE),
+                "--server.headless", "true",
+                "--server.port", str(port),
+                "--server.fileWatcherType", "none",
+                "--browser.gatherUsageStats", "false",
+            ],
+            env=environment,
+            stdout=handle,
+            stderr=subprocess.STDOUT,
+        )  # fmt: skip
     deadline = time.monotonic() + 60
     while time.monotonic() < deadline:
         if process.poll() is not None:
-            raise RuntimeError("the Streamlit server stopped; is the demo extra installed?")
+            raise RuntimeError(f"the Streamlit server stopped; its log, {log}, says:\n{tail(log)}")
         try:
             with socket.create_connection(("127.0.0.1", port), timeout=1):
                 return process
@@ -243,11 +246,20 @@ def start_server(file: Path, port: int) -> subprocess.Popen:
     raise TimeoutError("the Streamlit server did not start in 60s")
 
 
-def shoot(file: Path, out: Path, browser_path: str) -> list[tuple[str, int, str, dict, Path]]:
-    """Each page's measurements and screenshot path, with the end-of-run result off and on."""
+def tail(log: Path, size: int = 4000) -> str:
+    """The end of the server's log, for an error message."""
+    return log.read_text(errors="replace")[-size:] if log.exists() else ""
+
+
+def shoot(
+    file: Path, out: Path, browser_path: str, timeout: float = RENDER_TIMEOUT
+) -> list[tuple[str, int, str, dict, Path]]:
+    """Each page's measurements and screenshot path, with the end-of-run result off and on. A
+    page that does not render in the timeout stops the run, after the server's log is printed."""
     out.mkdir(parents=True, exist_ok=True)
     port = free_port()
-    server = start_server(file, port)
+    log = out / SERVER_LOG
+    server = start_server(file, port, log)
     browser = None
     results = []
     try:
@@ -255,7 +267,11 @@ def shoot(file: Path, out: Path, browser_path: str) -> list[tuple[str, int, str,
         for hotel, day in PAGES:
             for state, query in STATES:
                 url = f"http://127.0.0.1:{port}/?hotel={hotel}&day={day}{query}"
-                measured = browser.open(url)
+                try:
+                    measured = browser.open(url, timeout)
+                except TimeoutError:
+                    print(f"{url} did not render. The server's log, {log}, says:\n{tail(log)}")
+                    raise
                 path = out / f"{hotel}-day{day}{'-end' if query else ''}.png"
                 browser.screenshot(path)
                 results.append((hotel, day, state, measured, path))
