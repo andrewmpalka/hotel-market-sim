@@ -18,10 +18,13 @@
 
 # A local .env (never committed) may hold ANTHROPIC_API_KEY and ANTHROPIC_WORKSPACE_ID. Make
 # keeps the quotes of a quoted value, which the API then rejects, so they are stripped here.
+# Only the targets that call the model see them: live, live-audit, bench and docker-live. The
+# tests, the demo page and the screenshots run without them.
 -include .env
 ANTHROPIC_API_KEY := $(strip $(subst ",,$(subst ',,$(ANTHROPIC_API_KEY))))
 ANTHROPIC_WORKSPACE_ID := $(strip $(subst ",,$(subst ',,$(ANTHROPIC_WORKSPACE_ID))))
-export ANTHROPIC_API_KEY ANTHROPIC_WORKSPACE_ID
+live live-audit bench docker-live: export ANTHROPIC_API_KEY := $(ANTHROPIC_API_KEY)
+live live-audit bench docker-live: export ANTHROPIC_WORKSPACE_ID := $(ANTHROPIC_WORKSPACE_ID)
 
 PYTHON ?= python3
 VENV   ?= .venv
