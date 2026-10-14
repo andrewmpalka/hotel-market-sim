@@ -1,6 +1,6 @@
 # Commands
 
-Every command of the repository, with its one-line comment. The README keeps the three that start a demo.
+Every command of the repository is here, with its one-line comment. The README keeps the three that start a demo.
 
 Python 3.11 or later, from the repository root:
 

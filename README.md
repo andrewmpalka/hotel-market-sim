@@ -26,7 +26,8 @@ key. Every other command is in docs/commands.md.
 ## Results
 
 Seeds 1 to 20, the agent run against the fixed-rate run over stay dates 0 to
-149. The reasons are the template's and the elasticity is the simulator's.
+149. The reasons are the template's, and the agent uses the simulator's
+elasticity.
 
 | Measure | Value |
 | --- | ---: |
