@@ -136,8 +136,8 @@ here for the rest.
 - Links: [[DEC-42]], [[MOD-21]], [[DAT-28]], [[UNK-10]]
 
 ### RES-15 [O] The suite on each Python version
-- Ran: `python -m pytest --slow` from a fresh virtual environment on Python 3.12.6 and on 3.13.7, on 2026-10-12. The environments had numpy 2.5.4, pandas 3.0.6, duckdb 1.5.6 and anthropic 1.13.0.
-- Result: 235 tests passed on both versions, the slow 20-seed check included; the suite had run on Python 3.11 before.
+- Ran: `python -m pytest --slow` from a fresh virtual environment on Python 3.12.6 and on 3.13.7, on 2026-10-12, then `python -m pytest` on both on 2026-10-14, with numpy 2.5.4, pandas 3.0.6, duckdb 1.5.6 and anthropic 1.13.0.
+- Result: the slow run of 2026-10-12 passed 235 tests on both versions. On 2026-10-14 the plain suite gave 356 passed with 9 skipped on 3.12.6. On 3.13.7 it gave 351 passed with 14 skipped, because the demo extra was absent there.
 - Detail: the package was also installed and run against numpy 1.26 and pandas 2.2, the lower bounds in pyproject.toml. A seed-7 run then reproduced decisions.jsonl byte for byte ([[DEC-28]]).
 - Table: docs/results.md, "The suite on each Python version"
 - Links: [[UNK-04]], [[DEC-28]], [[DEC-30]]
@@ -179,6 +179,7 @@ here for the rest.
 - Result: each image builds in 24 s and passes 278 tests with 3 skipped, the slow ones, in about 45 s. The 3.12 image runs seed 7 in 1.6 s, and its decisions.jsonl matches the native run's sha256.
 - Detail: every dependency came as a wheel on all three Pythons, 3.14 included. pip took numpy 2.4.6 on 3.11 and 2.5.4 on 3.12 and 3.14. pandas 3.0.6, duckdb 1.5.6 and anthropic 1.13.0 are the same everywhere.
 - Sizes: the images are 615 MB, 592 MB and 600 MB on 3.11, 3.12 and 3.14. The suite inside the image runs from its copy of the repository. The demo file and the schema lookups expect the repository root.
+- Refreshed: on 2026-10-14 the native suite with the dev extra alone gives 351 passed with 14 skipped, and the native seed-7 checksum is 19b766b8, two plan fields later. The images were not rebuilt.
 - Table: docs/results.md, "The container image on each Python version"
 - Links: [[UNK-03]], [[DEC-28]], [[RES-15]]
 

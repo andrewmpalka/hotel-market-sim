@@ -153,20 +153,20 @@ Timings of the stored tables, measured once during development on the developmen
 | Inserting a day's rows one statement at a time (replaced by one frame per day) | 2.5 seconds per 3,000 rows |
 | Reading the events table once per detect row (replaced by one read per day) | 2 seconds a day |
 
-The suite on each Python version, run from a fresh virtual environment on 2026-10-12. The environment had numpy 2.5.4, pandas 3.0.6, duckdb 1.5.6 and anthropic 1.13.0.
+The suite on each Python version. The run of 2026-10-12 came from a fresh virtual environment with the slow tests included and passed 235 tests on both versions. The counts below were refreshed on 2026-10-14 from the plain suite, with numpy 2.5.4, pandas 3.0.6, duckdb 1.5.6 and anthropic 1.13.0 on both. The nine slow tests are skipped, and on 3.13 the five demo-page tests too, because that environment has the dev extra alone.
 
 | Python | Command | Result |
 | --- | --- | --- |
-| 3.12.6 | `python -m pytest --slow` | 235 passed |
-| 3.13.7 | `python -m pytest --slow` | 235 passed |
+| 3.12.6 | `python -m pytest` | 356 passed, 9 skipped |
+| 3.13.7 | `python -m pytest` | 351 passed, 14 skipped |
 
-The container image on each Python version, built on 2026-10-12. Docker 28.4.0 ran on an aarch64 Ubuntu VM with 4 CPUs and 4 GiB. Each image ran the suite from its copy of the repository, and the 3.12 image ran seed 7 with the template. pandas 3.0.6, duckdb 1.5.6 and anthropic 1.13.0 were installed on every version, and every dependency came as a wheel, 3.14 included.
+The container image on each Python version, built on 2026-10-12. Docker 28.4.0 ran on an aarch64 Ubuntu VM with 4 CPUs and 4 GiB. Each image ran the suite from its copy of the repository, and the 3.12 image ran seed 7 with the template. pandas 3.0.6, duckdb 1.5.6 and anthropic 1.13.0 were installed on every version, and every dependency came as a wheel, 3.14 included. The test counts were refreshed on 2026-10-14 from the native suite with the dev extra alone, as the image installs it; the images were not rebuilt.
 
 | Python | numpy | Build | Image | Tests | Suite time | Seed-7 run | decisions.jsonl |
 | --- | --- | ---: | ---: | --- | ---: | ---: | --- |
-| 3.11.15 | 2.4.6 | 24 s | 615 MB | 278 passed, 3 skipped | 45 s | | |
-| 3.12.13 | 2.5.4 | 24 s | 592 MB | 278 passed, 3 skipped | 45 s | 1.6 s | matches the native run, sha256 8ce570ea |
-| 3.14.8 | 2.5.4 | 24 s | 600 MB | 278 passed, 3 skipped | 45 s | | |
+| 3.11.15 | 2.4.6 | 24 s | 615 MB | 351 passed, 14 skipped | 45 s | | |
+| 3.12.13 | 2.5.4 | 24 s | 592 MB | 351 passed, 14 skipped | 45 s | 1.6 s | matched the native run; the native checksum is 19b766b8 since the plan records gained two fields, and was 8ce570ea when the image ran |
+| 3.14.8 | 2.5.4 | 24 s | 600 MB | 351 passed, 14 skipped | 45 s | | |
 
 ## The benchmark of the reviewers
 
