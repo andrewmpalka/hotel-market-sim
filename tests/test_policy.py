@@ -5,7 +5,15 @@ import pytest
 from hotel_market.bookings import simulate
 from hotel_market.customer import demo
 from hotel_market.detect import AHEAD, BEHIND, NEW_EVENT, SEATS_CUT, SEATS_UP, detect_numbers, flags
-from hotel_market.policy import LOWER, POLICIES, POLICY_STEP, RAISE, PacePolicy, RulesPolicy
+from hotel_market.policy import (
+    LOWER,
+    POLICIES,
+    POLICY_STEP,
+    RAISE,
+    NeverCutPolicy,
+    PacePolicy,
+    RulesPolicy,
+)
 from hotel_market.simulated import deciding, simulated_sources
 
 DEMO = demo()
@@ -20,7 +28,8 @@ def ruled():
 
 
 def test_the_rule_raises_ahead_of_pace_and_lowers_behind_by_the_step(ruled):
-    assert POLICY_STEP == 0.05 and POLICIES == {"pace": PacePolicy, "rules": RulesPolicy}
+    assert POLICY_STEP == 0.05
+    assert POLICIES == {"pace": PacePolicy, "rules": RulesPolicy, "never-cut": NeverCutPolicy}
     rule, books = ruled
     assert rule.changed >= rule.acted > 0  # one or more stay dates per flag acted on
     # Replay day 0 on a fresh rule: every flag with a pace cause moves its stay dates by the
@@ -80,3 +89,21 @@ def test_the_rules_policy_adds_the_event_and_seat_rules_and_skips_a_conflict():
     )
     assert not convention <= set(by_pace)
     assert all(by_rules[key] == by_pace[key] for key in set(by_pace) & set(by_rules) - convention)
+
+
+def test_the_never_cut_policy_keeps_the_raises_and_never_lowers():
+    never = NeverCutPolicy()
+    assert never.name == "never-cut" and POLICIES["never-cut"] is NeverCutPolicy
+    assert never.direction((AHEAD,)) == RAISE and never.direction((NEW_EVENT,)) == RAISE
+    assert never.direction((SEATS_UP,)) == RAISE
+    assert never.direction((BEHIND,)) == 0 and never.direction((SEATS_CUT,)) == 0
+    assert (
+        never.direction((AHEAD, SEATS_CUT)) == RAISE
+    )  # a cut cause is no rule here, so no conflict
+    # On day 40 the seat cut is filed. The rules policy lowers the cut dates; this one leaves
+    # them alone and only ever raises.
+    sources = simulated_sources(simulate(SEED, last_day=40))
+    by_rules, by_never = RulesPolicy().decide(40, sources), NeverCutPolicy().decide(40, sources)
+    lowered = {key for key, rate in by_rules.items() if rate < DEMO.hotel(key[0]).start_rate}
+    assert lowered and not lowered & set(by_never)
+    assert by_never and all(rate > DEMO.hotel(key[0]).start_rate for key, rate in by_never.items())

@@ -300,6 +300,7 @@ it differs from what that would write. `README.md` is the legend.
 - RES-37 [C] The reviewers at learn:1.0 cautious with the reaction on at a market elasticity of 0.5 — kg/results.md
 - RES-38 [O] The decline rate by standard-error group in the learn arms — kg/results.md
 - RES-39 [O] The reviewers ranked across the learned modes, and the learn arms' cost — kg/results.md
+- RES-40 [C] The agent against the never-cut policy on seeds 1 to 20 — kg/results.md
 
 ## Open forks (`forks.md`)
 

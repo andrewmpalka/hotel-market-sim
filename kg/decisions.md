@@ -345,12 +345,13 @@ design keeps its node, marked [H], and names the decision that replaced it.
 
 ### DEC-55 [C] A rule-based control is the fair comparison, because frozen rates never move
 - Decided: --policy runs a rule-based control beside each arm ([[MOD-25]]). pace raises POLICY_STEP where a stay date runs ahead of pace and lowers it where behind ([[RUL-99]]). Both keep the agent's hold, floor and ceiling.
-- Rules: rules keeps the pace steps and adds the retired rules of [[DEC-11]]. It raises on an event or seat-up flag and lowers on a seat-cut flag. A flag whose causes point both ways is left alone. The README quotes it.
+- Rules: rules keeps the pace steps and adds the retired rules of [[DEC-11]]. It raises on an event or seat-up flag and lowers on a seat-cut flag. A flag whose causes point both ways is left alone.
 - Why rules: pace skips every flag that is not a pace flag. It cannot act on the two shocks that carry most of the gain ([[RES-06]]). Against it the agent was beaten on the part of the problem the control was never given.
 - Reason: a fixed-rate run never moves a rate, so every gain against it includes what a hotel's own rules earn anyway. The rule stands for what a hotel already does, and the agent's margin over it is the claim worth making.
-- Measured: in the default world the rules policy earns +$22,856 a seed, and the agent's gain against it is +$10,043 ([[RES-33]]). Both policies act only on a flag and share the blind spot of [[FRK-11]].
+- Measured: in the default world the never-cut policy earns +$24,780 a seed, and the agent's gain against it is +$8,119 ([[RES-40]]); the rules policy's figures are in [[RES-33]].
+- Never-cut: never-cut keeps the raises and never lowers, because every cut loses in this market. The README quotes the lead over it first and the lead over the cutting rules policy after it. All three act only on a flag ([[FRK-11]]).
 - Evidence: test_the_rule_raises_ahead_of_pace_and_lowers_behind_by_the_step, test_the_rules_policy_adds_the_event_and_seat_rules_and_skips_a_conflict, test_a_policy_runs_the_rule_based_control_beside_each_arm
-- Links: [[MOD-25]], [[RUL-99]], [[RES-33]], [[RES-01]], [[RES-06]], [[DEC-11]], [[DEC-13]], [[FRK-11]], [[UNK-08]]
+- Links: [[MOD-25]], [[RUL-99]], [[RES-33]], [[RES-40]], [[RES-01]], [[RES-06]], [[DEC-11]], [[DEC-13]], [[FRK-11]], [[UNK-08]]
 
 ## Engineering
 

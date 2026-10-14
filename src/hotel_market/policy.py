@@ -8,13 +8,15 @@ yardstick.
 Each policy maps the flag causes it acts on to a direction. PacePolicy raises every stay date
 that runs ahead of pace by the detect threshold and lowers every one that runs behind. RulesPolicy
 keeps those steps and adds the rules the agent's first design retired: raise on an event flag's
-dates and on a seat-up flag's dates, and lower on a seat-cut flag's dates. Every step is
-POLICY_STEP, clamped to the hotel's floor and ceiling. A flag whose causes point both ways is
-left alone. Each policy respects the same hold the agent does, so a changed stay date rests for
-hold_days unless a shock cause lifts the hold. It reads the day through the four sources, as the
-agent does, and the simulator wraps it with simulated.deciding(). It acts only on a flag, so a
-market that is simply larger or smaller than the start rates assume raises nothing until a flag
-says so.
+dates and on a seat-up flag's dates, and lower on a seat-cut flag's dates. NeverCutPolicy keeps
+the rules policy's raises and never lowers, because in this market the start rate is already the
+best rate on a night that will not sell out, so every cut the rules policy makes loses money.
+Every step is POLICY_STEP, clamped to the hotel's floor and ceiling. A flag whose causes point
+both ways is left alone. Each policy respects the same hold the agent does, so a changed stay
+date rests for hold_days unless a shock cause lifts the hold. It reads the day through the four
+sources, as the agent does, and the simulator wraps it with simulated.deciding(). It acts only
+on a flag, so a market that is simply larger or smaller than the start rates assume raises
+nothing until a flag says so.
 """
 
 from __future__ import annotations
@@ -87,4 +89,15 @@ class RulesPolicy(PacePolicy):
     }
 
 
-POLICIES = {PacePolicy.name: PacePolicy, RulesPolicy.name: RulesPolicy}
+class NeverCutPolicy(PacePolicy):
+    """The rules policy's raises with no cut: a behind-pace or seat-cut flag is left alone."""
+
+    name = "never-cut"
+    rules: Mapping[str, int] = {AHEAD: RAISE, NEW_EVENT: RAISE, SEATS_UP: RAISE}
+
+
+POLICIES = {
+    PacePolicy.name: PacePolicy,
+    RulesPolicy.name: RulesPolicy,
+    NeverCutPolicy.name: NeverCutPolicy,
+}

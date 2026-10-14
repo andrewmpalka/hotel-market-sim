@@ -910,13 +910,15 @@ def test_the_learn_arms_pin_their_headline(tmp_path):
 
 @pytest.mark.slow
 def test_the_rule_based_control_runs_pin_their_headline(tmp_path):
-    """The pace rule beside the true-mode template arm ends where the recorded runs ended at the
-    default bias and at 0.9, so the control table stays pinned."""
+    """The pace, rules and never-cut policies beside the true-mode template arm end where the
+    recorded runs ended at the default bias and at 0.9, so the control table stays pinned."""
     pins = {
         ("pace", 1.0): (11462, 21437),
         ("pace", 0.9): (2015, -101),
         ("rules", 1.0): (22856, 10043),
         ("rules", 0.9): (657, 1256),
+        ("never-cut", 1.0): (24780, 8119),
+        ("never-cut", 0.9): (-461, 2374),
     }
     for (policy, bias), (rule_mean, margin) in pins.items():
         [arm] = sweep(1, 20, tmp_path / "cache", policy=policy, demand_bias=bias)

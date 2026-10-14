@@ -295,7 +295,7 @@ here for the rest.
 - Pace: the pace policy earns +$11,462 there from 653 changes, and the agent's margin over it is +$21,437. It acts on no event or seat flag ([[DEC-55]]).
 - Biases: at 0.9 the rules policy earns +$657 and the agent +$1,256 a seed against it. At 1.1 it earns +$79,869 from 8,385 changes, and the agent's +$112,082 is +$32,214 against it.
 - Reacting: with the reaction on at a market elasticity of 0.5, the rules policy earns +$105,144. The agent's +$72,229 is -$32,914 against it, behind in every seed. The policy changes 7,091 stay dates against the agent's 207.
-- Table: docs/results.md, "Seeds 1 to 20 in the true mode against the pace and the rules policies"
+- Table: docs/results.md, "Seeds 1 to 20 in the true mode against the pace, the rules and the never-cut policies"
 - Evidence: test_the_rule_based_control_runs_pin_their_headline
 - Links: [[DEC-55]], [[DEC-11]], [[MOD-25]], [[RES-01]], [[RES-21]], [[RES-22]], [[RES-26]], [[FRK-11]]
 
@@ -354,3 +354,13 @@ here for the rest.
 - Invalid: six records hold a bad attempt, all on seed 1's first two-entry request. The API refused the first schema's array bound, and Sonnet then left an entry out ([[UNK-02]]). The rerun answered each.
 - Table: docs/results.md, "The reviewers ranked across the learned modes", "The learn arms' cost"
 - Links: [[RES-19]], [[RES-34]], [[RES-35]], [[RES-36]], [[RES-37]], [[DEC-34]], [[DEC-48]], [[MEA-12]], [[UNK-02]]
+
+### RES-40 [C] The agent against the never-cut policy on seeds 1 to 20
+- Ran: `hotel-market bench --seeds 1 20 --template --policy never-cut --demand-bias B --elasticity true` at B = 0.9, 1.0 and 1.1, and the same with `--react --market-elasticity 0.5` in place of the bias, on 2026-10-14.
+- Result: in the default world the never-cut policy earns +$24,780 a seed over frozen rates from 5,416 stay dates changed. The agent's +$32,899 is +$8,119 against it, ahead in 17 of 20.
+- Cuts: the rules policy earns +$22,856 there ([[RES-33]]), so its cuts cost it about $1,900 a seed. The start rate is the best rate on a night that will not sell out, so every cut loses.
+- Biases: at 0.9 the policy loses $461 a seed and the agent is +$2,374 against it, ahead in 14 of 20. At 1.1 it earns +$85,934 from 6,704 changes, and the agent's +$112,082 is +$26,148 against it.
+- Reacting: with the reaction on at a market elasticity of 0.5, the policy earns +$141,050 from 5,387 changes. The agent's +$72,229 is -$68,820 against it, behind in every seed.
+- Table: docs/results.md, "Seeds 1 to 20 in the true mode against the pace, the rules and the never-cut policies"
+- Evidence: test_the_rule_based_control_runs_pin_their_headline
+- Links: [[DEC-55]], [[RES-33]], [[MOD-25]]
