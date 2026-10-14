@@ -143,10 +143,10 @@ which is also the order in which they depend on each other.
 - Owns: the checks that this graph agrees with the code. Links resolve, every source file has a MOD node, and every [H] node links to its replacement. Every [C] node cites tests that exist or is a reviewed policy node.
 - Checks: every constant's value and kind match the code, and every customer setting has a node. Every measure's function exists, and every RES node names a table in docs/results.md. The index is the one it writes with --write-index.
 - Limits: a field line has at most 240 characters and a node at most 8 fields. A commit named in a Commit field is looked up when the history is present. A miss is a warning, never a failure.
-- Reads: the package modules, to read the constants' values
+- Reads: the package modules, to read the constants' values. A module whose import fails, such as the demo page without its extra, is skipped and named in a warning.
 - Writes: kg/index.md with --write-index; otherwise nothing. It prints the problems and exits 1 when there are any
 - Tests: tests/test_kg.py
-- Evidence: test_the_knowledge_graph_agrees_with_the_code, test_a_constant_whose_value_differs_from_the_code_is_reported, test_a_customer_setting_missing_from_the_graph_is_reported
+- Evidence: test_the_knowledge_graph_agrees_with_the_code, test_a_constant_whose_value_differs_from_the_code_is_reported, test_a_module_that_cannot_import_is_skipped_with_a_warning
 
 ### MOD-16 [C] estimate.py
 - File: src/hotel_market/estimate.py

@@ -159,11 +159,18 @@ def problems(kg_dir: Path = KG_DIR, root: Path = ROOT) -> list[str]:
 
 
 def warnings(kg_dir: Path = KG_DIR, root: Path = ROOT) -> list[str]:
-    """Commit fields that name a commit the git history does not hold. Information
-    only: the history may be recreated, and the evidence is in the tests."""
+    """Source files whose import failed, so their constants went unchecked, and Commit fields
+    that name a commit the git history does not hold. Information only: the history may be
+    recreated, and the evidence is in the tests."""
+    _add_to_path(root)
+    for file in _source_files(root):
+        _module(file)
+    found = [
+        f"{file}: not checked, its import failed ({why}); install the extra it needs"
+        for file, why in sorted(_UNIMPORTABLE.items())
+    ]
     if not (root / ".git").exists():
-        return []
-    found = []
+        return found
     checked: dict[str, bool] = {}
     for node in read_nodes(kg_dir):
         for token in _tokens(node.fields.get("Commit", "")):
@@ -345,11 +352,20 @@ def _commit_exists(commit: str, root: Path) -> bool:
     return result.returncode == 0
 
 
+# A source file whose import failed, and why. Its constants are not checked, and warnings()
+# says so once: the demo page needs the demo extra, which the dev install does not bring.
+_UNIMPORTABLE: dict[str, str] = {}
+
+
 def _module(file: str) -> object | None:
     path = Path(file)
     if path.parts[:2] != ("src", "hotel_market") or path.suffix != ".py":
         return None
-    return importlib.import_module(f"hotel_market.{path.stem}")
+    try:
+        return importlib.import_module(f"hotel_market.{path.stem}")
+    except ImportError as error:
+        _UNIMPORTABLE[file] = str(error)
+        return None
 
 
 def _constant_nodes(nodes: list[Node]) -> list[Node]:
@@ -370,6 +386,8 @@ def _wrong_constants(nodes: list[Node], root: Path) -> list[str]:
             defined, actual = _setting(root / file, node.fields.get("Key", ""))
         else:
             module = _module(file)
+            if file in _UNIMPORTABLE:
+                continue  # not checked; warnings() names the file
             defined = module is not None and hasattr(module, node.name)
             actual = getattr(module, node.name, None)
         if not defined:
@@ -504,6 +522,8 @@ def _code_constants(root: Path) -> list[tuple[str, str, object]]:
             continue
         file = path.relative_to(root).as_posix()
         module = _module(file)
+        if module is None:
+            continue  # its import failed; warnings() names the file
         for name in names:
             value = getattr(module, name)
             if _is_simple(value):

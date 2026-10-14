@@ -2,6 +2,7 @@
 
 import importlib.util
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -206,3 +207,25 @@ def test_a_closed_fork_names_what_closed_it(kg_copy):
     assert not _problem_with(kg_copy, "FRK-01 is [H]")
     _set_field(forks, "FRK-01", "Closed by", "the customer file")
     assert _problem_with(kg_copy, "FRK-01 is [H] but names no node that replaced it")
+
+
+def test_a_module_that_cannot_import_is_skipped_with_a_warning():
+    """Without the demo extra the demo page cannot import. The checker then skips that file's
+    constants, warns once, and still passes, so the dev install and the container can run it."""
+    code = (
+        "import sys; sys.modules['streamlit'] = None; sys.modules['altair'] = None\n"
+        "sys.path.insert(0, sys.argv[1])\n"
+        "import kg_check\n"
+        "print(len(kg_check.problems()))\n"
+        "print('\\n'.join(kg_check.warnings()))\n"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", code, str(ROOT)],
+        capture_output=True,
+        text=True,
+        cwd=ROOT,
+        check=True,
+    )
+    lines = result.stdout.splitlines()
+    assert lines[0] == "0", result.stdout
+    assert any("demo_page.py: not checked" in line for line in lines[1:]), result.stdout
