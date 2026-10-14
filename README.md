@@ -1,72 +1,32 @@
 # Hotel market simulator
 
-This repository holds a simulator of one hotel market and an agent that sets
-rates in it. Four hotels of one brand share the market. The market produces
-daily bookings, competitor rate shops, one convention and two changes to the air
-schedule. Each day the agent flags the stay dates where a signal changed. Code
-scores the rate options for each flag. The model accepts or declines each plan
-and writes the reason for the revenue manager. The air schedule feed, as this
-repository models it, is described in [docs/schedule-feed.md](docs/schedule-feed.md).
+A simulator of one made-up hotel market and its pricing agent. Four hotels of
+one brand share it; the agent reads the simulated feeds on days 0 to 59. Four
+shocks arrive: a convention (day 10), new flights (day 20), a competitor rate
+cut at the full-service hotel (day 30) and a route suspension (day 40). Code
+computes every number; the model picks a plan or holding and writes the reason.
+The schedule columns follow Cirium's published data dictionary, but every row
+is synthetic. The repository has no Cirium data and no affiliation with Cirium.
 
-The schedule columns follow Cirium's published data dictionary, but every row is
-synthetic. The repository has no Cirium data and no affiliation with Cirium.
+The agent's demand forecast is the simulator's own formula and reads the
+simulator's own event uplift from the events feed, so every headline figure is
+a perfect-information result that measures the loop and not a forecast. In the
+default run every reviewer, the template and the three models, accepts every
+plan, so those figures measure the plans and not the model.
 
-## Install and run
+## Run it
 
-Python 3.11 or later, from the repository root:
+    make setup          # .venv with the package, pytest and ruff
+    make test           # the tests; make test-all adds the nine slow ones
+    make demo SEED=7    # demo.duckdb from the recorded run, then the demo page
 
-    pip install -e ".[dev]"                  # the package, its dependencies, pytest and ruff
-    python -m pytest                         # the tests, offline; the nine slow tests are skipped
-    python -m pytest --slow                  # every test; nine slow tests, about twenty minutes
-    ruff check . && ruff format --check .    # the linter and the formatter, as a check
-    python kg_check.py                       # the knowledge graph against the code
-
-    hotel-market --seed 7 --template         # both runs, decisions.jsonl, the daily queues, the summary
-    hotel-market --seed 7                    # the same, the model writing the reasons (needs ANTHROPIC_API_KEY)
-    hotel-market --seed 7 --replay 20        # day 20's queue again, without a model call
-    hotel-market --seeds 1 20                # seeds 1 to 20: mean and range of the contribution change
-    hotel-market --seeds 1 20 --elasticity true --elasticity learn:1.0 --cautious   # one arm per mode
-    hotel-market --seed 7 --customer customers/demo.toml --target revenue           # another market or target
-    hotel-market run-day --seed 7 --as-of 20 --from 0   # days 0 to 20, one day at a time, through stored tables
-    hotel-market replay --as-of 20                      # day 20's plans again, from the stored tables alone
-    python scripts/live_audit.py --seed 7               # a live run, every model call measured, then audited
-    hotel-market demo-data --seed 7                     # demo.duckdb: the stored tables and the demo page's tables, reasons from the recorded run
-    pip install -e ".[demo]" && HOTEL_MARKET_DEMO_FILE=demo.duckdb streamlit run src/hotel_market/demo_page.py
-                                                        # the read-only demo page over that file; no API key
-    python scripts/demo_screenshots.py                  # the page at 1440 by 900 in a Chromium-based browser: three pages, each with the end-of-run result off and on, and a failure if one is taller
-    hotel-market bench --seeds 1 20 --template          # the template and the oracle reviewer, in three modes, offline
-    hotel-market bench --seeds 1 3                      # the same with each Claude model reviewing (needs ANTHROPIC_API_KEY)
-    hotel-market bench --seeds 1 20 --template --demand-bias 0.9 --elasticity true --elasticity learn:1.0
-                                                        # the simulator's demand times 0.9, which the agent never sees
-    hotel-market bench --seeds 1 20 --template --react  # competitors follow the hotels' rate changes, three days later
-    hotel-market bench --seeds 1 20 --template --react --market-elasticity 0.5
-                                                        # the market's demand answers the comp median's level; the agent is told the value
-    hotel-market --seeds 1 20 --churn                   # the airline files weekly revisions below the threshold
-    hotel-market --seeds 1 20 --scenario upgauge        # another set of air-schedule filings
-    python scripts/median_path.py --seed 7 --react --hotel convention --stays 45 48 --days 9 15
-                                                        # a comp median's path next to the hotel's rate
-
-With make, on a Mac or Linux machine:
-
-    make setup                 # create .venv and install the package, pytest and ruff into it
-    make test                  # the tests; make test-all includes the nine slow tests; make lint runs ruff
-    make run SEED=7            # the template run; make live SEED=7 uses the model
-    make bench FIRST=1 LAST=3  # the reviewers benchmarked; make bench BENCH=--template runs it offline
-    make day SEED=7 DAY=20     # a day through the stored tables; make day-replay DAY=20 replays it
-    make demo SEED=7           # write demo.duckdb from the recorded run and start the demo page
-    make screenshots           # screenshot the demo page at 1440 by 900, in both states, and fail if a page is taller than the window
-    make help                  # every target
-
-With Docker:
-
-    docker build -t hotel-market:py3.12 .                        # --build-arg PYTHON=3.11 for another Python
-    docker run --rm -v "$PWD:/work" hotel-market:py3.12 --seed 7 --template
-    docker run --rm -v "$PWD:/work" -e ANTHROPIC_API_KEY hotel-market:py3.12 --seed 7
-    docker run --rm --entrypoint python -w /app hotel-market:py3.12 -m pytest -p no:cacheprovider tests
+make demo needs the network once, to install streamlit, and never needs an API
+key. Every other command is in docs/commands.md.
 
 ## Results
 
-Seeds 1 to 20, the agent run against the fixed-rate run over stay dates 0 to 149. The reasons are the template's and the elasticity is the simulator's.
+Seeds 1 to 20, the agent run against the fixed-rate run over stay dates 0 to
+149. The reasons are the template's and the elasticity is the simulator's.
 
 | Measure | Value |
 | --- | ---: |
@@ -78,173 +38,48 @@ Seeds 1 to 20, the agent run against the fixed-rate run over stay dates 0 to 149
 | Accepted plans' estimated gain over holding, summed | +$681,054 |
 | Realised gain on the same plans, summed | +$657,979 |
 
-Seed 7: room revenue and contribution per hotel, the fixed-rate run against the agent run, stay dates 0 to 149.
+## Three findings
 
-| Hotel | Revenue, fixed | Revenue, agent | Change | Contribution, fixed | Contribution, agent | Change |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Downtown convention hotel | 10,370,360 | 10,367,821 | -2,539 | 6,913,573 | 6,917,488 | +3,915 (+0.1%) |
-| Downtown full-service hotel | 5,532,800 | 5,522,502 | -10,298 | 3,688,533 | 3,695,019 | +6,485 (+0.2%) |
-| Lifestyle hotel | 3,371,280 | 3,373,752 | +2,472 | 2,247,520 | 2,260,632 | +13,112 (+0.6%) |
-| Airport hotel | 2,774,800 | 2,750,146 | -24,654 | 1,849,867 | 1,855,173 | +5,306 (+0.3%) |
-| All four hotels | 22,049,240 | 22,014,221 | -35,019 | 14,699,493 | 14,728,311 | +28,818 (+0.2%) |
+**Where the money comes from.** Contribution rises in 20 of 20 seeds and room
+revenue falls in every one, because the agent raises in nearly all accepted
+plans and the lost revenue is smaller than the saved room cost. With the cost
+at a third of the start rate and an elasticity of 1.5, the start rate is
+already the best rate on a night that will not sell out, so the gain lies in
+the nights the shocks make scarce. The convention and the new flights carry
+96% of it (docs/results.md, the table of where each arm's gain came from).
 
-The tables of every experiment: [docs/results.md](docs/results.md).
+**Against a rule that prices on the same flags.** The never-cut control earns
++$24,780 a seed by itself. The agent's lead over it is +$8,119, and the agent
+is ahead in 17 seeds of 20, so the control wins 3. Against the same rule with
+5% cuts the lead is +$10,043, because every cut loses in this market
+(docs/results.md, The rule-based control).
 
-Contribution increases in all 20 seeds and room revenue decreases. The agent
-raises rates in nearly all accepted plans, so the hotels sell fewer rooms. The
-lost revenue is smaller than the saved cost of the rooms. The two shocks, the
-convention and the new flights, produce 96% of the gain. Against a rule-based
-control that prices on the same flags with no estimate and no model, raising
-5% on a pace, event or seat-up flag and never cutting, the agent earns +$8,119
-a seed, next to the +$32,899 against frozen rates, because the control earns
-+$24,780 of it by itself, and the control is ahead in 3 of the 20 seeds.
-Against the same control with 5% cuts on a behind-pace or seat-cut flag, the
-lead is +$10,043 and the control earns +$22,856, because in this market the
-start rate is already the best rate on a night that will not sell out, so
-every cut loses money (docs/results.md).
+**What the model adds, and what learns.** In the default run the model adds
+nothing, because every reviewer accepts every plan. As a reviewer in a mode
+where the agent's elasticity is wrong, Opus recovers a share of 0.28 of what a
+perfect reviewer could at a fixed elasticity of 1.0 and 4% in a learned mode,
+and Sonnet and Haiku decline nothing. The one piece that learns from the
+bookings is the elasticity estimator, a Poisson regression with a prior, and
+the agent that uses it keeps 43% to 76% of the gain, set by the prior and the
+cautious rule (docs/reviewers.md for the reviewers, docs/results.md for the
+rest).
 
-An agent that learns the price response keeps 43% to 76% of the gain. The start
-value and the cautious rule set the share. The agent uses the simulator's demand
-formula, so the results test the machinery. A forecast for a real market would
-need the demand model learned from real bookings.
+## The limit that matters
 
-## The model as a reviewer
+The forecast is right by construction. With the simulator's demand scaled by
+0.9, which the agent never sees, the gain falls to +$1,913 a seed, ahead in 12
+seeds of 20 (docs/results.md, The demand bias). The other limits are in
+docs/limits.md.
 
-The model does not set rates. Code computes every candidate action for a hotel
-and estimates the contribution of each one before the model is asked. The model
-then sees one hotel's queue of plans for the day. It accepts or declines each
-plan and writes the reason in both cases. Code checks the answer against the
-options in the request. The model cannot return a rate that code did not
-compute.
+## Read more
 
-Every gain is measured against a control run with no rate changes. The same seed
-produces the same bookings in both runs, so the accepted plans are the only
-difference between them. The cache returns a stored answer before the model is
-asked again, so a run can be repeated exactly.
+- docs/results.md: the tables of every experiment, with their commands.
+- docs/reviewers.md: the model as a reviewer, the oracle and the benchmark.
+- docs/limits.md: the known limits, and the next version.
+- docs/commands.md: every command, make target and Docker line.
+- docs/schedule-feed.md: the air schedule feed as this repository models it.
+- kg/: a map of the repository for agents, with kg/README.md as the legend.
 
-The oracle reviewer scores every plan with the simulator's own elasticity. It
-declines the plan when holding scores at least as well. No reviewer can decline
-better with these candidates, so the oracle is the ceiling. The comparison
-follows the shape of Coinbase's series on a fraud agent. It has a control arm,
-an oracle, and a reviewer scored on decline precision and recall.
-
-The benchmark runs seeds 1 to 20 in three elasticity modes. Each mode has five
-reviewers: the template, which accepts every plan, the oracle, and the three
-current Claude models. In the true mode, every plan is scored with the
-simulator's own elasticity, so accepting every plan is correct. The oracle and
-the three models accept every plan, and each earns the template's +$32,899 a
-seed. The two modes with a wrong elasticity separate the reviewers.
-
-At a fixed elasticity of 1.0, accepting every plan earns +$8,438 a seed. The
-oracle earns +$30,588 and accepts 15% of the plans. The difference, $22,150 a
-seed, is the value a reviewer can recover. Opus recovers 28% of it. It earns
-+$14,584 a seed and beats the fixed-rate run in 17 of 20 seeds.
-
-Opus declines 47 plans, and the oracle declines every one of them, so its
-precision is 1.00. It catches one in seven of the oracle's declines, so its
-recall is 0.14. Its dollar-weighted recall is 0.25, so its declines are the
-costlier ones. The declines cluster on one plan. After the day-40 seat cut, code
-plans a 10% raise on all seven days for stay dates 70 to 90. Opus holds instead
-in 36 of the 47 cases.
-
-Its reasons state that the estimate rests on an elasticity "fixed for the run
-rather than learned from our bookings". They also state that the dates are
-behind pace and priced above the median. At a fixed elasticity of 2.0, Opus
-declines one plan in 20 seeds. It ties with accept-all, +$9,557 against +$9,551,
-and the oracle earns +$23,058.
-
-Sonnet and Haiku decline no plan in any mode, so their runs equal the template's
-runs. One model beats accept-all, by $6,146 a seed at a fixed elasticity of 1.0
-and by nothing at 2.0. Its calls cost $0.41 per seed. For the other two models,
-the value of the run is in the code, and the model writes the reasons.
-
-The learned modes then ran live, from a prior of 1.0 and of 2.0, with and
-without the cautious rule. One arm ran in the reacting market at a market
-elasticity of 0.5. From a prior of 1.0, accepting every plan earns +$14,141 a
-seed and the oracle +$30,828. The $16,687 a seed between them is open to a
-reviewer, and Opus recovers 4% of it. It declines 7 plans, six of them the
-day-40 raise it held at the fixed elasticity. The oracle agrees with every
-one. The uncertainty shown in the request did not change any model's
-declines. The decline rate was the same at every standard error. In the
-cautious arms three models agreed on a wrong decline because of a rounding in
-the display. The request rounded a gain of a few dollars at an end of the band
-to "the same as holding". Each model read that as a failed rule. That was the
-request's fault, and the benchmark found it. The request now states the
-rule's verdict and writes those gains to the dollar. Rerun on seeds 1 to 20,
-the three models declined nothing and tie with accept-all at +$25,076 a seed.
-In the reacting arm Opus held 43 of the 556 second raises it was shown. The
-oracle held one, because the simulator pays the second raise. Opus did not
-decline the second raise as such. The reason is that the request carries no
-history of the hotel's own changes, which the next version adds. The holds
-cost $5,824 a seed. The first run's five commands made 3,553 calls for
-$46.76, and the rerun 852 calls for $10.48 (docs/results.md).
-
-This repository does no post-training. Every booking in this world comes from
-code in this repository. A model trained on these runs learns the simulator's
-Poisson draws and its elasticity of 1.5 and nothing about hotels. Its gains say
-nothing about a real market. The only learning that carries over to a real
-market is the kind in estimate.py. It fits one parameter to the observed
-bookings.
-
-## Known limits
-
-- All data is synthetic, so no real market, airline, hotel or booking appears in
-  it.
-- The agent's demand forecast and booking curve are the simulator's own. A test
-  holds the forecast equal to the simulator's demand at the default demand bias
-  of 1.0, and the curve is never learned. The option `--demand-bias F`
-  multiplies the simulator's demand by F, which the agent never sees, so its
-  forecast is wrong by that factor. At 0.9 the default run keeps +$1,913 a seed
-  of its +$32,899, because every raise sells fewer rooms than the agent's
-  estimate says. At 1.1 it earns +$112,082 a seed, because the start rates were
-  set for a smaller market. The learning agent's day-59 elasticity stays at
-  1.26 to 1.49 at both biases, so the level error lands in the estimator's
-  intercept as designed. With `--level` the agent feeds that intercept back
-  into its forecast and learns the level by day 10, but the gain at 0.9 does
-  not recover, because the opportunity shrank: the gain here comes from
-  scarcity on the shock dates, and a market a tenth smaller has fewer nights
-  that sell out, so the level halved the false pace flags and could not make
-  rooms scarce. At 1.1 the level removes the false flags and the correct
-  raises go with them, because the agent acts only on a flag and a market
-  that is simply larger raises none (docs/results.md).
-- By default the agent is handed the simulator's elasticity of 1.5;
-  `--elasticity fixed:X` and `learn:X` take it away.
-- Demand moves by the hotel's share of guests arriving by air times the change
-  in arriving seats; that link is a modelling choice.
-- The minimum-stay recommendation is advice only. The simulator has no length
-  of stay, and the advice is not in any estimate or result.
-- The estimates assume the simulator's Poisson booking noise; real bookings
-  arrive less evenly, with groups, cancellations and no-shows.
-- The cost of an occupied room is one third of the start rate, which makes the
-  start rate contribution-best on a night that will not sell out.
-- The $250 minimum applies to a whole plan, so a small change on one day of the
-  week can ride inside a plan that clears the minimum on its other days.
-- The air schedule files two changes by default and, with `--churn`, weekly
-  revisions held under the threshold by construction. A second scenario holds
-  an upgauge and a frequency cut. A real feed revises in more ways than these,
-  and its rows carry an arrival time (docs/schedule-feed.md).
-- By default competitors never react and the market has no price response of
-  its own, so `--react` makes each competitor move half of a hotel's change
-  three days after it takes effect, and `--market-elasticity E` makes the
-  market's demand fall with the comp median's level to the power of E, with
-  the agent told E. With the reaction on, the default run earns +$111,272 a
-  seed at an E of 0.0, +$72,229 at 0.5 and +$43,584 at 1.0, against +$32,899
-  with neither. What those figures show, and the loop they expose, is in the
-  market section of docs/results.md.
-- There is one rate per hotel and stay date, with no room types, group blocks,
-  cancellations or no-shows.
-- Without an API key, every plan is accepted. A template run therefore measures
-  the plans alone.
-- The benchmark ran the live models on seeds 1 to 20 in the fixed and the
-  learned modes (docs/results.md). No reviewer recovered more than 28% of the
-  oracle's margin in a fixed mode or 4% in a learned one. The cautious arms'
-  declines came from a rounding in the request, and the fixed request removed
-  them. In the reacting market Opus held 43 of 556 second raises for reasons
-  that never name the earlier raise.
-- The container image was built on Python 3.11, 3.12 and 3.14 and passed the
-  suite on each. A seed-7 run inside it matches the native run (docs/results.md).
-
-The next version puts each hotel's past rate changes and their outcomes into the
-model request. The model can then compare a plan with the previous ones. It also
-reprices when data arrives during the day, and its simulated competitors react
-to the hotels' rate changes.
+The next version puts each hotel's past rate changes and their outcomes into
+the model request, reprices as data arrives during the day, and makes the
+simulated competitors react by default.

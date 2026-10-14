@@ -1,0 +1,62 @@
+# Known limits
+
+- All data is synthetic, so no real market, airline, hotel or booking appears in
+  it.
+- The agent's demand forecast and booking curve are the simulator's own. A test
+  holds the forecast equal to the simulator's demand at the default demand bias
+  of 1.0, and the curve is never learned. The option `--demand-bias F`
+  multiplies the simulator's demand by F, which the agent never sees, so its
+  forecast is wrong by that factor. At 0.9 the default run keeps +$1,913 a seed
+  of its +$32,899, because every raise sells fewer rooms than the agent's
+  estimate says. At 1.1 it earns +$112,082 a seed, because the start rates were
+  set for a smaller market. The learning agent's day-59 elasticity stays at
+  1.26 to 1.49 at both biases, so the level error lands in the estimator's
+  intercept as designed. With `--level` the agent feeds that intercept back
+  into its forecast and learns the level by day 10, but the gain at 0.9 does
+  not recover, because the opportunity shrank: the gain here comes from
+  scarcity on the shock dates, and a market a tenth smaller has fewer nights
+  that sell out, so the level halved the false pace flags and could not make
+  rooms scarce. At 1.1 the level removes the false flags and the correct
+  raises go with them, because the agent acts only on a flag and a market
+  that is simply larger raises none (docs/results.md).
+- By default the agent is handed the simulator's elasticity of 1.5;
+  `--elasticity fixed:X` and `learn:X` take it away.
+- Demand moves by the hotel's share of guests arriving by air times the change
+  in arriving seats; that link is a modelling choice.
+- The minimum-stay recommendation is advice only. The simulator has no length
+  of stay, and the advice is not in any estimate or result.
+- The estimates assume the simulator's Poisson booking noise; real bookings
+  arrive less evenly, with groups, cancellations and no-shows.
+- The cost of an occupied room is one third of the start rate, which makes the
+  start rate contribution-best on a night that will not sell out.
+- The $250 minimum applies to a whole plan, so a small change on one day of the
+  week can ride inside a plan that clears the minimum on its other days.
+- The air schedule files two changes by default and, with `--churn`, weekly
+  revisions held under the threshold by construction. A second scenario holds
+  an upgauge and a frequency cut. A real feed revises in more ways than these,
+  and its rows carry an arrival time (docs/schedule-feed.md).
+- By default competitors never react and the market has no price response of
+  its own, so `--react` makes each competitor move half of a hotel's change
+  three days after it takes effect, and `--market-elasticity E` makes the
+  market's demand fall with the comp median's level to the power of E, with
+  the agent told E. With the reaction on, the default run earns +$111,272 a
+  seed at an E of 0.0, +$72,229 at 0.5 and +$43,584 at 1.0, against +$32,899
+  with neither. What those figures show, and the loop they expose, is in the
+  market section of docs/results.md.
+- There is one rate per hotel and stay date, with no room types, group blocks,
+  cancellations or no-shows.
+- Without an API key, every plan is accepted. A template run therefore measures
+  the plans alone.
+- The benchmark ran the live models on seeds 1 to 20 in the fixed and the
+  learned modes (docs/results.md). No reviewer recovered more than 28% of the
+  oracle's margin in a fixed mode or 4% in a learned one. The cautious arms'
+  declines came from a rounding in the request, and the fixed request removed
+  them. In the reacting market Opus held 43 of 556 second raises for reasons
+  that never name the earlier raise.
+- The container image was built on Python 3.11, 3.12 and 3.14 and passed the
+  suite on each. A seed-7 run inside it matches the native run (docs/results.md).
+
+The next version puts each hotel's past rate changes and their outcomes into the
+model request. The model can then compare a plan with the previous ones. It also
+reprices when data arrives during the day, and its simulated competitors react
+to the hotels' rate changes.

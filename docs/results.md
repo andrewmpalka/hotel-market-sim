@@ -32,6 +32,16 @@ Seed 7, days 0 to 59: what became of the flags.
 | ---: | ---: | ---: | ---: | ---: | ---: |
 | 113 | 7 | 49 | 57 | 0 | 1 |
 
+Seed 7: room revenue and contribution per hotel, the fixed-rate run against the agent run, stay dates 0 to 149.
+
+| Hotel | Revenue, fixed | Revenue, agent | Change | Contribution, fixed | Contribution, agent | Change |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Downtown convention hotel | 10,370,360 | 10,367,821 | -2,539 | 6,913,573 | 6,917,488 | +3,915 (+0.1%) |
+| Downtown full-service hotel | 5,532,800 | 5,522,502 | -10,298 | 3,688,533 | 3,695,019 | +6,485 (+0.2%) |
+| Lifestyle hotel | 3,371,280 | 3,373,752 | +2,472 | 2,247,520 | 2,260,632 | +13,112 (+0.6%) |
+| Airport hotel | 2,774,800 | 2,750,146 | -24,654 | 1,849,867 | 1,855,173 | +5,306 (+0.3%) |
+| All four hotels | 22,049,240 | 22,014,221 | -35,019 | 14,699,493 | 14,728,311 | +28,818 (+0.2%) |
+
 Seed 7 over only the 93 hotel and stay-date pairs where the agent changed a rate. The pairs per hotel are in brackets.
 
 | Hotel | Revenue, fixed | Revenue, agent | Change | Contribution, fixed | Contribution, agent | Change |

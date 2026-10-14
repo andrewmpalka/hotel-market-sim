@@ -2,8 +2,9 @@
 
 A Python simulator of one made-up hotel market and an agent for it. The agent
 reads the simulated data each day and recommends rate changes for four hotels of
-one brand. Every number is synthetic. README.md has the commands and the
-results, and docs/results.md has the tables of every experiment.
+one brand. Every number is synthetic. README.md has the findings,
+docs/commands.md the commands and docs/results.md the tables of every
+experiment.
 
 ## Rules
 
@@ -78,8 +79,9 @@ opens the demo page in a Chromium-based browser at 1440 by 900, saves six
 screenshots, three pages with the end-of-run result off and on, and fails when a
 page is taller than the window. kg/ and kg_check.py are
 the knowledge graph and its checker. Makefile and Dockerfile wrap the setup.
-docs/results.md holds the experiment tables, and docs/schedule-feed.md describes
-the air schedule feed as modelled.
+docs/results.md holds the experiment tables, docs/commands.md every command,
+docs/reviewers.md the model as a reviewer, docs/limits.md the known limits, and
+docs/schedule-feed.md describes the air schedule feed as modelled.
 
 ## Commands
 
@@ -97,7 +99,7 @@ the air schedule feed as modelled.
     make image                 # the Docker image; make docker-test and docker-run SEED=7 use it
     python kg_check.py         # the graph against the code; --write-index rewrites kg/index.md
 
-`make help` lists every target. The raw commands are in README.md.
+`make help` lists every target. The raw commands are in docs/commands.md.
 
 ## Commits
 
