@@ -99,7 +99,8 @@ day-replay: $(STAMP) ## Rebuild day DAY's plans from the stored tables alone and
 demo: $(STAMP) ## Write demo.duckdb for seed SEED from the recorded live run and start the demo page (no API key; installs the demo extra)
 	@$(BIN)/python -c 'import streamlit' 2>/dev/null || $(BIN)/python -m pip install -e ".[demo]"
 	$(BIN)/hotel-market demo-data --seed $(SEED) --out demo.duckdb
-	HOTEL_MARKET_DEMO_FILE=demo.duckdb $(BIN)/streamlit run src/hotel_market/demo_page.py
+	@echo "Open http://localhost:8501 in a browser (Streamlit prints another port if that one is taken)."
+	HOTEL_MARKET_DEMO_FILE=demo.duckdb $(BIN)/streamlit run src/hotel_market/demo_page.py --server.headless true --browser.gatherUsageStats false
 
 screenshots: $(STAMP) ## Open the demo page at 1440 by 900 in a Chromium-based browser, save six screenshots under screenshots/ (three pages, the end-of-run result off and on), and fail if one is taller than the window
 	@$(BIN)/python -c 'import streamlit' 2>/dev/null || $(BIN)/python -m pip install -e ".[demo]"
