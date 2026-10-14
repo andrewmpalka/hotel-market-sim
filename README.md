@@ -16,8 +16,8 @@ synthetic. The repository has no Cirium data and no affiliation with Cirium.
 Python 3.11 or later, from the repository root:
 
     pip install -e ".[dev]"                  # the package, its dependencies, pytest and ruff
-    python -m pytest                         # the tests, offline; the slow 20-seed check is skipped
-    python -m pytest --slow                  # every test, the 20-seed check included
+    python -m pytest                         # the tests, offline; the nine slow tests are skipped
+    python -m pytest --slow                  # every test, the nine slow tests included: 20-seed sweeps, about 20 minutes on a laptop
     ruff check . && ruff format --check .    # the linter and the formatter, as a check
     python kg_check.py                       # the knowledge graph against the code
 
@@ -49,7 +49,7 @@ Python 3.11 or later, from the repository root:
 With make, on a Mac or Linux machine:
 
     make setup                 # create .venv and install the package, pytest and ruff into it
-    make test                  # the tests; make test-all includes the slow check; make lint runs ruff
+    make test                  # the tests; make test-all includes the nine slow tests; make lint runs ruff
     make run SEED=7            # the template run; make live SEED=7 uses the model
     make bench FIRST=1 LAST=3  # the reviewers benchmarked; make bench BENCH=--template runs it offline
     make day SEED=7 DAY=20     # a day through the stored tables; make day-replay DAY=20 replays it

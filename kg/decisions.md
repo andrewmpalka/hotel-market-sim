@@ -407,7 +407,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 
 ### DEC-30 [C] No hosted CI; the checks run locally through make and pytest
 - Decided: the workflow file is gone. The tests, ruff and the knowledge-graph check run locally with python -m pytest and the two ruff commands. The Makefile wraps them.
-- Detail: a test marked slow runs 20 seeds and takes about a minute. Plain pytest skips it, and pytest --slow (make test-all) includes it.
+- Detail: nine tests marked slow each run a 20-seed sweep or several, about 20 minutes on a laptop in all. Plain pytest skips them, and pytest --slow (make test-all) includes them.
 - Replaces: [[DEC-29]]
 - Reason: the owner chose it after the queued run, and nothing in the repository depends on a hosted runner.
 - Commit: 5cef53e

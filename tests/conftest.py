@@ -1,7 +1,8 @@
 """Fixtures shared by the test files, and the slow marker.
 
-A test marked slow runs 20 seeds and takes about a minute. Plain `pytest` skips
-them; `pytest --slow` (which `make test-all` runs) includes them.
+A test marked slow runs a 20-seed sweep or several, and the nine together take about
+20 minutes on a laptop. Plain `pytest` skips them; `pytest --slow` (which `make test-all`
+runs) includes them.
 """
 
 import os

@@ -84,8 +84,8 @@ the air schedule feed as modelled.
 ## Commands
 
     make setup                 # .venv with the package, pytest and ruff
-    make test                  # the tests; the slow 20-seed check is skipped
-    make test-all              # every test, the slow check included
+    make test                  # the tests; the nine slow tests are skipped
+    make test-all              # every test, the nine slow tests included: each a 20-seed sweep or several, about 20 minutes on a laptop
     make lint                  # ruff check, and ruff format as a check
     make run SEED=7            # both runs with the template reasons
     make live SEED=7           # the model writes the reasons (ANTHROPIC_API_KEY, here or in .env)
