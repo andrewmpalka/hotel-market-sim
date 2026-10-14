@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+from hotel_market.customer import demo
 from hotel_market.shops import REACTION_LAG, REACTION_SHARE
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -24,7 +25,7 @@ def test_the_median_follows_the_hotels_change_after_the_lag(median_path, capsys)
     stays, days = range(45, 49), range(8, 18)
     rows, agent, books, fixed = median_path.median_path(7, "convention", stays, days, react=True)
     assert books.react and fixed.react and [day for day, _ in rows] == list(days)
-    assert (fixed.rates == 220).all() is not None  # the fixed-rate run keeps its start rates
+    assert all((fixed.rates[h.row] == h.start_rate).all() for h in demo().hotels)
     rate = {day: cells[0][0] for day, cells in rows}  # stay 45
     median = {day: cells[0][1] for day, cells in rows}
     # The convention is announced on day 10, the competitors raise that day, and the plan the

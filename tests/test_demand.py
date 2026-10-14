@@ -31,6 +31,8 @@ def test_day_of_week_factors_match_the_table():
 
 
 def test_normal_demand_is_rooms_x_base_occupancy_x_day_of_week_factor():
+    """Regression test: it rebuilds the formula from the same factors the code reads, so it
+    catches a changed formula and cannot catch a wrong one."""
     base_occupancy = {"convention": 0.75, "full-service": 0.75, "lifestyle": 0.75, "airport": 0.85}
     for hotel in DEMO.hotels:
         for stay_day in range(14):
@@ -40,6 +42,8 @@ def test_normal_demand_is_rooms_x_base_occupancy_x_day_of_week_factor():
 
 @pytest.mark.parametrize("as_of_day", [0, 9, 10, 19, 20, 21, 39, 40, 41, 59])
 def test_expected_demand_follows_the_formula(as_of_day):
+    """Regression test: it combines normal demand, the seat change and the event uplift the way
+    demand.py combines them, so it pins the formula rather than checking it against anything."""
     change = seat_change(as_of_day)
     for hotel in DEMO.hotels:
         for stay_day in stay_window(as_of_day):
