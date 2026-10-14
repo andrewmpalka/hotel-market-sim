@@ -58,6 +58,43 @@ def test_a_customer_file_with_a_bad_target_or_repeated_key_or_name_is_refused(tm
         load(same_name)
 
 
+def _refused(tmp_path, old: str, new: str, match: str) -> None:
+    """The demo file with one value changed is refused, with an error that names the field."""
+    text = (ROOT / DEMO_FILE).read_text()
+    assert old in text
+    bad = tmp_path / "bad.toml"
+    bad.write_text(text.replace(old, new, 1))
+    with pytest.raises(ValueError, match=match):
+        load(bad)
+
+
+def test_a_hotel_needs_seven_weekday_factors(tmp_path):
+    _refused(
+        tmp_path,
+        "weekday_factors = [0.95, 1.10, 1.10, 1.05, 0.90, 0.95, 0.80]",
+        "weekday_factors = [0.95, 1.10, 1.10, 1.05, 0.90, 0.95]",
+        "hotel 'convention': weekday_factors needs seven",
+    )
+
+
+def test_the_booking_curves_days_out_must_ascend(tmp_path):
+    _refused(tmp_path, "days_out = [0, 7, 30, 60, 90]", "days_out = [0, 30, 7, 60, 90]", "days_out")
+
+
+def test_a_share_must_lie_between_0_and_1(tmp_path):
+    _refused(tmp_path, "cost_share = 0.3333333333333333", "cost_share = 1.5", "cost_share")
+    _refused(tmp_path, "air_share = 0.60", "air_share = 1.6", "hotel 'convention': air_share")
+
+
+def test_the_floor_must_be_below_the_ceiling(tmp_path):
+    _refused(tmp_path, "ceiling_share = 1.40", "ceiling_share = 0.60", "floor_share.*ceiling_share")
+
+
+def test_rooms_and_the_start_rate_must_be_positive(tmp_path):
+    _refused(tmp_path, "rooms = 400", "rooms = 0", "hotel 'convention': rooms")
+    _refused(tmp_path, "start_rate = 220", "start_rate = -220", "hotel 'convention': start_rate")
+
+
 def test_the_revenue_target_scores_candidates_on_the_rate_alone(day10, tmp_path):
     _, table = day10
     revenue = replace(DEMO, target="revenue")

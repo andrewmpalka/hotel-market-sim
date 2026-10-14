@@ -192,11 +192,11 @@ which is also the order in which they depend on each other.
 - File: src/hotel_market/customer.py
 - Owns: everything specific to one market, read from its customer file ([[DEC-41]]). load(path) turns the TOML into a Customer ([[DAT-27]]): hotels ([[DAT-04]]), limits, thresholds, hold, minimum, curve ([[CON-01]]) and target ([[RUL-58]]).
 - Default: demo() is the demo market, loaded once and the default wherever no customer is given. demo_path() finds it through CUSTOMER_VARIABLE ([[RUL-71]]), the working directory or the repository root.
-- Checks: load() refuses a target outside TARGETS ([[RUL-70]]), a repeated hotel key and a repeated hotel name, which [[MOD-23]] matches on. Both sides read the file: the simulator makes the market and the agent learns its hotels.
+- Checks: load() refuses a bad target ([[RUL-70]]), a repeated hotel key or name, a share outside 0 to 1, a floor at or above the ceiling, a curve that does not ascend, and a hotel short of seven weekday factors, rooms or a rate.
 - Reads: [[MOD-02]] for the Hotel and Competitor types
 - Writes: [[DAT-27]], [[DAT-04]]
 - Tests: tests/test_customer.py
-- Evidence: test_the_demo_file_describes_the_market_in_claude_md, test_a_customer_file_with_a_bad_target_or_repeated_key_or_name_is_refused, test_without_a_customer_the_demo_market_is_the_default
+- Evidence: test_the_demo_file_describes_the_market_in_claude_md, test_a_customer_file_with_a_bad_target_or_repeated_key_or_name_is_refused, test_a_hotel_needs_seven_weekday_factors, test_a_share_must_lie_between_0_and_1
 
 ### MOD-21 [C] stored.py
 - File: src/hotel_market/stored.py

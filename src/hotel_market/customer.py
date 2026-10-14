@@ -74,6 +74,7 @@ def load(path: Path | str) -> Customer:
     )
     if data["target"] not in TARGETS:
         raise ValueError(f"{path}: target must be one of {TARGETS}, not {data['target']!r}")
+    _validate(path, data)
     hotels = tuple(
         _hotel(row, entry, limits["floor_share"], limits["ceiling_share"], limits["cost_share"])
         for row, entry in enumerate(data["hotels"])
@@ -98,6 +99,52 @@ def load(path: Path | str) -> Customer:
         curve_days_out=tuple(curve["days_out"]),
         curve_share=tuple(curve["share"]),
     )
+
+
+def _validate(path: Path | str, data: dict) -> None:
+    """The checks a market file must pass. Each error names the field and, for a hotel, the hotel.
+    The shares lie between 0 and 1, the floor sits below the ceiling, the booking curve's days
+    out ascend with one share each, and every hotel has seven weekday factors, positive rooms
+    and a positive start rate."""
+    limits, detect, curve = data["limits"], data["detect"], data["booking_curve"]
+    for field in ("floor_share", "cost_share"):
+        _share(path, limits, field)
+    _share(path, detect, "pace_share")
+    if not limits["floor_share"] < limits["ceiling_share"]:
+        raise ValueError(
+            f"{path}: floor_share {limits['floor_share']!r} must be below ceiling_share "
+            f"{limits['ceiling_share']!r}"
+        )
+    days_out, share = curve["days_out"], curve["share"]
+    if len(days_out) != len(share) or any(b <= a for a, b in zip(days_out, days_out[1:])):
+        raise ValueError(
+            f"{path}: booking_curve.days_out must ascend, with one share each, not {days_out!r}"
+        )
+    for value in share:
+        if not 0 <= value <= 1:
+            raise ValueError(f"{path}: booking_curve.share must lie between 0 and 1, not {value!r}")
+    for entry in data["hotels"]:
+        key = entry["key"]
+        if len(entry["weekday_factors"]) != 7:
+            raise ValueError(
+                f"{path}: hotel {key!r}: weekday_factors needs seven entries, Monday to Sunday, "
+                f"not {len(entry['weekday_factors'])}"
+            )
+        for field in ("rooms", "start_rate"):
+            if not entry[field] > 0:
+                raise ValueError(
+                    f"{path}: hotel {key!r}: {field} must be positive, not {entry[field]!r}"
+                )
+        for field in ("air_share", "base_occupancy"):
+            _share(path, entry, field, hotel=key)
+
+
+def _share(path: Path | str, table: dict, field: str, hotel: str | None = None) -> None:
+    """A share lies between 0 and 1; the error names the field and the hotel when there is one."""
+    value = table[field]
+    if not 0 <= value <= 1:
+        where = f"hotel {hotel!r}: " if hotel else ""
+        raise ValueError(f"{path}: {where}{field} must lie between 0 and 1, not {value!r}")
 
 
 def _hotel(row: int, entry: dict, floor_share: float, ceiling_share: float, cost_share: float):
