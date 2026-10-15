@@ -153,9 +153,9 @@ def test_observations_stop_on_the_day_a_stay_date_sells_out():
 def test_the_preload_is_not_an_observation():
     books = Books(SEED)
     hotel = DEMO.hotels[0]
-    sources = simulated_sources(books)
-    assert len(observations(sources, hotel, 0)) == 0
+    assert len(observations(simulated_sources(books), hotel, 0)) == 0
     books.book(0)
+    sources = simulated_sources(books)  # the sources copy the log when they are made
     data = observations(sources, hotel, 1)
     assert set(data.booking_days) == {0} and len(data) == len(stay_window(0))
     assert data.bookings.sum() == books.daily_rooms[0, 0].sum()

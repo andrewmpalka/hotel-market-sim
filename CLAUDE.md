@@ -16,7 +16,8 @@ experiment.
 3. Nothing may use information before the day it becomes known. Every lookup
    takes as_of_day. A flight counts from the day the airline files it, an
    event from the day it is announced, and a competitor's rate from the day it
-   is shopped.
+   is shopped. The sources an agent is handed hold the day's data alone, on
+   both routes, so tomorrow cannot be reached through an attribute either.
 4. Model responses are saved under cache/, keyed by seed, day and hotel. The
    elasticity mode and the model join the key when they are not the defaults.
    A demand bias other than 1.0 or the competitor reaction puts a run's folders

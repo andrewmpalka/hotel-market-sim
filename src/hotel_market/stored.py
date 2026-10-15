@@ -6,8 +6,9 @@ known on. The feeds are daily bookings, rate shops, schedule snapshots and event
 plans and decisions hold what the agent made of them.
 
 Day -1 holds the position before the first day. A source answering as of a day reads only the
-rows known by that day. The tables therefore keep the simulator's rule: nothing is used before
-the day it became known.
+rows known by that day, and a source made for a day refuses a later one, as the simulated sources
+do. The tables therefore keep the simulator's rule: nothing is used before the day it became
+known, and a replay of a day cannot read the days after it.
 
 write_snapshot() copies one day of any Sources into the feed tables. write_decisions() stores the
 day's flags, plans and decisions. Both delete the day's rows first, so writing a day twice leaves
@@ -37,6 +38,7 @@ from hotel_market.sources import (
     Bookings,
     Event,
     Events,
+    Limited,
     RateShops,
     Schedules,
     Sources,
@@ -145,11 +147,12 @@ def _frame(connection, sql: str, parameters: list | None = None) -> pd.DataFrame
 # ---- the four sources, read from the tables ---------------------------------
 
 
-class StoredBookings(Bookings):
+class StoredBookings(Limited, Bookings):
     """daily_bookings, read as of a day."""
 
-    def __init__(self, connection, customer: Customer):
+    def __init__(self, connection, customer: Customer, as_of_day: int | None = None):
         self.connection = connection
+        self.as_of_day = as_of_day
         self.hotels = customer.hotels
         self._rows = {hotel.key: hotel.row for hotel in self.hotels}
 
@@ -157,6 +160,7 @@ class StoredBookings(Bookings):
         return frame["hotel"].map(self._rows).to_numpy(dtype=np.int64)
 
     def on_books(self, as_of_day: int) -> np.ndarray:
+        self._known(as_of_day)
         frame = _frame(
             self.connection,
             "SELECT hotel, stay_day, CAST(SUM(rooms_taken) AS BIGINT) AS rooms "
@@ -168,6 +172,7 @@ class StoredBookings(Bookings):
         return rooms
 
     def rates(self, as_of_day: int) -> np.ndarray:
+        self._known(as_of_day)
         frame = _frame(
             self.connection,
             "SELECT hotel, stay_day, rate FROM daily_bookings WHERE as_of_day = ?",
@@ -178,6 +183,7 @@ class StoredBookings(Bookings):
         return rates
 
     def history(self, as_of_day: int) -> BookingHistory:
+        self._known(as_of_day, before=True)
         taken = np.zeros((as_of_day, len(self.hotels), HORIZON_DAYS), dtype=np.int64)
         rates = np.zeros((as_of_day, len(self.hotels), HORIZON_DAYS))
         frame = _frame(
@@ -205,15 +211,17 @@ class StoredBookings(Bookings):
         return BookingHistory(taken, rates, opening)
 
 
-class StoredRateShops(RateShops):
+class StoredRateShops(Limited, RateShops):
     """rate_shops, one shop day at a time."""
 
-    def __init__(self, connection, customer: Customer):
+    def __init__(self, connection, customer: Customer, as_of_day: int | None = None):
         self.connection = connection
+        self.as_of_day = as_of_day
         self.hotels = customer.hotels
         self._shops: dict[int, dict[tuple[str, int], dict[str, float]]] = {}
 
     def competitor_rates(self, shop_day: int, hotel: Hotel, stay_day: int) -> dict[str, float]:
+        self._known(shop_day)
         shop = self._shop(shop_day)
         if (hotel.key, stay_day) not in shop:
             raise LookupError(
@@ -244,6 +252,7 @@ class StoredRateShops(RateShops):
         return self.median(max(0, stay_day - (LOOKAHEAD_DAYS - 1)), hotel, stay_day)
 
     def median_history(self, as_of_day: int) -> np.ndarray:
+        self._known(as_of_day, before=True)
         medians = np.zeros((as_of_day, len(self.hotels), HORIZON_DAYS))
         if as_of_day <= 0:
             return medians
@@ -277,14 +286,16 @@ def _median(values: np.ndarray) -> np.ndarray:
     return (ordered[..., count // 2 - 1] + ordered[..., count // 2]) / 2
 
 
-class StoredSchedules(Schedules):
+class StoredSchedules(Limited, Schedules):
     """schedule_snapshots: the seats arriving each day, as filed by a day."""
 
-    def __init__(self, connection):
+    def __init__(self, connection, as_of_day: int | None = None):
         self.connection = connection
+        self.as_of_day = as_of_day
         self._seats: dict[int, np.ndarray] = {}
 
     def seats(self, as_of_day: int) -> np.ndarray:
+        self._known(as_of_day)
         if as_of_day not in self._seats:
             frame = _frame(
                 self.connection,
@@ -299,22 +310,24 @@ class StoredSchedules(Schedules):
         return self._seats[as_of_day]
 
 
-class StoredEvents(Events):
+class StoredEvents(Limited, Events):
     """events: the calendar as of a day, read once per day asked about."""
 
-    def __init__(self, connection):
+    def __init__(self, connection, as_of_day: int | None = None):
         self.connection = connection
-        self._known: dict[int, list[Event]] = {}
+        self.as_of_day = as_of_day
+        self._read: dict[int, list[Event]] = {}
 
     def known(self, as_of_day: int) -> list[Event]:
-        if as_of_day not in self._known:
+        self._known(as_of_day)
+        if as_of_day not in self._read:
             frame = _frame(
                 self.connection,
                 "SELECT name, known_day, start_day, end_day, hotels, uplift, comp_rate_raise "
                 "FROM events WHERE as_of_day = ? ORDER BY known_day, name",
                 [as_of_day],
             )
-            self._known[as_of_day] = [
+            self._read[as_of_day] = [
                 Event(
                     row.name,
                     int(row.known_day),
@@ -326,17 +339,21 @@ class StoredEvents(Events):
                 )
                 for row in frame.itertuples(index=False)
             ]
-        return list(self._known[as_of_day])
+        return list(self._read[as_of_day])
 
 
-def stored_sources(connection, customer: Customer | None = None) -> Sources:
-    """The four sources, answering from the tables."""
+def stored_sources(
+    connection, customer: Customer | None = None, as_of_day: int | None = None
+) -> Sources:
+    """The four sources, answering from the tables, made for as_of_day: a question about a later
+    day is refused, as the simulated sources refuse it. With no day they answer any day the
+    tables hold."""
     customer = customer or demo()
     return Sources(
-        StoredBookings(connection, customer),
-        StoredRateShops(connection, customer),
-        StoredSchedules(connection),
-        StoredEvents(connection),
+        StoredBookings(connection, customer, as_of_day),
+        StoredRateShops(connection, customer, as_of_day),
+        StoredSchedules(connection, as_of_day),
+        StoredEvents(connection, as_of_day),
     )
 
 

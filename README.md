@@ -112,5 +112,5 @@ docs/limits.md.
 
 The next version puts each hotel's past rate changes and their outcomes into the
 model request, reprices as data arrives during the day and makes the competitors
-react by default. The stored route then refuses a later day, the tables keep
-each decision's outcome, and each hotel gets its own booking curve.
+react by default. The tables then keep each decision's outcome, and each hotel
+gets its own booking curve.

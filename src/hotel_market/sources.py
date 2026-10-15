@@ -128,3 +128,18 @@ class Sources:
     shops: RateShops
     schedules: Schedules
     events: Events
+
+
+class Limited:
+    """A source made for a day. It refuses a question about a later day, so an agent cannot read
+    tomorrow through it even by mistake. Made with no day, as a test may make it, it answers any
+    day. Both implementations mix it in."""
+
+    as_of_day: int | None = None  # the day the source was made for; None answers any day
+
+    def _known(self, day: int, before: bool = False) -> None:
+        """Refuse a day after as_of_day. A question about the bookings before a day, as history()
+        asks, may name the day after as_of_day, because today's bookings are in."""
+        latest = day - 1 if before else day
+        if self.as_of_day is not None and latest > self.as_of_day:
+            raise ValueError(f"asked about day {day} on day {self.as_of_day}: it is not known yet")

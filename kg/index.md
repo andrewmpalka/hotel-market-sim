@@ -8,19 +8,19 @@ nodes and its words, len(text.split()) over the file.
 
 | File | Nodes | Words |
 | --- | ---: | ---: |
-| modules.md | 30 | 4,041 |
-| data.md | 33 | 4,254 |
+| modules.md | 30 | 4,045 |
+| data.md | 33 | 4,266 |
 | rules.md | 122 | 5,097 |
 | shocks.md | 7 | 734 |
 | concepts.md | 11 | 1,154 |
 | measures.md | 14 | 962 |
 | sources.md | 4 | 849 |
-| decisions.md | 60 | 8,788 |
+| decisions.md | 61 | 8,966 |
 | results.md | 42 | 7,233 |
-| forks.md | 13 | 1,906 |
+| forks.md | 13 | 1,921 |
 | unknowns.md | 15 | 2,013 |
-| every node file | 351 | 37,031 |
-| index.md | | 2,958 |
+| every node file | 352 | 37,240 |
+| index.md | | 2,972 |
 
 ## Modules (`modules.md`)
 
@@ -280,6 +280,7 @@ nodes and its words, len(text.split()) over the file.
 - DEC-57 [C] A read-only demo page over a file code writes
 - DEC-58 [C] The demo page fits one window, and every date on it is a calendar date
 - DEC-60 [C] Every printed mean carries its spread, and every ahead count a sign test
+- DEC-61 [C] The sources hold only what the day knows, on both routes
 
 ## Results (`results.md`)
 
@@ -340,7 +341,7 @@ nodes and its words, len(text.split()) over the file.
 - FRK-10 [O] An arrival time column
 - FRK-11 [O] A periodic re-plan beside the anomaly flags
 - FRK-12 [O] Per-hotel booking curves in the customer file
-- FRK-13 [O] The stored route refuses a later day
+- FRK-13 [H] The stored route refuses a later day
 
 ## Unknowns (`unknowns.md`)
 

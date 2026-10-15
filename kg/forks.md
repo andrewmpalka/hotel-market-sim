@@ -92,8 +92,9 @@ it. None of these is in progress.
 - Needs: a curve per hotel in the file, read by [[MOD-20]] and used by [[MOD-06]] and [[MOD-18]]. Every pinned figure then changes. The template arms rerun for nothing and the live arms at about $86.
 - Links: [[CON-01]], [[DAT-27]], [[MOD-07]], [[DEC-55]], [[RES-42]]
 
-### FRK-13 [O] The stored route refuses a later day
+### FRK-13 [H] The stored route refuses a later day
 - Choice: whether stored_sources should take the day it is made for and refuse a later one, as the simulated sources do ([[MOD-19]], [[MOD-21]]).
+- Closed by: [[DEC-61]], which made both routes' sources hold only what the day knows.
 - Known: the simulated sources are made for a day and refuse a later one. The stored sources answer any day the tables hold, so a replay of day 10 can read day 34 ([[DEC-42]]).
 - Needs: an as_of_day on the four stored sources and on stored_sources(), passed by run-day and replay ([[MOD-12]]). No figure changes.
 - Links: [[MOD-19]], [[MOD-21]], [[DEC-40]], [[DEC-42]], [[RUL-03]]

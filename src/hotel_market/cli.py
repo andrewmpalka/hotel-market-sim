@@ -246,7 +246,7 @@ def run_days(
         stored.write_snapshot(connection, day, feed, customer)
         agent = Agent(seed, cache_dir, client, elasticity=mode, customer=customer)
         agent.resume(*stored.state_before(connection, day))
-        changes = agent.decide(day, stored.stored_sources(connection, customer))
+        changes = agent.decide(day, stored.stored_sources(connection, customer, day))
         stored.write_decisions(connection, day, agent.entries, agent.advice)
         outcome["entries"], outcome["advice"] = agent.entries, agent.advice
         if observe is not None:
@@ -284,7 +284,7 @@ def replay_day(
             raise LookupError(f"{db} holds no day {day}; run it first")
         agent = Agent(0, elasticity=mode, customer=customer)  # no cache: nothing is asked
         agent.resume(*stored.state_before(connection, day))
-        sources = stored.stored_sources(connection, customer)
+        sources = stored.stored_sources(connection, customer, day)
         entries = agent.plans_for(day, sources)
         for entry in entries:
             key = (entry.hotel, entry.first_stay, entry.last_stay)

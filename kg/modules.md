@@ -160,7 +160,7 @@ which is also the order in which they depend on each other.
 
 ### MOD-17 [C] sources.py
 - File: src/hotel_market/sources.py
-- Owns: the boundary between the agent and its data: the four interfaces ([[DAT-25]]) for bookings, rate shops, air schedules and events. It also holds the Event type ([[DAT-05]]), BookingHistory ([[DAT-26]]) and the Sources bundle.
+- Owns: the boundary between the agent and its data: the four interfaces ([[DAT-25]]) for bookings, rate shops, schedules and events, the Event type ([[DAT-05]]), BookingHistory ([[DAT-26]]), the Sources bundle and the as-of guard Limited.
 - Rule: every method takes the day it is asked on and returns only what was known then. The module holds no data and no truth ([[DEC-40]]).
 - Seats: the schedule interface asks an implementation only for the seats arriving each day as filed. It computes the seat change and the seat revision itself (seat_fraction), so every implementation counts the same way ([[DEC-42]]).
 - Reads: [[MOD-02]] for the Hotel type
@@ -181,7 +181,7 @@ which is also the order in which they depend on each other.
 ### MOD-19 [C] simulated.py
 - File: src/hotel_market/simulated.py
 - Owns: the simulator as the agent's four sources ([[DEC-40]]). SimulatedBookings reads the Books' daily log ([[DAT-07]]), and SimulatedRateShops the seed and the logged medians.
-- Also: SimulatedSchedules reads the schedule as filed under the run's scenario ([[DEC-53]]), and SimulatedEvents the events. Each source is made for a day, refuses a later one and hands out copies; deciding() makes them per day.
+- Also: SimulatedSchedules holds the seats filed by the day under the run's scenario ([[DEC-53]]), and SimulatedEvents the events known. Each copies what it reads when made, holds no Books or Scenario and refuses a later day ([[DEC-61]]).
 - Reaction: the rate-shop source passes the Books' lagged hotel change to each shop ([[DEC-51]]). first_median() is the shop of day -1 ([[DEC-52]]). The agent sees the shop the simulator used. deciding() also wraps a policy ([[MOD-25]]).
 - Reads: [[MOD-01]], [[MOD-02]], [[MOD-03]], [[MOD-04]], [[MOD-05]], [[MOD-06]], [[MOD-07]], [[MOD-10]], [[MOD-17]], [[MOD-20]]
 - Writes: [[DAT-25]], as their implementation
@@ -200,7 +200,7 @@ which is also the order in which they depend on each other.
 
 ### MOD-21 [C] stored.py
 - File: src/hotel_market/stored.py
-- Owns: the four sources read from stored tables ([[DAT-28]], [[DEC-42]]), the second implementation of [[DAT-25]]: StoredBookings, StoredRateShops, StoredSchedules and StoredEvents. Each answers as of the day asked.
+- Owns: the four sources read from stored tables ([[DAT-28]], [[DEC-42]]), the second implementation of [[DAT-25]]: StoredBookings, StoredRateShops, StoredSchedules and StoredEvents. Made for a day, each refuses a later one ([[DEC-61]]).
 - Writers: write_snapshot() copies one day of any Sources into the feed tables. write_decisions() stores a day's flags, plans and decisions. Each writer deletes the day's rows first, in one transaction.
 - Readers: state_before() gives an agent its hold and advice, and rate_changes_before() gives the simulator its playback. decided_on(), records_on(), decisions_file() and plan_differences() read a run back.
 - Holds: TABLES ([[RUL-72]]) and OPENING_DAY ([[RUL-73]]). connect() opens the DuckDB file and creates the tables from sql/schema.sql. It imports nothing from the simulator and is one of the modules the import test covers.

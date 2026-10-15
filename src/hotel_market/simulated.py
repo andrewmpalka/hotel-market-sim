@@ -5,10 +5,12 @@ simulator knew on that day. The bookings come from the Books' daily log and the 
 the shops the simulator used. The schedule and event records are as of that day. deciding() wraps
 an Agent as the simulator's decide hook.
 
-The sources are made for a day, the as_of_day the simulator is deciding. A question about a later
-day raises ValueError, so the agent cannot read tomorrow through them even by mistake, and every
-array they hand out is a copy, so nothing the agent does reaches the simulator's own log. When they
-are made with no day, as a test may make them, they answer any day.
+The sources are made for a day, the as_of_day the simulator is deciding. Each copies what it will
+read when it is made, the log through that day and the seats and events known by then, and holds
+nothing else: no Books, no Scenario and no draw of a later day, so a decider cannot reach tomorrow
+through an attribute either. A question about a later day raises ValueError, and every array they
+hand out is a copy, so nothing the agent does reaches the simulator's own log. When they are made
+with no day, as a test may make them, they copy the whole log and answer any day.
 
 Run `python -m hotel_market.simulated --seed 7` to print the flags of a fixed-rate run.
 """
@@ -22,19 +24,25 @@ import numpy as np
 import pandas as pd
 
 from hotel_market.agent import Agent
-from hotel_market.bookings import Books, Decide, simulate
+from hotel_market.bookings import Books, Decide, lagged_change, simulate
 from hotel_market.customer import Customer, demo
-from hotel_market.demand import last_filing
 from hotel_market.detect import AHEAD, PACE, Flag, detect_numbers, flags, pace_without_shock
 from hotel_market.policy import PacePolicy
-from hotel_market.schedule import DEFAULT_SCENARIO, Scenario, build_schedule, seats_by_day
+from hotel_market.schedule import (
+    DEFAULT_SCENARIO,
+    HORIZON_DAYS,
+    Scenario,
+    build_schedule,
+    seats_by_day,
+)
 from hotel_market.shocks import events_as_of
-from hotel_market.shops import comp_rates
+from hotel_market.shops import comp_median, comp_rates, starting_median
 from hotel_market.sources import (
     BookingHistory,
     Bookings,
     Event,
     Events,
+    Limited,
     RateShops,
     Schedules,
     Sources,
@@ -42,88 +50,103 @@ from hotel_market.sources import (
 from hotel_market.world import SIM_DAYS, Hotel
 
 
-class Limited:
-    """A source made for a day. It refuses a question about a later day."""
-
-    as_of_day: int | None = None  # the day the sources were made for; None answers any day
-
-    def _known(self, day: int, before: bool = False) -> None:
-        """Refuse a day after as_of_day. A question about the bookings before a day, as history()
-        asks, may name the day after as_of_day, because today's bookings are in."""
-        latest = day - 1 if before else day
-        if self.as_of_day is not None and latest > self.as_of_day:
-            raise ValueError(f"asked about day {day} on day {self.as_of_day}: it is not known yet")
+def _through(as_of_day: int | None) -> int:
+    """How many days of a daily log a source made for the day copies: through that day."""
+    return HORIZON_DAYS if as_of_day is None else as_of_day + 1
 
 
 class SimulatedBookings(Limited, Bookings):
-    """The Books' daily log, read as of a day, as copies."""
+    """The Books' daily log through the day, copied when the source is made, read as of a day."""
 
     def __init__(self, books: Books, as_of_day: int | None = None):
-        self.books = books
         self.as_of_day = as_of_day
+        self._preload = books.preload.copy()
+        self._daily_rooms = books.daily_rooms[: _through(as_of_day)].copy()
+        self._daily_rates = books.daily_rates[: _through(as_of_day)].copy()
 
     def on_books(self, as_of_day: int) -> np.ndarray:
         self._known(as_of_day)
-        return self.books.preload + self.books.daily_rooms[: as_of_day + 1].sum(axis=0)
+        return self._preload + self._daily_rooms[: as_of_day + 1].sum(axis=0)
 
     def rates(self, as_of_day: int) -> np.ndarray:
         self._known(as_of_day)
-        return self.books.daily_rates[as_of_day].copy()
+        return self._daily_rates[as_of_day].copy()
 
     def history(self, as_of_day: int) -> BookingHistory:
         self._known(as_of_day, before=True)
         return BookingHistory(
-            self.books.daily_rooms[:as_of_day].copy(),
-            self.books.daily_rates[:as_of_day].copy(),
-            self.books.preload.copy(),
+            self._daily_rooms[:as_of_day].copy(),
+            self._daily_rates[:as_of_day].copy(),
+            self._preload.copy(),
         )
 
 
 class SimulatedRateShops(Limited, RateShops):
-    """The rate shops the simulator draws from the seed, and the log of the medians it used. With
-    the reaction on, each shop carries the Books' lagged hotel change, so the agent sees the
-    shop the simulator used."""
+    """The rate shops the simulator draws from the seed, and the log of the medians it used
+    through the day, copied. With the reaction on, each shop carries the hotel's lagged change,
+    read from the copied rates, so the agent sees the shop the simulator used."""
 
     def __init__(self, books: Books, as_of_day: int | None = None):
-        self.books = books
         self.as_of_day = as_of_day
+        self._seed = books.seed
+        self._customer = books.customer
+        self._react = books.react
+        self._daily_rates = books.daily_rates[: _through(as_of_day)].copy()
+        self._daily_medians = books.daily_medians[: _through(as_of_day)].copy()
+        self._starting: dict[tuple[int, int], float] = {}  # (hotel row, stay day) -> median
+
+    def _hotel_change(self, shop_day: int, hotel: Hotel, stay_day: int) -> float:
+        return lagged_change(self._daily_rates, self._react, shop_day, hotel, stay_day)
 
     def competitor_rates(self, shop_day: int, hotel: Hotel, stay_day: int) -> dict[str, float]:
         self._known(shop_day)
-        books = self.books
         return comp_rates(
             shop_day,
             hotel,
             stay_day,
-            seed=books.seed,
-            customer=books.customer,
-            hotel_change=books.hotel_change(shop_day, hotel, stay_day),
+            seed=self._seed,
+            customer=self._customer,
+            hotel_change=self._hotel_change(shop_day, hotel, stay_day),
         )
 
     def median(self, shop_day: int, hotel: Hotel, stay_day: int) -> float:
         self._known(shop_day)
-        return self.books.comp_median(shop_day, hotel, stay_day)
+        return comp_median(
+            shop_day,
+            hotel,
+            stay_day,
+            seed=self._seed,
+            customer=self._customer,
+            hotel_change=self._hotel_change(shop_day, hotel, stay_day),
+        )
 
     def first_median(self, hotel: Hotel, stay_day: int) -> float:
         """The shop of day -1: no shock is known yet, and no rate has changed."""
-        return self.books.starting_median(hotel, stay_day)
+        key = (hotel.row, stay_day)
+        if key not in self._starting:
+            self._starting[key] = starting_median(
+                hotel, stay_day, seed=self._seed, customer=self._customer
+            )
+        return self._starting[key]
 
     def median_history(self, as_of_day: int) -> np.ndarray:
         self._known(as_of_day, before=True)
-        return self.books.daily_medians[:as_of_day].copy()
+        return self._daily_medians[:as_of_day].copy()
 
 
 class SimulatedSchedules(Limited, Schedules):
-    """The schedule as filed by a day under a scenario, counted to arriving seats. The schedule
-    only changes on filing days, so the seats are counted once per filing and reused."""
+    """The schedule as filed by each filing day through the day under the run's scenario, counted
+    to arriving seats once per filing. It holds those counts and not the scenario, so a filing
+    still to come is not in it."""
 
     def __init__(self, scenario: Scenario = DEFAULT_SCENARIO, as_of_day: int | None = None):
-        self.scenario = scenario
         self.as_of_day = as_of_day
+        last = HORIZON_DAYS - 1 if as_of_day is None else as_of_day
+        self._filed = {day: _seats(day, scenario) for day in (-1, *scenario.filing_days(last))}
 
     def seats(self, as_of_day: int) -> np.ndarray:
         self._known(as_of_day)
-        return _seats(last_filing(as_of_day, self.scenario), self.scenario)
+        return self._filed[max(day for day in self._filed if day <= as_of_day)]
 
 
 @lru_cache(maxsize=None)
@@ -134,17 +157,22 @@ def _seats(filing_day: int, scenario: Scenario) -> np.ndarray:
 
 
 class SimulatedEvents(Limited, Events):
+    """The events announced by the day, copied from the calendar, so an event still to be
+    announced is not in it."""
+
     def __init__(self, as_of_day: int | None = None):
         self.as_of_day = as_of_day
+        self._events = events_as_of(HORIZON_DAYS if as_of_day is None else as_of_day)
 
     def known(self, as_of_day: int) -> list[Event]:
         self._known(as_of_day)
-        return events_as_of(as_of_day)
+        return [event for event in self._events if event.known_day <= as_of_day]
 
 
 def simulated_sources(books: Books, as_of_day: int | None = None) -> Sources:
-    """The four sources, answering from these books and their seed, made for as_of_day: a
-    question about a later day is refused. With no day they answer any day."""
+    """The four sources, made for as_of_day from copies of what these books knew by then: a
+    question about a later day is refused, and no attribute reaches the books. With no day they
+    answer any day."""
     return Sources(
         SimulatedBookings(books, as_of_day),
         SimulatedRateShops(books, as_of_day),

@@ -182,3 +182,44 @@ def test_a_failed_day_write_rolls_the_earlier_tables_back(tmp_path, monkeypatch)
         assert stored.stored_days(connection) == [0, 1, 2]
     finally:
         connection.close()
+
+
+def test_the_stored_sources_refuse_a_later_day_and_the_daily_commands_make_them_for_the_day(
+    through_tables, monkeypatch
+):
+    """Made for a day, the stored sources refuse a question about a later day, as the simulated
+    sources do, so a replay of day 10 cannot read the days after it. run-day and replay make the
+    sources for the day they decide, and sources made with no day answer any day the tables hold."""
+    connection = stored.connect(through_tables, read_only=True)
+    try:
+        sources = stored.stored_sources(connection, as_of_day=10)
+        hotel = DEMO.hotels[0]
+        assert sources.bookings.on_books(10).sum() > 0
+        assert sources.bookings.history(11).taken.shape[0] == 11  # today's bookings are in
+        for ask in (
+            lambda: sources.bookings.on_books(34),
+            lambda: sources.bookings.rates(11),
+            lambda: sources.bookings.history(12),
+            lambda: sources.shops.competitor_rates(11, hotel, 50),
+            lambda: sources.shops.median(34, hotel, 46),
+            lambda: sources.shops.median_history(12),
+            lambda: sources.schedules.seats(20),
+            lambda: sources.events.known(34),
+        ):
+            with pytest.raises(ValueError, match="on day 10"):
+                ask()
+        any_day = stored.stored_sources(connection)
+        assert [e.name for e in any_day.events.known(34)] == ["Convention"]
+    finally:
+        connection.close()
+    seen = []
+    original = stored.stored_sources
+
+    def spy(connection, customer=None, as_of_day=None):
+        seen.append(as_of_day)
+        return original(connection, customer, as_of_day)
+
+    monkeypatch.setattr(stored, "stored_sources", spy)
+    replay_day(10, through_tables)
+    run_day(SEED, 20, through_tables)
+    assert seen == [10, 20]

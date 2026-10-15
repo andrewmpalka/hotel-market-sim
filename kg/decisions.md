@@ -542,3 +542,12 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Measured: the default lead over the never-cut control, +$8,119 a seed, has a standard deviation of $6,620 and a standard error of $1,480 ([[RES-40]]).
 - Evidence: test_the_seeds_command_prints_each_seed_and_the_mean_and_range, test_the_bench_command_prints_its_tables
 - Links: [[MOD-12]], [[DAT-24]], [[RES-01]], [[RES-21]], [[RES-40]]
+
+### DEC-61 [C] The sources hold only what the day knows, on both routes
+- Decided: each simulated source copies the log through its day, the seats filed and the events known by then, and holds no Books or Scenario ([[MOD-19]]). The stored sources take the day and refuse a later one ([[MOD-21]]).
+- Routes: run-day and replay make both kinds for the day they decide ([[MOD-12]]). Limited, the guard, lives at the boundary ([[MOD-17]]) and both mix it in.
+- Replaces: simulated sources that held the Books and the Scenario, through which a decider could read every future draw, the live rooms and the filings still to come, and stored sources with no guard at all.
+- Reason: [[RUL-03]] was kept on the agent side by discipline alone. Now the objects a decider is handed cannot reach tomorrow on either route, which the live-feed version will build on.
+- Measured: the seed-7 checksum and the 20-seed mean of +$32,899 are unchanged ([[RES-01]], [[RES-02]]).
+- Evidence: test_a_decider_cannot_reach_a_future_draw_the_live_rooms_or_the_scenarios_shocks, test_the_stored_sources_refuse_a_later_day_and_the_daily_commands_make_them_for_the_day
+- Links: [[MOD-17]], [[MOD-19]], [[MOD-21]], [[DAT-25]], [[DEC-40]], [[DEC-42]], [[FRK-13]], [[RUL-03]]

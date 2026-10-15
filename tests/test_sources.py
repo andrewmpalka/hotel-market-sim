@@ -174,3 +174,43 @@ def test_the_simulated_sources_refuse_a_later_day_and_hand_out_copies():
 
     simulate(7, deciding(Spy()), last_day=2)
     assert seen == [(0, 0, 0), (1, 1, 1), (2, 2, 2)]
+
+
+def test_a_decider_cannot_reach_a_future_draw_the_live_rooms_or_the_scenarios_shocks():
+    """The sources a decider is handed hold copies of what the day knows and nothing else: no
+    Books, no Scenario, no array that shares memory with the simulator's, no log past the day,
+    and no filing or event still to come. Rule 3 therefore holds through an attribute as well as
+    through a method."""
+    import numpy as np
+
+    from hotel_market.bookings import Books
+    from hotel_market.schedule import Scenario
+
+    seen = {}
+
+    class Probe:
+        def decide(self, day, sources):
+            if day == 5:
+                for name in ("bookings", "shops", "schedules", "events"):
+                    seen[name] = dict(vars(getattr(sources, name)))
+            return {}
+
+    books = simulate(7, deciding(Probe()), last_day=5)
+    values = [value for held in seen.values() for value in held.values()]
+    assert values and not any(isinstance(value, (Books, Scenario)) for value in values)
+    arrays = [value for value in values if isinstance(value, np.ndarray)]
+    own = [
+        books._daily_luck,
+        books._preload_luck,
+        books.rooms,
+        books.revenue,
+        books.rates,
+        books.daily_rooms,
+        books.daily_rates,
+        books.daily_medians,
+        books.preload,
+    ]
+    assert arrays and not any(np.shares_memory(held, live) for held in arrays for live in own)
+    assert all(held.shape[0] == 6 for held in arrays if held.ndim == 3)  # the log through day 5
+    assert seen["events"]["_events"] == []  # the convention is announced on day 10
+    assert set(seen["schedules"]["_filed"]) == {-1}  # the first filing is on day 20

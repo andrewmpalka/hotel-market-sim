@@ -172,14 +172,9 @@ class Books:
         return self._starting[key]
 
     def hotel_change(self, day: int, hotel: Hotel, stay_day: int) -> float:
-        """The hotel's change from its start rate that its competitors react to on a shop day: its
-        rate in force REACTION_LAG days earlier, read from the daily log. It is zero when the
-        reaction is off, before that day exists, and where the stay date was outside that day's
-        window."""
-        if not self.react or day < REACTION_LAG:
-            return 0.0
-        rate = self.daily_rates[day - REACTION_LAG, hotel.row, stay_day]
-        return float(rate - hotel.start_rate) if rate else 0.0
+        """The hotel's change from its start rate that its competitors react to on a shop day
+        (lagged_change over the daily log)."""
+        return lagged_change(self.daily_rates, self.react, day, hotel, stay_day)
 
     def comp_median(self, day: int, hotel: Hotel, stay_day: int) -> float:
         """The comp median the run shops on a day, with the reaction when it is on."""
@@ -233,6 +228,19 @@ class Books:
         """Room revenue minus the cost of servicing every room sold."""
         sold = self.rooms[hotel.row, list(stays)].sum()
         return self.room_revenue(hotel, stays) - float(sold) * hotel.room_cost
+
+
+def lagged_change(
+    daily_rates: np.ndarray, react: bool, day: int, hotel: Hotel, stay_day: int
+) -> float:
+    """The hotel's change from its start rate that its competitors react to on a shop day: its
+    rate in force REACTION_LAG days earlier, read from a daily log of rates. It is zero when the
+    reaction is off, before that day exists, and where the stay date was outside that day's
+    window."""
+    if not react or day < REACTION_LAG:
+        return 0.0
+    rate = daily_rates[day - REACTION_LAG, hotel.row, stay_day]
+    return float(rate - hotel.start_rate) if rate else 0.0
 
 
 # Called after each day's bookings on days 0 to 59; returns new rates by
