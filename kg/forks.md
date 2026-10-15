@@ -60,7 +60,7 @@ it. None of these is in progress.
 - Known: at 0.0 a matched raise is free, and the reaction run measured the ratchet ([[RES-24]]). With the reaction on, 0.5 and 1.0 cut the gain by a third and by more than half ([[RES-26]]).
 - Without: without the reaction, the term acts only where a shock moves the median ([[RES-27]]).
 - Needs: a value with a source ([[UNK-15]]). Then a run of seeds 1 to 20 at it, with and without the reaction. [[RES-01]] and [[RES-02]] would then need new pins, and the README's results would change.
-- Reaction: the README's next version also makes the competitors react by default ([[DEC-51]]). A matched raise would then stop being a demand gift ([[DEC-59]], [[RES-41]]).
+- Reaction: a later version may make the competitors react by default ([[DEC-51]]). A matched raise would then stop being a demand gift ([[DEC-59]], [[RES-41]]).
 - Links: [[RUL-87]], [[DEC-52]], [[RES-01]], [[RES-02]], [[RES-24]], [[RES-26]], [[RES-27]], [[UNK-15]]
 
 ### FRK-09 [O] A comp move that follows our own change as a flag cause

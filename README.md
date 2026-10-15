@@ -116,6 +116,5 @@ docs/limits.md.
 - docs/schedule-feed.md: the air schedule feed as this repository models it.
 - kg/: a map of the repository for agents, with kg/README.md as the legend.
 
-The next version reprices as data arrives during the day, runs the reviewer
-benchmark on world v2, adds per-weekday terms to the estimator, and adds
-cancellations and segments.
+The next version reprices as data arrives during the day, adds per-weekday
+terms to the estimator, and adds cancellations and segments.

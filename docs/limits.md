@@ -84,7 +84,8 @@
 - The container image was built on Python 3.11, 3.12 and 3.14 and passed the
   suite on each. A seed-7 run inside it matches the native run (docs/results.md).
 
-The next version puts each hotel's past rate changes and their outcomes into the
-model request. The model can then compare a plan with the previous ones. It also
-reprices when data arrives during the day, and its simulated competitors react
-to the hotels' rate changes.
+The next version reprices when data arrives during the day, adds per-weekday
+terms to the estimator, and adds cancellations and segments. Since world v2 the
+request already lists each hotel's earlier changes on an entry's stay dates,
+with the rooms booked since against the rooms expected, and the competitors'
+reaction is an option of a run rather than the default.
