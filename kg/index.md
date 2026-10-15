@@ -8,7 +8,7 @@ nodes and its words, len(text.split()) over the file.
 
 | File | Nodes | Words |
 | --- | ---: | ---: |
-| modules.md | 28 | 3,860 |
+| modules.md | 30 | 4,021 |
 | data.md | 33 | 4,252 |
 | rules.md | 121 | 5,022 |
 | shocks.md | 7 | 707 |
@@ -16,11 +16,11 @@ nodes and its words, len(text.split()) over the file.
 | measures.md | 14 | 962 |
 | sources.md | 4 | 849 |
 | decisions.md | 58 | 8,548 |
-| results.md | 40 | 6,825 |
+| results.md | 42 | 7,183 |
 | forks.md | 11 | 1,603 |
 | unknowns.md | 15 | 2,014 |
-| every node file | 342 | 35,796 |
-| index.md | | 2,937 |
+| every node file | 346 | 36,315 |
+| index.md | | 2,975 |
 
 ## Modules (`modules.md`)
 
@@ -52,6 +52,8 @@ nodes and its words, len(text.split()) over the file.
 - MOD-26 [C] demo_data.py
 - MOD-27 [C] demo_page.py
 - MOD-28 [C] scripts/demo_screenshots.py
+- MOD-29 [C] scripts/no_comp_raise.py
+- MOD-30 [C] scripts/measures.py
 
 ## Data (`data.md`)
 
@@ -319,6 +321,8 @@ nodes and its words, len(text.split()) over the file.
 - RES-38 [O] The decline rate by standard-error group in the learn arms
 - RES-39 [O] The reviewers ranked across the learned modes, and the learn arms' cost
 - RES-40 [C] The agent against the never-cut policy on seeds 1 to 20
+- RES-41 [C] The convention without the competitors' raise on seeds 1 to 20
+- RES-42 [C] The default agent in a revenue manager's measures on seeds 1 to 20
 
 ## Open forks (`forks.md`)
 

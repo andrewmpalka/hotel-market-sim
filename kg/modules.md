@@ -274,3 +274,17 @@ which is also the order in which they depend on each other.
 - Reads: [[MOD-27]] as the page it runs; nothing from the package
 - Tests: tests/test_demo_screenshots.py
 - Evidence: test_a_page_is_too_tall_when_its_content_passes_the_window_or_it_scrolls, test_the_three_pages_fit_the_window, test_a_page_that_does_not_render_prints_the_servers_log
+
+### MOD-29 [C] scripts/no_comp_raise.py
+- File: scripts/no_comp_raise.py
+- Owns: the template sweep with the convention's competitor raise at zero, next to the shipped run ([[RES-41]]). sweep() replaces the Event in shocks.EVENTS ([[SHK-01]]) before its runs and puts it back after them.
+- Run: each seed is the command's template run ([[MOD-12]]), with its decisions file in a temporary folder, and no model is called. table() prints the rows as markdown.
+- Tests: tests/test_no_comp_raise.py
+- Evidence: test_the_raise_at_zero_keeps_the_uplift_and_puts_the_event_back
+
+### MOD-30 [C] scripts/measures.py
+- File: scripts/measures.py
+- Owns: the template sweep in a revenue manager's measures ([[RES-42]]): occupancy, average rate, RevPAR and the sold-out share per hotel for both runs ([[MEA-01]] to [[MEA-03]]), and what the agent run gave up a seed.
+- Break-even: cost_table() gives the cost per occupied room, as a share of the start rate, at which a hotel's gain is zero ([[RUL-61]], [[UNK-06]]). A hotel whose room revenue rose prints a share below zero.
+- Tests: tests/test_measures.py
+- Evidence: test_the_measures_are_the_books_measures_over_the_seeds

@@ -34,6 +34,8 @@ Python 3.11 or later, from the repository root:
     hotel-market --seeds 1 20 --scenario upgauge        # another set of air-schedule filings
     python scripts/median_path.py --seed 7 --react --hotel convention --stays 45 48 --days 9 15
                                                         # a comp median's path next to the hotel's rate
+    python scripts/no_comp_raise.py --seeds 1 20        # the sweep with the convention's competitor raise at zero, next to the shipped run
+    python scripts/measures.py --seeds 1 20             # both runs in a revenue manager's measures, and the cost share at which each hotel's gain is zero
 
 With make, on a Mac or Linux machine:
 

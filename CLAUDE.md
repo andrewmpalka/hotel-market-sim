@@ -74,6 +74,9 @@ tests/fixtures/live_seed7/, one recorded live run. customers/demo.toml is the
 demo market, sql/schema.sql defines the seven stored tables and sql/demo.sql the
 demo page's eight. scripts/live_audit.py runs and audits a live seed, and
 scripts/median_path.py prints a comp median's path next to the hotel's rate.
+scripts/no_comp_raise.py reruns the sweep with the convention's competitor
+raise at zero, and scripts/measures.py prints both runs in a revenue manager's
+measures.
 scripts/demo_screenshots.py opens the demo page in a Chromium-based browser at
 1440 by 900, saves six screenshots, three pages with the end-of-run result off
 and on, and fails when a page is taller than the window. kg/ and kg_check.py are

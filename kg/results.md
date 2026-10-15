@@ -364,3 +364,21 @@ here for the rest.
 - Table: docs/results.md, "Seeds 1 to 20 in the true mode against the pace, the rules and the never-cut policies"
 - Evidence: test_the_rule_based_control_runs_pin_their_headline
 - Links: [[DEC-55]], [[RES-33]], [[MOD-25]]
+
+### RES-41 [C] The convention without the competitors' raise on seeds 1 to 20
+- Ran: `python scripts/no_comp_raise.py --seeds 1 20` on 2026-10-15. It runs the template sweep as shipped, then with the convention's competitor raise at 0.0 and its demand uplift still 35%.
+- Result: with the raise at zero the mean falls from +$32,899 to +$19,480 a seed (+$8,462 to +$31,031), still ahead in 20 of 20. The convention plans earn +$538 a seed on their stay dates, against +$14,018.
+- Why: a hotel that holds while its comp set raises 15% sits 13% below the median. The rate ratio then gives it 1.15 ** 1.5, or 23%, more of the bookings still to come ([[RUL-21]]).
+- Sold out: at fixed rates the two downtown hotels sell out 79 of their 160 convention nights with the raise and 10 without it.
+- Table: docs/results.md, "Seeds 1 to 20 with the convention's competitor raise"
+- Evidence: test_the_raise_at_zero_keeps_the_uplift_and_puts_the_event_back
+- Links: [[SHK-01]], [[RUL-21]], [[RES-01]], [[RES-06]], [[MOD-29]]
+
+### RES-42 [C] The default agent in a revenue manager's measures on seeds 1 to 20
+- Ran: `python scripts/measures.py --seeds 1 20` on 2026-10-15. It gives both runs' occupancy, average rate, RevPAR and sold-out share per hotel, and what the agent run gave up and saved a seed.
+- Occupancy: 78.4%, 77.6%, 77.2% and 88.9% by hotel at fixed rates, and 78.2%, 77.3%, 76.3% and 86.2% in the agent run. The sold-out share of nights falls from 1.9%, 2.2%, 11.6% and 20.8% to 0.7%, 0.6%, 7.0% and 12.3%.
+- RevPAR: $172.54 to $172.55, $147.36 to $147.35, $185.29 to $185.05 and $124.46 to $123.61. The agent run gives up 121, 85, 167 and 602 room nights a seed by hotel.
+- Break-even: the airport hotel's gain is zero at a room cost of 22.7% of the start rate, the lifestyle hotel's at 10.9%. The two downtown hotels gain at any cost, because their room revenue rose or barely fell.
+- Table: docs/results.md, "Seeds 1 to 20 in a revenue manager's measures", "Seeds 1 to 20: what the agent run gave up"
+- Evidence: test_the_measures_are_the_books_measures_over_the_seeds
+- Links: [[MEA-01]], [[MEA-02]], [[MEA-03]], [[RUL-61]], [[RES-01]], [[UNK-06]], [[MOD-30]]

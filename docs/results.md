@@ -540,3 +540,40 @@ The standard error did not move the declines. From 1.0, Opus declines 3% of the 
 In the reacting market the rules control earns +$105,144 a seed against the agent's +$72,229. The control wins in that world because of the loop: it raises again on every comp move that followed its own raise. The reviewer arm is where a model can decline the second raise on dates it raised a week before. Opus was shown 556 plans on stay dates the hotel had changed within the previous 14 days. It held 43 of them, 8%, against 6 of the 230 other plans, 3%. Its reasons never name the earlier raise, because the request carries no history of the hotel's own changes. DEC-45 adds that history. Forty of the 49 cite the band's display as the first run showed it and quote "the same as holding at the high end of the elasticity band". A second raise lands there more often, because the hotel already sits 5% above the median it moved. The oracle, told the reaction and the market elasticity, holds 1 of the 556 and accepts 99% of the plans. In this simulator the second raise pays. Opus's holds therefore cost $5,824 a seed against accepting all and $6,224 against the oracle. Its stay dates changed twice fall from 702 to 675. Opus does not decline the second raise as such. The 43 holds are the before measurement for FRK-09's fix.
 
 The five commands made 3,553 calls for $46.76 at list prices. Opus's five arms cost $39.84, Sonnet's two $5.95 and Haiku's four $0.94. The projection from seeds 1 to 3 was $42.31. The reacting arm and the cautious arm from 2.0 came in $1.96 and $1.54 over their projections. Their later seeds made more calls a seed than their first three. The rerun of the three cautious arms from 1.0 after the display fix made 852 calls for $10.48.
+
+## The convention without the competitors' raise
+
+`python scripts/no_comp_raise.py --seeds 1 20`, run on 2026-10-15. The script runs the template sweep as shipped and then again with the convention's competitor raise set to 0.0 and its demand uplift left at 35%, and it puts the shipped event back afterwards. A convention plan is an accepted plan whose causes include the event's announcement, and its gain is the contribution change on the stay dates it changed. The last column counts the convention nights, four at each of the two downtown hotels, that sold out at fixed rates over the 20 seeds.
+
+Seeds 1 to 20 with the convention's competitor raise as shipped and at zero, the template in the true mode, each against the fixed-rate run.
+
+| Competitors' raise | Mean change a seed | Range | Ahead | Convention plans accepted | Gain on their stay dates a seed | Convention nights sold out at fixed rates |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 15% | +$32,899 | +$13,479 to +$52,809 | 20 of 20 | 40 | +$14,018 | 79 of 160 |
+| 0% | +$19,480 | +$8,462 to +$31,031 | 20 of 20 | 17 | +$538 | 10 of 160 |
+
+With the raise at zero the mean falls from +$32,899 to +$19,480 a seed and the convention plans earn +$538 a seed on their stay dates instead of +$14,018, so most of the convention's share of the headline comes from the competitors' raise and not from the demand uplift. A hotel that holds its rate while its comp set raises 15% sits 13% below the median, and the rate ratio then sends it 1.15 to the power 1.5, or 23% more, of the bookings still to come, which is why 79 of the 160 convention nights sell out at fixed rates with the raise and 10 without it.
+
+## In a revenue manager's measures
+
+`python scripts/measures.py --seeds 1 20`, run on 2026-10-15. Each measure is per hotel over stay dates 0 to 149 and is the mean over the 20 seeds, with the fixed-rate run beside the agent run. The second table divides the 20-seed totals by 20: the room nights the agent run gave up, their share of the hotel's capacity, the change in room revenue, the room cost saved on those nights and the contribution gained. The last column is the cost per occupied room, as a share of the start rate, at which the hotel's gain would be zero. The gain is positive above that share, and a hotel whose room revenue rose gains at any cost, so its share prints below zero.
+
+Seeds 1 to 20 in a revenue manager's measures: occupancy, average rate, RevPAR and the share of sold-out nights per hotel, the fixed-rate run and the agent run, each the mean over the seeds.
+
+| Hotel | Occupancy, fixed | Occupancy, agent | Average rate, fixed | Average rate, agent | RevPAR, fixed | RevPAR, agent | Sold-out nights, fixed | Sold-out nights, agent |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Downtown convention hotel | 78.4% | 78.2% | $220.00 | $220.58 | $172.54 | $172.55 | 1.9% | 0.7% |
+| Downtown full-service hotel | 77.6% | 77.3% | $190.00 | $190.56 | $147.36 | $147.35 | 2.2% | 0.6% |
+| Lifestyle hotel | 77.2% | 76.3% | $240.00 | $242.61 | $185.29 | $185.05 | 11.6% | 7.0% |
+| Airport hotel | 88.9% | 86.2% | $140.00 | $143.36 | $124.46 | $123.61 | 20.8% | 12.3% |
+
+Seeds 1 to 20: what the agent run gave up and saved a seed, per hotel, and the cost share at which the gain is zero.
+
+| Hotel | Room nights given up a seed | Share of capacity | Room revenue change a seed | Room cost saved a seed | Contribution gained a seed | Cost share at which the gain is zero |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Downtown convention hotel | 121 | 0.20% | +$687 | +$8,892 | +$9,579 | -2.6% |
+| Downtown full-service hotel | 85 | 0.23% | -$64 | +$5,402 | +$5,338 | 0.4% |
+| Lifestyle hotel | 167 | 0.93% | -$4,396 | +$13,396 | +$9,000 | 10.9% |
+| Airport hotel | 602 | 2.67% | -$19,088 | +$28,070 | +$8,982 | 22.7% |
+
+The agent gives up rooms at every hotel, and RevPAR is flat at the two downtown hotels and lower at the other two, so the gain is room cost not paid rather than revenue earned. The airport hotel's gain holds only while the cost of an occupied room is above 22.7% of the rate, and the lifestyle hotel's only above 10.9%, while the two downtown hotels gain at any cost because their room revenue rose or barely fell.
