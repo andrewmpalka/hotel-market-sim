@@ -249,7 +249,7 @@ which is also the order in which they depend on each other.
 
 ### MOD-26 [C] demo_data.py
 - File: src/hotel_market/demo_data.py
-- Owns: the demo file ([[DAT-33]], [[DEC-57]], [[DEC-58]]). build() runs days 0 to 59 through run_days ([[MOD-12]]) with a client that answers from the recorded run, or the template with a warning, and both runs book on to day 149.
+- Owns: the demo file ([[DAT-33]], [[DEC-57]], [[DEC-58]]), at one tick a day or at --ticks N. build() runs days 0 to 59 through run_days ([[MOD-12]]) with the recorded run's client, or the template with a warning; both book to day 149.
 - Rows: _news_rows, _stay_rows and _queue_rows fill the day's tables from the feeds, the detect numbers and the entries ([[MOD-07]], [[MOD-11]]). _stay_rows adds an accepted plan's rate, and _alternative names a held flag's best one.
 - Scorecard: figures() gives the five measures over hotels and stay dates together ([[MEA-01]] to [[MEA-05]]). _stayed takes stay dates 0 to the day before, _outcome_rows every stay date, and _gain_rows the contribution by stay date.
 - Dates: stay_label, stay_span and day_label write a date as "Thu 18 Feb [45]" from SIM_START ([[RUL-01]]). tiles(), value_text and delta_text write the tiles' texts; a change that rounds to nothing is "0".

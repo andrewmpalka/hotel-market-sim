@@ -363,3 +363,77 @@ def test_a_seed_with_no_recording_gets_the_templates_reasons(tmp_path, capsys):
     assert _rows(tmp_path / "one.duckdb", "SELECT seed, reason_source FROM run") == [
         (1, "the template's, as no run is recorded")
     ]
+
+
+@pytest.fixture(scope="module")
+def demo_file_4(tmp_path_factory):
+    """The demo file of seed 7 at four ticks a day."""
+    from hotel_market.demo_data import build
+
+    out = tmp_path_factory.mktemp("ticks") / "demo4.duckdb"
+    source = build(7, out, ticks=4)
+    return out, source
+
+
+def test_at_four_ticks_the_news_names_each_feeds_tick_and_the_filings_outcome(demo_file_4):
+    """At four ticks a day the news says which tick a feed landed at, the filing day adds the
+    first flag, the first accepted raise, its stay dates and what they earned against the
+    fixed-rate run, the queue holds every tick's flags, a planned rate names its tick, and the
+    template writes every reason, because the recording is daily."""
+    out, source = demo_file_4
+    assert source.startswith("the template's, as the recorded run is at one tick a day")
+    assert _rows(out, "SELECT seed, reason_source FROM run") == [(7, source)]
+    day20 = _rows(
+        out,
+        "SELECT kind, text FROM news WHERE as_of_day = 20 AND hotel = 'airport' ORDER BY position",
+    )
+    assert day20[0] == (
+        "schedule",
+        "The airlines filed a schedule change at tick 3 of 4: arriving passengers are up 12.8% "
+        "to 23.0% for Tue 23 Feb [50] to Wed 2 Jun [149].",
+    )
+    kinds = [kind for kind, _ in day20]
+    assert "decision" in kinds
+    decision = next(text for kind, text in day20 if kind == "decision")
+    assert decision.startswith(
+        "The first flag rose at tick 3 of 4, and the first raise was accepted at tick 3 of 4 for "
+    )
+    assert "those stay dates earned " in decision and "against the fixed-rate run." in decision
+    day10 = _rows(
+        out,
+        "SELECT kind, text FROM news WHERE as_of_day = 10 AND hotel = 'convention' "
+        "ORDER BY position",
+    )
+    assert [kind for kind, _ in day10] == [
+        "comp set",
+        "event",
+    ]  # the shop lands at tick 2, the event at tick 4
+    assert "at tick 2 of 4" in day10[0][1] and "was announced at tick 4 of 4" in day10[1][1]
+    assert _rows(out, "SELECT DISTINCT text FROM news WHERE as_of_day = 0") == [(NOTHING_NEW,)]
+    assert _rows(out, "SELECT COUNT(*) FROM news WHERE text = ?", NOTHING_NEW)[0][0] <= SIM_DAYS * 4
+    planned = _rows(
+        out,
+        "SELECT DISTINCT decided_at FROM stay_dates WHERE as_of_day = 20 AND hotel = 'airport' "
+        "AND planned_rate IS NOT NULL",
+    )
+    assert planned == [("tick 3 of 4",)]
+    assert _rows(out, "SELECT DISTINCT decided_at FROM stay_dates WHERE planned_rate IS NULL") == [
+        ("",)
+    ]
+    queued = _rows(out, "SELECT DISTINCT reason_source FROM queue WHERE queued")
+    assert queued == [("template",)]
+    positions = _rows(
+        out,
+        "SELECT position FROM queue WHERE as_of_day = 20 AND hotel = 'airport' ORDER BY position",
+    )
+    assert [p for (p,) in positions] == list(range(len(positions)))
+    ticks = _rows(out, "SELECT DISTINCT as_of_tick FROM decisions ORDER BY 1")
+    assert ticks == [(1,), (2,), (3,), (4,)]
+
+
+def test_at_one_tick_a_day_the_demo_file_has_no_tick_in_it(demo_file):
+    """The daily clock's file reads as before: no tick words in the news, no decided-at text, and
+    the demo-data command takes --ticks with 1 as its default."""
+    assert _rows(demo_file, "SELECT COUNT(*) FROM news WHERE text LIKE '%tick%'") == [(0,)]
+    assert _rows(demo_file, "SELECT DISTINCT decided_at FROM stay_dates") == [("",)]
+    assert _rows(demo_file, "SELECT DISTINCT kind FROM news WHERE kind = 'decision'") == []

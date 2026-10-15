@@ -183,3 +183,29 @@ def test_a_reason_with_two_dollar_amounts_shows_both_as_written(demo_file, monke
     assert (
         "See \\[the plan\\](http://example.com), \\~\\~hold\\~\\~ and \\<http://example.com\\>."
     ) in text
+
+
+def test_at_four_ticks_the_day_20_page_names_the_ticks_in_the_news_and_the_legend(
+    monkeypatch, tmp_path_factory
+):
+    """The airport hotel's day-20 page on a four-tick file: the news line names the filing's tick
+    and the decision's tick with the raise's stay dates and what they earned, and the planned
+    rate's legend entry names the tick it was decided at."""
+    testing = pytest.importorskip("streamlit.testing.v1")
+    from hotel_market.demo_data import build
+
+    file = tmp_path_factory.mktemp("ticks") / "demo4.duckdb"
+    build(7, file, ticks=4)
+    page = _page(testing, monkeypatch, file, hotel="airport", day=20)
+    text = _text(page)
+    assert "The airlines filed a schedule change at tick 3 of 4: arriving passengers are" in text
+    assert (
+        "The first flag rose at tick 3 of 4, and the first raise was accepted at tick 3 of 4"
+        in text
+    )
+    assert "against the fixed-rate run." in text
+    assert "Planned rate (tick 3 of 4)" in _rate_chart_spec(page)
+    assert [caption.value for caption in page.sidebar.caption][0].startswith(
+        "Seed 7 of the simulated market. The reasons are the template's, as the recorded run is "
+        "at one tick a day"
+    )

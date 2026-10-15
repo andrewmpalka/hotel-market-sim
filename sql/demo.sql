@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS stay_dates (
     causes VARCHAR NOT NULL,           -- the flag's causes, comma-separated; empty when not flagged
     flag VARCHAR NOT NULL,             -- the flag's id, "45-48"; empty when not flagged
     planned_rate DOUBLE,               -- the rate an accepted plan sets from tomorrow; NULL without one
+    decided_at VARCHAR NOT NULL,       -- "tick 3 of 4" on a finer clock; empty on the daily clock or without a plan
     PRIMARY KEY (as_of_day, hotel, stay_day)
 );
 

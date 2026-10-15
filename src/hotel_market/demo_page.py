@@ -213,7 +213,7 @@ def main() -> None:
     # ---- the stay dates ahead -------------------------------------------------------------------
     stays = rows(
         "SELECT stay_day, label, tick, rate, comp_median, rooms_on_books, pace, flagged, "
-        "causes, flag, planned_rate FROM stay_dates WHERE as_of_day = ? AND hotel = ? "
+        "causes, flag, planned_rate, decided_at FROM stay_dates WHERE as_of_day = ? AND hotel = ? "
         "ORDER BY stay_day",
         day,
         key,
@@ -232,7 +232,9 @@ def main() -> None:
         "comp_median": ("Comp set median", "orange", [1, 0]),
     }
     if not planned.empty:
-        rate_lines["planned_rate"] = ("Planned rate", "aqua", [6, 4])
+        decided_at = planned.iloc[0]["decided_at"]  # "tick 3 of 4" on a finer clock, else empty
+        label = f"Planned rate ({decided_at})" if decided_at else "Planned rate"
+        rate_lines["planned_rate"] = (label, "aqua", [6, 4])
     rate_series = _series(rate_lines)
     dollars = _y("dollars:Q", "Rate ($)")
     dollars["scale"] = alt.Scale(

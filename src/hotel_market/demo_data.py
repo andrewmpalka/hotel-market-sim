@@ -4,6 +4,7 @@ The demo page's data. One command writes one DuckDB file with everything the pag
 
     hotel-market demo-data --seed 7              # writes demo.duckdb
     hotel-market demo-data --seed 7 --out FILE --customer customers/demo.toml
+    hotel-market demo-data --seed 7 --ticks 4 --out demo4.duckdb
 
 The file holds the eight stored tables for days 0 to 59 (stored.py). The daily path writes them
 with a client that answers from the recorded live run (tests/fixtures/live_seed7) wherever the
@@ -20,6 +21,12 @@ every date as a calendar date with its day of the week and the day number in bra
 already stayed as of the day, stay dates 0 to the day before. The outcome holds the result once
 every stay date is complete, every booking through day 149. The gains are that result's
 contribution difference by stay date. Each is given per hotel and for all the hotels together.
+
+With --ticks N the run is the finer clock's (world.py): each news line then names the tick its
+feed landed at, the queue holds every tick's flags, a planned rate names the tick it was decided
+at, and on a filing day the news adds the first flag, the first accepted raise, its stay dates
+and what they earned against the fixed-rate run. The recorded run is at one tick a day, so the
+template writes every reason. At one tick a day the file reads as before.
 """
 
 from __future__ import annotations
@@ -37,7 +44,7 @@ from hotel_market import stored
 from hotel_market.agent import Agent
 from hotel_market.bookings import Books, simulate
 from hotel_market.customer import Customer, demo, load
-from hotel_market.detect import detect_numbers
+from hotel_market.detect import SEATS_UP, detect_numbers, moment_index
 from hotel_market.model import request_digest, template_decisions
 from hotel_market.plan import DAY_NAMES, HOLD, PLAN_ORDER, Entry, WeekdayGroup
 from hotel_market.schedule import SIM_START
@@ -108,17 +115,20 @@ def recorded_run(seed: int) -> Path | None:
     return None
 
 
-def build(seed: int, out: Path = DEMO_FILE, customer: Customer | None = None) -> str:
+def build(
+    seed: int, out: Path = DEMO_FILE, customer: Customer | None = None, ticks: int = 1
+) -> str:
     """Write the demo file for the seed: the stored tables for days 0 to 59 and the page's
-    tables. Both runs book on to day 149, so the outcome is complete. Returns the words for where
-    the reasons came from, as the file's run table and the sidebar say them."""
+    tables, on the daily clock or on `ticks` a day. Both runs book on to day 149, so the outcome
+    is complete. Returns the words for where the reasons came from, as the file's run table and
+    the sidebar say them."""
     from hotel_market.cli import run_days  # here, because cli imports this module
 
     customer = customer or demo()
     for leftover in (out, out.with_name(out.name + ".wal")):
         if leftover.exists():
             leftover.unlink()
-    recording = recorded_run(seed)
+    recording = recorded_run(seed) if ticks == 1 else None  # the recording is at one tick a day
     rows: dict[str, list[tuple]] = {table: [] for table in DEMO_TABLES}
     rows["hotels"] = [
         (
@@ -136,21 +146,38 @@ def build(seed: int, out: Path = DEMO_FILE, customer: Customer | None = None) ->
     ]
     figures: dict[tuple[int, str, str], tuple[float, ...]] = {}  # (day, scope, run) -> the five
     final: dict[str, Books] = {}
+    texts: dict[tuple[int, str], list[tuple[str, str]]] = {}  # (day, hotel) -> the news so far
+    entries_of: dict[tuple[int, str], list[Entry]] = {}  # (day, hotel) -> the day's entries so far
 
-    def observe(day: int, books: Books, agent: Agent) -> None:
-        feed = simulated_sources(books, day)
-        table = detect_numbers(day, feed, customer)
-        entries = [entry for entry in agent.entries if entry.day == day]
+    def observe(day: int, books: Books, agent: Agent, tick: int = 1) -> None:
+        """After each moment: the news its feeds brought and its queue; at the day's last tick
+        the day's news rows, chart rows and scorecard."""
+        feed = simulated_sources(books, day, tick if ticks > 1 else None)
+        table = detect_numbers(day, feed, customer, tick=tick if ticks > 1 else None)
         for hotel in customer.hotels:
-            own = [entry for entry in entries if entry.hotel == hotel.key]
-            rows["news"] += _news_rows(day, hotel, feed, table, customer)
-            rows["stay_dates"] += _stay_rows(day, hotel, table, own)
-            rows["queue"] += _queue_rows(day, hotel, own, customer.min_value_at_stake)
-        figures.update(_stayed(day, "agent", books, customer))
-        final["agent"] = books
+            own = [e for e in agent.entries if e.day == day and e.hotel == hotel.key]
+            entries_of.setdefault((day, hotel.key), []).extend(own)
+            texts.setdefault((day, hotel.key), []).extend(
+                _news_texts(day, hotel, feed, table, customer, tick, ticks)
+            )
+            rows["queue"] += _queue_rows(
+                day,
+                hotel,
+                own,
+                customer.min_value_at_stake,
+                len(entries_of[(day, hotel.key)]) - len(own),
+            )
+            if tick == ticks:
+                rows["stay_dates"] += _stay_rows(
+                    day, hotel, table, entries_of[(day, hotel.key)], ticks
+                )
+        if tick == ticks:
+            figures.update(_stayed(day, "agent", books, customer))
+            final["agent"] = books
 
-    def record_fixed(day: int, books: Books) -> dict[tuple[str, int], float]:
-        figures.update(_stayed(day, "fixed", books, customer))
+    def record_fixed(day: int, books: Books, tick: int = 1) -> dict[tuple[str, int], float]:
+        if tick == ticks:  # the day's figures after its last tick
+            figures.update(_stayed(day, "fixed", books, customer))
         return {}
 
     client = Recorded(recording, customer) if recording is not None else None
@@ -164,9 +191,18 @@ def build(seed: int, out: Path = DEMO_FILE, customer: Customer | None = None) ->
             client=client,
             customer=customer,
             observe=observe,
+            ticks=ticks,
         )
-    source = reason_source(recording, client.fallbacks if client is not None else 0)
-    final["fixed"] = simulate(seed, record_fixed, customer=customer)
+    source = reason_source(recording, client.fallbacks if client is not None else 0, ticks)
+    final["fixed"] = simulate(seed, record_fixed, customer=customer, ticks=ticks)
+    if ticks > 1:
+        _add_filing_outcomes(texts, entries_of, final["agent"], final["fixed"], customer, ticks)
+    for (day, key), found in texts.items():
+        rows["news"] += [
+            (day, key, position, kind, text)
+            for position, (kind, text) in enumerate(found or [("none", NOTHING_NEW)])
+        ]
+    rows["news"].sort()
     rows["scorecard"] = _scorecard_rows(figures, customer)
     rows["outcome"] = _outcome_rows(final["agent"], final["fixed"], customer)
     rows["gains"] = _gain_rows(final["agent"], final["fixed"], customer)
@@ -188,10 +224,14 @@ def build(seed: int, out: Path = DEMO_FILE, customer: Customer | None = None) ->
     return source
 
 
-def reason_source(recording: Path | None, fallbacks: int = 0) -> str:
+def reason_source(recording: Path | None, fallbacks: int = 0, ticks: int = 1) -> str:
     """Where the file's reasons came from, as the sidebar says it: the recorded run's, the
     template's, or the recorded run's where it covers the request and the template's for the
-    rest."""
+    rest. On a finer clock the template writes every reason, as the recording is daily."""
+    if ticks > 1:
+        return (
+            f"the template's, as the recorded run is at one tick a day and this file is at {ticks}"
+        )
     if recording is None:
         return "the template's, as no run is recorded"
     if fallbacks:
@@ -240,26 +280,39 @@ def _ends(stays: Sequence[int]) -> tuple[int, int]:
 
 
 def _news_rows(day: int, hotel: Hotel, feed: Sources, table, customer: Customer) -> list[tuple]:
-    """What became known today for the hotel, in plain words: each event announced today that
-    covers it, each schedule filing's stay dates, and each comp set move beyond the threshold."""
+    """What became known today for the hotel, as news rows: each event announced today that
+    covers it, each schedule filing's stay dates, and each comp set move beyond the threshold,
+    or one row saying nothing new became known."""
+    texts = _news_texts(day, hotel, feed, table, customer) or [("none", NOTHING_NEW)]
+    return [(day, hotel.key, position, kind, text) for position, (kind, text) in enumerate(texts)]
+
+
+def _news_texts(
+    day: int, hotel: Hotel, feed: Sources, table, customer: Customer, tick: int = 1, ticks: int = 1
+) -> list[tuple[str, str]]:
+    """What became known at a moment for the hotel, in plain words, as (kind, text) pairs. On a
+    finer clock each names the tick its feed landed at, and the table is the moment's, so a move
+    is since the previous tick."""
+    at = f" at tick {tick} of {ticks}" if ticks > 1 else ""
+    moment = (day, tick) if ticks > 1 else (day, None)
     texts: list[tuple[str, str]] = []
-    for event in feed.events.known(day):
-        if event.known_day == day and hotel.key in event.hotels:
+    for event in feed.events.known(*moment):
+        if event.known_day == day and hotel.key in event.hotels and _landed(table, "new_event"):
             texts.append(
                 (
                     "event",
-                    f"An event, the {event.name.lower()}, was announced for "
+                    f"An event, the {event.name.lower()}, was announced{at} for "
                     f"{stay_span(event.start_day, event.end_day)}. Demand there is "
                     f"{percent_change(event.uplift)}, and the comp set's rates are "
                     f"{percent_change(event.comp_rate_raise)}.",
                 )
             )
-    revision = feed.schedules.passenger_revision(day)
+    revision = feed.schedules.passenger_revision(*moment)
     for first, last in _runs(s for s in range(HORIZON_DAYS) if revision[s] != 0):
         texts.append(
             (
                 "schedule",
-                f"The airlines filed a schedule change: arriving passengers are "
+                f"The airlines filed a schedule change{at}: arriving passengers are "
                 f"{percent_change_range(revision[s] for s in range(first, last + 1))} for "
                 f"{stay_span(first, last)}.",
             )
@@ -272,13 +325,56 @@ def _news_rows(day: int, hotel: Hotel, feed: Sources, table, customer: Customer)
             (
                 "comp set",
                 f"The comp set median is "
-                f"{percent_change_range(changes[s] for s in range(first, last + 1))} for "
+                f"{percent_change_range(changes[s] for s in range(first, last + 1))}{at} for "
                 f"{stay_span(first, last)}.",
             )
         )
-    if not texts:
-        texts.append(("none", NOTHING_NEW))
-    return [(day, hotel.key, position, kind, text) for position, (kind, text) in enumerate(texts)]
+    return texts
+
+
+def _landed(table, column: str) -> bool:
+    """Whether the moment's detect numbers mark anything in a column: an event announced at this
+    tick shows in new_event, so an event known since an earlier tick is not news again."""
+    return bool(table[column].notna().any())
+
+
+def _add_filing_outcomes(
+    texts: dict, entries_of: dict, agent: Books, fixed: Books, customer: Customer, ticks: int
+) -> None:
+    """On a finer clock, after each hotel's filing-day news: the tick the first seats flag rose,
+    the tick the first raise was accepted, the stay dates it covered and what they earned
+    against the fixed-rate run; or that no raise was accepted on the filing's stay dates."""
+    for (day, key), found in texts.items():
+        if not any(kind == "schedule" for kind, _ in found):
+            continue
+        hotel = customer.hotel(key)
+        flagged = [e for e in entries_of.get((day, key), []) if SEATS_UP in e.causes]
+        raised = [
+            e
+            for e in entries_of.get((day, key), [])
+            if SEATS_UP in e.causes and e.action != HOLD and "raise" in e.action
+        ]
+        if not flagged:
+            text = "No flag rose on the stay dates the filing changed."
+        elif not raised:
+            first = min(flagged, key=lambda e: moment_index(e.day, e.tick, ticks))
+            text = (
+                f"The first flag rose at tick {first.tick} of {ticks}; no raise was accepted on "
+                f"the stay dates the filing changed."
+            )
+        else:
+            first = min(flagged, key=lambda e: moment_index(e.day, e.tick, ticks))
+            raise_ = min(raised, key=lambda e: moment_index(e.day, e.tick, ticks))
+            stays = sorted(raise_.new_rates)
+            measure = Books.contribution if customer.scores_contribution() else Books.room_revenue
+            earned = measure(agent, hotel, stays) - measure(fixed, hotel, stays)
+            text = (
+                f"The first flag rose at tick {first.tick} of {ticks}, and the first raise was "
+                f"accepted at tick {raise_.tick} of {ticks} for "
+                f"{stay_span(stays[0], stays[-1])}; those stay dates earned "
+                f"{'-' if earned < 0 else '+'}${abs(round(earned)):,} against the fixed-rate run."
+            )
+        found.append(("decision", text))
 
 
 def _runs(stays: Iterable[int]) -> list[tuple[int, int]]:
@@ -288,18 +384,23 @@ def _runs(stays: Iterable[int]) -> list[tuple[int, int]]:
     return [(run[0][1], run[-1][1]) for _, group in groups for run in [list(group)]]
 
 
-def _stay_rows(day: int, hotel: Hotel, table, entries: Sequence[Entry]) -> list[tuple]:
+def _stay_rows(
+    day: int, hotel: Hotel, table, entries: Sequence[Entry], ticks: int = 1
+) -> list[tuple]:
     """The charts' rows: the hotel's rate, the comp median, the rooms on the books and the
     rooms the pace curve expects, per stay date in the window, with the flag that covers it and
-    the rate an accepted plan sets. A plan's held days of the week keep the current rate."""
+    the rate an accepted plan sets. A plan's held days of the week keep the current rate. On a
+    finer clock the flag is the last of the day's to cover the date, and a planned rate names
+    the tick its plan was decided at."""
     own = table[table["hotel"] == hotel.key]
     rows = []
     for record in own.to_dict("records"):
         stay = record["stay_day"]
-        flag = next((e for e in entries if e.first_stay <= stay <= e.last_stay), None)
-        planned = None
+        flag = next((e for e in reversed(entries) if e.first_stay <= stay <= e.last_stay), None)
+        planned, decided_at = None, ""
         if flag is not None and flag.action != HOLD:
             planned = flag.new_rates.get(stay, float(record["rate"]))
+            decided_at = f"tick {flag.tick} of {ticks}" if ticks > 1 else ""
         rows.append(
             (
                 day,
@@ -315,16 +416,20 @@ def _stay_rows(day: int, hotel: Hotel, table, entries: Sequence[Entry]) -> list[
                 ", ".join(flag.causes) if flag is not None else "",
                 flag.id if flag is not None else "",
                 planned,
+                decided_at,
             )
         )
     return rows
 
 
-def _queue_rows(day: int, hotel: Hotel, entries: Sequence[Entry], minimum: float) -> list[tuple]:
+def _queue_rows(
+    day: int, hotel: Hotel, entries: Sequence[Entry], minimum: float, start: int = 0
+) -> list[tuple]:
     """The day's flags for the hotel: each plan, its value, its reason and what became of it. A
-    held flag also carries the best alternative to holding and how far it fell short."""
+    held flag also carries the best alternative to holding and how far it fell short. On a finer
+    clock each tick's flags follow the earlier ticks', from the position `start`."""
     rows = []
-    for position, entry in enumerate(entries):
+    for position, entry in enumerate(entries, start):
         if not entry.queued:
             outcome = "held"
         else:
@@ -530,9 +635,22 @@ def main(argv: list[str] | None = None) -> None:
         metavar="FILE",
         help="the market's customer file (default: customers/demo.toml)",
     )
+    parser.add_argument(
+        "--ticks",
+        type=int,
+        default=1,
+        metavar="N",
+        help="cut each day into N ticks, the feeds landing at fixed ticks and the agent running "
+        "after each (default 1, the daily loop)",
+    )
     args = parser.parse_args(argv)
-    source = build(args.seed, args.out, load(args.customer) if args.customer else None)
-    print(f"Wrote {args.out}: days 0 to {SIM_DAYS - 1} of seed {args.seed}, reasons {source}.")
+    if args.ticks < 1:
+        parser.error("--ticks: a day has one tick or more")
+    source = build(args.seed, args.out, load(args.customer) if args.customer else None, args.ticks)
+    clock = "" if args.ticks == 1 else f" at {args.ticks} ticks a day"
+    print(
+        f"Wrote {args.out}: days 0 to {SIM_DAYS - 1} of seed {args.seed}{clock}, reasons {source}."
+    )
 
 
 if __name__ == "__main__":
