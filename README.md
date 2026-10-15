@@ -21,38 +21,39 @@ plan, so those figures measure the plans and not the model.
     make demo SEED=7    # demo.duckdb from the recorded run, then the demo page
 
 make demo needs the network once, to install streamlit, and needs no API key.
-The recorded run covers the shipped market at seed 7, and any other market or
-seed gets the template's reasons where it does not. Every other command is in
+The recorded run covers the shipped market at seed 7 on world v1, and the
+template answers wherever it does not, which on world v2 is every request until
+`make live-audit SEED=7` records it again. Every other command is in
 docs/commands.md.
 
 ## Results
 
 Seeds 1 to 20, the agent run against the fixed-rate run over stay dates 0 to
-149. The reasons are the template's, and the agent uses the simulator's
-elasticity.
+149, run on 2026-10-15 on world v2. The reasons are the template's, and the agent
+uses the simulator's elasticity.
 
 | Measure | Value |
 | --- | ---: |
 | Seeds where the agent earned more contribution | 20 of 20 |
-| Mean contribution change per seed | +$32,899 |
-| Smallest and largest contribution change | +$13,479 and +$52,809 |
-| Mean room revenue change per seed | -$22,861 |
-| Rate changes over the 20 seeds | 179 |
-| Accepted plans' estimated gain over holding, summed | +$681,054 |
-| Realised gain on the same plans, summed | +$657,979 |
+| Mean contribution change per seed | +$16,164 |
+| Smallest and largest contribution change | +$11,589 and +$23,394 |
+| Mean room revenue change per seed | -$27,684 |
+| Rate changes over the 20 seeds | 106 |
+| Accepted plans' estimated gain over holding, summed | +$391,434 |
+| Realised gain on the same plans, summed | +$323,281 |
 
 The same runs in a revenue manager's measures, each the mean over the seeds:
 
 | Hotel | Occupancy, fixed / agent | Average rate, fixed / agent | RevPAR, fixed / agent |
 | --- | ---: | ---: | ---: |
-| Downtown convention hotel | 78.4% / 78.2% | $220.00 / $220.58 | $172.54 / $172.55 |
-| Downtown full-service hotel | 77.6% / 77.3% | $190.00 / $190.56 | $147.36 / $147.35 |
-| Lifestyle hotel | 77.2% / 76.3% | $240.00 / $242.61 | $185.29 / $185.05 |
-| Airport hotel | 88.9% / 86.2% | $140.00 / $143.36 | $124.46 / $123.61 |
+| Downtown convention hotel | 76.9% / 76.8% | $220.00 / $220.03 | $169.07 / $169.07 |
+| Downtown full-service hotel | 76.5% / 76.5% | $190.00 / $190.06 | $145.37 / $145.36 |
+| Lifestyle hotel | 77.0% / 76.1% | $240.00 / $242.50 | $184.76 / $184.44 |
+| Airport hotel | 88.9% / 86.1% | $140.00 / $143.44 | $124.50 / $123.53 |
 
 RevPAR is flat or lower at every hotel, so the gain is room cost not paid on the
 rooms the agent gave up, and the airport hotel's gain is zero once that cost
-falls to 22.7% of the rate (docs/results.md, In a revenue manager's measures).
+falls to 24.7% of the rate (docs/results.md, In a revenue manager's measures).
 
 ## Three findings
 
@@ -61,43 +62,47 @@ revenue falls in every one, because the agent raises in nearly all accepted
 plans and the lost revenue is smaller than the saved room cost. With the cost at
 a third of the start rate and an elasticity of 1.5, the start rate is already
 the best rate on a night that will not sell out, so the gain lies in the nights
-the shocks make scarce. The convention and the new flights carry 96% of it
-(docs/results.md, the table of where each arm's gain came from). The
-convention's share comes mostly from the competitors' 15% raise, because a hotel
-that holds its rate then sits 13% below its comp set, and the rate ratio sends
-it 23% more of the remaining demand. With that raise at zero the mean is
-+$19,480 a seed and the event plans earn +$538 (docs/results.md, The convention
-without the competitors' raise). Half the headline rides on the new flights,
-where the seat link is exact and immediate and the airport hotel's base
+the shocks make scarce. The convention and the new flights carry 94% of it
+(docs/results.md, the table of where each arm's gain came from), and nearly all
+of that is the new flights: the convention plans earn +$614 a seed on their
+stay dates, and +$100 with the competitors' 15% raise at zero, which moves the
+mean from +$16,164 to +$15,611 (docs/results.md, The convention without the
+competitors' raise). On world v2 the downtown hotels hold most of their
+convention business as group blocks before the announcement, and the market's
+own price response takes back part of what the raise gives, so the convention
+adds little either way. The new flights' passengers ramp from a 60% load factor
+over 90 days rather than arriving at once, and the airport hotel's base
 occupancy was set so that the flights fill it.
 
 **Against a rule that prices on the same flags.** The never-cut control earns
-+$24,780 a seed by itself. The agent's lead over it is +$8,119, with a standard
-deviation of about $6,600 across the seeds, and the agent is ahead in 17 seeds
-of 20, which a sign test puts at p 0.003. Against the same rule with 5% cuts the
-lead is +$10,043, because every cut loses in this market. That follows from the
-constant elasticity of 1.5 and the cost at a third of the rate, which together
-make the start rate the contribution-best rate on a night that will not sell out
-and the floor the revenue-best rate. In the reacting market that the next
-version makes the default, the same never-cut control beats the agent in every
-seed, which docs/results.md explains as the ratchet (docs/results.md, The
-rule-based control).
++$10,468 a seed by itself, run on 2026-10-15 on world v2. The agent's lead over it
+is +$5,696, with a standard deviation of about $5,900 across the
+seeds, and the agent is ahead in 18 seeds of 20, which a sign test puts
+at p <0.001. Against the same rule with 5% cuts the lead is +$7,156, because
+every cut loses in this market. That follows from the constant elasticity of
+1.5 and the cost at a third of the rate, which together make the start rate the
+contribution-best rate on a night that will not sell out and the floor the
+revenue-best rate. In the reacting market at a market elasticity of 0.5, the
+never-cut control earns +$112,877 and the agent is -$54,602 against it,
+ahead in 0 seeds of 20, which docs/results.md explains as the ratchet
+(docs/results.md, The rule-based control).
 
-**What the model adds, and what learns.** In the default run the model adds
-nothing, because every reviewer accepts every plan. As a reviewer in a mode
-where the agent's elasticity is wrong, Opus recovers 28% of what a perfect
-reviewer could at a fixed elasticity of 1.0 and 4% in a learned mode, and
-Sonnet and Haiku decline nothing. The one piece that learns from the
-bookings is the elasticity estimator, a Poisson regression with a prior, and
-the agent that uses it keeps 43% to 76% of the gain, set by the prior and the
-cautious rule (docs/reviewers.md for the reviewers, docs/results.md for the
-rest).
+**What the model adds, and what learns.** Measured on world v1 (commit
+b178e7b) and not yet rerun on world v2: in the default run the model added
+nothing, because every reviewer accepted every plan, and as a reviewer in a
+mode where the agent's elasticity was wrong, Opus recovered 28% of what a
+perfect reviewer could at a fixed elasticity of 1.0 and 4% in a learned mode,
+while Sonnet and Haiku declined nothing. A benchmark on world v2, the same
+commands over seeds 1 to 20 with the three models, costs about $90 at list
+prices and is the next run. The one piece that learns from the bookings is the
+elasticity estimator, a Poisson regression with a prior, and on world v2 the
+agent that uses it keeps little of the gain unless the cautious rule is on
+(docs/reviewers.md for the reviewers, docs/results.md for the rest).
 
 ## The limit that matters
 
 The forecast is right by construction. With the simulator's demand scaled by
-0.9, which the agent never sees, the gain falls to +$1,913 a seed, ahead in 12
-seeds of 20, which is not distinguishable from zero (p 0.50). The demand-bias
+0.9, which the agent never sees, the gain falls to +$1,069 a seed, ahead in 12 seeds of 20, which a sign test puts at p 0.50, on 2026-10-15 on world v2. The demand-bias
 section of docs/results.md has the table, and the other limits are in
 docs/limits.md.
 
@@ -110,7 +115,6 @@ docs/limits.md.
 - docs/schedule-feed.md: the air schedule feed as this repository models it.
 - kg/: a map of the repository for agents, with kg/README.md as the legend.
 
-The next version puts each hotel's past rate changes and their outcomes into the
-model request, reprices as data arrives during the day and makes the competitors
-react by default. The tables then keep each decision's outcome, and each hotel
-gets its own booking curve.
+The next version reprices as data arrives during the day, runs the reviewer
+benchmark on world v2, adds per-weekday terms to the estimator, and adds
+cancellations and segments.
