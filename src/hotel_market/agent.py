@@ -201,7 +201,7 @@ class Agent:
         """The elasticity the hotel's estimates assume today, by the agent's mode."""
         mode, market = self.elasticity, self.market_elasticity
         if mode.kind == "learn":
-            estimate = estimate_elasticity(sources, hotel, day, mode.value, self.customer, market)
+            estimate = estimate_elasticity(sources, hotel, day, mode.value, market)
             self.estimates[(day, hotel.key)] = estimate
             return Pricing(
                 estimate.elasticity,

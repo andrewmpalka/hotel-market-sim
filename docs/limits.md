@@ -43,11 +43,11 @@
   noise, and the learned elasticity comes from a ratio that moves only when the
   hotel moves it. That is why the estimator's standard errors stay at 0.17 to
   0.31 after about 5,300 observations.
-- One transient booking curve serves all four hotels, with no group base, so
-  "pace" here means that a shock's bookings have arrived. The hotels that
-  received the convention and the new flights run ahead of pace every day until
-  the stay date, and the pace and rules controls therefore price the shocks at
-  one remove.
+- Each hotel has its own booking curve, but the pace baseline is still normal
+  demand on that curve with no group base, so "pace" here means that a shock's
+  bookings have arrived. The hotels that received the convention and the new
+  flights run ahead of pace every day until the stay date, and the pace and
+  rules controls therefore price the shocks at one remove.
 - The air schedule files two changes by default and, with `--churn`, weekly
   revisions held under the threshold by construction. A second scenario holds
   an upgauge and a frequency cut. A real feed revises in more ways than these,

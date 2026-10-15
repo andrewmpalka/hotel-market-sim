@@ -166,7 +166,7 @@ def test_estimate_is_expected_contribution_on_the_unsold_rooms(day10):
         row = table.query("hotel == @key and stay_day == @stay_day").iloc[0]
         ratio = row["comp_median"] / starting_median(hotel, stay_day, seed=7)
         demand = expected_demand(hotel, stay_day, 10, 1.0, ratio, DEMO.market_elasticity)
-        remaining = demand * (1 - DEMO.curve(stay_day - 10))
+        remaining = demand * (1 - hotel.curve(stay_day - 10))
         unsold = hotel.rooms - row["rooms"]
         for c in group.candidates:
             rate = c.rates[stay_day]
@@ -185,18 +185,32 @@ def test_on_nights_that_will_not_sell_out_the_start_rate_is_already_best(books_t
         assert not entry.changed_weekdays and entry.value_at_stake == 0 and not entry.queued
 
 
-def test_when_demand_would_overfill_the_hotel_a_raise_wins(day10):
-    # Day 10: the convention is announced and its competitors raise 15%, so at
-    # today's rate the Thursday peak night (45) would draw more bookings than
-    # the convention hotel has rooms left.
+def _sell_out_chance(hotel, table, stay_day, day):
+    """The chance that the night sells out at today's rate: P(Poisson(mean) >= unsold)."""
+    row = table.query("hotel == @hotel.key and stay_day == @stay_day").iloc[0]
+    ratio = row["comp_median"] / starting_median(hotel, stay_day, seed=7)
+    demand = expected_demand(hotel, stay_day, day, 1.0, ratio, DEMO.market_elasticity)
+    mean = demand * (1 - hotel.curve(stay_day - day)) * (row["rate"] / row["comp_median"]) ** -1.5
+    unsold = int(hotel.rooms - row["rooms"])
+    counts = np.arange(unsold)
+    log_factorial = np.concatenate(([0.0], np.cumsum(np.log(counts[1:]))))
+    return 1 - np.exp(counts * math.log(mean) - mean - log_factorial).sum()
+
+
+def test_a_raise_wins_where_the_night_would_often_sell_out_at_todays_rate(day10):
+    # Day 10: the convention is announced and its competitors raise 15%. The full-service
+    # hotel's Thursday peak night (45) would then sell out at today's rate about as often as
+    # not, so a raise wins and the plan is queued. The convention hotel already holds most of
+    # its group business, so its Thursday hardly ever sells out and nothing worth the minimum
+    # beats holding.
     _, table = day10
-    convention = DEMO.hotel("convention")
-    row = table.query("hotel == 'convention' and stay_day == 45").iloc[0]
-    remaining = expected_demand(convention, 45, 10) * (1 - DEMO.curve(35))
-    assert remaining * (row["rate"] / row["comp_median"]) ** -1.5 > convention.rooms - row["rooms"]
-    [entry] = [entry_for(10, f, table) for f in flags(10, table) if f.hotel == "convention"]
-    [thursday] = [g for g in entry.weekdays if g.stays == [45]]
-    assert thursday.best.name.startswith("raise") and entry.queued
+    full_service, convention = DEMO.hotel("full-service"), DEMO.hotel("convention")
+    assert 0.3 < _sell_out_chance(full_service, table, 45, 10) < 0.6
+    assert _sell_out_chance(convention, table, 45, 10) < 0.05
+    entries = {f.hotel: entry_for(10, f, table) for f in flags(10, table)}
+    [thursday] = [g for g in entries["full-service"].weekdays if g.stays == [45]]
+    assert thursday.best.name == "raise 10%" and entries["full-service"].queued
+    assert entries["convention"].value_at_stake < 10 and not entries["convention"].queued
 
 
 def test_after_the_new_flights_the_airport_raises_every_night_close_to_full(books_through):
@@ -215,10 +229,10 @@ def test_after_the_new_flights_the_airport_raises_every_night_close_to_full(book
 def test_a_night_expected_97_percent_full_raises_where_a_cap_on_demand_would_hold(books_through):
     airport = DEMO.hotel("airport")
     entry, table = _airport_entry(20, books_through(20))
-    [wednesday] = [g for g in entry.weekdays if g.weekday == 2]
+    [friday] = [g for g in entry.weekdays if g.weekday == 4]
     rows = table.query("hotel == 'airport'").set_index("stay_day")
-    full = sum(expected_demand(airport, s, 20) for s in wednesday.stays) / (
-        airport.rooms * len(wednesday.stays)
+    full = sum(expected_demand(airport, s, 20) for s in friday.stays) / (
+        airport.rooms * len(friday.stays)
     )
     assert 0.95 < full < 1.00
 
@@ -227,7 +241,7 @@ def test_a_night_expected_97_percent_full_raises_where_a_cap_on_demand_would_hol
         return sum(
             min(
                 expected_demand(airport, s, 20)
-                * (1 - DEMO.curve(s - 20))
+                * (1 - airport.curve(s - 20))
                 * (r / rows.loc[s, "comp_median"]) ** -1.5,
                 airport.rooms - rows.loc[s, "rooms"],
             )
@@ -235,8 +249,8 @@ def test_a_night_expected_97_percent_full_raises_where_a_cap_on_demand_would_hol
             for s, r in candidate.rates.items()
         )
 
-    assert max(wednesday.candidates, key=capped).name == HOLD
-    assert wednesday.best.name == "raise 10%" and wednesday.gain > 0
+    assert max(friday.candidates, key=capped).name == HOLD
+    assert friday.best.name == "raise 10%" and friday.gain > 0
 
 
 def test_a_plan_lists_its_changes_by_day_of_week():

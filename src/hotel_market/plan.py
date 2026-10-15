@@ -377,7 +377,7 @@ def entry_for(
     hotel = customer.hotel(flag.hotel)
     cost = hotel.room_cost if customer.scores_contribution() else 0.0
     rows = _flag_rows(flag, table)
-    stay_dates = _stay_dates(day, hotel, rows, customer)
+    stay_dates = _stay_dates(day, hotel, rows)
     weekdays = []
     for wd in sorted({weekday(s.stay_day) for s in stay_dates}):
         in_group = [s for s in stay_dates if weekday(s.stay_day) == wd]
@@ -405,11 +405,11 @@ def _flag_rows(flag: Flag, table: pd.DataFrame) -> pd.DataFrame:
     return hotel_rows[hotel_rows["stay_day"].between(flag.first_stay, flag.last_stay)]
 
 
-def _stay_dates(day: int, hotel: Hotel, rows: pd.DataFrame, customer: Customer) -> list[StayDate]:
+def _stay_dates(day: int, hotel: Hotel, rows: pd.DataFrame) -> list[StayDate]:
     stay_dates = []
     for row in rows.itertuples():
         stay_day = int(row.stay_day)
-        still_to_come = 1 - float(customer.curve(stay_day - day))
+        still_to_come = 1 - float(hotel.curve(stay_day - day))
         stay_dates.append(
             StayDate(
                 stay_day=stay_day,

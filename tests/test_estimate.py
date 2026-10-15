@@ -107,14 +107,14 @@ def test_the_baseline_is_the_forecast_with_the_market_term_times_the_curves_rise
     data = observations(sources, hotel, 59, market_elasticity=1.0)
     for k in range(0, len(data), 997):
         day, stay = int(data.booking_days[k]), int(data.stay_days[k])
-        rise = DEMO.curve(stay - day) - DEMO.curve(stay - day + 1)
+        rise = hotel.curve(stay - day) - hotel.curve(stay - day + 1)
         forecast = expected_demand(hotel, stay, day, sources, 1.0) * rise
         assert np.exp(data.log_baseline[k]) == pytest.approx(forecast)
     # At a market elasticity of 0 the baseline is the plain forecast.
     plain = observations(sources, hotel, 59, market_elasticity=0.0)
     k = 5
     day, stay = int(plain.booking_days[k]), int(plain.stay_days[k])
-    rise = DEMO.curve(stay - day) - DEMO.curve(stay - day + 1)
+    rise = hotel.curve(stay - day) - hotel.curve(stay - day + 1)
     assert np.exp(plain.log_baseline[k]) == pytest.approx(
         expected_demand(hotel, stay, day, sources, 0.0) * rise
     )

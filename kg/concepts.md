@@ -4,10 +4,10 @@ The ideas the code is built on, each with a plain definition and links to
 the modules, constants and decisions that implement it.
 
 ### CON-01 [C] Booking curve
-- Definition: the share of a stay date's final bookings normally on the books a given number of days out.
-- Points: the pinned points, by days out, are 90: 0%, 60: 20%, 30: 40%, 7: 70% and 0: 100%. The curve is linear between them.
+- Definition: the share of a stay date's final bookings normally on the books a given number of days out. Each hotel has its own curve, flat beyond its last pinned point.
+- Points: every curve is pinned at 90, 60, 30, 7 and 0 days out ([[RUL-68]]) and reaches 100% on the night. The shares are the hotel's ([[RUL-69]]): the convention hotel holds 25% at 90 days out, the airport hotel 0%.
 - Daily: a day's expected new bookings are the demand times the curve's rise from yesterday to today.
-- Implemented by: Customer.curve() in [[MOD-20]] from the customer file's [[RUL-68]] and [[RUL-69]] ([[DAT-27]]), read by both sides. [[MOD-06]] draws with it, and the day-0 preload ([[DEC-03]]) loads each stay date to it.
+- Implemented by: Hotel.curve() in [[MOD-02]] from the hotel's entry in the customer file ([[DAT-04]], [[MOD-20]]), read by both sides. [[MOD-06]] draws with it, and the day-0 preload ([[DEC-03]]) loads each stay date to it.
 - Read by: pace ([[CON-02]]), the agent's remaining demand in [[MOD-08]] and the estimator's baseline in [[MOD-16]]
 - Evidence: test_curve_matches_the_points_and_is_linear_in_between, test_expected_new_bookings_follow_the_formula
 
@@ -58,7 +58,7 @@ the modules, constants and decisions that implement it.
 - Definition: a stay date whose rooms on the books reach the hotel's rooms.
 - Both sides: the simulator caps each day's draw at the rooms still unsold. The agent's estimate counts the chance of a sell-out through E[min(N, unsold)] ([[DEC-21]]). A night expected to come close to full is therefore where a raise pays.
 - Implemented by: Books.book() in [[MOD-06]], and expected_bookings() in [[MOD-08]].
-- Evidence: test_rooms_never_exceed_the_hotel, test_expected_bookings_is_the_mean_of_a_poisson_count_that_stops_at_the_unsold_rooms, test_when_demand_would_overfill_the_hotel_a_raise_wins
+- Evidence: test_rooms_never_exceed_the_hotel, test_expected_bookings_is_the_mean_of_a_poisson_count_that_stops_at_the_unsold_rooms, test_a_raise_wins_where_the_night_would_often_sell_out_at_todays_rate
 
 ### CON-10 [C] Hold period
 - Definition: an accepted rate change on day d holds the changed stay dates on days d+1 to d+7 ([[RUL-66]]). A new shock that covers them lifts the hold ([[DEC-06]]). A pace gap alone raises no flag under it.

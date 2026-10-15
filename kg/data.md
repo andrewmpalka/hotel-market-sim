@@ -33,7 +33,7 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-04 [C] Hotel, Competitor and the customer's hotels
 - File: src/hotel_market/world.py
-- Fields: Hotel(key, name, rooms, start_rate, air_share, base_occupancy, weekday_factors, competitors, floor, ceiling, room_cost, row) with clamp(), and Competitor(name, base_rate).
+- Fields: Hotel(key, name, rooms, start_rate, air_share, base_occupancy, weekday_factors, curve_days_out, curve_share, competitors, floor, ceiling, room_cost, row) with clamp() and curve(days_out), and Competitor(name, base_rate).
 - Built by: [[MOD-20]] from the customer file ([[DAT-27]]). Floor, ceiling and room_cost are the file's shares of the start rate ([[RUL-59]] to [[RUL-61]]).
 - Offsets: each competitor's base rate is the start rate at its offset. row is the hotel's place in the file and in every array indexed by hotel.
 - Values: convention: 400 rooms, $220, air share 0.60, base occupancy 0.75. Full-service: 250, $190, 0.45, 0.75. Lifestyle: 120, $240, 0.50, 0.75. Airport: 150, $140, 0.80, 0.85 ([[DEC-14]]).
@@ -236,8 +236,8 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-27 [C] Customer
 - File: src/hotel_market/customer.py
-- Fields: Customer(name, target, hotels, floor_share, ceiling_share, cost_share, pace_share, pace_noise_sd, seat_threshold, median_threshold, hold_days, min_value_at_stake, curve_days_out, curve_share), frozen.
-- Methods: hotel(key) finds a hotel ([[DAT-04]]), and curve(days_out) is the booking curve ([[CON-01]]), linear between the pinned points. scores_contribution() says whether the target is contribution ([[RUL-58]]).
+- Fields: Customer(name, target, hotels, floor_share, ceiling_share, cost_share, pace_share, pace_noise_sd, seat_threshold, median_threshold, hold_days, min_value_at_stake, market_elasticity), frozen.
+- Methods: hotel(key) finds a hotel ([[DAT-04]]), which carries its own booking curve ([[CON-01]]). scores_contribution() says whether the target is contribution ([[RUL-58]]).
 - Settings: one market's description and settings, read from its TOML file by load(path) ([[MOD-20]]). The demo market's settings are the nodes [[RUL-57]] to [[RUL-69]].
 - Written by: [[MOD-20]]; demo() holds the demo market, the default wherever no customer is given
 - Read by: [[MOD-05]], [[MOD-06]], [[MOD-07]], [[MOD-08]], [[MOD-10]], [[MOD-12]], [[MOD-16]], [[MOD-19]]

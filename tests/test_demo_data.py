@@ -128,7 +128,7 @@ def test_the_scorecard_counts_the_nights_already_stayed(demo_file):
     assert {row[2] for row in day10} == {"Downtown convention hotel"}
     assert {row[3] for row in day10} == {"Mon 4 Jan [0] to Wed 13 Jan [9]"}
     assert all(row[4] == row[5] and row[6] == 0 and row[8] == "0" for row in day10)
-    assert [row[7] for row in day10][:2] == ["74.1%", "$220.00"]
+    assert [row[7] for row in day10][:2] == ["73.9%", "$220.00"]
     # The figures are the Books measures over those nights, at fixed rates on day 10.
     books = simulate(7, last_day=9)
     hotel = demo().hotel("convention")
@@ -156,22 +156,22 @@ def test_the_scorecard_counts_the_nights_already_stayed(demo_file):
 
 
 def test_the_outcome_is_the_result_once_every_stay_date_is_complete(demo_file):
-    # Both runs book on to day 149, so the outcome is the README's seed-7 table: -638 for the
-    # convention hotel and +19,012 for all four, over stay dates 0 to 149.
+    # Both runs book on to day 149, so the outcome is the README's seed-7 table: nothing for the
+    # convention hotel, which changed no rate, and +18,756 for all four, over stay dates 0 to 149.
     outcome = _rows(
         demo_file,
         "SELECT hotel, title, nights, delta, delta_text FROM outcome "
         "WHERE measure = 'Contribution' ORDER BY hotel",
     )
     by_hotel = {row[0]: row for row in outcome}
-    assert by_hotel["convention"][3] == pytest.approx(-638, abs=1)
-    assert by_hotel[ALL][3] == pytest.approx(19012, abs=1)
+    assert by_hotel["convention"][3] == 0
+    assert by_hotel[ALL][3] == pytest.approx(18756, abs=1)
     assert by_hotel[ALL][1:3] == ("All four hotels", "Mon 4 Jan [0] to Wed 2 Jun [149]")
-    assert by_hotel[ALL][4] == "+$19,012" and by_hotel["convention"][4] == "-$638"
+    assert by_hotel[ALL][4] == "+$18,756" and by_hotel["convention"][4] == "0"
     revenue = _rows(
         demo_file, f"SELECT delta_text FROM outcome WHERE hotel = '{ALL}' AND position = 3"
     )
-    assert revenue == [("-$40,852",)]
+    assert revenue == [("-$27,841",)]
     # The gains by stay date add up to the outcome, and the convention dates carry the hotel's.
     sums = _rows(demo_file, "SELECT hotel, sum(difference) FROM gains GROUP BY hotel")
     for hotel, total in sums:
@@ -213,7 +213,7 @@ def test_the_tiles_texts_round_and_a_change_that_rounds_to_nothing_is_zero():
 def test_a_held_flag_names_the_best_alternative_and_how_far_it_fell_short(demo_file):
     # On day 30 the full-service hotel's comp set cut its rates for stay dates 37 to 39. No
     # change beats holding, so the flag is held, and the best change on each day of the week
-    # falls short of holding. On day 20 the convention hotel's plan beats holding by less than
+    # falls short of holding. On day 10 the convention hotel's plan beats holding by less than
     # the $250 minimum, so it is held short of the minimum.
     day30 = _rows(
         demo_file,
@@ -226,15 +226,15 @@ def test_a_held_flag_names_the_best_alternative_and_how_far_it_fell_short(demo_f
         "hold",
         "held",
         "raise 5% on Wed, Fri; lower halfway to the new median on Thu",
-        "$20 less than holding",
+        "$10 less than holding",
     )
-    day20 = _rows(
+    day10 = _rows(
         demo_file,
         "SELECT plan, value, outcome, alternative, alternative_text FROM queue "
-        "WHERE as_of_day = 20 AND hotel = 'convention'",
+        "WHERE as_of_day = 10 AND hotel = 'convention'",
     )
-    [(plan, value, outcome, alternative, text)] = day20
-    assert outcome == "held" and 0 < value < 250 and alternative == plan == "raise 5% on Tue"
+    [(plan, value, outcome, alternative, text)] = day10
+    assert outcome == "held" and 0 < value < 250 and alternative == plan == "raise 5% on Thu"
     gain, short = math.floor(value), math.ceil(250 - value)
     assert text == f"${gain} more than holding, ${short} short of the $250 minimum"
     queued = _rows(
@@ -291,14 +291,14 @@ def test_the_chart_rows_mark_the_flagged_stay_dates_and_carry_the_planned_rate(d
         demo_file,
         "SELECT stay_day, rate, comp_median > rate, rooms_on_books > 0, pace > 0, causes, flag, "
         "planned_rate FROM stay_dates "
-        "WHERE as_of_day = 10 AND hotel = 'convention' AND flagged ORDER BY stay_day",
+        "WHERE as_of_day = 10 AND hotel = 'full-service' AND flagged ORDER BY stay_day",
     )
     assert [row[0] for row in flagged] == [45, 46, 47, 48]
-    assert all(row[1:5] == (220.0, True, True, True) for row in flagged)
+    assert all(row[1:5] == (190.0, True, True, True) for row in flagged)
     assert {row[5] for row in flagged} == {"comp median up, event announced"}
     assert {row[6] for row in flagged} == {"45-48"}
     # The accepted plan raises 10% on Thu; Fri, Sat and Sun hold at the current rate.
-    assert [row[7] for row in flagged] == pytest.approx([242, 220, 220, 220])
+    assert [row[7] for row in flagged] == pytest.approx([209, 190, 190, 190])
     unflagged = _rows(
         demo_file, "SELECT DISTINCT causes, flag, planned_rate FROM stay_dates WHERE NOT flagged"
     )

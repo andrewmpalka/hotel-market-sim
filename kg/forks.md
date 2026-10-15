@@ -87,7 +87,7 @@ it. None of these is in progress.
 
 ### FRK-12 [O] Per-hotel booking curves in the customer file
 - Choice: whether each hotel should carry its own booking curve ([[CON-01]], [[RUL-68]], [[RUL-69]]), with a group base on the convention hotel's event dates and a late curve at the airport hotel.
-- Known: one transient curve serves all four hotels ([[DAT-27]]). The pace baseline is normal demand ([[MOD-07]]), so a hotel that received a shock runs ahead of pace every day until the stay date.
+- Known: on world v1 one transient curve served all four hotels ([[DAT-27]]). The pace baseline is normal demand ([[MOD-07]]), so a hotel that received a shock runs ahead of pace every day until the stay date.
 - Consequence: "pace" means that a shock's bookings have arrived, and the pace control prices the shocks at one remove ([[DEC-55]], [[RES-42]]).
 - Needs: a curve per hotel in the file, read by [[MOD-20]] and used by [[MOD-06]] and [[MOD-18]]. Every pinned figure then changes. The template arms rerun for nothing and the live arms at about $86.
 - Links: [[CON-01]], [[DAT-27]], [[MOD-07]], [[DEC-55]], [[RES-42]]

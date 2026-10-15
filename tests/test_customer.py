@@ -35,11 +35,15 @@ def test_the_demo_file_describes_the_market_in_claude_md():
     assert (DEMO.pace_share, DEMO.pace_noise_sd) == (0.10, 3)
     assert (DEMO.seat_threshold, DEMO.median_threshold, DEMO.hold_days) == (0.05, 0.05, 7)
     assert DEMO.min_value_at_stake == 250
-    assert (DEMO.curve_days_out, DEMO.curve_share) == (
-        (0, 7, 30, 60, 90),
-        (1.0, 0.7, 0.4, 0.2, 0.0),
-    )
-    assert DEMO.curve(45) == pytest.approx(0.3)
+    # Each hotel carries its own booking curve, pinned at the same days out.
+    assert all(h.curve_days_out == (0, 7, 30, 60, 90) for h in DEMO.hotels)
+    assert {h.key: h.curve_share for h in DEMO.hotels} == {
+        "convention": (1.0, 0.85, 0.6, 0.45, 0.25),
+        "full-service": (1.0, 0.75, 0.5, 0.3, 0.1),
+        "lifestyle": (1.0, 0.7, 0.4, 0.2, 0.0),
+        "airport": (1.0, 0.5, 0.2, 0.05, 0.0),
+    }
+    assert DEMO.hotel("lifestyle").curve(45) == pytest.approx(0.3)
     assert DEMO.market_elasticity == 1.0 == MARKET_ELASTICITY == ORACLE_MARKET_ELASTICITY
     assert load(ROOT / DEMO_FILE) == DEMO
 
@@ -80,8 +84,21 @@ def test_a_hotel_needs_seven_weekday_factors(tmp_path):
     )
 
 
-def test_the_booking_curves_days_out_must_ascend(tmp_path):
-    _refused(tmp_path, "days_out = [0, 7, 30, 60, 90]", "days_out = [0, 30, 7, 60, 90]", "days_out")
+def test_a_booking_curves_days_out_must_ascend_from_0(tmp_path):
+    # The first match is the convention hotel's, and the error names the hotel.
+    before = "days_out = [0, 7, 30, 60, 90]"
+    for after in ("days_out = [0, 30, 7, 60, 90]", "days_out = [1, 7, 30, 60, 90]"):
+        _refused(tmp_path, before, after, "hotel 'convention': booking_curve.days_out")
+
+
+def test_a_booking_curves_shares_start_at_1_on_the_night_and_never_rise(tmp_path):
+    before = "share = [1.00, 0.85, 0.60, 0.45, 0.25]"
+    for after in (
+        "share = [0.95, 0.85, 0.60, 0.45, 0.25]",  # not every booking is in by the night
+        "share = [1.00, 0.85, 0.60, 0.65, 0.25]",  # a rise with the days out
+        "share = [1.00, 0.85, 0.60, 0.45, -0.25]",  # below 0
+    ):
+        _refused(tmp_path, before, after, "hotel 'convention': booking_curve.share")
 
 
 def test_a_share_must_lie_between_0_and_1(tmp_path):

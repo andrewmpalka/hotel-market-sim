@@ -394,10 +394,10 @@ def test_the_seeds_command_prints_one_row_per_arm_and_a_learn_arms_estimates(mon
     assert "  59" in out and "1.59 (1.59 to 1.59)" in out  # day 59, the convention hotel
 
 
-def test_the_default_mode_still_gives_19012_on_seed_7(first):
+def test_the_default_mode_gives_the_pinned_seed_7_figure(first):
     _, fixed, books, _ = first
     change = sum(books.contribution(h) - fixed.contribution(h) for h in DEMO.hotels)
-    assert change == pytest.approx(19012, abs=1)
+    assert change == pytest.approx(18756, abs=1)
 
 
 @pytest.mark.slow

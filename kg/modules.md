@@ -17,7 +17,7 @@ which is also the order in which they depend on each other.
 
 ### MOD-02 [C] world.py
 - File: src/hotel_market/world.py
-- Owns: the types a market is described with: Hotel and Competitor ([[DAT-04]]). A Hotel carries its rooms, start rate, air share, base occupancy and weekday factors. It also carries its comp set, floor, ceiling, room cost and array row.
+- Owns: the types a market is described with: Hotel and Competitor ([[DAT-04]]). A Hotel carries its rooms, start rate, air share, base occupancy, weekday factors, booking curve ([[CON-01]]), comp set, floor, ceiling, room cost and row.
 - Holds: the calendar: SIM_DAYS ([[RUL-12]]), the 90-day window ([[RUL-13]]) and weekday. The hotels themselves come from the customer file ([[MOD-20]], [[DEC-41]]). Nothing here is random or secret.
 - Reads: [[MOD-01]] for SIM_START and HORIZON_DAYS
 - Writes: [[DAT-04]]
@@ -153,7 +153,7 @@ which is also the order in which they depend on each other.
 - Owns: the agent's own estimate of the elasticity ([[CON-06]], [[DEC-38]]). It gathers the observations it may use on a day. It fits a Poisson regression with the log baseline as an offset and a normal prior, and clamps the result.
 - Observations: one per stay date and booking day, from the sources' booking and shop histories ([[DAT-26]]). They are bookings made before the day, inside the day's window and before the stay date sold out. The opening rooms never count.
 - Holds: PRIOR_SD ([[RUL-50]]), ELASTICITY_MIN ([[RUL-51]]) and ELASTICITY_MAX ([[RUL-52]]). The baseline comes from the agent's own forecast ([[MOD-18]]), with the run's market term ([[DEC-52]]).
-- Reads: [[MOD-02]], [[MOD-17]] (the sources), [[MOD-18]] (the forecast), [[MOD-20]] (the booking curve); never the simulator ([[DEC-40]])
+- Reads: [[MOD-02]] (the hotel and its booking curve), [[MOD-17]] (the sources), [[MOD-18]] (the forecast); never the simulator ([[DEC-40]])
 - Writes: [[DAT-23]]; level_factor() turns an Estimate's intercept into the --level factor ([[DEC-54]])
 - Tests: tests/test_estimate.py
 - Evidence: test_the_day_59_estimate_recovers_the_simulators_elasticity, test_the_estimate_uses_no_booking_made_on_or_after_as_of_day, test_observations_stop_on_the_day_a_stay_date_sells_out
@@ -190,9 +190,9 @@ which is also the order in which they depend on each other.
 
 ### MOD-20 [C] customer.py
 - File: src/hotel_market/customer.py
-- Owns: everything specific to one market, read from its customer file ([[DEC-41]]). load(path) turns the TOML into a Customer ([[DAT-27]]): hotels ([[DAT-04]]), limits, thresholds, hold, minimum, curve ([[CON-01]]) and target ([[RUL-58]]).
+- Owns: everything specific to one market, read from its customer file ([[DEC-41]]). load(path) turns the TOML into a Customer ([[DAT-27]]): hotels ([[DAT-04]]), limits, thresholds, hold, minimum, market elasticity and target ([[RUL-58]]).
 - Default: demo() is the demo market, loaded once and the default wherever no customer is given. demo_path() finds it through CUSTOMER_VARIABLE ([[RUL-71]]) or under the package's repository, never the working directory.
-- Checks: load() refuses a bad target ([[RUL-70]]), a repeated hotel key or name, a share outside 0 to 1, a floor at or above the ceiling, a curve that does not ascend, and a hotel short of seven weekday factors, rooms or a rate.
+- Checks: load() refuses a bad target ([[RUL-70]]), a repeated hotel key or name, a share outside 0 to 1, a floor at or above the ceiling, a curve not falling from 1 on the night, and a hotel short of weekday factors, rooms or a rate.
 - Reads: [[MOD-02]] for the Hotel and Competitor types
 - Writes: [[DAT-27]], [[DAT-04]]
 - Tests: tests/test_customer.py
@@ -263,7 +263,7 @@ which is also the order in which they depend on each other.
 - Scorecard: the nights already stayed for the hotel and for all together, as five large tiles each. With the checkbox on, the complete outcome's tiles follow each, in a compact size, and then the small line of the contribution difference.
 - Holds: the file, parameter, plot, tile, colour and mark constants, FILE_VARIABLE to REASON_MARKS ([[RUL-105]], [[RUL-106]], [[RUL-112]] to [[RUL-123]]), and STYLE.
 - Reads: nothing in the package; streamlit, altair and duckdb only, the optional extra demo. The page computes nothing, and a test parses it for an arithmetic operator or an aggregate call. Tests: tests/test_demo_page.py.
-- Evidence: test_the_page_imports_nothing_from_the_package_or_the_simulator, test_the_page_does_no_arithmetic_on_a_figure, test_the_page_shows_the_convention_hotel_on_day_10, test_a_reason_with_two_dollar_amounts_shows_both_as_written
+- Evidence: test_the_page_imports_nothing_from_the_package_or_the_simulator, test_the_page_does_no_arithmetic_on_a_figure, test_the_page_shows_the_full_service_hotel_on_day_10, test_a_reason_with_two_dollar_amounts_shows_both_as_written
 
 ### MOD-28 [C] scripts/demo_screenshots.py
 - File: scripts/demo_screenshots.py

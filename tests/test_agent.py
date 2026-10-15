@@ -72,16 +72,16 @@ def test_accepted_rates_apply_and_hold_those_stay_dates_for_7_days(run):
             assert books.rates[hotel.row, s] == pytest.approx(
                 last.get((hotel.key, s), hotel.start_rate)
             )
-    # The day-10 convention plan holds the stay dates it changed for 7 days.
-    [plan] = [e for e in agent.entries if e.day == 10 and e.hotel == "convention"]
+    # The first accepted plan holds the stay dates it changed for 7 days.
+    plan = next(e for e in agent.entries if e.action != HOLD)
     assert plan.action == plan.plan and plan.new_rates
     for stay_day in plan.new_rates:
-        assert agent.held[("convention", stay_day)] >= 10
+        assert agent.held[(plan.hotel, stay_day)] >= plan.day
         assert not [
             e
             for e in agent.entries
-            if e.hotel == "convention"
-            and 11 <= e.day <= 17
+            if e.hotel == plan.hotel
+            and plan.day + 1 <= e.day <= plan.day + 7
             and e.first_stay <= stay_day <= e.last_stay
         ]
 
@@ -201,8 +201,8 @@ def test_plain_learn_mode_gives_the_same_results_as_before(tmp_path):
     agent = Agent(SEED, tmp_path, elasticity=ElasticityMode.parse("learn:1.0"))
     books = simulate(SEED, deciding(agent))
     change = sum(books.contribution(h) - fixed.contribution(h) for h in DEMO.hotels)
-    assert change == pytest.approx(-10078.87, abs=0.01)
-    assert sum(1 for e in agent.entries if e.action != HOLD) == 14 and len(agent.entries) == 70
+    assert change == pytest.approx(2469.25, abs=0.01)
+    assert sum(1 for e in agent.entries if e.action != HOLD) == 14 and len(agent.entries) == 67
 
 
 def test_a_cautious_agent_records_the_band_and_what_it_rejected(tmp_path):

@@ -121,6 +121,15 @@ def test_a_customer_setting_missing_from_the_graph_is_reported(kg_copy):
     assert _reported(kg_copy, "customers/demo.toml: detect.hold_days = 7 has no RUL node")
 
 
+def test_a_key_with_a_star_reads_every_hotels_setting_and_a_missing_one_is_undefined():
+    path = ROOT / "customers" / "demo.toml"
+    assert kg_check._setting(path, "hotels[*].rooms") == (True, (400, 250, 120, 150))
+    assert kg_check._setting(path, "hotels[*].booking_curve.days_out")[1][0] == (0, 7, 30, 60, 90)
+    assert kg_check._setting(path, "hotels[*].rooms_was") == (False, None)
+    assert kg_check._setting(path, "limits[*].floor_share") == (False, None)
+    assert kg_check._setting(path, "detect.hold_days") == (True, 7)
+
+
 def test_a_shock_in_the_code_without_a_node_is_reported(monkeypatch):
     """A second event added to shocks.py has no SHK node, so the check fails until a node names
     its file and its known day. The shipped shocks all have one."""

@@ -14,7 +14,8 @@ It reports a problem when:
 - a cited test name does not exist in tests/,
 - a node marked [H] names no node that replaced, closed or moved it,
 - a constant's value in kg/rules.md differs from the value in the code or in the
-  customer file (a RUL node with a .toml File names its Key),
+  customer file (a RUL node with a .toml File names its Key; a part name[*] maps over a
+  list of tables, so hotels[*].booking_curve.share is every hotel's share),
 - a constant in kg/rules.md has no Kind, or one that is not parameter or label,
 - a public constant in the code, or a setting in the customer file, has no RUL node,
 - a measure's Function does not exist,
@@ -447,17 +448,26 @@ def _wrong_constants(nodes: list[Node], root: Path) -> list[str]:
 
 
 def _setting(path: Path, key: str) -> tuple[bool, object]:
-    """(whether the dotted key exists in the TOML file, its value)."""
+    """(whether the dotted key exists in the TOML file, its value). A part written name[*] maps
+    over a list of tables, so hotels[*].booking_curve.share is every hotel's share, as a tuple."""
     if not path.exists() or not key:
         return False, None
-    value = tomllib.loads(path.read_text())
-    for part in key.split("."):
-        if not isinstance(value, dict) or part not in value:
+    return _lookup(tomllib.loads(path.read_text()), key.split("."))
+
+
+def _lookup(value: object, parts: list[str]) -> tuple[bool, object]:
+    if not parts:
+        return True, tuple(value) if isinstance(value, list) else value
+    part, rest = parts[0], parts[1:]
+    if part.endswith("[*]"):
+        tables = value.get(part[:-3]) if isinstance(value, dict) else None
+        found = [_lookup(table, rest) for table in tables] if isinstance(tables, list) else []
+        if not found or not all(defined for defined, _ in found):
             return False, None
-        value = value[part]
-    if isinstance(value, list):
-        value = tuple(value)
-    return True, value
+        return True, tuple(each for _, each in found)
+    if not isinstance(value, dict) or part not in value:
+        return False, None
+    return _lookup(value[part], rest)
 
 
 def _settings(path: Path) -> list[tuple[str, object]]:

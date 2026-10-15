@@ -37,7 +37,6 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from hotel_market.customer import Customer, demo
 from hotel_market.forecast import ORACLE_MARKET_ELASTICITY, event_uplift, normal_demand
 from hotel_market.sources import Sources
 from hotel_market.world import HORIZON_DAYS, Hotel, stay_window
@@ -90,7 +89,6 @@ def observations(
     sources: Sources,
     hotel: Hotel,
     as_of_day: int,
-    customer: Customer | None = None,
     market_elasticity: float = ORACLE_MARKET_ELASTICITY,
 ) -> Observations:
     """The observations the agent may use on as_of_day. They are the bookings made before that day,
@@ -109,9 +107,7 @@ def observations(
         booking_days=booking_days,
         bookings=rooms[keep],
         log_ratio=np.log(rates[keep] / medians[keep]),
-        log_baseline=np.log(
-            _baselines(sources, hotel, as_of_day, customer or demo(), market_elasticity)[keep]
-        ),
+        log_baseline=np.log(_baselines(sources, hotel, as_of_day, market_elasticity)[keep]),
     )
 
 
@@ -119,14 +115,13 @@ def _baselines(
     sources: Sources,
     hotel: Hotel,
     as_of_day: int,
-    customer: Customer,
     market_elasticity: float = ORACLE_MARKET_ELASTICITY,
 ) -> np.ndarray:
     """The bookings expected at a rate ratio of 1, by [booking day, stay day], for the days before
     as_of_day. Each is the forecast as known on the booking day (forecast.expected_demand, with
     the market term at that day's comp median) times the booking curve's rise. It is zero outside
     each day's window."""
-    curve = customer.curve
+    curve = hotel.curve
     normal = np.array([normal_demand(hotel, stay_day) for stay_day in range(HORIZON_DAYS)])
     baselines = np.zeros((as_of_day, HORIZON_DAYS))
     for day in range(as_of_day):
@@ -153,12 +148,11 @@ def estimate_elasticity(
     hotel: Hotel,
     as_of_day: int,
     prior: float,
-    customer: Customer | None = None,
     market_elasticity: float = ORACLE_MARKET_ELASTICITY,
 ) -> Estimate:
     """The hotel's elasticity as of a day, from the bookings made before it, with the run's market
     elasticity in the baseline."""
-    data = observations(sources, hotel, as_of_day, customer, market_elasticity)
+    data = observations(sources, hotel, as_of_day, market_elasticity)
     intercept, slope, standard_error = fit(data, prior)
     return Estimate(
         elasticity=min(max(-slope, ELASTICITY_MIN), ELASTICITY_MAX),

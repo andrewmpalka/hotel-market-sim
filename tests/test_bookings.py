@@ -7,7 +7,7 @@ import pytest
 
 from hotel_market.bookings import ELASTICITY, Books, poisson_draw, preload_mean, simulate
 from hotel_market.customer import demo
-from hotel_market.demand import DEMAND_BIAS, MARKET_ELASTICITY, expected_demand
+from hotel_market.demand import DEMAND_BIAS, MARKET_ELASTICITY, expected_demand, normal_demand
 from hotel_market.schedule import HORIZON_DAYS
 from hotel_market.shops import REACTION_LAG, REACTION_SHARE, comp_median, starting_median
 from hotel_market.world import SIM_DAYS
@@ -29,10 +29,17 @@ def _starting_rates(hotel):
 
 
 def test_curve_matches_the_points_and_is_linear_in_between():
-    assert [DEMO.curve(d) for d in (90, 60, 30, 7, 0)] == pytest.approx([0.0, 0.2, 0.4, 0.7, 1.0])
-    assert DEMO.curve(45) == pytest.approx(0.3)
-    assert DEMO.curve(18.5) == pytest.approx(0.55)  # halfway between 7 (0.7) and 30 (0.4)
-    assert DEMO.curve(120) == 0.0
+    lifestyle, convention = DEMO.hotel("lifestyle"), DEMO.hotel("convention")
+    points = [lifestyle.curve(d) for d in (90, 60, 30, 7, 0)]
+    assert points == pytest.approx([0.0, 0.2, 0.4, 0.7, 1.0])
+    assert lifestyle.curve(45) == pytest.approx(0.3)
+    assert lifestyle.curve(18.5) == pytest.approx(0.55)  # halfway between 7 (0.7) and 30 (0.4)
+    assert lifestyle.curve(120) == 0.0
+    # Each hotel has its own curve, flat beyond its last point: the convention hotel holds a
+    # quarter of its bookings 90 or more days out.
+    points = [convention.curve(d) for d in (90, 60, 30, 7, 0)]
+    assert points == pytest.approx([0.25, 0.45, 0.6, 0.85, 1.0])
+    assert convention.curve(120) == 0.25
 
 
 def test_poisson_draw_is_the_poisson_quantile():
@@ -55,21 +62,29 @@ def test_a_bigger_mean_never_draws_fewer_rooms_on_the_same_luck():
 
 
 def test_preload_mean_is_normal_demand_x_curve_of_days_out_plus_1():
-    convention = DEMO.hotel("convention")
-    # Stay date 0 is tonight (a Monday): 285 rooms x DEMO.curve(1) = 285 x (1 - 0.3 / 7).
-    assert preload_mean(convention, 0) == pytest.approx(285 * (1 - 0.3 / 7))
-    # Stay date 89 is 89 days out: DEMO.curve(90) is 0, so nothing is booked yet.
-    assert preload_mean(convention, 89) == 0
+    convention, airport = DEMO.hotel("convention"), DEMO.hotel("airport")
+    # Stay date 0 is tonight (a Monday): 285 rooms x curve(1) = 285 x (1 - 0.15 / 7).
+    assert preload_mean(convention, 0) == pytest.approx(285 * (1 - 0.15 / 7))
+    # Stay date 89 is 89 days out. The convention hotel's curve holds 0.25 from 90 days out, so
+    # that date, and every later one, starts with a quarter of its normal demand; the airport
+    # hotel's curve is 0 there, so nothing is booked yet.
+    assert preload_mean(convention, 89) == pytest.approx(0.25 * normal_demand(convention, 89))
+    assert preload_mean(convention, 149) == pytest.approx(0.25 * normal_demand(convention, 149))
+    assert preload_mean(airport, 89) == 0
 
 
 def test_day_0_starts_with_the_bookings_made_before_the_run():
     books = Books(SEED)  # the preload only, before day 0's bookings
     for hotel in DEMO.hotels:
         i = hotel.row
-        expected = sum(preload_mean(hotel, s) for s in range(90))
-        assert abs(books.rooms[i, :90].sum() - expected) < 4 * math.sqrt(expected)
+        expected = sum(preload_mean(hotel, s) for s in range(HORIZON_DAYS))
+        assert abs(books.rooms[i].sum() - expected) < 4 * math.sqrt(expected)
         assert (books.rooms[i] <= hotel.rooms).all()
-        assert (books.rooms[i, 90:] == 0).all()  # not in day 0's window yet
+        assert (books.rooms[i] == books.preload[i]).all()  # nothing but the preload yet
+        if hotel.curve(90) == 0:  # not in day 0's window yet, and nothing booked that far ahead
+            assert (books.rooms[i, 90:] == 0).all()
+        else:
+            assert (books.rooms[i, 90:] > 0).all()
         assert books.revenue[i] == pytest.approx(books.rooms[i] * _starting_rates(hotel))
 
 
@@ -88,7 +103,7 @@ def test_expected_new_bookings_follow_the_formula():
         price = airport.start_rate / comp_median(day, airport, stay_day, seed=SEED)
         formula = (
             expected_demand(airport, stay_day, day)
-            * (DEMO.curve(days_out) - DEMO.curve(days_out + 1))
+            * (airport.curve(days_out) - airport.curve(days_out + 1))
             * price**-ELASTICITY
         )
         assert books.expected_new_bookings(airport, stay_day, day) == pytest.approx(formula)
@@ -171,8 +186,11 @@ def test_average_rate_is_room_revenue_over_rooms_sold(fixed):
         expected = fixed.revenue[i, 40:50].sum() / fixed.rooms[i, 40:50].sum()
         assert fixed.average_rate(hotel, range(40, 50)) == pytest.approx(expected)
         assert fixed.average_rate(hotel, range(40, 50)) == pytest.approx(hotel.start_rate)
-    # Before day 0 nothing is booked beyond the window, so there is no rate to average.
-    assert math.isnan(Books(SEED).average_rate(DEMO.hotels[0], range(140, 150)))
+    # Before day 0 the airport hotel has nothing booked beyond the window, so there is no rate
+    # to average; the convention hotel holds its group base there, at the start rate.
+    airport, convention = DEMO.hotel("airport"), DEMO.hotel("convention")
+    assert math.isnan(Books(SEED).average_rate(airport, range(140, 150)))
+    assert Books(SEED).average_rate(convention, range(140, 150)) == convention.start_rate
 
 
 def test_revpar_is_room_revenue_over_rooms_available(fixed):

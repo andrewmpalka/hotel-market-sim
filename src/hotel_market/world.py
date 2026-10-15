@@ -3,8 +3,8 @@
 The types a market is described with, and the calendar the simulation runs on. A Hotel carries
 everything the agent and the simulator need to know about it: its rooms, starting rate, share of
 guests arriving by air and rooms sold on a normal night. It also has its demand factors across the
-week, rate floor and ceiling, cost per occupied room and comp set. The hotels themselves, and the
-rest of a market's settings, come from a customer file (customer.py).
+week, booking curve, rate floor and ceiling, cost per occupied room and comp set. The hotels
+themselves, and the rest of a market's settings, come from a customer file (customer.py).
 
 Nothing here is random. The seed only matters once competitor rates and bookings are drawn.
 """
@@ -13,6 +13,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import timedelta
+
+import numpy as np
 
 from hotel_market.schedule import HORIZON_DAYS, SIM_START
 
@@ -35,6 +37,10 @@ class Hotel:
     air_share: float  # share of guests who arrive by air
     base_occupancy: float  # share of rooms sold on a normal night
     weekday_factors: tuple[float, ...]  # demand factors, Monday to Sunday
+    curve_days_out: tuple[float, ...]  # the booking curve's pinned days out, ascending from 0
+    curve_share: tuple[
+        float, ...
+    ]  # the share of final bookings on the books at each; 1 on the night
     competitors: tuple[Competitor, ...]
     floor: float  # the lowest rate the hotel will set
     ceiling: float  # the highest
@@ -44,6 +50,11 @@ class Hotel:
     def clamp(self, rate: float) -> float:
         """Keep a proposed rate between the hotel's floor and ceiling."""
         return min(max(rate, self.floor), self.ceiling)
+
+    def curve(self, days_out):
+        """Share of final bookings normally on the books this many days before arrival: linear
+        between the pinned points and flat beyond the last."""
+        return np.interp(days_out, self.curve_days_out, self.curve_share)
 
 
 def stay_window(day: int) -> range:

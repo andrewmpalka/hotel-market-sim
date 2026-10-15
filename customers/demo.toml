@@ -30,16 +30,16 @@ min_value_at_stake = 250  # a plan worth less than this over holding is held, no
 [market]
 elasticity = 1.0
 
-# The booking curve: the share of final bookings normally on the books, by
-# days before arrival, linear in between.
-[booking_curve]
-days_out = [0, 7, 30, 60, 90]
-share = [1.00, 0.70, 0.40, 0.20, 0.00]
-
 # Each hotel: its rooms, start rate, share of guests arriving by air, share of
-# rooms sold on a normal night, demand factors Monday to Sunday, and its four
-# competitors, each at an offset from the hotel's start rate. The offsets are
-# symmetric, so every comp set's median starts at the hotel's own rate.
+# rooms sold on a normal night, demand factors Monday to Sunday, its booking
+# curve and its four competitors, each at an offset from the hotel's start
+# rate. The offsets are symmetric, so every comp set's median starts at the
+# hotel's own rate. The booking curve is the share of final bookings normally
+# on the books by days before arrival, linear in between and flat beyond the
+# last point, 1.00 on the night for all. The convention hotel holds a quarter
+# of its rooms as group blocks 90 or more days out and the full-service hotel
+# a tenth; the lifestyle hotel keeps the transient curve; the airport hotel
+# books late. Each is chosen for the kind of hotel, not for any result.
 
 [[hotels]]
 key = "convention"
@@ -49,6 +49,7 @@ start_rate = 220
 air_share = 0.60
 base_occupancy = 0.75
 weekday_factors = [0.95, 1.10, 1.10, 1.05, 0.90, 0.95, 0.80]
+booking_curve = { days_out = [0, 7, 30, 60, 90], share = [1.00, 0.85, 0.60, 0.45, 0.25] }
 competitors = [
     { name = "convention comp 1", offset = -0.08 },
     { name = "convention comp 2", offset = -0.03 },
@@ -64,6 +65,7 @@ start_rate = 190
 air_share = 0.45
 base_occupancy = 0.75
 weekday_factors = [0.95, 1.10, 1.10, 1.05, 0.90, 0.95, 0.80]
+booking_curve = { days_out = [0, 7, 30, 60, 90], share = [1.00, 0.75, 0.50, 0.30, 0.10] }
 competitors = [
     { name = "full-service comp 1", offset = -0.08 },
     { name = "full-service comp 2", offset = -0.03 },
@@ -79,6 +81,7 @@ start_rate = 240
 air_share = 0.50
 base_occupancy = 0.75
 weekday_factors = [0.85, 0.85, 0.90, 1.00, 1.20, 1.25, 0.90]
+booking_curve = { days_out = [0, 7, 30, 60, 90], share = [1.00, 0.70, 0.40, 0.20, 0.00] }
 competitors = [
     { name = "lifestyle comp 1", offset = -0.08 },
     { name = "lifestyle comp 2", offset = -0.03 },
@@ -95,6 +98,7 @@ start_rate = 140
 air_share = 0.80
 base_occupancy = 0.85
 weekday_factors = [1.05, 0.90, 1.00, 1.05, 1.00, 0.85, 1.05]
+booking_curve = { days_out = [0, 7, 30, 60, 90], share = [1.00, 0.50, 0.20, 0.05, 0.00] }
 competitors = [
     { name = "airport comp 1", offset = -0.08 },
     { name = "airport comp 2", offset = -0.03 },

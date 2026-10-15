@@ -8,18 +8,18 @@ nodes and its words, len(text.split()) over the file.
 
 | File | Nodes | Words |
 | --- | ---: | ---: |
-| modules.md | 30 | 4,050 |
-| data.md | 33 | 4,293 |
-| rules.md | 124 | 5,207 |
+| modules.md | 30 | 4,051 |
+| data.md | 33 | 4,291 |
+| rules.md | 124 | 5,305 |
 | shocks.md | 7 | 734 |
-| concepts.md | 11 | 1,154 |
+| concepts.md | 11 | 1,183 |
 | measures.md | 14 | 962 |
 | sources.md | 4 | 849 |
-| decisions.md | 61 | 9,051 |
+| decisions.md | 61 | 9,071 |
 | results.md | 42 | 7,233 |
-| forks.md | 13 | 1,921 |
+| forks.md | 13 | 1,924 |
 | unknowns.md | 15 | 2,013 |
-| every node file | 354 | 37,467 |
+| every node file | 354 | 37,616 |
 | index.md | | 2,977 |
 
 ## Modules (`modules.md`)
@@ -157,8 +157,8 @@ nodes and its words, len(text.split()) over the file.
 - RUL-65 [C] median_threshold — customers/demo.toml
 - RUL-66 [C] hold_days — customers/demo.toml
 - RUL-67 [C] min_value_at_stake — customers/demo.toml
-- RUL-68 [C] days_out — customers/demo.toml
-- RUL-69 [C] share — customers/demo.toml
+- RUL-68 [C] booking_curve.days_out — customers/demo.toml
+- RUL-69 [C] booking_curve.share — customers/demo.toml
 - RUL-109 [C] RATE_AXIS — src/hotel_market/demo_data.py
 - RUL-110 [C] GAIN_TICK_DAYS — src/hotel_market/demo_data.py
 - RUL-115 [C] PLOT_HEIGHTS — src/hotel_market/demo_page.py

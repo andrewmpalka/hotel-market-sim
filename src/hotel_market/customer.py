@@ -1,10 +1,10 @@
 """customer.py
 
 Everything specific to one market, read from a customer file such as customers/demo.toml. The
-file holds the hotels with their rooms, starting rates, demand pattern and comp sets. It also
-holds the cost share and rate limits. The detect thresholds, the hold period and the minimum
-value at stake follow. The booking curve, the market's price response and the target the agent
-scores candidates on, "contribution" or "revenue", complete it.
+file holds the hotels with their rooms, starting rates, demand pattern, booking curves and comp
+sets. It also holds the cost share and rate limits. The detect thresholds, the hold period and
+the minimum value at stake follow. The market's price response and the target the agent scores
+candidates on, "contribution" or "revenue", complete it.
 
 Both sides read it: the simulator to make the market, the agent to know its hotels and settings. The
 constants of the simulator itself, the calendar, the elasticity, the noise, the schedule and the
@@ -19,8 +19,6 @@ import tomllib
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
-
-import numpy as np
 
 from hotel_market.world import Competitor, Hotel
 
@@ -45,8 +43,6 @@ class Customer:
     median_threshold: float
     hold_days: int
     min_value_at_stake: float
-    curve_days_out: tuple[float, ...]
-    curve_share: tuple[float, ...]
     market_elasticity: float  # the market's own price response, which a run may override
 
     def hotel(self, key: str) -> Hotel:
@@ -54,10 +50,6 @@ class Customer:
             if hotel.key == key:
                 return hotel
         raise KeyError(f"no hotel with key {key!r}")
-
-    def curve(self, days_out):
-        """Share of final bookings normally on the books this many days before arrival."""
-        return np.interp(days_out, self.curve_days_out, self.curve_share)
 
     def scores_contribution(self) -> bool:
         return self.target == "contribution"
@@ -67,13 +59,7 @@ def load(path: Path | str) -> Customer:
     """A customer from its TOML file."""
     with open(path, "rb") as handle:
         data = tomllib.load(handle)
-    limits, detect, agent, curve, market = (
-        data["limits"],
-        data["detect"],
-        data["agent"],
-        data["booking_curve"],
-        data["market"],
-    )
+    limits, detect, agent, market = data["limits"], data["detect"], data["agent"], data["market"]
     if data["target"] not in TARGETS:
         raise ValueError(f"{path}: target must be one of {TARGETS}, not {data['target']!r}")
     _validate(path, data)
@@ -98,8 +84,6 @@ def load(path: Path | str) -> Customer:
         median_threshold=detect["median_threshold"],
         hold_days=detect["hold_days"],
         min_value_at_stake=agent["min_value_at_stake"],
-        curve_days_out=tuple(curve["days_out"]),
-        curve_share=tuple(curve["share"]),
         market_elasticity=market["elasticity"],
     )
 
@@ -107,9 +91,9 @@ def load(path: Path | str) -> Customer:
 def _validate(path: Path | str, data: dict) -> None:
     """The checks a market file must pass. Each error names the field and, for a hotel, the hotel.
     The market elasticity is zero or more, the shares lie between 0 and 1, the floor sits below
-    the ceiling, the booking curve's days out ascend with one share each, and every hotel has
-    seven weekday factors, positive rooms and a positive start rate."""
-    limits, detect, curve = data["limits"], data["detect"], data["booking_curve"]
+    the ceiling, and every hotel has seven weekday factors, positive rooms, a positive start rate
+    and a booking curve that starts at 1 on the night and falls with the days out."""
+    limits, detect = data["limits"], data["detect"]
     if not data["market"]["elasticity"] >= 0:
         raise ValueError(
             f"{path}: market.elasticity must be zero or more, not {data['market']['elasticity']!r}"
@@ -122,16 +106,9 @@ def _validate(path: Path | str, data: dict) -> None:
             f"{path}: floor_share {limits['floor_share']!r} must be below ceiling_share "
             f"{limits['ceiling_share']!r}"
         )
-    days_out, share = curve["days_out"], curve["share"]
-    if len(days_out) != len(share) or any(b <= a for a, b in zip(days_out, days_out[1:])):
-        raise ValueError(
-            f"{path}: booking_curve.days_out must ascend, with one share each, not {days_out!r}"
-        )
-    for value in share:
-        if not 0 <= value <= 1:
-            raise ValueError(f"{path}: booking_curve.share must lie between 0 and 1, not {value!r}")
     for entry in data["hotels"]:
         key = entry["key"]
+        _curve(path, key, entry["booking_curve"])
         if len(entry["weekday_factors"]) != 7:
             raise ValueError(
                 f"{path}: hotel {key!r}: weekday_factors needs seven entries, Monday to Sunday, "
@@ -146,6 +123,25 @@ def _validate(path: Path | str, data: dict) -> None:
             _share(path, entry, field, hotel=key)
 
 
+def _curve(path: Path | str, hotel: str, curve: dict) -> None:
+    """A booking curve's days out ascend from 0 with one share each. The shares start at 1 on the
+    night and never rise with the days out, so no day expects fewer than no bookings."""
+    days_out, share = curve["days_out"], curve["share"]
+    where = f"{path}: hotel {hotel!r}: booking_curve"
+    if (
+        len(days_out) != len(share)
+        or days_out[0] != 0
+        or any(b <= a for a, b in zip(days_out, days_out[1:]))
+    ):
+        raise ValueError(
+            f"{where}.days_out must ascend from 0, with one share each, not {days_out!r}"
+        )
+    if share[0] != 1 or any(not 0 <= b <= a for a, b in zip(share, share[1:])):
+        raise ValueError(
+            f"{where}.share must start at 1 on the night and fall to 0 or more, not {share!r}"
+        )
+
+
 def _share(path: Path | str, table: dict, field: str, hotel: str | None = None) -> None:
     """A share lies between 0 and 1; the error names the field and the hotel when there is one."""
     value = table[field]
@@ -155,7 +151,7 @@ def _share(path: Path | str, table: dict, field: str, hotel: str | None = None) 
 
 
 def _hotel(row: int, entry: dict, floor_share: float, ceiling_share: float, cost_share: float):
-    start_rate = entry["start_rate"]
+    start_rate, curve = entry["start_rate"], entry["booking_curve"]
     competitors = tuple(
         Competitor(comp["name"], start_rate * (1 + comp["offset"])) for comp in entry["competitors"]
     )
@@ -167,6 +163,8 @@ def _hotel(row: int, entry: dict, floor_share: float, ceiling_share: float, cost
         air_share=entry["air_share"],
         base_occupancy=entry["base_occupancy"],
         weekday_factors=tuple(entry["weekday_factors"]),
+        curve_days_out=tuple(curve["days_out"]),
+        curve_share=tuple(curve["share"]),
         competitors=competitors,
         floor=floor_share * start_rate,
         ceiling=ceiling_share * start_rate,

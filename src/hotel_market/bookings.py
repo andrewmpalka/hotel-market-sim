@@ -54,14 +54,11 @@ ELASTICITY = 1.5  # bookings scale with (rate / comp median) ** -ELASTICITY
 BOOKING_STREAM = 2  # keeps these draws apart from the rate-shop noise (stream 1)
 
 
-def preload_mean(
-    hotel: Hotel,
-    stay_day: int,
-    customer: Customer | None = None,
-    demand_bias: float = DEMAND_BIAS,
-) -> float:
-    """Rooms expected on the books for a stay date before day 0's bookings."""
-    return normal_demand(hotel, stay_day, demand_bias) * (customer or demo()).curve(stay_day + 1)
+def preload_mean(hotel: Hotel, stay_day: int, demand_bias: float = DEMAND_BIAS) -> float:
+    """Rooms expected on the books for a stay date before day 0's bookings: normal demand times
+    the hotel's curve at the days out plus one. The curve is flat beyond its last point, so a
+    stay date past the window holds the share the hotel books that far ahead."""
+    return normal_demand(hotel, stay_day, demand_bias) * hotel.curve(stay_day + 1)
 
 
 def poisson_draw(u: np.ndarray, mean: np.ndarray) -> np.ndarray:
@@ -136,18 +133,15 @@ class Books:
         self._preload()
 
     def _preload(self) -> None:
-        """Bookings made before day 0: a draw around normal_demand x curve(days out + 1)."""
-        window = stay_window(0)
-        stays = np.array(window)
+        """Bookings made before day 0 on every stay date of the horizon: a draw around
+        normal_demand x the hotel's curve(days out + 1)."""
         for hotel in self.customer.hotels:
             i = hotel.row
-            mean = np.array(
-                [preload_mean(hotel, s, self.customer, self.demand_bias) for s in window]
-            )
-            rooms = np.minimum(poisson_draw(self._preload_luck[i, stays], mean), hotel.rooms)
-            self.preload[i, stays] = rooms
-            self.rooms[i, stays] = rooms
-            self.revenue[i, stays] = rooms * self.rates[i, stays]
+            mean = np.array([preload_mean(hotel, s, self.demand_bias) for s in range(HORIZON_DAYS)])
+            rooms = np.minimum(poisson_draw(self._preload_luck[i], mean), hotel.rooms)
+            self.preload[i] = rooms
+            self.rooms[i] = rooms
+            self.revenue[i] = rooms * self.rates[i]
 
     def expected_new_bookings(
         self, hotel: Hotel, stay_day: int, day: int, median: float | None = None
@@ -158,7 +152,7 @@ class Books:
         rate = self.rates[hotel.row, stay_day]
         if median is None:
             median = self.comp_median(day, hotel, stay_day)
-        curve = self.customer.curve
+        curve = hotel.curve
         ratio = median / self.starting_median(hotel, stay_day) if self.market_elasticity else 1.0
         demand = expected_demand(
             hotel, stay_day, day, self.demand_bias, ratio, self.market_elasticity, self.scenario

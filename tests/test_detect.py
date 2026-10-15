@@ -102,7 +102,7 @@ def test_numbers_follow_the_definitions():
         i = hotel.row
         for stay_day in (30, 38, 60, 119):
             row = table.loc[(hotel.key, stay_day)]
-            on_pace = demand.normal_demand(hotel, stay_day) * DEMO.curve(stay_day - 30)
+            on_pace = demand.normal_demand(hotel, stay_day) * hotel.curve(stay_day - 30)
             median = comp_median(30, hotel, stay_day, seed=SEED)
             assert row["rooms"] == books.rooms[i, stay_day]
             ratio = median / starting_median(hotel, stay_day, seed=SEED)

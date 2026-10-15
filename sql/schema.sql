@@ -29,8 +29,8 @@
 -- are no sequences, no engine-specific types and no procedures.
 
 -- One row per hotel and night in the day's window, read after that day's
--- bookings. On day -1 the rows are the opening position, and rooms_taken is
--- everything booked before the run.
+-- bookings. On day -1 the rows are the opening position on every night of
+-- the horizon, and rooms_taken is everything booked before the run.
 CREATE TABLE IF NOT EXISTS daily_bookings (
     as_of_day INTEGER NOT NULL,
     hotel VARCHAR NOT NULL,            -- the hotel's key in the customer file

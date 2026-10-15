@@ -77,7 +77,7 @@ def detect_numbers(
         i = hotel.row
         level = levels.get(hotel.key, 1.0)
         for stay_day in stay_window(day):
-            on_pace = normal_demand(hotel, stay_day) * customer.curve(stay_day - day) * level
+            on_pace = normal_demand(hotel, stay_day) * hotel.curve(stay_day - day) * level
             median = sources.shops.median(day, hotel, stay_day)
             row = {
                 "day": day,

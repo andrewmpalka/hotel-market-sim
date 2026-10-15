@@ -28,10 +28,10 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Links: [[RUL-03]], [[MOD-01]], [[MOD-03]], [[MOD-04]]
 
 ### DEC-03 [C] The day-0 preload: bookings made before the run starts
-- Decided: the simulator loads each stay date in the window with a seeded Poisson draw before day 0's bookings. The mean is normal_demand x curve(days out + 1), capped at the rooms, at the start rate.
+- Decided: the simulator loads every stay date of the horizon with a seeded Poisson draw before day 0's bookings. The mean is normal_demand x the hotel's curve(days out + 1), capped at the rooms, at the start rate.
 - Replaces: nothing built. Empty books would have flagged every early stay date as behind pace and left tonight's hotel empty.
-- Reason: the first 90 stay dates are already part way up the booking curve when the run starts.
-- Measured: tonight is 1 - 0.3 / 7 of the way up the curve. The convention hotel therefore starts with about 273 of its 285 expected rooms on the books.
+- Reason: the first 90 stay dates are already part way up the booking curve when the run starts. A curve that holds a share 90 or more days out gives the later stay dates that share too.
+- Measured: tonight is 1 - 0.15 / 7 of the way up the convention hotel's curve. It therefore starts with about 279 of its 285 expected rooms on the books.
 - Commit: 054edd6
 - Evidence: test_preload_mean_is_normal_demand_x_curve_of_days_out_plus_1, test_day_0_starts_with_the_bookings_made_before_the_run
 - Links: [[MOD-06]], [[DAT-07]], [[RUL-68]], [[CON-01]]
@@ -240,7 +240,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Reason: with the agent's elasticity equal to the simulator's, the agent was never wrong about price response. The question was what being wrong costs and how much learning wins back ([[FRK-02]], [[UNK-07]]).
 - Measured: a wrong value costs about three quarters of the gain ([[RES-03]]). Learning wins back about a quarter of the loss ([[RES-04]], [[RES-10]]).
 - Commit: abef71f
-- Evidence: test_the_day_59_estimate_recovers_the_simulators_elasticity, test_the_default_mode_still_gives_19012_on_seed_7, test_each_mode_records_the_elasticity_its_plans_assume
+- Evidence: test_the_day_59_estimate_recovers_the_simulators_elasticity, test_the_default_mode_gives_the_pinned_seed_7_figure, test_each_mode_records_the_elasticity_its_plans_assume
 
 ### DEC-39 [C] The cautious rule: a learning agent changes a rate only where the change beats holding across its band
 - Decided: in learn mode, --cautious scores every candidate at three elasticities. They are the estimate and the estimate [[RUL-54]] standard error lower and higher, clamped to [[RUL-51]] and [[RUL-52]].
@@ -466,11 +466,11 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Reason: a repository that can be pointed at a hotel's own data needs one place where the data comes in. With the line drawn, what the agent may know is the list of methods in sources.py.
 - Measured: the default run is unchanged ([[RES-02]]). Seed 7's decisions file is byte for byte the one before the boundary, and the estimator's inputs are bitwise identical.
 - Commit: 35967c8
-- Evidence: test_the_agent_reads_only_through_the_interfaces, test_the_forecast_is_the_simulators_demand_for_the_demo_market, test_the_default_mode_still_gives_19012_on_seed_7
+- Evidence: test_the_agent_reads_only_through_the_interfaces, test_the_forecast_is_the_simulators_demand_for_the_demo_market, test_the_default_mode_gives_the_pinned_seed_7_figure
 
 ### DEC-41 [C] Everything specific to the market is a customer file
 - Decided: customers/demo.toml holds the demo market, which [[MOD-20]] reads into a Customer ([[DAT-27]]).
-- Holds: the hotels and comp sets ([[DAT-04]]), the cost share and the rate limits, and the detect thresholds and hold period. It also holds the minimum, the booking curve and the target ([[RUL-57]] to [[RUL-69]]).
+- Holds: the hotels, their curves and comp sets ([[DAT-04]]), the cost share, rate limits, detect thresholds and hold period. It also holds the minimum, the market elasticity and the target ([[RUL-57]] to [[RUL-69]], [[RUL-124]]).
 - Command: hotel-market --customer FILE names the file, and --target overrides its target. The demo file is the default wherever none is given. A revenue run keeps its own cache folder ([[DAT-17]]).
 - Replaces: the market constants in world.py and the thresholds in detect.py and plan.py ([[RUL-14]] to [[RUL-18]], [[RUL-23]] to [[RUL-30]], [[RUL-40]]). It closes [[FRK-01]].
 - Reason: with the boundary drawn ([[DEC-40]]), the market's numbers were the last demo facts written into code. In a file they are what a hotel would hand over, and the simulator reads it too. The simulator's constants stay in code.

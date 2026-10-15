@@ -28,7 +28,7 @@ here for the rest.
 - Pairs: the 93 hotel-nights the agent changed carry the whole gain, +1.6% on them. The other 507 book identically in both runs.
 - Fixed rates: occupancy over stay dates 0 to 59 is 75.7%, 76.0%, 76.6% and 83.7% by hotel. Stay dates 140 to 149 end 78% to 91% full, and the emptiest of those nights is 57% full.
 - Table: docs/results.md, "Seed 7, days 0 to 59", "Seed 7: room revenue and contribution per hotel", "Seed 7 over only the 93", "Seed 7 with fixed rates"
-- Evidence: test_the_default_mode_still_gives_19012_on_seed_7, test_every_other_pair_books_the_same_in_both_runs, test_fixed_rate_occupancy_is_between_60_and_90_percent_for_stay_dates_0_to_59
+- Evidence: test_the_default_mode_gives_the_pinned_seed_7_figure, test_every_other_pair_books_the_same_in_both_runs, test_fixed_rate_occupancy_is_between_60_and_90_percent_for_stay_dates_0_to_59
 - Links: [[DEC-05]], [[DEC-12]], [[DEC-17]], [[DEC-22]], [[SHK-04]], [[DAT-20]], [[MOD-12]], [[RES-01]]
 
 ### RES-03 [O] A wrong elasticity, fixed:1.0 and fixed:2.0, on seeds 1 to 20

@@ -394,14 +394,15 @@ def stored_sources(
 def write_snapshot(connection, day: int, feed: Sources, customer: Customer | None = None) -> None:
     """One day of the four feeds, copied from any sources into the feed tables. The
     day's rows are deleted first, so writing a day twice leaves the tables as they
-    were. Day -1 (OPENING_DAY) writes the position before the first day."""
+    were. Day -1 (OPENING_DAY) writes the position before the first day, on every night of the
+    horizon, as the preload reaches past the first window."""
     hotels = (customer or demo()).hotels
     if day == OPENING_DAY:
         opening = feed.bookings.history(0).opening
         bookings = [
             (day, h.key, s, int(opening[h.row, s]), int(opening[h.row, s]), float(h.start_rate))
             for h in hotels
-            for s in stay_window(0)
+            for s in range(HORIZON_DAYS)
         ]
     else:
         on_books = feed.bookings.on_books(day)

@@ -201,7 +201,7 @@ marked [H], with one line that names the node it moved to.
 - File: src/hotel_market/shops.py
 - Kind: parameter
 - Meaning: the random stream for the rate-shop noise, kept apart from the booking stream [[RUL-22]]. Another stream draws other noise and other results.
-- Evidence: test_rates_depend_only_on_the_seed, test_the_default_mode_still_gives_19012_on_seed_7
+- Evidence: test_rates_depend_only_on_the_seed, test_the_default_mode_gives_the_pinned_seed_7_figure
 
 ### RUL-83 [C] REACTION_SHARE
 - Value: 0.5
@@ -231,7 +231,7 @@ marked [H], with one line that names the node it moved to.
 - File: src/hotel_market/bookings.py
 - Kind: parameter
 - Meaning: the random stream for every booking draw of a run. Another stream draws other bookings and other results.
-- Evidence: test_same_seed_gives_the_same_books_and_another_seed_does_not, test_the_default_mode_still_gives_19012_on_seed_7
+- Evidence: test_same_seed_gives_the_same_books_and_another_seed_does_not, test_the_default_mode_gives_the_pinned_seed_7_figure
 
 ## forecast.py
 
@@ -326,7 +326,7 @@ marked [H], with one line that names the node it moved to.
 - Kind: parameter
 - Meaning: the elasticity the default mode prices with. It is the simulator's own value ([[RUL-21]]), handed to the agent as an oracle ([[DEC-40]]). A real hotel does not have one.
 - Modes: the other modes replace it with a fixed value or a learned one ([[DEC-38]], [[RUL-49]]).
-- Evidence: test_elasticity_modes_parse_and_print, test_the_default_mode_still_gives_19012_on_seed_7
+- Evidence: test_elasticity_modes_parse_and_print, test_the_default_mode_gives_the_pinned_seed_7_figure
 
 ### RUL-40 [H] MIN_VALUE_AT_STAKE
 - Moved to: [[RUL-67]]
@@ -719,21 +719,22 @@ hotels themselves are data ([[DAT-04]]).
 - Meaning: a plan worth less than this over holding is held rather than queued ([[DEC-17]], [[CON-08]]). It applies in every mode, the cautious rule included ([[CON-11]], [[DEC-43]]).
 - Evidence: test_a_plan_needs_at_least_the_minimum_value_to_enter_the_queue
 
-### RUL-68 [C] days_out
-- Value: (0, 7, 30, 60, 90)
+### RUL-68 [C] booking_curve.days_out
+- Value: ((0, 7, 30, 60, 90), (0, 7, 30, 60, 90), (0, 7, 30, 60, 90), (0, 7, 30, 60, 90))
 - File: customers/demo.toml
-- Key: booking_curve.days_out
+- Key: hotels[*].booking_curve.days_out
 - Kind: parameter
-- Meaning: the days out at which the booking curve is pinned, paired with [[RUL-69]] ([[CON-01]]).
-- Evidence: test_curve_matches_the_points_and_is_linear_in_between
+- Meaning: the days out at which each hotel's booking curve is pinned, the same four points for every hotel, paired with [[RUL-69]] ([[CON-01]]). Each hotel carries its own curve since world v2.
+- Evidence: test_the_demo_file_describes_the_market_in_claude_md, test_curve_matches_the_points_and_is_linear_in_between
 
-### RUL-69 [C] share
-- Value: (1.00, 0.70, 0.40, 0.20, 0.00)
+### RUL-69 [C] booking_curve.share
+- Value: ((1.0, 0.85, 0.6, 0.45, 0.25), (1.0, 0.75, 0.5, 0.3, 0.1), (1.0, 0.7, 0.4, 0.2, 0.0), (1.0, 0.5, 0.2, 0.05, 0.0))
 - File: customers/demo.toml
-- Key: booking_curve.share
+- Key: hotels[*].booking_curve.share
 - Kind: parameter
-- Meaning: the share of final bookings on the books at each pinned days-out, linear in between.
-- Evidence: test_curve_matches_the_points_and_is_linear_in_between
+- Meaning: each hotel's share of final bookings on the books at each pinned days out, linear in between and flat beyond 90, in file order: convention, full-service, lifestyle, airport.
+- Reason: the convention hotel holds a quarter of its rooms as group blocks 90 or more days out, the full-service hotel a tenth. The lifestyle hotel keeps the transient curve. The airport hotel books late.
+- Evidence: test_the_demo_file_describes_the_market_in_claude_md, test_curve_matches_the_points_and_is_linear_in_between
 
 ### RUL-103 [C] DEMO_TABLES
 - Value: ("hotels", "days", "news", "stay_dates", "queue", "scorecard", "outcome", "gains")
@@ -754,14 +755,14 @@ hotels themselves are data ([[DAT-04]]).
 - File: src/hotel_market/demo_page.py
 - Kind: label
 - Meaning: the environment variable that names the demo file the page reads ([[DAT-33]]). make demo sets it, and the page test sets it to the file it built.
-- Evidence: test_the_page_shows_the_convention_hotel_on_day_10
+- Evidence: test_the_page_shows_the_full_service_hotel_on_day_10
 
 ### RUL-106 [C] DEFAULT_FILE
 - Value: "demo.duckdb"
 - File: src/hotel_market/demo_page.py
 - Kind: label
 - Meaning: the file the page reads when the variable is not set, the one hotel-market demo-data writes by default ([[MOD-26]]).
-- Evidence: test_the_page_shows_the_convention_hotel_on_day_10
+- Evidence: test_the_page_shows_the_full_service_hotel_on_day_10
 
 ### RUL-107 [C] ALL
 - Value: "all"
@@ -817,7 +818,7 @@ hotels themselves are data ([[DAT-04]]).
 - File: src/hotel_market/demo_page.py
 - Kind: label
 - Meaning: the key the page reads the scorecard rows for all hotels together by, the same value as [[RUL-107]].
-- Evidence: test_the_page_shows_the_convention_hotel_on_day_10
+- Evidence: test_the_page_shows_the_full_service_hotel_on_day_10
 
 ### RUL-115 [C] PLOT_HEIGHTS
 - Value: {"chart": 110, "small": 50}

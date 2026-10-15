@@ -46,8 +46,8 @@ def test_the_requests_display_strings_and_whole_numbers_are_what_a_reason_may_qu
     entries = [entry_for(10, f, table) for f in flags(10, table) if f.hotel == "convention"]
     request = request_for(10, hotel, entries)
     phrases, tokens = audit.quotable(request)
-    assert {"$1,630 more than holding", "10.7% to 14.6% below the median", "up 15.0%"} <= phrases
-    assert {"1,190", "$220", "$242", "45 to 48", "1.5"} <= phrases
+    assert {"the same as holding", "10.7% to 14.6% below the median", "up 15.0%"} <= phrases
+    assert {"956", "$220", "$242", "45 to 48", "1.5", "$300 less than holding"} <= phrases
     assert {"10", "5%", "10%", "45", "48"} <= tokens  # the day, and the figures inside names
     assert "8052.54" not in phrases | tokens  # raw values are not for quoting
     # A phrase must appear whole: a sign, a cut or one end of a range on its own is not a
@@ -55,7 +55,7 @@ def test_the_requests_display_strings_and_whole_numbers_are_what_a_reason_may_qu
     assert audit.appears("14.6%", "we sit 10.7% to 14.6% below the median", phrases, tokens)
     assert not audit.appears("14.6%", "our rate sits 14.6% below the median", phrases, tokens)
     assert not audit.appears("-14.6%", "we sit 10.7% to -14.6% below the median", phrases, tokens)
-    assert not audit.appears("$1,630", "the plan adds $1,630 in contribution", phrases, tokens)
+    assert not audit.appears("$300", "the plan loses $300 in contribution", phrases, tokens)
     assert audit.appears("10%", "we recommend raising 10% to $242", phrases, tokens)
     # The template copies the display strings whole, so every figure it quotes is known.
     [decision] = template_decisions(request)
