@@ -267,3 +267,62 @@ def test_a_source_made_for_a_tick_refuses_a_later_tick_of_its_day_on_both_routes
     assert (daily.bookings.on_books(20) == daily.bookings.on_books(20, 1)).all()
     with pytest.raises(ValueError, match="tick 2 is not 1 to 1"):
         daily.bookings.on_books(20, 2)
+
+
+def test_each_feed_lands_at_its_tick_and_answers_the_previous_value_before_it():
+    """With four ticks a day the rate shop lands at tick 2, the airlines' filing at tick 3 and the
+    events at tick 4, and the bookings at every tick. Before a feed lands, a question on a tick
+    gets the previous value, the day before's. With one tick a day every feed lands at tick 1."""
+    from hotel_market.world import EVENT_TICK, FILING_TICK, SHOP_TICK, arrival_tick
+
+    assert (
+        arrival_tick(SHOP_TICK, 4),
+        arrival_tick(FILING_TICK, 4),
+        arrival_tick(EVENT_TICK, 4),
+    ) == (
+        2,
+        3,
+        4,
+    )
+    assert (
+        arrival_tick(SHOP_TICK, 2),
+        arrival_tick(FILING_TICK, 2),
+        arrival_tick(EVENT_TICK, 2),
+    ) == (
+        2,
+        1,
+        1,
+    )
+    assert {arrival_tick(slot, 1) for slot in (SHOP_TICK, FILING_TICK, EVENT_TICK)} == {1}
+    books = simulate(7, last_day=21, ticks=4)
+    sources = simulated_sources(books)  # made with no day: any day, any tick
+    hotel = DEMO.hotel("convention")
+    # The shop: on day 10, tick 1 still shows day 9's shop, before the convention's raise.
+    assert sources.shops.median(10, hotel, 46, 1) == sources.shops.median(9, hotel, 46)
+    assert sources.shops.competitor_rates(10, hotel, 46, 1) == sources.shops.competitor_rates(
+        9, hotel, 46, 4
+    )
+    assert sources.shops.median(10, hotel, 46, 2) == sources.shops.median(10, hotel, 46)
+    assert sources.shops.median(10, hotel, 46, 2) > 1.1 * sources.shops.median(10, hotel, 46, 1)
+    # The filing: on day 20, ticks 1 and 2 show the schedule as filed by day 19.
+    assert sources.schedules.seats(20, 2)[55] == 4244 and sources.schedules.seats(20, 3)[55] == 4964
+    assert sources.schedules.passengers(20, 2)[55] == sources.schedules.passengers(19)[55]
+    assert sources.schedules.passenger_revision(20, 2)[55] == 0
+    assert sources.schedules.passenger_revision(20, 3)[55] > 0  # against the previous tick
+    assert sources.schedules.passenger_revision(20, 4)[55] == 0  # tick 3 already had it
+    assert sources.schedules.passenger_revision(21, 1)[55] == 0
+    # The events: the convention lands at tick 4 of day 10.
+    assert sources.events.known(10, 3) == [] and sources.events.known(10) != []
+    assert [e.name for e in sources.events.known(10, 4)] == ["Convention"]
+    assert [e.name for e in sources.events.known(11, 1)] == ["Convention"]
+    # The bookings: on the books grows tick by tick to the day's total, and the rates are the
+    # tick's own.
+    before = books.preload + books.daily_rooms[:20].sum(axis=0)
+    for tick in range(1, 5):
+        expected = before + books.tick_rooms[20, :tick].sum(axis=0)
+        assert (sources.bookings.on_books(20, tick) == expected).all()
+        assert (sources.bookings.rates(20, tick) == books.tick_rates[20, tick - 1]).all()
+    assert (sources.bookings.on_books(20) == sources.bookings.on_books(20, 4)).all()
+    assert (
+        sources.bookings.on_books(20, 4) == books.preload + books.daily_rooms[:21].sum(axis=0)
+    ).all()

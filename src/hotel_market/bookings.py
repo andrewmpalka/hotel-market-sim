@@ -29,6 +29,12 @@ poisson_draw turns it into a Poisson count. A change to one rate changes only th
 draws. A fixed-rate run and an agent run with the same seed therefore differ only where the agent
 acted.
 
+With N ticks a day (--ticks), each day's count is still drawn once, at the day's first tick and
+the rate then in force, and each booking is assigned to a tick with the hotel's own stream, so a
+fixed-rate run books the same rooms per hotel and stay date at every N. A rate changed at tick t
+applies from tick t+1: the bookings still to come that day are thinned, or topped up, in
+proportion to the simulator's demand response at the new rate, (new / old) ** -ELASTICITY.
+
 The books also keep a daily log of what each draw took, at what rate and against which competitor
 median. The agent can learn from the bookings it has seen (estimate.py). It reads nothing it did
 not know on the day.
@@ -54,6 +60,7 @@ ELASTICITY = 1.5  # bookings scale with (rate / comp median) ** -ELASTICITY
 BOOKING_STREAM = (
     2  # keeps these draws apart from the rate-shop noise (stream 1); the hotel's key joins it
 )
+TICK_STREAM = 4  # the split of a day's bookings over its ticks; the hotel's key and the day join it
 
 
 def preload_mean(hotel: Hotel, stay_day: int, demand_bias: float = DEMAND_BIAS) -> float:
@@ -137,6 +144,16 @@ class Books:
         self.daily_rooms = np.zeros((HORIZON_DAYS, len(hotels), HORIZON_DAYS), dtype=np.int64)
         self.daily_rates = np.zeros((HORIZON_DAYS, len(hotels), HORIZON_DAYS))
         self.daily_medians = np.zeros((HORIZON_DAYS, len(hotels), HORIZON_DAYS))
+        # The same by tick, indexed [day, tick - 1, hotel row, stay day]: the rooms each tick's
+        # bookings took and the rate in force at that tick. With one tick a day they are the
+        # daily log.
+        self.tick_rooms = np.zeros((HORIZON_DAYS, ticks, len(hotels), HORIZON_DAYS), dtype=np.int64)
+        self.tick_rates = np.zeros((HORIZON_DAYS, ticks, len(hotels), HORIZON_DAYS))
+        # The day's bookings still to come, by tick, and the mean and rate they were drawn at.
+        self._planned = np.zeros((ticks, len(hotels), HORIZON_DAYS), dtype=np.int64)
+        self._planned_mean = np.zeros((len(hotels), HORIZON_DAYS))
+        self._planned_rate = np.zeros((len(hotels), HORIZON_DAYS))
+        self._split_rng: dict[int, np.random.Generator] = {}  # by hotel row, for the day
         self.preload = np.zeros((len(hotels), HORIZON_DAYS), dtype=np.int64)
         self._preload()
 
@@ -177,29 +194,75 @@ class Books:
         change = self.hotel_change(day, hotel, stay_day)
         return comp_median(day, hotel, stay_day, seed=self.seed, hotel_change=change)
 
-    def book(self, day: int) -> None:
-        """Draw one day's new bookings for every hotel and stay date in the window."""
+    def book(self, day: int, tick: int = 1) -> None:
+        """Draw one day's new bookings for every hotel and stay date in the window. With several
+        ticks a day, tick 1 draws the day's count and splits it over the ticks, and each tick
+        then books its share."""
         window = stay_window(day)
         stays = np.array(window)
         for hotel in self.customer.hotels:
             i = hotel.row
-            medians = [self.comp_median(day, hotel, s) for s in window]
-            mean = np.array(
-                [self.expected_new_bookings(hotel, s, day, m) for s, m in zip(window, medians)]
-            )
-            wanted = poisson_draw(self._daily_luck[day, i, stays], mean)
-            taken = np.minimum(wanted, hotel.rooms - self.rooms[i, stays])
+            if tick == 1:
+                medians = [self.comp_median(day, hotel, s) for s in window]
+                mean = np.array(
+                    [self.expected_new_bookings(hotel, s, day, m) for s, m in zip(window, medians)]
+                )
+                wanted = poisson_draw(self._daily_luck[day, i, stays], mean)
+                self.daily_rates[day, i, stays] = self.rates[i, stays]
+                self.daily_medians[day, i, stays] = medians
+                if self.ticks == 1:
+                    planned = wanted
+                else:
+                    self._planned_mean[i, stays] = mean
+                    self._planned_rate[i, stays] = self.rates[i, stays]
+                    self._split_rng[i] = np.random.default_rng(
+                        [self.seed, TICK_STREAM, *hotel.key.encode(), day]
+                    )
+                    self._planned[:, i, stays] = self._split(self._split_rng[i], wanted)
+                    planned = self._planned[0, i, stays]
+            else:
+                planned = self._planned[tick - 1, i, stays]
+            taken = np.minimum(planned, hotel.rooms - self.rooms[i, stays])
             self.rooms[i, stays] += taken
             self.revenue[i, stays] += taken * self.rates[i, stays]
-            self.daily_rooms[day, i, stays] = taken
-            self.daily_rates[day, i, stays] = self.rates[i, stays]
-            self.daily_medians[day, i, stays] = medians
+            self.daily_rooms[day, i, stays] += taken
+            self.tick_rooms[day, tick - 1, i, stays] = taken
+            self.tick_rates[day, tick - 1, i, stays] = self.rates[i, stays]
 
-    def set_rates(self, changes: dict[tuple[str, int], float]) -> None:
-        """New rates by (hotel key, stay day). Called after a day's bookings, so
-        they apply from the next day."""
+    def _split(self, rng: np.random.Generator, wanted: np.ndarray) -> np.ndarray:
+        """Each stay date's bookings assigned to the day's ticks, one draw per booking from the
+        hotel's own stream: a [tick, stay] array of counts that sums to `wanted` over the ticks."""
+        return rng.multinomial(wanted, np.full(self.ticks, 1 / self.ticks)).T
+
+    def set_rates(
+        self, changes: dict[tuple[str, int], float], day: int | None = None, tick: int | None = None
+    ) -> None:
+        """New rates by (hotel key, stay day). Called after a day's bookings, so they apply from
+        the next day. With several ticks, called after a tick's bookings with the day and tick,
+        so a change applies from the next tick: the bookings still to come that day are thinned
+        or topped up in proportion to the demand response at the new rate."""
         for (hotel_key, stay_day), rate in changes.items():
-            self.rates[self.customer.hotel(hotel_key).row, stay_day] = rate
+            hotel = self.customer.hotel(hotel_key)
+            i = hotel.row
+            if tick is not None and tick < self.ticks and day is not None:
+                self._rebook(i, stay_day, rate, tick)
+            self.rates[i, stay_day] = rate
+
+    def _rebook(self, row: int, stay_day: int, rate: float, tick: int) -> None:
+        """Thin or top up the stay date's bookings planned for the ticks after `tick`, in
+        proportion to the demand response at the new rate against the rate they were drawn at."""
+        old = self._planned_rate[row, stay_day]
+        if not old or rate == old:
+            return
+        factor = (rate / old) ** -ELASTICITY
+        rng = self._split_rng[row]
+        later = self._planned[tick:, row, stay_day]
+        if factor < 1:
+            later[:] = rng.binomial(later, factor)
+        else:
+            extra = self._planned_mean[row, stay_day] / self.ticks * (factor - 1)
+            later[:] += rng.poisson(extra, size=later.shape)
+        self._planned_rate[row, stay_day] = rate
 
     def occupancy(self, hotel: Hotel, stays: Sequence[int]) -> float:
         """Rooms sold over rooms available, for a range of stay dates."""
@@ -238,8 +301,10 @@ def lagged_change(
 
 
 # Called after each day's bookings on days 0 to 59; returns new rates by
-# (hotel key, stay day), which apply from the next day.
-Decide = Callable[[int, Books], dict[tuple[str, int], float]]
+# (hotel key, stay day), which apply from the next day. With several ticks a day it is called
+# after each tick's bookings with the tick as a third argument, and the rates apply from the
+# next tick.
+Decide = Callable[..., dict[tuple[str, int], float]]
 
 
 def simulate(
@@ -266,9 +331,13 @@ def simulate(
     """
     books = Books(seed, customer, demand_bias, react, market_elasticity, scenario, churn, ticks)
     for day in range(last_day + 1):
-        books.book(day)
-        if decide is not None and day < SIM_DAYS:
-            books.set_rates(decide(day, books))
+        for tick in range(1, ticks + 1):
+            books.book(day, tick)
+            if decide is not None and day < SIM_DAYS:
+                if ticks == 1:
+                    books.set_rates(decide(day, books))
+                else:
+                    books.set_rates(decide(day, books, tick), day, tick)
     return books
 
 

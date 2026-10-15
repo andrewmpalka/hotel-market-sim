@@ -49,7 +49,15 @@ from hotel_market.sources import (
     Schedules,
     Sources,
 )
-from hotel_market.world import SIM_DAYS, TICKS_PER_DAY, Hotel
+from hotel_market.world import (
+    EVENT_TICK,
+    FILING_TICK,
+    SHOP_TICK,
+    SIM_DAYS,
+    TICKS_PER_DAY,
+    Hotel,
+    arrival_tick,
+)
 
 
 def _through(as_of_day: int | None) -> int:
@@ -67,14 +75,25 @@ class SimulatedBookings(Limited, Bookings):
         self._preload = books.preload.copy()
         self._daily_rooms = books.daily_rooms[: _through(as_of_day)].copy()
         self._daily_rates = books.daily_rates[: _through(as_of_day)].copy()
+        self._tick_rooms = books.tick_rooms[: _through(as_of_day)].copy()
+        self._tick_rates = books.tick_rates[: _through(as_of_day)].copy()
 
     def on_books(self, as_of_day: int, as_of_tick: int | None = None) -> np.ndarray:
         self._known(as_of_day, as_of_tick)
-        return self._preload + self._daily_rooms[: as_of_day + 1].sum(axis=0)
+        if self.ticks == 1:
+            return self._preload + self._daily_rooms[: as_of_day + 1].sum(axis=0)
+        tick = self._tick(as_of_tick)
+        return (
+            self._preload
+            + self._daily_rooms[:as_of_day].sum(axis=0)
+            + self._tick_rooms[as_of_day, :tick].sum(axis=0)
+        )
 
     def rates(self, as_of_day: int, as_of_tick: int | None = None) -> np.ndarray:
         self._known(as_of_day, as_of_tick)
-        return self._daily_rates[as_of_day].copy()
+        if self.ticks == 1:
+            return self._daily_rates[as_of_day].copy()
+        return self._tick_rates[as_of_day, self._tick(as_of_tick) - 1].copy()
 
     def history(self, as_of_day: int) -> BookingHistory:
         self._known(as_of_day, before=True)
@@ -102,10 +121,18 @@ class SimulatedRateShops(Limited, RateShops):
     def _hotel_change(self, shop_day: int, hotel: Hotel, stay_day: int) -> float:
         return lagged_change(self._daily_rates, self._react, shop_day, hotel, stay_day)
 
+    def _landed(self, shop_day: int, as_of_tick: int | None) -> int:
+        """The shop a question on (shop_day, tick) sees: the day's own once it has landed, else the
+        day before's, the previous value."""
+        self._known(shop_day, as_of_tick)
+        if self._tick(as_of_tick) >= arrival_tick(SHOP_TICK, self.ticks):
+            return shop_day
+        return shop_day - 1
+
     def competitor_rates(
         self, shop_day: int, hotel: Hotel, stay_day: int, as_of_tick: int | None = None
     ) -> dict[str, float]:
-        self._known(shop_day, as_of_tick)
+        shop_day = self._landed(shop_day, as_of_tick)
         return comp_rates(
             shop_day,
             hotel,
@@ -117,7 +144,7 @@ class SimulatedRateShops(Limited, RateShops):
     def median(
         self, shop_day: int, hotel: Hotel, stay_day: int, as_of_tick: int | None = None
     ) -> float:
-        self._known(shop_day, as_of_tick)
+        shop_day = self._landed(shop_day, as_of_tick)
         return comp_median(
             shop_day,
             hotel,
@@ -152,7 +179,11 @@ class SimulatedSchedules(Limited, Schedules):
     def _filing(
         self, as_of_day: int, as_of_tick: int | None = None
     ) -> tuple[np.ndarray, np.ndarray]:
+        """The schedule a question on (day, tick) sees: the day's filing once it has landed, else
+        the schedule as filed by the day before."""
         self._known(as_of_day, as_of_tick)
+        if self._tick(as_of_tick) < arrival_tick(FILING_TICK, self.ticks):
+            as_of_day -= 1
         return self._filed[max(day for day in self._filed if day <= as_of_day)]
 
     def seats(self, as_of_day: int, as_of_tick: int | None = None) -> np.ndarray:
@@ -188,7 +219,11 @@ class SimulatedEvents(Limited, Events):
         self._events = events_as_of(HORIZON_DAYS if as_of_day is None else as_of_day)
 
     def known(self, as_of_day: int, as_of_tick: int | None = None) -> list[Event]:
+        """The events announced by the day and landed by the tick: the day's own announcements
+        land at the events' tick, before which the day before's calendar answers."""
         self._known(as_of_day, as_of_tick)
+        if self._tick(as_of_tick) < arrival_tick(EVENT_TICK, self.ticks):
+            as_of_day -= 1
         return [event for event in self._events if event.known_day <= as_of_day]
 
 
@@ -209,10 +244,11 @@ def simulated_sources(
 def deciding(decider: Agent | PacePolicy) -> Decide:
     """The agent, or a rule such as the pace policy, as the simulator's decide hook. After each
     day's bookings it reads the day through the simulated sources and returns the rate changes
-    for tomorrow."""
+    for tomorrow. With several ticks a day it is called after each tick's bookings with the tick,
+    reads the sources as of that tick, and returns the changes for the next tick."""
 
-    def decide(day: int, books: Books) -> dict[tuple[str, int], float]:
-        return decider.decide(day, simulated_sources(books, day))
+    def decide(day: int, books: Books, tick: int | None = None) -> dict[tuple[str, int], float]:
+        return decider.decide(day, simulated_sources(books, day, tick))
 
     return decide
 

@@ -176,6 +176,27 @@ marked [H], with one line that names the node it moved to.
 - Guard: every source method takes as_of_tick, which defaults to the day's last tick. A source made for a tick refuses a later tick of its day on both routes ([[DAT-25]]).
 - Evidence: test_a_source_made_for_a_tick_refuses_a_later_tick_of_its_day_on_both_routes
 
+### RUL-129 [C] SHOP_TICK
+- Value: 2
+- File: src/hotel_market/world.py
+- Kind: parameter
+- Meaning: the tick of the day the rate shop lands at with N ticks, tick 1 when N is under 2 (arrival_tick). Before it lands, a question on a tick gets the day before's shop ([[DEC-67]]).
+- Evidence: test_each_feed_lands_at_its_tick_and_answers_the_previous_value_before_it
+
+### RUL-130 [C] FILING_TICK
+- Value: 3
+- File: src/hotel_market/world.py
+- Kind: parameter
+- Meaning: the tick the airlines' filing lands at with N ticks, tick 1 when N is under 3. Before it lands, a question gets the schedule as filed by the day before ([[DEC-67]]).
+- Evidence: test_each_feed_lands_at_its_tick_and_answers_the_previous_value_before_it
+
+### RUL-131 [C] EVENT_TICK
+- Value: 4
+- File: src/hotel_market/world.py
+- Kind: parameter
+- Meaning: the tick the events feed lands at with N ticks, tick 1 when N is under 4. Before it lands, a question gets the calendar as of the day before ([[DEC-67]]).
+- Evidence: test_each_feed_lands_at_its_tick_and_answers_the_previous_value_before_it
+
 ### RUL-14 [H] FLOOR_SHARE
 - Moved to: [[RUL-59]]
 
@@ -263,6 +284,13 @@ marked [H], with one line that names the node it moved to.
 - Evidence: test_same_seed_gives_the_same_books_and_another_seed_does_not, test_the_default_mode_gives_the_pinned_seed_7_figure
 
 ## forecast.py
+
+### RUL-132 [C] TICK_STREAM
+- Value: 4
+- File: src/hotel_market/bookings.py
+- Kind: parameter
+- Meaning: the random stream that assigns a day's bookings to its ticks, keyed with the hotel's key and the day, apart from the booking draws ([[RUL-22]]) and the shop noise ([[RUL-20]]) ([[DEC-67]]).
+- Evidence: test_the_fixed_rate_run_books_the_same_rooms_at_one_tick_a_day_and_at_four
 
 ### RUL-88 [C] ORACLE_MARKET_ELASTICITY
 - Value: 1.0

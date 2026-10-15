@@ -8,19 +8,19 @@ nodes and its words, len(text.split()) over the file.
 
 | File | Nodes | Words |
 | --- | ---: | ---: |
-| modules.md | 30 | 4,119 |
-| data.md | 33 | 4,393 |
-| rules.md | 128 | 5,561 |
+| modules.md | 30 | 4,135 |
+| data.md | 33 | 4,388 |
+| rules.md | 132 | 5,762 |
 | shocks.md | 7 | 762 |
 | concepts.md | 11 | 1,197 |
 | measures.md | 14 | 962 |
 | sources.md | 4 | 855 |
-| decisions.md | 66 | 9,720 |
-| results.md | 42 | 7,055 |
+| decisions.md | 67 | 9,884 |
+| results.md | 42 | 7,054 |
 | forks.md | 14 | 2,039 |
-| unknowns.md | 16 | 2,191 |
-| every node file | 365 | 38,854 |
-| index.md | | 2,991 |
+| unknowns.md | 16 | 2,183 |
+| every node file | 370 | 39,221 |
+| index.md | | 2,988 |
 
 ## Modules (`modules.md`)
 
@@ -109,6 +109,9 @@ nodes and its words, len(text.split()) over the file.
 - RUL-12 [C] SIM_DAYS — src/hotel_market/world.py
 - RUL-13 [C] LOOKAHEAD_DAYS — src/hotel_market/world.py
 - RUL-128 [C] TICKS_PER_DAY — src/hotel_market/world.py
+- RUL-129 [C] SHOP_TICK — src/hotel_market/world.py
+- RUL-130 [C] FILING_TICK — src/hotel_market/world.py
+- RUL-131 [C] EVENT_TICK — src/hotel_market/world.py
 - RUL-14 [H] FLOOR_SHARE — kg/rules.md
 - RUL-15 [H] CEILING_SHARE — kg/rules.md
 - RUL-16 [H] COST_SHARE — kg/rules.md
@@ -125,6 +128,7 @@ nodes and its words, len(text.split()) over the file.
 - RUL-84 [C] REACTION_LAG — src/hotel_market/shops.py
 - RUL-21 [C] ELASTICITY — src/hotel_market/bookings.py
 - RUL-22 [C] BOOKING_STREAM — src/hotel_market/bookings.py
+- RUL-132 [C] TICK_STREAM — src/hotel_market/bookings.py
 - RUL-88 [C] ORACLE_MARKET_ELASTICITY — src/hotel_market/forecast.py
 - RUL-26 [H] PACE_SHARE — kg/rules.md
 - RUL-27 [H] PACE_NOISE_SD — kg/rules.md
@@ -230,32 +234,33 @@ nodes and its words, len(text.split()) over the file.
 - DEC-64 [C] Each hotel's luck and shop noise come from its own stream
 - DEC-65 [C] The market's price response is on by default, at 1.0
 - DEC-66 [C] Each hotel carries its own booking curve
+- DEC-67 [C] A day's bookings are drawn once and split over its ticks
 - DEC-05 [C] The booking loop plays out to day 149 with rates frozen from day 60
 - DEC-06 [C] The 7-day hold after an accepted rate change
-- DEC-07 [C] A pace flag needs a gap beyond both 10% of rooms and 3 standard deviations
+- DEC-07 [C] A pace flag needs a gap beyond 10% of rooms and 3 standard deviations
 - DEC-08 [H] The convention's peak night was fixed at stay date 46
-- DEC-09 [C] The peak night comes from expected demand as of the day the event is known
+- DEC-09 [C] The peak night is the expected-demand peak as of the event's known day
 - DEC-10 [C] A minimum stay is advice only, never simulated
 - DEC-11 [H] The rule "seats up, so raise the rate"
-- DEC-12 [C] Contribution with a room cost is the target; the start rate is best on ordinary nights
+- DEC-12 [C] Contribution with a room cost is the target; the start rate wins ordinary nights
 - DEC-13 [C] Every flag gets scored candidates, with hold as the default
-- DEC-14 [C] The airport hotel's base occupancy is 0.85; the other three are 0.75
+- DEC-14 [C] Base occupancy is 0.85 at the airport hotel and 0.75 elsewhere
 - DEC-15 [H] Rates followed the day of the week
 - DEC-16 [C] Flat rates: starting and competitor rates do not follow the day of the week
-- DEC-17 [C] A plan must be worth at least $250 over holding to enter the queue
+- DEC-17 [C] A plan needs $250 over holding to enter the queue
 - DEC-18 [H] One candidate moved all of a flag's stay dates together
-- DEC-19 [C] The best candidate is chosen separately for each day of the week within a flag
+- DEC-19 [C] The best candidate is chosen per day of the week within a flag
 - DEC-20 [H] Expected bookings were capped at the unsold rooms
 - DEC-21 [C] Estimated bookings are the exact expectation E[min(N, unsold)] for a Poisson N
-- DEC-22 [C] One random number per booking draw, fixed by the seed before the run
+- DEC-22 [C] One random number per booking draw, fixed by the seed
 - DEC-26 [H] AGENT_ELASTICITY is the agent's own constant and never imports the simulator's
 - DEC-35 [C] Every number is synthetic, and the schedule's columns follow a published data dictionary
 - DEC-36 [C] The summary reports what the run produces; nothing is tuned to force a gain
 - DEC-37 [H] Competitor noise drawn once per competitor and stay date
 - DEC-62 [C] The shop noise is fresh every shop day
 - DEC-38 [C] The agent can learn its elasticity from the bookings
-- DEC-39 [C] The cautious rule changes a rate only where it beats holding across the band
-- DEC-43 [C] The cautious rule tests the band alone, and one minimum applies to the plan
+- DEC-39 [C] The cautious rule changes a rate only where it beats hold across the band
+- DEC-43 [C] The cautious rule tests the band alone; one minimum applies to the plan
 - DEC-44 [C] Every request figure is a display string the prompt says to copy whole
 - DEC-45 [C] The tables keep each decision's request, answer and outcome
 - DEC-46 [T] The agent reprices when data arrives during the day
@@ -263,33 +268,33 @@ nodes and its words, len(text.split()) over the file.
 - DEC-50 [C] A demand bias the agent never sees
 - DEC-51 [C] Competitors can follow the hotel's rate changes, as an opt-in arm
 - DEC-52 [C] The market can answer the comp median's level
-- DEC-53 [C] The filings are a named scenario, and the churn files what a feed files
-- DEC-54 [C] A learning agent can feed the fitted demand level back into its forecast
-- DEC-55 [C] A rule-based control is the fair comparison, because frozen rates never move
+- DEC-53 [C] The filings are a named scenario; the churn files what a feed files
+- DEC-54 [C] A learning agent can feed the fitted demand level into its forecast
+- DEC-55 [C] A rule-based control is the fair comparison; frozen rates never move
 - DEC-59 [C] The README names the competitors' raise as the convention's source of gain
 
 ### Engineering
 
-- DEC-23 [C] The cache is keyed by seed, day and hotel, with a digest of the request
+- DEC-23 [C] The cache key is seed, day and hotel, with the request's digest
 - DEC-24 [H] Template answers were cached like the model's
-- DEC-25 [C] Only the model's answers are cached; the template is a function of the request
+- DEC-25 [C] Only the model's answers are cached; the template needs no cache
 - DEC-27 [H] The modules lived flat at the repository root
-- DEC-28 [C] The code is the package src/hotel_market, with pyproject.toml and a console command
+- DEC-28 [C] The code is the package src/hotel_market, with pyproject.toml and a command
 - DEC-29 [H] A hosted workflow ran the tests on every push
 - DEC-30 [C] No hosted CI; the checks run locally through make and pytest
 - DEC-31 [H] One agent.py held the planning, the model call and the daily loop
-- DEC-32 [C] The agent is three modules: plan.py, model.py and agent.py, with text.py for shared wording
+- DEC-32 [C] The agent is plan.py, model.py and agent.py, with text.py for shared wording
 - DEC-33 [C] ruff formats the code at 100 columns, and lint checks the format
-- DEC-34 [C] The answer schema lists the request's own entry ids and options as enums
-- DEC-40 [C] The agent reads data only through four interfaces; the simulator is one implementation
+- DEC-34 [C] The answer schema lists the request's entry ids and options as enums
+- DEC-40 [C] The agent reads only through four interfaces; the simulator is one implementation
 - DEC-41 [C] Everything specific to the market is a customer file
 - DEC-42 [C] Stored tables the agent can run against a day at a time
 - DEC-47 [C] The oracle reviewer is a grader outside the agent's path
 - DEC-48 [C] The bench is one sweep with a reviewer per arm
-- DEC-56 [C] The band verdict is a display field; a small band-end gain reads to the dollar
+- DEC-56 [C] The band verdict is a display field; small band-end gains read to the dollar
 - DEC-57 [C] A read-only demo page over a file code writes
 - DEC-58 [C] The demo page fits one window, and every date is a calendar date
-- DEC-60 [C] Every printed mean carries its spread, and every ahead count a sign test
+- DEC-60 [C] Every printed mean carries its spread, every ahead count a sign test
 - DEC-61 [C] The sources hold only what the day knows, on both routes
 
 ## Results (`results.md`)
@@ -332,7 +337,7 @@ nodes and its words, len(text.split()) over the file.
 - RES-36 [C] The reviewers at learn:2.0, with and without the cautious rule
 - RES-37 [C] The reviewers at learn:1.0 cautious in the reacting market at 0.5
 - RES-38 [O] The decline rate by standard-error group in the learn arms
-- RES-39 [O] The reviewers ranked across the learned modes, and the learn arms' cost
+- RES-39 [O] The reviewers ranked across the learned modes, and the arms' cost
 - RES-40 [C] The agent against the never-cut policy
 - RES-41 [C] The convention without the competitors' raise
 - RES-42 [C] The default agent in a revenue manager's measures
@@ -360,15 +365,15 @@ nodes and its words, len(text.split()) over the file.
 - UNK-02 [C] Whether the enum schema behaves as expected against the live API
 - UNK-03 [H] Whether the container image builds and its tests pass
 - UNK-04 [H] Whether the suite passes on Python 3.12 and 3.13
-- UNK-05 [U] How a change in arriving passengers turns into hotel demand in a real market
+- UNK-05 [U] How arriving passengers turn into hotel demand in a real market
 - UNK-06 [U] The real cost to service an occupied room
 - UNK-07 [U] The real price elasticity, and what the learned estimate settles
 - UNK-08 [U] Whether the measured gains say anything about a real hotel
 - UNK-09 [C] What a live run costs and how long it takes
 - UNK-10 [U] Whether sql/schema.sql runs on a cloud warehouse as written
-- UNK-11 [U] How competitors react to a rate change and what that does to the revenue target
+- UNK-11 [U] How competitors react to a rate change, and what it does to revenue
 - UNK-12 [U] The effect of cancellations, no-shows, groups and room types
-- UNK-13 [U] Whether a 5% cut is enough: the largest cut on the menu is 5%
+- UNK-13 [U] Whether a 5% cut, the largest on the menu, is enough
 - UNK-14 [U] The bias in an elasticity estimate when a hotel prices to demand
 - UNK-15 [U] The real market-level price elasticity
 - UNK-16 [O] What the reviewers do on world v2

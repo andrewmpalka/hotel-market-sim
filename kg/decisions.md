@@ -76,6 +76,15 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Measured: on seed 7 the two downtown hotels change no rate on the convention nights, because most of their business is in before the announcement ([[RES-02]], [[RES-41]]).
 - Evidence: test_curve_matches_the_points_and_is_linear_in_between, test_preload_mean_is_normal_demand_x_curve_of_days_out_plus_1, test_the_demo_file_describes_the_market_in_claude_md
 - Links: [[CON-01]], [[DAT-04]], [[DEC-03]], [[FRK-12]], [[RES-02]], [[RES-41]]
+### DEC-67 [C] A day's bookings are drawn once and split over its ticks
+- Decided: with N ticks a day, tick 1 draws the day's count as before and assigns each booking to a tick from the hotel's own stream ([[RUL-132]]). Each tick then books its share.
+- Replaces: nothing built; with one tick a day the loop is the daily one, and its log is byte for byte what it was.
+- Reason: a fixed-rate run must book the same rooms per hotel and stay date at every N, not the same in expectation, so a finer clock changes only what the agent sees and when it acts.
+- Change: a rate changed at tick t applies from tick t+1. The bookings still to come that day are thinned by a binomial, or topped up by a Poisson, at (new / old) ** -ELASTICITY ([[RUL-21]]).
+- Feeds: each feed lands at a fixed tick, the shop at [[RUL-129]], the filing at [[RUL-130]], the events at [[RUL-131]], and bookings at every tick. Before a feed lands, a tick reads the previous value.
+- Evidence: test_the_fixed_rate_run_books_the_same_rooms_at_one_tick_a_day_and_at_four, test_a_rate_changed_at_a_tick_thins_or_tops_up_the_ticks_after_it, test_the_default_clock_books_byte_for_byte_what_it_booked_before_the_split
+- Links: [[MOD-06]], [[MOD-19]], [[DAT-07]], [[RUL-128]], [[DEC-22]], [[DEC-64]]
+
 ### DEC-05 [C] The booking loop plays out to day 149 with rates frozen from day 60
 - Decided: the agent decides on days 0 to 59. The loop keeps booking to day 149 with no new decisions. The window stops at stay date 149, so every stay date from 0 to 149 ends complete.
 - Replaces: nothing built; the first plan stopped the loop at day 59.
@@ -94,7 +103,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: test_the_hold_silences_pace_flags_for_7_days_but_not_shock_flags, test_accepted_rates_apply_and_hold_those_stay_dates_for_7_days
 - Links: [[MOD-07]], [[MOD-10]], [[DAT-09]], [[CON-10]]
 
-### DEC-07 [C] A pace flag needs a gap beyond both 10% of rooms and 3 standard deviations
+### DEC-07 [C] A pace flag needs a gap beyond 10% of rooms and 3 standard deviations
 - Decided: the pace threshold is max(0.10 x rooms, 3 x sqrt(normal demand x curve)) ([[RUL-62]], [[RUL-63]]).
 - Replaces: nothing built; a single percentage floor was the first idea.
 - Reason: a percentage of rooms alone flags far-out stay dates, where few rooms are on the books and noise dominates. 3 x sqrt(mean) is three Poisson standard deviations.
@@ -110,7 +119,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Commit: 53a7081
 - Links: [[SHK-01]]
 
-### DEC-09 [C] The peak night comes from expected demand as of the day the event is known
+### DEC-09 [C] The peak night is the expected-demand peak as of the event's known day
 - Decided: peak_night(hotel, event, sources) in [[MOD-18]] is the event night with the highest expected demand as of event.known_day. The earliest night wins a tie.
 - Replaces: [[DEC-08]]
 - Reason: the peak must follow the data and the as-of rule. For the convention it is Thursday 45 at both downtown hotels.
@@ -134,7 +143,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Commit: abef71f
 - Links: [[SHK-02]]
 
-### DEC-12 [C] Contribution with a room cost is the target; the start rate is best on ordinary nights
+### DEC-12 [C] Contribution with a room cost is the target; the start rate wins ordinary nights
 - Decided: each occupied room costs one third of the hotel's start rate to service ([[RUL-61]]). Contribution is room revenue minus that cost for every room sold, and the agent scores candidates on it.
 - Replaces: [[DEC-11]], and revenue as the implicit target
 - Reason: revenue rewards selling every room at any price. With ELASTICITY 1.5 the contribution-best rate on a night that will not sell out is 3 x cost. That is the start rate, so only a night that may sell out can pay for a raise.
@@ -152,7 +161,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: test_each_day_of_the_week_gets_hold_raise_5_raise_10_and_lower_5_clamped_to_the_limits, test_a_comp_median_drop_adds_lower_halfway_to_the_new_median, test_a_model_that_declines_changes_no_rate
 - Links: [[MOD-08]], [[DAT-11]], [[DAT-12]], [[CON-08]]
 
-### DEC-14 [C] The airport hotel's base occupancy is 0.85; the other three are 0.75
+### DEC-14 [C] Base occupancy is 0.85 at the airport hotel and 0.75 elsewhere
 - Decided: the customer file stores base occupancy per hotel ([[DAT-04]]), and the airport hotel's is 0.85.
 - Replaces: one base occupancy of 0.75 for every hotel.
 - Reason: the value is a choice about the scenario. At 0.75 the new flights never fill the airport hotel, so the schedule data would never matter there. At 0.85 Mondays, Thursdays and Sundays after day 50 are expected 101% full.
@@ -177,7 +186,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: test_competitor_rates_are_base_rate_x_noise_with_no_weekly_pattern, test_hotel_starts_level_with_its_comp_median
 - Links: [[MOD-05]], [[DEC-12]], [[RES-11]]
 
-### DEC-17 [C] A plan must be worth at least $250 over holding to enter the queue
+### DEC-17 [C] A plan needs $250 over holding to enter the queue
 - Decided: a plan needs a value at stake of at least $250 ([[RUL-67]], a setting of the customer file since [[DEC-41]]). An entry below it is recorded as a hold with the reason "under the $250 minimum".
 - Replaces: a queue of every entry whose best candidate beat hold by any amount.
 - Reason: the first full agent run made rate changes worth under $10, and some of them lost money ([[RES-11]]). A revenue manager should not be shown an $8 recommendation.
@@ -193,7 +202,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Commit: abef71f
 - Links: [[SHK-02]], [[RES-11]]
 
-### DEC-19 [C] The best candidate is chosen separately for each day of the week within a flag
+### DEC-19 [C] The best candidate is chosen per day of the week within a flag
 - Decided: the planner groups a flag's stay dates by weekday ([[DAT-12]]). Each group gets its own best candidate, and hold wins a tie. The plan names the days that change, and value at stake is summed over them.
 - Replaces: [[DEC-18]]
 - Reason: the quiet days of the week in a long flag should hold while the busy ones move.
@@ -219,7 +228,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: test_expected_bookings_is_the_mean_of_a_poisson_count_that_stops_at_the_unsold_rooms, test_expected_bookings_matches_the_simulators_daily_draws, test_a_night_close_to_full_raises_where_a_cap_on_demand_would_hold
 - Links: [[MOD-08]], [[DAT-10]], [[CON-09]]
 
-### DEC-22 [C] One random number per booking draw, fixed by the seed before the run
+### DEC-22 [C] One random number per booking draw, fixed by the seed
 - Decided: every draw of the run has its own uniform random number, drawn in one go from the seed. The function poisson_draw turns it into a count by the Poisson quantile. A bigger mean never gives a smaller count on the same number.
 - Replaces: nothing built; a shared random stream was the alternative.
 - Reason: a rate change on one stay date leaves every other draw as it was. The fixed-rate and agent runs therefore differ only where the agent acted, and the changed-pairs comparison is exact.
@@ -282,7 +291,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Commit: abef71f
 - Evidence: test_the_day_59_estimate_recovers_the_simulators_elasticity, test_the_default_mode_gives_the_pinned_seed_7_figure, test_each_mode_records_the_elasticity_its_plans_assume
 
-### DEC-39 [C] The cautious rule changes a rate only where it beats holding across the band
+### DEC-39 [C] The cautious rule changes a rate only where it beats hold across the band
 - Decided: in learn mode, --cautious scores every candidate at three elasticities. They are the estimate and the estimate [[RUL-54]] standard error lower and higher, clamped to [[RUL-51]] and [[RUL-52]].
 - Rule: a candidate replaces hold only if it is ahead of hold at all three. The best such candidate wins; otherwise the day of the week holds ([[CON-11]], [[MOD-08]]).
 - Records: each plan record, the request and the log line store all three values and the rejected candidates ([[DAT-11]], [[DAT-16]], [[DAT-18]]). Without the option nothing changes.
@@ -292,7 +301,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Commit: abef71f
 - Evidence: test_under_the_cautious_rule_a_candidate_that_loses_at_one_end_is_held, test_the_cautious_rule_scores_each_candidate_one_standard_error_either_side, test_a_cautious_agent_records_the_band_and_what_it_rejected
 
-### DEC-43 [C] The cautious rule tests the band alone, and one minimum applies to the plan
+### DEC-43 [C] The cautious rule tests the band alone; one minimum applies to the plan
 - Decided: a cautious candidate replaces hold when it beats hold at the estimate and at both band ends ([[CON-11]]). The minimum value at stake ([[RUL-67]]) applies to the whole plan through Entry.queued, as in every mode.
 - Detail: the rejected count now includes every candidate ahead of hold at the estimate, not only those worth $250. The default run and the plain learn runs are unchanged.
 - Replaces: the minimum per day of the week that [[DEC-39]] first added. Under it a day of the week worth less than $250 on its own held.
@@ -368,7 +377,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: test_the_market_elasticity_scales_each_days_draw_by_the_medians_level, test_the_grader_scores_a_raise_against_the_median_the_reaction_moves, test_the_oracle_reviewer_is_told_the_market_elasticity_and_the_reaction
 - Links: [[DEC-51]], [[DEC-50]], [[RUL-87]], [[RUL-88]], [[RES-26]], [[RES-27]], [[UNK-11]], [[UNK-15]], [[FRK-08]], [[FRK-09]]
 
-### DEC-53 [C] The filings are a named scenario, and the churn files what a feed files
+### DEC-53 [C] The filings are a named scenario; the churn files what a feed files
 - Decided: a Scenario is a named list of filings ([[DAT-03]]). The default is AIR_SHOCKS as it was. --scenario picks another from SCENARIOS, and the upgauge scenario holds an upgauge and a frequency cut ([[SHK-05]], [[SHK-06]]).
 - Kinds: a filing adds routes, suspends one, swaps a route's equipment, sets its daily flights or shifts its departures ([[RUL-89]]). An equipment change moves the seats while the flight count stays. A time change moves no seat.
 - Churn: --churn files the seed's weekly revisions on top, each under the detect threshold ([[SHK-07]]). A detector that fires on any revision fires on them. The threshold detector does not.
@@ -377,7 +386,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: test_the_churn_files_weekly_revisions_below_the_threshold, test_a_detector_that_fires_on_any_revision_is_caught_by_the_churn, test_a_scenario_and_the_churn_go_to_both_runs
 - Links: [[DAT-03]], [[SHK-05]], [[SHK-06]], [[SHK-07]], [[RUL-89]], [[RES-28]], [[DEC-04]], [[UNK-05]]
 
-### DEC-54 [C] A learning agent can feed the fitted demand level back into its forecast
+### DEC-54 [C] A learning agent can feed the fitted demand level into its forecast
 - Decided: learn:X --level scales the agent's forecast, the pace baseline included, by exp(intercept) ([[RUL-96]] to [[RUL-98]]). The factor is 1 until the fit has enough observations. Every plan record carries it ([[DAT-21]]).
 - Baseline: the estimator's baseline stays unscaled, so the intercept keeps measuring the level against the raw forecast ([[MOD-16]]). The factor therefore does not compound.
 - Reason: the intercept absorbed a demand-level error and the agent discarded it ([[DEC-38]]). At a bias of 0.9 the plain learner lost money ([[RES-21]]). The arm asks whether the level fed back recovers that, and what it costs at 1.0.
@@ -385,7 +394,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: test_a_level_agent_scales_its_forecast_by_the_fitted_demand_level, test_a_level_scales_one_hotels_pace_baseline_and_expected_demand, test_the_level_factor_is_the_fitted_level_once_the_fit_has_enough_observations
 - Links: [[DEC-38]], [[DEC-50]], [[DEC-52]], [[RUL-96]], [[RUL-97]], [[RUL-98]], [[RES-29]], [[RES-30]], [[RES-31]], [[RES-32]], [[UNK-07]], [[UNK-08]]
 
-### DEC-55 [C] A rule-based control is the fair comparison, because frozen rates never move
+### DEC-55 [C] A rule-based control is the fair comparison; frozen rates never move
 - Decided: --policy runs a rule-based control beside each arm ([[MOD-25]]). pace raises POLICY_STEP where a stay date runs ahead of pace and lowers it where behind ([[RUL-99]]). Both keep the agent's hold, floor and ceiling.
 - Rules: rules keeps the pace steps and adds the retired rules of [[DEC-11]]. It raises on an event or seat-up flag and lowers on a seat-cut flag. A flag whose causes point both ways is left alone.
 - Why rules: pace skips every flag that is not a pace flag. It cannot act on the two shocks that carry most of the gain ([[RES-06]]). Against it the agent was beaten on the part of the problem the control was never given.
@@ -405,7 +414,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 
 ## Engineering
 
-### DEC-23 [C] The cache is keyed by seed, day and hotel, with a digest of the request
+### DEC-23 [C] The cache key is seed, day and hotel, with the request's digest
 - Decided: the answer to one hotel's queue on one day is saved at cache/seed<seed>/day<DDD>_<hotel key>.json. The file records the sha256 of the request's sorted-keys JSON ([[DAT-17]]), and a rerun reads the cache first.
 - Detail: a file whose digest does not match the request, or whose prompt_digest differs from the running prompt, raises StaleCache. A record with no prompt_digest is current. A replay never calls the model.
 - Model: a model other than MODEL ([[RUL-46]]) adds -<model> to the folder, as a mode does. Each new record names its model. The default model in the default mode keeps cache/seed<seed>/, so [[DAT-29]] replays unchanged.
@@ -422,7 +431,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Commit: abef71f
 - Links: [[MOD-09]]
 
-### DEC-25 [C] Only the model's answers are cached; the template is a function of the request
+### DEC-25 [C] Only the model's answers are cached; the template needs no cache
 - Decided: without a client the template answers and nothing is written. With a client the model's cached answer is read first. A cache file whose source is not "model" is ignored and overwritten.
 - Detail: a replay reads the model's cache when a client is given and uses the template otherwise.
 - Uncached: a client whose cached flag is false, such as the oracle grader ([[DEC-47]]), joins the template as an uncached answer. Nothing is written or read; its decisions record the client's name as their source.
@@ -439,7 +448,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Commit: 15e0215
 - Links: [[MOD-12]]
 
-### DEC-28 [C] The code is the package src/hotel_market, with pyproject.toml and a console command
+### DEC-28 [C] The code is the package src/hotel_market, with pyproject.toml and a command
 - Decided: the code is a src layout with absolute imports hotel_market.<module>. The old run.py became cli.py behind the hotel-market command and python -m hotel_market.
 - Metadata: pyproject.toml holds the metadata, the dependencies with tested lower bounds, the dev extras and the pytest and ruff settings.
 - Replaces: [[DEC-27]]
@@ -472,7 +481,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Commit: abef71f
 - Links: [[MOD-10]]
 
-### DEC-32 [C] The agent is three modules: plan.py, model.py and agent.py, with text.py for shared wording
+### DEC-32 [C] The agent is plan.py, model.py and agent.py, with text.py for shared wording
 - Decided: the module plan.py builds candidates, estimates and plans, and model.py holds the model call, its cache and the template. The module agent.py runs the daily loop and gives the advice, and text.py holds the shared wording.
 - Replaces: [[DEC-31]]
 - Reason: each module has one job. Named records (StayDate, FlagNumbers, Comparison, SeedResult) replace dicts and tuples, and the command line has one function per mode. The tests follow the split.
@@ -490,7 +499,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: test_the_formatter_runs_at_100_columns
 - Links: [[MOD-15]], [[MOD-01]]
 
-### DEC-34 [C] The answer schema lists the request's own entry ids and options as enums
+### DEC-34 [C] The answer schema lists the request's entry ids and options as enums
 - Decided: schema_for(request) builds the answer schema as an object with one required decision per entry id. Each is limited to that entry's plan and "hold". An answer cannot leave an entry out or borrow a plan.
 - Replaces: a fixed schema that typed id and choice as free strings.
 - Reason: with free strings a schema-valid answer such as "Hold" failed the check, and the run aborted with nothing cached. With enums the API cannot return a choice the code would reject. The pairing check stays as the backstop.
@@ -498,7 +507,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: test_the_schema_limits_ids_and_choices_to_the_requests_options
 - Links: [[MOD-09]], [[DAT-16]], [[UNK-02]], [[RES-09]]
 
-### DEC-40 [C] The agent reads data only through four interfaces; the simulator is one implementation
+### DEC-40 [C] The agent reads only through four interfaces; the simulator is one implementation
 - Decided: sources.py ([[MOD-17]]) defines Bookings, RateShops, Schedules and Events ([[DAT-25]]). Every method takes the day it is asked on and returns only what was known then.
 - Boundary: the modules detect, forecast, estimate, plan, model and agent read data through them and import none of the simulator's modules. A test reads their imports and fails if one does.
 - Detail: the agent's own demand model is forecast.py ([[MOD-18]]), held equal to demand.py by a test. The simulator implements the four in simulated.py ([[MOD-19]]). ORACLE_ELASTICITY ([[RUL-56]]) names the default elasticity an oracle.
@@ -548,7 +557,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: test_a_sweep_with_reviewers_keeps_each_arms_entries_calls_and_counts, test_the_bench_command_prints_its_tables, test_a_duplicate_call_record_is_counted_once
 - Links: [[MOD-12]], [[MOD-23]], [[DAT-19]], [[DAT-24]], [[DAT-32]], [[DEC-47]]
 
-### DEC-56 [C] The band verdict is a display field; a small band-end gain reads to the dollar
+### DEC-56 [C] The band verdict is a display field; small band-end gains read to the dollar
 - Decided: each candidate but hold in a cautious request carries band_verdict ([[DAT-16]], [[MOD-11]]). An example is "beats holding at both ends of the band". A gain over hold at an end of the band under $10 reads to the dollar.
 - Replaces: the ends read to the nearest $10 as every estimate does ([[DEC-44]]). A gain of $3 the rule had passed therefore read "the same as holding". The model inferred the rule's result from the rounded gains.
 - Reason: on seed 7, day 29, Opus, Sonnet and Haiku each declined the same airport raise ([[RES-35]]). Each read "the same as holding" at the high end as a failed rule. That was the natural reading of what code wrote.
@@ -577,7 +586,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: test_the_three_pages_fit_the_window, test_every_date_reads_as_a_calendar_date_with_its_day_number_in_brackets, test_a_held_flag_names_the_best_alternative_and_how_far_it_fell_short
 - Links: [[DEC-57]], [[MOD-26]], [[MOD-27]], [[MOD-28]], [[DAT-33]], [[RUL-67]], [[RUL-109]]
 
-### DEC-60 [C] Every printed mean carries its spread, and every ahead count a sign test
+### DEC-60 [C] Every printed mean carries its spread, every ahead count a sign test
 - Decided: the sweep, arm, bench and control tables print the standard deviation and the standard error beside every mean ([[MOD-12]]). They print a two-sided sign test's p beside every count of seeds ahead. docs/results.md carries them.
 - Replaces: means and counts with no spread. Under them +$1,913 a seed at a demand bias of 0.9, ahead in 12 of 20, read as a gain.
 - Reason: a reader has to tell a result from a coin flip. 12 of 20 has p 0.50 ([[RES-21]]), 13 of 20 has p 0.26, and 17 of 20 has p 0.0026 ([[RES-40]]).

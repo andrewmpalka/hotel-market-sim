@@ -25,6 +25,12 @@ LOOKAHEAD_DAYS = 90  # stay dates each hotel looks at on each simulation day
 # ticks counted 1 to N. At 1, the default, a tick is the whole day and the loop is the daily one.
 # --ticks N sets a run's value; the sources default a question to the last tick of its day.
 TICKS_PER_DAY = 1
+# With N ticks, each feed lands at a fixed tick of the day: bookings at every tick, the rate shop
+# at tick 2, the airlines' filings at tick 3 and the events at tick 4, each at tick 1 when N is
+# smaller than its slot. Until a feed lands, a question on a tick gets the previous value.
+SHOP_TICK = 2
+FILING_TICK = 3
+EVENT_TICK = 4
 
 
 @dataclass(frozen=True)
@@ -81,6 +87,12 @@ def stay_window(day: int) -> range:
 def last_tick(ticks: int = TICKS_PER_DAY) -> int:
     """The last tick of a day, which a question with no tick means: after the whole day."""
     return ticks
+
+
+def arrival_tick(slot: int, ticks: int = TICKS_PER_DAY) -> int:
+    """The tick a feed with this slot lands at on a day of `ticks` ticks: its slot, or tick 1 when
+    the day has fewer ticks than the slot."""
+    return slot if slot <= ticks else 1
 
 
 def weekday(day: int) -> int:

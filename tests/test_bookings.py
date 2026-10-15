@@ -11,7 +11,7 @@ from hotel_market.customer import DEMO_FILE, demo, load
 from hotel_market.demand import DEMAND_BIAS, MARKET_ELASTICITY, expected_demand, normal_demand
 from hotel_market.schedule import HORIZON_DAYS
 from hotel_market.shops import REACTION_LAG, REACTION_SHARE, comp_median
-from hotel_market.world import SIM_DAYS
+from hotel_market.world import SIM_DAYS, stay_window
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -354,4 +354,87 @@ def test_the_market_elasticity_scales_each_days_draw_by_the_medians_level():
     )
     assert not np.array_equal(
         simulate(SEED, last_day=30, market_elasticity=0.0).rooms, simulate(SEED, last_day=30).rooms
+    )
+
+
+# ---- the clock: one draw a day, split over the ticks --------------------------------------
+
+# The fixed-rate seed-7 run's daily log, hashed, as it stood before the day's draw was split over
+# the ticks (the run of 2026-10-15 on world v2). The default clock must book these bytes.
+DAILY_ROOMS_DIGEST = "20db41d45c0dfc2f07648e873f59394aa3c2507ddb0c261eb6fb69c1a87c405a"
+
+
+def test_the_fixed_rate_run_books_the_same_rooms_at_one_tick_a_day_and_at_four():
+    """The day's count is drawn once and each booking goes to a tick, so the rooms per hotel and
+    stay date are the same at every number of ticks, not only in expectation. The tick log sums
+    to the daily log, and the revenue is the same because no rate changed."""
+    import hashlib
+
+    one, four = simulate(7), simulate(7, ticks=4)
+    assert (one.daily_rooms == four.daily_rooms).all() and (one.rooms == four.rooms).all()
+    assert (one.revenue == four.revenue).all() and (one.daily_rates == four.daily_rates).all()
+    assert four.tick_rooms.shape == (150, 4, 4, 150)
+    assert (four.tick_rooms.sum(axis=1) == four.daily_rooms).all()
+    assert (one.tick_rooms[:, 0] == one.daily_rooms).all()
+    assert (four.tick_rooms[20, :, 0, 45] > 0).sum() >= 2  # a day's bookings spread over its ticks
+    assert hashlib.sha256(one.daily_rooms.tobytes()).hexdigest() == DAILY_ROOMS_DIGEST
+    assert hashlib.sha256(four.daily_rooms.tobytes()).hexdigest() == DAILY_ROOMS_DIGEST
+
+
+def test_the_default_clock_books_byte_for_byte_what_it_booked_before_the_split():
+    """With one tick a day, the loop, the draw and the log are what they were before the split was
+    built: the digest of the daily log is the one recorded then."""
+    import hashlib
+
+    books = simulate(7)
+    assert books.ticks == 1 and books.tick_rooms.shape == (150, 1, 4, 150)
+    assert hashlib.sha256(books.daily_rooms.tobytes()).hexdigest() == DAILY_ROOMS_DIGEST
+
+
+def test_a_rate_changed_at_a_tick_thins_or_tops_up_the_ticks_after_it():
+    """At four ticks a day, a rate changed after tick 2 applies from tick 3. A raise thins the
+    bookings still to come that day, and a cut tops them up, each in proportion to the demand
+    response at the new rate; the ticks before the change and every other hotel book exactly what
+    the fixed-rate run books."""
+    hotel = DEMO.hotel("convention")
+    fixed = simulate(7, last_day=6, ticks=4)
+
+    def at_tick_2_of_day_5(rate):
+        def decide(day, books, tick):
+            if (day, tick) == (5, 2):
+                return {(hotel.key, s): rate for s in stay_window(5)}
+            return {}
+
+        return decide
+
+    raised = simulate(7, at_tick_2_of_day_5(hotel.ceiling), last_day=6, ticks=4)
+    cut = simulate(7, at_tick_2_of_day_5(hotel.floor), last_day=6, ticks=4)
+    i = hotel.row
+    for books in (raised, cut):
+        assert (books.tick_rooms[:5] == fixed.tick_rooms[:5]).all()  # the days before
+        assert (books.tick_rooms[5, :2] == fixed.tick_rooms[5, :2]).all()  # the ticks before
+        others = [h.row for h in DEMO.hotels if h.row != i]
+        assert (books.tick_rooms[5:, :, others] == fixed.tick_rooms[5:, :, others]).all()
+    later = slice(2, None)  # ticks 3 and 4
+    assert (raised.tick_rooms[5, later, i] <= fixed.tick_rooms[5, later, i]).all()
+    assert raised.tick_rooms[5, later, i].sum() < fixed.tick_rooms[5, later, i].sum()
+    assert (cut.tick_rooms[5, later, i] >= fixed.tick_rooms[5, later, i]).all()
+    assert cut.tick_rooms[5, later, i].sum() > fixed.tick_rooms[5, later, i].sum()
+    stays = list(stay_window(5))
+    assert (raised.tick_rates[5, later, i][:, stays] == hotel.ceiling).all()
+    assert (raised.tick_rates[5, :2, i][:, stays] == hotel.start_rate).all()
+    assert (raised.rates[i, stays] == hotel.ceiling).all()  # in force from tick 3 and tomorrow
+    # The revenue booked after the change is at the new rate.
+    assert raised.revenue[i, stays].sum() == pytest.approx(
+        (
+            raised.tick_rooms[5, :2, i][:, stays].sum()
+            + fixed.tick_rooms[:5, :, i][:, :, stays].sum()
+            + raised.preload[i, stays].sum()
+        )
+        * hotel.start_rate
+        + (
+            raised.tick_rooms[5, later, i][:, stays].sum()
+            + raised.tick_rooms[6, :, i][:, stays].sum()
+        )
+        * hotel.ceiling
     )

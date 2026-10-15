@@ -36,7 +36,7 @@ and a RES node records the run. A claim that no test can confirm stays [U].
 - Result: the full suite passed on Python 3.12.6 and on 3.13.7 on 2026-10-12, the slow 20-seed check included.
 - Links: [[DEC-30]], [[RES-15]]
 
-### UNK-05 [U] How a change in arriving passengers turns into hotel demand in a real market
+### UNK-05 [U] How arriving passengers turn into hotel demand in a real market
 - Unknown: the simulator makes demand rise by the hotel's air share times the fractional change in arriving passengers, which is a modelling choice; the load factors are another ([[DEC-63]]).
 - Best guess: the real link is weaker than one for one and lagged. It differs by hotel more than the air shares alone say.
 - Resolves when: never within this repository; it holds no real data ([[DEC-35]]).
@@ -80,7 +80,7 @@ and a RES node records the run. A claim that no test can confirm stays [U].
 - Resolves when: someone runs the file on one of them.
 - Links: [[DAT-28]], [[MOD-21]], [[DEC-42]]
 
-### UNK-11 [U] How competitors react to a rate change and what that does to the revenue target
+### UNK-11 [U] How competitors react to a rate change, and what it does to revenue
 - Unknown: the simulator's competitors never react ([[CON-03]]). The revenue target's gain ([[RES-07]]) comes from cuts that real competitors might match.
 - Best guess: a matched cut gives back most of the revenue gain. The contribution target's raises are less exposed, because a competitor need not follow a raise.
 - Measured: with --react, competitors move half of a change three days later ([[DEC-51]]). At a market elasticity of 0.0 the default mode then earns +$111,272 a seed ([[RES-24]]). At 0.5 it earns +$72,229 and at 1.0 +$43,584 ([[RES-26]]).
@@ -93,7 +93,7 @@ and a RES node records the run. A claim that no test can confirm stays [U].
 - Resolves when: never within this repository; [[FRK-03]] is the first step.
 - Links: [[DAT-07]], [[CON-09]], [[FRK-03]], [[DEC-21]]
 
-### UNK-13 [U] Whether a 5% cut is enough: the largest cut on the menu is 5%
+### UNK-13 [U] Whether a 5% cut, the largest on the menu, is enough
 - Unknown: the candidates cut by at most 5% ([[RUL-43]]), or halfway to a fallen median ([[RUL-42]]). Whether a larger cut ever pays is not measured.
 - Best guess: on this market a larger cut rarely pays at an elasticity of 1.5. A cut sells more rooms, and those rooms cost about as much to service as they bring in ([[RES-07]]).
 - Resolves when: a run with a 10% cut on the menu is compared with the default on seeds 1 to 20.

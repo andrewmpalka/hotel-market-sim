@@ -60,7 +60,7 @@ the plans, the model's request and answer, and what the command writes.
 - File: src/hotel_market/bookings.py
 - Fields: rooms (int, hotels x stay dates), revenue and rates (float, same shape). demand_bias ([[RUL-82]]), react ([[DEC-51]]), market_elasticity ([[RUL-87]]), scenario and churn ([[DEC-53]]) are the run's settings.
 - Draws: the random numbers for every draw of the run ([[DEC-22]]), each hotel's from a stream keyed by its key ([[DEC-64]]). The preload has one per hotel and stay date, and the loop one per day, hotel and stay date.
-- Log: daily_rooms, daily_rates and daily_medians, shape (days, hotels, stay dates), zero outside the day's window. preload holds the rooms loaded before day 0, and [[MOD-19]] serves the agent from the log as of any day.
+- Log: daily_rooms, daily_rates and daily_medians, shape (days, hotels, stay dates), zero outside the day's window; tick_rooms and tick_rates add the tick ([[DEC-67]]). preload holds the rooms loaded before day 0.
 - Methods: book(day) and set_rates(changes). hotel_change() and comp_median() serve the reaction ([[DEC-51]]); the market term reads Hotel.starting_median() ([[DEC-52]]). The five measures are [[MEA-01]] to [[MEA-05]].
 - Written by: [[MOD-06]]; the agent's rate changes arrive through set_rates after each day's bookings
 - Read by: [[MOD-19]], [[MOD-12]]

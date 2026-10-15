@@ -347,7 +347,7 @@ here for the rest.
 - Table: docs/results.md, "The decline rate by the standard error of the plan's elasticity"
 - Links: [[RUL-102]], [[MEA-13]], [[RES-34]], [[RES-35]], [[RES-36]], [[RES-37]], [[UNK-07]]
 
-### RES-39 [O] The reviewers ranked across the learned modes, and the learn arms' cost
+### RES-39 [O] The reviewers ranked across the learned modes, and the arms' cost
 - Ran: the commands of [[RES-34]] and [[RES-35]] on 2026-10-15 on world v2. Each ranking pools the two priors, 40 seeds per reviewer. Sonnet ran from the prior of 1.0 only, so it is not ranked.
 - Plain: the oracle earns +$10,194 a seed accepting 21% of the plans. Opus earns +$2,431 with a recovered share of 0.10, precision 0.98 and recall 0.09. The template earns +$1,610 and Haiku +$1,620.
 - Cautious: the oracle earns +$9,493 accepting 32%. Opus earns +$7,289, the template +$7,273 and Haiku +$7,143. Opus's precision is 1.00 and its recall 0.02.
