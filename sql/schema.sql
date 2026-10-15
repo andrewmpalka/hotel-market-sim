@@ -1,9 +1,10 @@
 -- The tables the daily command writes and the stored sources read.
 --
 -- Every table but the last is keyed by as_of_day, the simulation day a row was
--- known on, so that a query as of a day sees only what was known then. The
--- first four tables are the feeds: a day's bookings, rate shops, schedule and
--- known events. The next three are what the agent made of them: its flags,
+-- known on, and as_of_tick, the tick of that day, so that a query as of a
+-- moment sees only what was known then. On the daily clock every tick is 1.
+-- The first four tables are the feeds: a day's bookings, rate shops, schedule
+-- and known events, one snapshot per tick. The next three are what the agent made of them: its flags,
 -- the plans it scored and the decisions it recorded, each decision with the
 -- request the model saw and its answer. The last, outcomes, holds what each
 -- accepted plan earned on each night once that night has passed, keyed by the
@@ -33,23 +34,25 @@
 -- the horizon, and rooms_taken is everything booked before the run.
 CREATE TABLE IF NOT EXISTS daily_bookings (
     as_of_day INTEGER NOT NULL,
+    as_of_tick INTEGER NOT NULL,       -- the tick of the day; 1 with one tick a day
     hotel VARCHAR NOT NULL,            -- the hotel's key in the customer file
     stay_day INTEGER NOT NULL,         -- the night
-    rooms_taken INTEGER NOT NULL,      -- rooms booked that day
-    rooms_on_books INTEGER NOT NULL,   -- rooms on the books after that day's bookings
-    rate DOUBLE NOT NULL,              -- the hotel's rate in force that day
-    PRIMARY KEY (as_of_day, hotel, stay_day)
+    rooms_taken INTEGER NOT NULL,      -- rooms booked at that tick (that day, with one tick)
+    rooms_on_books INTEGER NOT NULL,   -- rooms on the books after that tick's bookings
+    rate DOUBLE NOT NULL,              -- the hotel's rate in force at that tick
+    PRIMARY KEY (as_of_day, as_of_tick, hotel, stay_day)
 );
 
 -- One row per hotel, competitor and night shopped on the day. A shop covers
 -- every night from the shop day to the end of the schedule.
 CREATE TABLE IF NOT EXISTS rate_shops (
     as_of_day INTEGER NOT NULL,        -- the shop day
+    as_of_tick INTEGER NOT NULL,       -- the tick; before the shop lands it holds the day before's
     hotel VARCHAR NOT NULL,            -- the hotel whose comp set was shopped
     stay_day INTEGER NOT NULL,
     competitor VARCHAR NOT NULL,
     rate DOUBLE NOT NULL,
-    PRIMARY KEY (as_of_day, hotel, stay_day, competitor)
+    PRIMARY KEY (as_of_day, as_of_tick, hotel, stay_day, competitor)
 );
 
 -- The schedule as filed by the day, counted to arriving seats per day the way
@@ -60,16 +63,18 @@ CREATE TABLE IF NOT EXISTS rate_shops (
 -- would keep the flight-level snapshot as well and make this a view over it.
 CREATE TABLE IF NOT EXISTS schedule_snapshots (
     as_of_day INTEGER NOT NULL,        -- the day the schedule was read
+    as_of_tick INTEGER NOT NULL,       -- the tick; before the filing lands it holds the day before's
     stay_day INTEGER NOT NULL,         -- the day the seats arrive
     seats INTEGER NOT NULL,
     passengers DOUBLE NOT NULL,        -- the seats at each flight's load factor
-    PRIMARY KEY (as_of_day, stay_day)
+    PRIMARY KEY (as_of_day, as_of_tick, stay_day)
 );
 
 -- The events known on the day: an event has a row for every day from its
 -- announcement on, so that a day's rows are the whole calendar as of that day.
 CREATE TABLE IF NOT EXISTS events (
     as_of_day INTEGER NOT NULL,
+    as_of_tick INTEGER NOT NULL,       -- the tick; before the events land it holds the day before's
     name VARCHAR NOT NULL,
     known_day INTEGER NOT NULL,        -- the day the event was announced
     start_day INTEGER NOT NULL,        -- first night affected
@@ -77,7 +82,7 @@ CREATE TABLE IF NOT EXISTS events (
     hotels VARCHAR NOT NULL,           -- keys of the hotels whose demand rises, comma-separated
     uplift DOUBLE NOT NULL,            -- 0.35 means demand is 35% higher
     comp_rate_raise DOUBLE NOT NULL,   -- 0.15 means those hotels' competitors charge 15% more
-    PRIMARY KEY (as_of_day, name)
+    PRIMARY KEY (as_of_day, as_of_tick, name)
 );
 
 -- The agent's flags for the day: consecutive nights of a hotel with the same

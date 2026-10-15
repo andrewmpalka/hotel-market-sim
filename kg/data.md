@@ -247,8 +247,8 @@ the plans, the model's request and answer, and what the command writes.
 ### DAT-28 [C] The stored tables
 - File: sql/schema.sql
 - Tables: eight, seven keyed by as_of_day, the day a row was known on, and outcomes by the day its plan was accepted ([[DEC-45]]). Day -1 ([[RUL-73]]) is the opening position. The head lists what a warehouse would change ([[UNK-10]]).
-- Feeds: daily_bookings (as_of_day, hotel, stay_day, rooms_taken, rooms_on_books, rate) has a row per hotel and night in the window. rate_shops (as_of_day, hotel, stay_day, competitor, rate) runs from the shop day to the schedule's end.
-- More feeds: schedule_snapshots (as_of_day, stay_day, seats) is counted the way seats_by_day counts. events (as_of_day, name, known_day, start_day, end_day, hotels, uplift, comp_rate_raise) has one row per known event per day.
+- Feeds: daily_bookings (as_of_day, as_of_tick, hotel, stay_day, rooms_taken, rooms_on_books, rate) has a row per hotel and night in the window. rate_shops adds as_of_tick too and runs from the shop day to the schedule's end.
+- More feeds: schedule_snapshots (as_of_day, as_of_tick, stay_day, seats, passengers) and events (as_of_day, as_of_tick, name, known_day, start_day, end_day, hotels, uplift, comp_rate_raise), one snapshot per tick ([[RUL-128]]).
 - Output: flags (as_of_day, as_of_tick, hotel, first_stay, last_stay, causes). plans has a row per candidate with its rates and estimates by night, versus_hold, band and is_best. decisions has a row per entry and advice, with the line.
 - More output: a queued decision adds request_digest, prompt_digest, model, request and answer (JSON). outcomes (decision_day, hotel, stay_day, rooms_sold, room_revenue, estimated, realised) has a row per accepted plan and passed night.
 - Used by: [[MOD-21]] writes them with write_snapshot, write_decisions and write_outcomes, driven by run-day in [[MOD-12]], deleting first ([[DEC-42]]). Its four sources and run readers read them back for the playback and replay.

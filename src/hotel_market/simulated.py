@@ -82,6 +82,8 @@ class SimulatedBookings(Limited, Bookings):
         self._known(as_of_day, as_of_tick)
         if self.ticks == 1:
             return self._preload + self._daily_rooms[: as_of_day + 1].sum(axis=0)
+        if as_of_day < 0:
+            return self._preload.copy()  # the opening position, before any day's bookings
         tick = self._tick(as_of_tick)
         return (
             self._preload
@@ -127,7 +129,7 @@ class SimulatedRateShops(Limited, RateShops):
         self._known(shop_day, as_of_tick)
         if self._tick(as_of_tick) >= arrival_tick(SHOP_TICK, self.ticks):
             return shop_day
-        return shop_day - 1
+        return max(shop_day - 1, -1)  # the opening shop, day -1, is the earliest there is
 
     def competitor_rates(
         self, shop_day: int, hotel: Hotel, stay_day: int, as_of_tick: int | None = None
@@ -183,7 +185,7 @@ class SimulatedSchedules(Limited, Schedules):
         the schedule as filed by the day before."""
         self._known(as_of_day, as_of_tick)
         if self._tick(as_of_tick) < arrival_tick(FILING_TICK, self.ticks):
-            as_of_day -= 1
+            as_of_day = max(as_of_day - 1, -1)  # the first schedule is the earliest there is
         return self._filed[max(day for day in self._filed if day <= as_of_day)]
 
     def seats(self, as_of_day: int, as_of_tick: int | None = None) -> np.ndarray:
@@ -223,7 +225,7 @@ class SimulatedEvents(Limited, Events):
         land at the events' tick, before which the day before's calendar answers."""
         self._known(as_of_day, as_of_tick)
         if self._tick(as_of_tick) < arrival_tick(EVENT_TICK, self.ticks):
-            as_of_day -= 1
+            as_of_day = max(as_of_day - 1, -1)
         return [event for event in self._events if event.known_day <= as_of_day]
 
 

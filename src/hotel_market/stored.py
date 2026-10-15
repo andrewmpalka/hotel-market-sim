@@ -63,11 +63,20 @@ TABLES = (
 OPENING_DAY = -1  # the position before the first day: the opening rooms, shop and schedule
 
 _COLUMNS = {
-    "daily_bookings": ("as_of_day", "hotel", "stay_day", "rooms_taken", "rooms_on_books", "rate"),
-    "rate_shops": ("as_of_day", "hotel", "stay_day", "competitor", "rate"),
-    "schedule_snapshots": ("as_of_day", "stay_day", "seats", "passengers"),
+    "daily_bookings": (
+        "as_of_day",
+        "as_of_tick",
+        "hotel",
+        "stay_day",
+        "rooms_taken",
+        "rooms_on_books",
+        "rate",
+    ),
+    "rate_shops": ("as_of_day", "as_of_tick", "hotel", "stay_day", "competitor", "rate"),
+    "schedule_snapshots": ("as_of_day", "as_of_tick", "stay_day", "seats", "passengers"),
     "events": (
         "as_of_day",
+        "as_of_tick",
         "name",
         "known_day",
         "start_day",
@@ -181,6 +190,12 @@ def _frame(connection, sql: str, parameters: list | None = None) -> pd.DataFrame
 # ---- the four sources, read from the tables ---------------------------------
 
 
+def _stored_tick(source: Limited, day: int, tick: int | None) -> int:
+    """The tick a stored row is read at: the question's, or the day's last with none, and tick 1
+    on the opening day, which is stored once."""
+    return 1 if day == OPENING_DAY else source._tick(tick)
+
+
 class StoredBookings(Limited, Bookings):
     """daily_bookings, read as of a day."""
 
@@ -207,8 +222,9 @@ class StoredBookings(Limited, Bookings):
         frame = _frame(
             self.connection,
             "SELECT hotel, stay_day, CAST(SUM(rooms_taken) AS BIGINT) AS rooms "
-            "FROM daily_bookings WHERE as_of_day <= ? GROUP BY hotel, stay_day",
-            [as_of_day],
+            "FROM daily_bookings WHERE as_of_day < ? OR (as_of_day = ? AND as_of_tick <= ?) "
+            "GROUP BY hotel, stay_day",
+            [as_of_day, as_of_day, _stored_tick(self, as_of_day, as_of_tick)],
         )
         rooms = np.zeros((len(self.hotels), HORIZON_DAYS), dtype=np.int64)
         rooms[self._row_index(frame), frame["stay_day"].to_numpy()] = frame["rooms"].to_numpy()
@@ -218,21 +234,25 @@ class StoredBookings(Limited, Bookings):
         self._known(as_of_day, as_of_tick)
         frame = _frame(
             self.connection,
-            "SELECT hotel, stay_day, rate FROM daily_bookings WHERE as_of_day = ?",
-            [as_of_day],
+            "SELECT hotel, stay_day, rate FROM daily_bookings "
+            "WHERE as_of_day = ? AND as_of_tick = ?",
+            [as_of_day, _stored_tick(self, as_of_day, as_of_tick)],
         )
         rates = np.zeros((len(self.hotels), HORIZON_DAYS))
         rates[self._row_index(frame), frame["stay_day"].to_numpy()] = frame["rate"].to_numpy()
         return rates
 
     def history(self, as_of_day: int) -> BookingHistory:
+        """The days before as_of_day: each day's rooms over its ticks, at the rate in force at its
+        first tick, which the day's draw was made at."""
         self._known(as_of_day, before=True)
         taken = np.zeros((as_of_day, len(self.hotels), HORIZON_DAYS), dtype=np.int64)
         rates = np.zeros((as_of_day, len(self.hotels), HORIZON_DAYS))
         frame = _frame(
             self.connection,
-            "SELECT as_of_day, hotel, stay_day, rooms_taken, rate FROM daily_bookings "
-            "WHERE as_of_day >= 0 AND as_of_day < ?",
+            "SELECT as_of_day, hotel, stay_day, CAST(SUM(rooms_taken) AS BIGINT) AS rooms_taken, "
+            "MAX(CASE WHEN as_of_tick = 1 THEN rate END) AS rate FROM daily_bookings "
+            "WHERE as_of_day >= 0 AND as_of_day < ? GROUP BY as_of_day, hotel, stay_day",
             [as_of_day],
         )
         index = (
@@ -270,13 +290,13 @@ class StoredRateShops(Limited, RateShops):
         self.as_of_tick = as_of_tick
         self.ticks = ticks
         self.hotels = customer.hotels
-        self._shops: dict[int, dict[tuple[str, int], dict[str, float]]] = {}
+        self._shops: dict[tuple[int, int], dict[tuple[str, int], dict[str, float]]] = {}
 
     def competitor_rates(
         self, shop_day: int, hotel: Hotel, stay_day: int, as_of_tick: int | None = None
     ) -> dict[str, float]:
         self._known(shop_day, as_of_tick)
-        shop = self._shop(shop_day)
+        shop = self._shop(shop_day, _stored_tick(self, shop_day, as_of_tick))
         if (hotel.key, stay_day) not in shop:
             raise LookupError(
                 f"the tables hold no rate shop for {hotel.key}, stay date {stay_day}, "
@@ -284,23 +304,25 @@ class StoredRateShops(Limited, RateShops):
             )
         return dict(shop[(hotel.key, stay_day)])
 
-    def _shop(self, shop_day: int) -> dict[tuple[str, int], dict[str, float]]:
-        """The whole shop of a day, read once: {(hotel key, stay day): {competitor: rate}}."""
-        if shop_day not in self._shops:
+    def _shop(self, shop_day: int, tick: int) -> dict[tuple[str, int], dict[str, float]]:
+        """The whole shop of a moment, read once: {(hotel key, stay day): {competitor: rate}}."""
+        if (shop_day, tick) not in self._shops:
             frame = _frame(
                 self.connection,
-                "SELECT hotel, stay_day, competitor, rate FROM rate_shops WHERE as_of_day = ? "
-                "ORDER BY hotel, stay_day, competitor",
-                [shop_day],
+                "SELECT hotel, stay_day, competitor, rate FROM rate_shops "
+                "WHERE as_of_day = ? AND as_of_tick = ? ORDER BY hotel, stay_day, competitor",
+                [shop_day, tick],
             )
             shop: dict[tuple[str, int], dict[str, float]] = {}
             columns = (frame[name].tolist() for name in ("hotel", "stay_day", "competitor", "rate"))
             for hotel, stay_day, competitor, rate in zip(*columns):
                 shop.setdefault((hotel, stay_day), {})[competitor] = rate
-            self._shops[shop_day] = shop
-        return self._shops[shop_day]
+            self._shops[(shop_day, tick)] = shop
+        return self._shops[(shop_day, tick)]
 
     def median_history(self, as_of_day: int) -> np.ndarray:
+        """The medians the simulator used each day before as_of_day: the day's own shop, which is
+        the one in the tables at the day's last tick."""
         self._known(as_of_day, before=True)
         medians = np.zeros((as_of_day, len(self.hotels), HORIZON_DAYS))
         if as_of_day <= 0:
@@ -309,10 +331,10 @@ class StoredRateShops(Limited, RateShops):
         frame = _frame(
             self.connection,
             "SELECT as_of_day, hotel, stay_day, rate FROM rate_shops "
-            "WHERE as_of_day >= 0 AND as_of_day < ? "
+            "WHERE as_of_day >= 0 AND as_of_day < ? AND as_of_tick = ? "
             "AND stay_day BETWEEN as_of_day AND as_of_day + ? "
             "ORDER BY as_of_day, hotel, stay_day, competitor",
-            [as_of_day, LOOKAHEAD_DAYS - 1],
+            [as_of_day, self.ticks, LOOKAHEAD_DAYS - 1],
         )
         for hotel in self.hotels:
             rows = frame[frame["hotel"] == hotel.key]
@@ -349,18 +371,20 @@ class StoredSchedules(Limited, Schedules):
         self.as_of_day = as_of_day
         self.as_of_tick = as_of_tick
         self.ticks = ticks
-        self._snapshots: dict[int, tuple[np.ndarray, np.ndarray]] = {}
+        self._snapshots: dict[tuple[int, int], tuple[np.ndarray, np.ndarray]] = {}
 
     def _snapshot(
         self, as_of_day: int, as_of_tick: int | None = None
     ) -> tuple[np.ndarray, np.ndarray]:
-        """(seats, passengers) by stay day as filed by the day, read once."""
+        """(seats, passengers) by stay day as filed by the moment, read once."""
         self._known(as_of_day, as_of_tick)
-        if as_of_day not in self._snapshots:
+        moment = (as_of_day, _stored_tick(self, as_of_day, as_of_tick))
+        if moment not in self._snapshots:
             frame = _frame(
                 self.connection,
-                "SELECT stay_day, seats, passengers FROM schedule_snapshots WHERE as_of_day = ?",
-                [as_of_day],
+                "SELECT stay_day, seats, passengers FROM schedule_snapshots "
+                "WHERE as_of_day = ? AND as_of_tick = ?",
+                list(moment),
             )
             if frame.empty:
                 raise LookupError(f"the tables hold no schedule snapshot for day {as_of_day}")
@@ -368,8 +392,8 @@ class StoredSchedules(Limited, Schedules):
             seats, passengers = np.zeros(HORIZON_DAYS, dtype=np.int64), np.zeros(HORIZON_DAYS)
             seats[stays] = frame["seats"].to_numpy()
             passengers[stays] = frame["passengers"].to_numpy()
-            self._snapshots[as_of_day] = (seats, passengers)
-        return self._snapshots[as_of_day]
+            self._snapshots[moment] = (seats, passengers)
+        return self._snapshots[moment]
 
     def seats(self, as_of_day: int, as_of_tick: int | None = None) -> np.ndarray:
         return self._snapshot(as_of_day, as_of_tick)[0]
@@ -392,18 +416,19 @@ class StoredEvents(Limited, Events):
         self.as_of_day = as_of_day
         self.as_of_tick = as_of_tick
         self.ticks = ticks
-        self._read: dict[int, list[Event]] = {}
+        self._read: dict[tuple[int, int], list[Event]] = {}
 
     def known(self, as_of_day: int, as_of_tick: int | None = None) -> list[Event]:
         self._known(as_of_day, as_of_tick)
-        if as_of_day not in self._read:
+        moment = (as_of_day, _stored_tick(self, as_of_day, as_of_tick))
+        if moment not in self._read:
             frame = _frame(
                 self.connection,
                 "SELECT name, known_day, start_day, end_day, hotels, uplift, comp_rate_raise "
-                "FROM events WHERE as_of_day = ? ORDER BY known_day, name",
-                [as_of_day],
+                "FROM events WHERE as_of_day = ? AND as_of_tick = ? ORDER BY known_day, name",
+                list(moment),
             )
-            self._read[as_of_day] = [
+            self._read[moment] = [
                 Event(
                     row.name,
                     int(row.known_day),
@@ -415,7 +440,7 @@ class StoredEvents(Limited, Events):
                 )
                 for row in frame.itertuples(index=False)
             ]
-        return list(self._read[as_of_day])
+        return list(self._read[moment])
 
 
 def stored_sources(
@@ -440,39 +465,54 @@ def stored_sources(
 # ---- writing a day ------------------------------------------------------------
 
 
-def write_snapshot(connection, day: int, feed: Sources, customer: Customer | None = None) -> None:
-    """One day of the four feeds, copied from any sources into the feed tables. The
-    day's rows are deleted first, so writing a day twice leaves the tables as they
-    were. Day -1 (OPENING_DAY) writes the position before the first day, on every night of the
-    horizon, as the preload reaches past the first window."""
+def write_snapshot(
+    connection, day: int, feed: Sources, customer: Customer | None = None, tick: int = 1
+) -> None:
+    """One moment of the four feeds, a day on the daily clock or one tick of it, copied from any
+    sources into the feed tables. The moment's rows are deleted first, so writing it twice leaves
+    the tables as they were. Day -1 (OPENING_DAY) writes the position before the first day, on
+    every night of the horizon, as the preload reaches past the first window. A tick's bookings
+    are the rooms on the books after it less those after the moment before it."""
     hotels = (customer or demo()).hotels
     if day == OPENING_DAY:
         opening = feed.bookings.history(0).opening
         bookings = [
-            (day, h.key, s, int(opening[h.row, s]), int(opening[h.row, s]), float(h.start_rate))
+            (day, 1, h.key, s, int(opening[h.row, s]), int(opening[h.row, s]), float(h.start_rate))
             for h in hotels
             for s in range(HORIZON_DAYS)
         ]
     else:
-        on_books = feed.bookings.on_books(day)
-        rates = feed.bookings.rates(day)
-        taken = feed.bookings.history(day + 1).taken[day]
+        on_books = feed.bookings.on_books(day, tick)
+        rates = feed.bookings.rates(day, tick)
+        before = (
+            feed.bookings.on_books(day, tick - 1) if tick > 1 else feed.bookings.on_books(day - 1)
+        )
+        taken = on_books - before
         bookings = [
-            (day, h.key, s, int(taken[h.row, s]), int(on_books[h.row, s]), float(rates[h.row, s]))
+            (
+                day,
+                tick,
+                h.key,
+                s,
+                int(taken[h.row, s]),
+                int(on_books[h.row, s]),
+                float(rates[h.row, s]),
+            )
             for h in hotels
             for s in stay_window(day)
         ]
     shops = [
-        (day, h.key, s, competitor, float(rate))
+        (day, tick, h.key, s, competitor, float(rate))
         for h in hotels
         for s in range(max(day, 0), HORIZON_DAYS)
-        for competitor, rate in feed.shops.competitor_rates(day, h, s).items()
+        for competitor, rate in feed.shops.competitor_rates(day, h, s, tick).items()
     ]
-    seats, passengers = feed.schedules.seats(day), feed.schedules.passengers(day)
-    snapshot = [(day, s, int(seats[s]), float(passengers[s])) for s in range(HORIZON_DAYS)]
+    seats, passengers = feed.schedules.seats(day, tick), feed.schedules.passengers(day, tick)
+    snapshot = [(day, tick, s, int(seats[s]), float(passengers[s])) for s in range(HORIZON_DAYS)]
     events = [
         (
             day,
+            tick,
             e.name,
             e.known_day,
             e.start_day,
@@ -481,13 +521,13 @@ def write_snapshot(connection, day: int, feed: Sources, customer: Customer | Non
             e.uplift,
             e.comp_rate_raise,
         )
-        for e in feed.events.known(day)
+        for e in feed.events.known(day, tick)
     ]
     with _transaction(connection):
-        _replace_day(connection, "daily_bookings", day, bookings)
-        _replace_day(connection, "rate_shops", day, shops)
-        _replace_day(connection, "schedule_snapshots", day, snapshot)
-        _replace_day(connection, "events", day, events)
+        _replace_day(connection, "daily_bookings", day, bookings, tick=tick)
+        _replace_day(connection, "rate_shops", day, shops, tick=tick)
+        _replace_day(connection, "schedule_snapshots", day, snapshot, tick=tick)
+        _replace_day(connection, "events", day, events, tick=tick)
 
 
 def write_decisions(
@@ -692,20 +732,28 @@ def stored_days(connection) -> list[int]:
     return [int(day) for day in frame["as_of_day"]]
 
 
+def stored_ticks(connection) -> int:
+    """The clock the tables were written on: the ticks a day was cut into, 1 for the daily
+    loop, from the highest tick any day's feeds hold."""
+    found = connection.execute("SELECT MAX(as_of_tick) FROM daily_bookings").fetchone()[0]
+    return int(found) if found else 1
+
+
 def state_before(
-    connection, day: int, customer: Customer | None = None, ticks: int = 1
+    connection, day: int, customer: Customer | None = None, ticks: int = 1, tick: int = 1
 ) -> tuple[dict[tuple[str, int], int | tuple[int, int]], set[tuple[str, str]], list[Change]]:
-    """What the decisions before a day leave an agent. That is the stay dates under the hold, by the
-    day of their last accepted change, or by its (day, tick) with several ticks a day, the
-    (hotel, event) pairs already advised, and the changes accepted so far: each with the exact
-    rates the plans table keeps, the rate in force that day from daily_bookings, and the rooms
-    the plan expected from its estimate over the margin."""
+    """What the decisions before a moment, (day, tick), leave an agent. That is the stay dates
+    under the hold, by the day of their last accepted change, or by its (day, tick) with several
+    ticks a day, the (hotel, event) pairs already advised, and the changes accepted so far: each
+    with the exact rates the plans table keeps, the rate in force at its moment from
+    daily_bookings, and the rooms the plan expected from its estimate over the margin."""
     customer = customer or demo()
     frame = _frame(
         connection,
         "SELECT as_of_day, as_of_tick, hotel, new_rates, simulated, event FROM decisions "
-        "WHERE as_of_day < ? ORDER BY as_of_day, as_of_tick, position",
-        [day],
+        "WHERE as_of_day < ? OR (as_of_day = ? AND as_of_tick < ?) "
+        "ORDER BY as_of_day, as_of_tick, position",
+        [day, day, tick],
     )
     held: dict[tuple[str, int], int | tuple[int, int]] = {}
     advised: set[tuple[str, str]] = set()
@@ -718,32 +766,32 @@ def state_before(
                     int(row.as_of_day) if ticks == 1 else (int(row.as_of_day), int(row.as_of_tick))
                 )
                 held[(row.hotel, int(stay_day))] = when
-    return held, advised, changes_before(connection, day, customer)
+    return held, advised, changes_before(connection, day, customer, tick)
 
 
-def changes_before(connection, day: int, customer: Customer) -> list[Change]:
-    """The changes accepted before a day, in order, as the agent keeps them (Change)."""
+def changes_before(connection, day: int, customer: Customer, tick: int = 1) -> list[Change]:
+    """The changes accepted before a moment, in order, as the agent keeps them (Change)."""
     plans = _frame(
         connection,
         "SELECT p.as_of_day, p.as_of_tick, p.hotel, p.rates, p.estimates FROM plans p "
         "JOIN decisions d ON d.as_of_day = p.as_of_day AND d.as_of_tick = p.as_of_tick "
         "AND d.hotel = p.hotel AND d.first_stay = p.first_stay AND d.last_stay = p.last_stay "
-        "WHERE p.as_of_day < ? AND p.is_best AND p.candidate <> ? "
-        "AND d.simulated AND d.action <> ? "
+        "WHERE (p.as_of_day < ? OR (p.as_of_day = ? AND p.as_of_tick < ?)) AND p.is_best "
+        "AND p.candidate <> ? AND d.simulated AND d.action <> ? "
         "ORDER BY p.as_of_day, p.as_of_tick, p.hotel, p.first_stay, p.weekday",
-        [day, HOLD, HOLD],
+        [day, day, tick, HOLD, HOLD],
     )
     if plans.empty:
         return []
     days = sorted({int(d) for d in plans["as_of_day"]})
     in_force = _frame(
         connection,
-        "SELECT as_of_day, hotel, stay_day, rate FROM daily_bookings "
+        "SELECT as_of_day, as_of_tick, hotel, stay_day, rate FROM daily_bookings "
         f"WHERE as_of_day IN ({', '.join('?' * len(days))})",
         days,
     )
     rate_on = {
-        (int(row.as_of_day), row.hotel, int(row.stay_day)): float(row.rate)
+        (int(row.as_of_day), int(row.as_of_tick), row.hotel, int(row.stay_day)): float(row.rate)
         for row in in_force.itertuples(index=False)
     }
     changes = []
@@ -752,7 +800,7 @@ def changes_before(connection, day: int, customer: Customer) -> list[Change]:
         cost = hotel.room_cost if customer.scores_contribution() else 0.0
         estimates = json.loads(row.estimates)
         for stay_day, rate in json.loads(row.rates).items():
-            old = rate_on[(int(row.as_of_day), row.hotel, int(stay_day))]
+            old = rate_on[(int(row.as_of_day), int(row.as_of_tick), row.hotel, int(stay_day))]
             expected = estimates[stay_day] / (float(rate) - cost)
             changes.append(
                 Change(
@@ -768,12 +816,14 @@ def changes_before(connection, day: int, customer: Customer) -> list[Change]:
     return changes
 
 
-def rate_changes_before(connection, day: int) -> dict[int, dict[tuple[str, int], float]]:
-    """The accepted rate changes of the days before a day, by day then (hotel key, stay day). The
-    rates are the exact rates the plans table keeps."""
+def rate_changes_before(
+    connection, day: int
+) -> dict[tuple[int, int], dict[tuple[str, int], float]]:
+    """The accepted rate changes of the days before a day, by (day, tick) then (hotel key, stay
+    day). The rates are the exact rates the plans table keeps."""
     frame = _frame(
         connection,
-        "SELECT p.as_of_day, p.hotel, p.rates FROM plans p JOIN decisions d "
+        "SELECT p.as_of_day, p.as_of_tick, p.hotel, p.rates FROM plans p JOIN decisions d "
         "ON d.as_of_day = p.as_of_day AND d.as_of_tick = p.as_of_tick AND d.hotel = p.hotel "
         "AND d.first_stay = p.first_stay AND d.last_stay = p.last_stay "
         "WHERE p.as_of_day < ? AND p.is_best AND p.candidate <> ? "
@@ -781,21 +831,24 @@ def rate_changes_before(connection, day: int) -> dict[int, dict[tuple[str, int],
         "ORDER BY p.as_of_day, p.as_of_tick, p.hotel, p.first_stay, p.weekday",
         [day, HOLD, HOLD],
     )
-    changes: dict[int, dict[tuple[str, int], float]] = {}
+    changes: dict[tuple[int, int], dict[tuple[str, int], float]] = {}
     for row in frame.itertuples(index=False):
+        moment = (int(row.as_of_day), int(row.as_of_tick))
         for stay_day, rate in json.loads(row.rates).items():
-            changes.setdefault(int(row.as_of_day), {})[(row.hotel, int(stay_day))] = rate
+            changes.setdefault(moment, {})[(row.hotel, int(stay_day))] = rate
     return changes
 
 
-def decided_on(connection, day: int) -> dict[tuple[str, int, int], tuple[str, str, str]]:
-    """The action, reason and reason source recorded for each entry of a day, by
+def decided_on(
+    connection, day: int, tick: int = 1
+) -> dict[tuple[str, int, int], tuple[str, str, str]]:
+    """The action, reason and reason source recorded for each entry of a moment, by
     (hotel key, first stay, last stay)."""
     frame = _frame(
         connection,
         "SELECT hotel, first_stay, last_stay, action, reason, reason_source FROM decisions "
-        "WHERE as_of_day = ? AND simulated",
-        [day],
+        "WHERE as_of_day = ? AND as_of_tick = ? AND simulated",
+        [day, tick],
     )
     return {
         (row.hotel, int(row.first_stay), int(row.last_stay)): (
@@ -825,13 +878,13 @@ def decisions_file(connection) -> str:
     return "".join(record + "\n" for record in frame["record"])
 
 
-def plan_differences(connection, day: int, entries: list[Entry]) -> list[str]:
-    """How the plans rebuilt for a day differ from the stored ones; empty when they match."""
+def plan_differences(connection, day: int, entries: list[Entry], tick: int = 1) -> list[str]:
+    """How the plans rebuilt for a moment differ from the stored ones; empty when they match."""
     columns = ", ".join(_COLUMNS["plans"][1:])
     stored = {
         tuple(row)
         for row in connection.execute(
-            f"SELECT {columns} FROM plans WHERE as_of_day = ?", [day]
+            f"SELECT {columns} FROM plans WHERE as_of_day = ? AND as_of_tick = ?", [day, tick]
         ).fetchall()
     }
     rebuilt = {row[1:] for row in plan_rows(entries)}

@@ -260,13 +260,16 @@ def run_days(
     earlier = stored.rate_changes_before(connection, first)
     outcome: dict[str, list] = {"entries": [], "advice": []}
 
-    def decide(day: int, books: Books) -> dict[tuple[str, int], float]:
+    def decide(day: int, books: Books, tick: int = 1) -> dict[tuple[str, int], float]:
+        """One moment through the tables: the feeds' snapshot, then a fresh agent on the tables,
+        then its rows; with several ticks a day, once per tick, and the outcomes at the day's
+        last tick."""
         if day < first:
-            return earlier.get(day, {})
-        feed = simulated_sources(books, day)
-        if day == 0:
+            return earlier.get((day, tick), {})
+        feed = simulated_sources(books, day, tick)
+        if day == 0 and tick == 1:
             stored.write_snapshot(connection, stored.OPENING_DAY, feed, customer)
-        stored.write_snapshot(connection, day, feed, customer)
+        stored.write_snapshot(connection, day, feed, customer, tick)
         agent = Agent(
             seed,
             cache_dir,
@@ -276,13 +279,19 @@ def run_days(
             market_elasticity=market_elasticity,
             ticks=ticks,
         )
-        agent.resume(*stored.state_before(connection, day, customer))
-        changes = agent.decide(day, stored.stored_sources(connection, customer, day, ticks=ticks))
-        stored.write_decisions(connection, day, agent.entries, agent.advice, agent.asked)
-        stored.write_outcomes(connection, day, customer)
-        outcome["entries"], outcome["advice"] = agent.entries, agent.advice
+        agent.resume(*stored.state_before(connection, day, customer, ticks, tick))
+        sources = stored.stored_sources(connection, customer, day, tick, ticks)
+        changes = agent.decide(day, sources, tick)
+        stored.write_decisions(connection, day, agent.entries, agent.advice, agent.asked, tick)
+        if tick == ticks:
+            stored.write_outcomes(connection, day, customer)
+        outcome["entries"] = outcome["entries"] + agent.entries if tick > 1 else agent.entries
+        outcome["advice"] = outcome["advice"] + agent.advice if tick > 1 else agent.advice
         if observe is not None:
-            observe(day, books, agent)
+            if ticks == 1:
+                observe(day, books, agent)
+            else:
+                observe(day, books, agent, tick)
         return changes
 
     try:
@@ -305,22 +314,30 @@ def replay_day(
     mode: ElasticityMode = TRUE_MODE,
     customer: Customer | None = None,
     market_elasticity: float | None = None,
+    tick: int | None = None,
 ) -> tuple[list[Entry], list[Advice], list[str]]:
     """A day's entries and advice rebuilt from the stored tables alone, with the actions the stored
-    decisions record. The third value is how the rebuilt plans differ from the stored ones, empty
-    when they match. The market elasticity is the one the run's agent was told. Neither the
-    simulator nor the model is involved, and nothing is written."""
+    decisions record; with several ticks a day, one tick's, the last with no tick. The third
+    value is how the rebuilt plans differ from the stored ones, empty when they match. The market
+    elasticity is the one the run's agent was told. Neither the simulator nor the model is
+    involved, and nothing is written."""
     customer = customer or demo()
     connection = stored.connect(db, read_only=True)
     try:
-        decided = stored.decided_on(connection, day)
         if day not in stored.stored_days(connection):
             raise LookupError(f"{db} holds no day {day}; run it first")
+        ticks = stored.stored_ticks(connection)
+        tick = ticks if tick is None else tick
+        if not 1 <= tick <= ticks:
+            raise LookupError(f"{db} holds ticks 1 to {ticks} a day; tick {tick} is not one")
+        decided = stored.decided_on(connection, day, tick)
         # No cache: nothing is asked.
-        agent = Agent(0, elasticity=mode, customer=customer, market_elasticity=market_elasticity)
-        agent.resume(*stored.state_before(connection, day, customer))
-        sources = stored.stored_sources(connection, customer, day)
-        entries = agent.plans_for(day, sources)
+        agent = Agent(
+            0, elasticity=mode, customer=customer, market_elasticity=market_elasticity, ticks=ticks
+        )
+        agent.resume(*stored.state_before(connection, day, customer, ticks, tick))
+        sources = stored.stored_sources(connection, customer, day, tick, ticks)
+        entries = agent.plans_for(day, sources, tick)
         for entry in entries:
             key = (entry.hotel, entry.first_stay, entry.last_stay)
             if key not in decided:
@@ -328,8 +345,8 @@ def replay_day(
                     f"{db} holds no decision for {entry.hotel} {entry.id} on day {day}"
                 )
             entry.action, entry.reason, entry.reason_source = decided[key]
-        advice = agent.advice_for(day, entries, sources)
-        differences = stored.plan_differences(connection, day, entries)
+        advice = agent.advice_for(day, entries, sources, tick)
+        differences = stored.plan_differences(connection, day, entries, tick)
     finally:
         connection.close()
     return entries, advice, differences
@@ -1167,10 +1184,13 @@ def _learn_flags(
     ]
 
 
-def _add_world_options(parser: argparse.ArgumentParser, policy: bool = True) -> None:
+def _add_world_options(
+    parser: argparse.ArgumentParser, policy: bool = True, ticks: bool = True
+) -> None:
     """The simulator's settings for a run: the demand bias and the reaction, which the agent never
-    sees, the market elasticity, which it is told, and the air schedule's scenario and churn. The
-    daily commands take them without the rule-based control."""
+    sees, the market elasticity, which it is told, the air schedule's scenario and churn, and the
+    clock. The daily commands take them without the rule-based control, and replay reads the
+    clock from the tables instead of taking it."""
     parser.add_argument(
         "--demand-bias",
         dest="demand_bias",
@@ -1210,14 +1230,15 @@ def _add_world_options(parser: argparse.ArgumentParser, policy: bool = True) -> 
         help="the airline also files weekly revisions below the detect threshold, drawn from "
         "the seed (default: off)",
     )
-    parser.add_argument(
-        "--ticks",
-        type=_ticks,
-        default=TICKS_PER_DAY,
-        metavar="N",
-        help=f"cut each day into N ticks: the feeds land at fixed ticks and the agent runs "
-        f"after each (default: {TICKS_PER_DAY}, the daily loop)",
-    )
+    if ticks:
+        parser.add_argument(
+            "--ticks",
+            type=_ticks,
+            default=TICKS_PER_DAY,
+            metavar="N",
+            help=f"cut each day into N ticks: the feeds land at fixed ticks and the agent runs "
+            f"after each (default: {TICKS_PER_DAY}, the daily loop)",
+        )
     if not policy:
         return
     parser.add_argument(
@@ -1267,9 +1288,10 @@ def _daily_main(argv: list[str]) -> None:
         print(f"\nDay {args.as_of}'s feeds, flags, plans, decisions and outcomes are in {args.db}.")
         return
     entries, advice, differences = replay_day(
-        args.as_of, args.db, args.mode, customer, args.market_elasticity
+        args.as_of, args.db, args.mode, customer, args.market_elasticity, args.tick
     )
-    print(f"Day {args.as_of} queue, rebuilt from the tables in {args.db}\n")
+    moment = f"Day {args.as_of}" if args.tick is None else f"Day {args.as_of}, tick {args.tick},"
+    print(f"{moment} queue, rebuilt from the tables in {args.db}\n")
     blocks = [format_entry(e, customer) for e in queue(entries)]
     blocks += [format_advice(a) for a in advice]
     print("\n\n".join(blocks) or "Nothing in the queue.")
@@ -1308,6 +1330,13 @@ def _parse_daily_args(argv: list[str]) -> argparse.Namespace:
     replay_parser = commands.add_parser(
         "replay", help="rebuild a day's plans from the stored tables alone and print its queue"
     )
+    replay_parser.add_argument(
+        "--tick",
+        type=_ticks,
+        default=None,
+        metavar="T",
+        help="with a run on several ticks a day, rebuild this tick of the day (default: the last)",
+    )
     for subparser in (run_day_parser, replay_parser):
         subparser.add_argument(
             "--as-of", dest="as_of", type=int, required=True, metavar="DAY", help="the day"
@@ -1332,7 +1361,7 @@ def _parse_daily_args(argv: list[str]) -> argparse.Namespace:
         subparser.add_argument(
             "--level", action="store_true", help="in learn mode, the fitted demand level fed back"
         )
-        _add_world_options(subparser, policy=False)
+        _add_world_options(subparser, policy=False, ticks=subparser is run_day_parser)
         _add_customer_options(subparser)
     args = parser.parse_args(argv)
     if not 0 <= args.as_of < SIM_DAYS:

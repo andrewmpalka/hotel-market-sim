@@ -118,7 +118,7 @@ which is also the order in which they depend on each other.
 - File: src/hotel_market/cli.py
 - Owns: the hotel-market command: both runs, decisions.jsonl ([[DAT-18]]), the replay of a day and the bench ([[DEC-48]]). It prints the queues, the summary tables ([[DAT-20]]) and the plans' nights against their estimates ([[DEC-45]]).
 - Sweep: sweep() runs one arm per seed, mode ([[DAT-24]]) and reviewer ([[DAT-32]]). bench runs the template, the oracle and each --model in every --elasticity mode. It prints a table per mode, a ranking and the groups of [[MEA-13]].
-- Daily: run_days() plays the simulator to a day under the run's world options and writes the feeds. A fresh agent then runs on the tables ([[MOD-21]]). replay_day() rebuilds a day's plans from the tables and checks them ([[DEC-42]]).
+- Daily: run_days() plays the simulator to a day under the run's world options and writes the feeds, per tick with --ticks. A fresh agent runs on the tables ([[MOD-21]]). replay_day() rebuilds a moment's plans and checks them ([[DEC-42]]).
 - Holds: REPORT_DAYS ([[RUL-53]]), SHOCK_PLAN_CAUSES ([[RUL-55]]), DAILY_COMMANDS ([[RUL-74]]), BENCH_MODES ([[RUL-81]]), NO_KEY_LINE ([[RUL-122]]) and DEFAULT_DB. --customer and --target name the market and its target ([[DEC-41]]).
 - Reads: [[MOD-01]], [[MOD-02]], [[MOD-06]], [[MOD-08]], [[MOD-09]], [[MOD-10]], [[MOD-11]], [[MOD-16]], [[MOD-19]], [[MOD-20]], [[MOD-21]], [[MOD-23]], [[MOD-26]] (the hotel count's words)
 - Tests: tests/test_cli.py
@@ -203,7 +203,7 @@ which is also the order in which they depend on each other.
 ### MOD-21 [C] stored.py
 - File: src/hotel_market/stored.py
 - Owns: the four sources read from stored tables ([[DAT-28]], [[DEC-42]]), the second implementation of [[DAT-25]]: StoredBookings, StoredRateShops, StoredSchedules and StoredEvents. Made for a day, each refuses a later one ([[DEC-61]]).
-- Writers: write_snapshot() copies one day of any Sources into the feed tables. write_decisions() stores a day's flags, plans and decisions with each request and answer, and write_outcomes() a passed night's outcomes. Each deletes first.
+- Writers: write_snapshot() copies one moment of any Sources into the feed tables, a day or a tick. write_decisions() stores a moment's flags, plans and decisions with each request and answer; write_outcomes() a night's. Each deletes first.
 - Readers: state_before() gives an agent its hold, advice and accepted changes, and rate_changes_before() gives the simulator its playback. decided_on(), records_on(), decisions_file() and plan_differences() read a run back.
 - Holds: TABLES ([[RUL-72]]) and OPENING_DAY ([[RUL-73]]). connect() opens the DuckDB file and creates the tables from sql/schema.sql. It imports nothing from the simulator and is one of the modules the import test covers.
 - Reads: [[MOD-02]], [[MOD-08]] (the Entry, for the plan and decision rows), [[MOD-17]] (the interfaces), [[MOD-20]]; never the simulator ([[DEC-40]])

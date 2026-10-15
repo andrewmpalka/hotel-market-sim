@@ -318,13 +318,13 @@ def test_a_failed_day_write_rolls_the_earlier_tables_back(tmp_path, monkeypatch)
     feed = simulated_sources(simulate(SEED, last_day=2))
     original = stored._replace_day
 
-    def failing(connection, table, day, rows):
+    def failing(connection, table, day, rows, key="as_of_day", tick=None):
         if table == "daily_bookings":
-            original(connection, table, day, [])  # the day deleted and nothing written back
+            original(connection, table, day, [], key, tick)  # deleted and nothing written back
         elif table == "rate_shops":
             raise RuntimeError("the second table's insert failed")
         else:
-            original(connection, table, day, rows)
+            original(connection, table, day, rows, key, tick)
 
     connection = stored.connect(db)
     try:
@@ -393,3 +393,90 @@ def test_the_agents_tables_carry_the_tick_which_is_1_on_the_daily_clock(through_
             assert ticks == [(1,)], table
     finally:
         connection.close()
+
+
+# ---- the clock: one snapshot per tick, the agent per tick, a replay of a tick ---------------
+
+
+@pytest.mark.slow
+def test_a_60_day_run_through_the_tables_at_four_ticks_gives_the_same_decisions_file(
+    tmp_path,
+):
+    """run-day --ticks 4 writes one snapshot per tick and runs the agent after each, and the
+    decisions file it leaves is the in-memory run's at four ticks, line for line."""
+    _, _, agent = run(SEED, tmp_path / "memory.jsonl", tmp_path / "cache", ticks=4)
+    run_days(SEED, 0, SIM_DAYS - 1, tmp_path / "ticks.duckdb", cache_dir=tmp_path / "c2", ticks=4)
+    connection = stored.connect(tmp_path / "ticks.duckdb", read_only=True)
+    try:
+        assert stored.decisions_file(connection) == (tmp_path / "memory.jsonl").read_text()
+        assert stored.stored_ticks(connection) == 4
+    finally:
+        connection.close()
+
+
+def test_the_stored_sources_answer_as_the_simulated_ones_do_at_each_tick(tmp_path, capsys):
+    """Through day 12 at four ticks a day, the tables answer each (day, tick) as the simulated
+    sources do: the bookings through the tick, the rate at the tick, the shop, schedule and
+    events landed by it. A tick replays from the tables alone, and the daily commands take the
+    clock."""
+    db = tmp_path / "ticks.duckdb"
+    main(
+        ["run-day", "--seed", str(SEED), "--as-of", "12", "--from", "0", "--ticks", "4"]
+        + ["--db", str(db), "--template"]
+    )
+    assert "Day 12's feeds, flags, plans, decisions and outcomes are in" in capsys.readouterr().out
+    _, books, agent = run(SEED, tmp_path / "memory.jsonl", tmp_path / "cache", ticks=4)
+    simulated = simulated_sources(books)
+    connection = stored.connect(db, read_only=True)
+    try:
+        assert stored.stored_ticks(connection) == 4
+        sources = stored.stored_sources(connection, ticks=4)
+        hotel = DEMO.hotel("convention")
+        for day in (0, 9, 10, 12):
+            for tick in (1, 2, 3, 4):
+                assert (
+                    sources.bookings.on_books(day, tick) == simulated.bookings.on_books(day, tick)
+                ).all()
+                assert (
+                    sources.bookings.rates(day, tick) == simulated.bookings.rates(day, tick)
+                ).all()
+                for stay_day in (day, day + 46):
+                    assert sources.shops.median(day, hotel, stay_day, tick) == pytest.approx(
+                        simulated.shops.median(day, hotel, stay_day, tick)
+                    )
+                assert (
+                    sources.schedules.passengers(day, tick)
+                    == simulated.schedules.passengers(day, tick)
+                ).all()
+                assert sources.events.known(day, tick) == simulated.events.known(day, tick)
+        # The convention lands at tick 4 of day 10 in the tables as in the simulator.
+        assert sources.events.known(10, 3) == [] and len(sources.events.known(10, 4)) == 1
+        assert (sources.shops.median_history(12) == simulated.shops.median_history(12)).all()
+        assert (sources.bookings.history(12).taken == simulated.bookings.history(12).taken).all()
+        ticks = connection.execute(
+            "SELECT DISTINCT as_of_tick FROM daily_bookings WHERE as_of_day = 5 ORDER BY 1"
+        ).fetchall()
+        assert ticks == [(1,), (2,), (3,), (4,)]
+        # The log through day 12 is the in-memory run's.
+        memory = [
+            line
+            for line in (tmp_path / "memory.jsonl").read_text().splitlines()
+            if json.loads(line)["day"] <= 12
+        ]
+        assert stored.decisions_file(connection).splitlines() == memory
+    finally:
+        connection.close()
+    # A tick replays from the tables alone and rebuilds its plans exactly.
+    for tick in (2, 4):
+        entries, advice, differences = replay_day(10, db, tick=tick)
+        assert differences == [] and {e.tick for e in entries} <= {tick}
+        expected = [e for e in agent.entries if (e.day, e.tick) == (10, tick)]
+        assert [e.to_json() for e in entries] == [e.to_json() for e in expected]
+    entries, _, _ = replay_day(10, db)  # no tick: the last
+    assert {e.tick for e in entries} <= {4}
+    with pytest.raises(LookupError, match="ticks 1 to 4"):
+        replay_day(10, db, tick=5)
+    main(["replay", "--as-of", "10", "--tick", "2", "--db", str(db)])
+    out = capsys.readouterr().out
+    assert out.startswith("Day 10, tick 2, queue, rebuilt from the tables in")
+    assert "The rebuilt plans match the stored plans." in out
