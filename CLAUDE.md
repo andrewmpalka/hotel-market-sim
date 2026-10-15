@@ -48,7 +48,7 @@ with pip install -e ".[dev]" and import it as hotel_market.<module>.
 | --- | --- |
 | schedule.py | the air schedule as known on a day, its seat counts, the filings, scenarios and churn |
 | world.py | the Hotel and Competitor dataclasses and the calendar |
-| customer.py | reads a market's customer file; demo() is customers/demo.toml |
+| customer.py | reads a market's customer file; demo() is customers/demo.toml, found under the package's repository or through HOTEL_MARKET_CUSTOMER |
 | sources.py | the four interfaces: Bookings, RateShops, Schedules, Events |
 | shocks.py | the convention (known day 10) and the competitor rate cut (day 30) |
 | demand.py | the simulator's expected and normal demand per hotel and stay date, and the market's price response |

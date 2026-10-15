@@ -170,18 +170,18 @@ def _hotel(row: int, entry: dict, floor_share: float, ceiling_share: float, cost
 
 def demo_path() -> Path:
     """Where the demo customer file is. It is the path in HOTEL_MARKET_CUSTOMER if that is set.
-    Otherwise it is customers/demo.toml under the working directory, else under the repository
-    root.
+    Otherwise it is customers/demo.toml under the repository this package is installed from. The
+    working directory never counts, so a command run from one checkout cannot read another's
+    file, and an installed package with no checkout needs the variable or --customer.
     """
     named = os.environ.get(CUSTOMER_VARIABLE)
     if named:
         return Path(named)
-    for base in (Path.cwd(), Path(__file__).resolve().parents[2]):
-        if (base / DEMO_FILE).exists():
-            return base / DEMO_FILE
+    root = Path(__file__).resolve().parents[2]
+    if (root / DEMO_FILE).exists():
+        return root / DEMO_FILE
     raise FileNotFoundError(
-        f"{DEMO_FILE} not found; run from the repository root, pass --customer, or set "
-        f"{CUSTOMER_VARIABLE}"
+        f"{DEMO_FILE} not found under {root}; pass --customer, or set {CUSTOMER_VARIABLE}"
     )
 
 

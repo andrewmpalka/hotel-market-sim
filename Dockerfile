@@ -24,6 +24,8 @@ COPY docs ./docs
 COPY customers ./customers
 COPY sql ./sql
 RUN pip install --no-cache-dir ".[dev]"
+# The installed package has no checkout to find the demo market in, so the variable names it.
+ENV HOTEL_MARKET_CUSTOMER=/app/customers/demo.toml
 
 # Run from the mounted repository, so what a run writes lands there.
 WORKDIR /work

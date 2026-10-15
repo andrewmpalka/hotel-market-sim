@@ -142,10 +142,14 @@ def test_the_customer_variable_names_the_default_file(tmp_path, monkeypatch):
     monkeypatch.setenv(CUSTOMER_VARIABLE, str(copy))
     assert demo_path() == copy and load(demo_path()).name == "copy"
     monkeypatch.delenv(CUSTOMER_VARIABLE)
-    monkeypatch.chdir(tmp_path)  # no customers/demo.toml here
+    # A customers/demo.toml under the working directory never counts, so two checkouts cannot
+    # read each other's file.
+    (tmp_path / "customers").mkdir()
+    (tmp_path / "customers" / "demo.toml").write_text(copy.read_text())
+    monkeypatch.chdir(tmp_path)
     checkout = Path(customer.__file__).resolve().parents[2] / DEMO_FILE
     if checkout.exists():  # the package is a source checkout: its repository root's file is found
-        assert demo_path() == ROOT / DEMO_FILE
-    else:  # the package is installed, as in the image: the error names the three ways out
+        assert demo_path() == ROOT / DEMO_FILE and load(demo_path()).name == "demo"
+    else:  # the package is installed, as in the image: the error names the two ways out
         with pytest.raises(FileNotFoundError, match=CUSTOMER_VARIABLE):
             demo_path()

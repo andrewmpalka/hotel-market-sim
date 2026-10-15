@@ -606,7 +606,7 @@ marked [H], with one line that names the node it moved to.
 - Value: "HOTEL_MARKET_CUSTOMER"
 - File: src/hotel_market/customer.py
 - Kind: label
-- Meaning: the environment variable that names the default customer file when it is set. Otherwise demo_path() looks for customers/demo.toml under the working directory, then under the repository root.
+- Meaning: the environment variable that names the default customer file when it is set. Otherwise demo_path() looks for customers/demo.toml under the repository the package is installed from, never the working directory.
 - Evidence: test_the_customer_variable_names_the_default_file
 
 ## customers/demo.toml

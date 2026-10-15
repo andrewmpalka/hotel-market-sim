@@ -191,7 +191,7 @@ which is also the order in which they depend on each other.
 ### MOD-20 [C] customer.py
 - File: src/hotel_market/customer.py
 - Owns: everything specific to one market, read from its customer file ([[DEC-41]]). load(path) turns the TOML into a Customer ([[DAT-27]]): hotels ([[DAT-04]]), limits, thresholds, hold, minimum, curve ([[CON-01]]) and target ([[RUL-58]]).
-- Default: demo() is the demo market, loaded once and the default wherever no customer is given. demo_path() finds it through CUSTOMER_VARIABLE ([[RUL-71]]), the working directory or the repository root.
+- Default: demo() is the demo market, loaded once and the default wherever no customer is given. demo_path() finds it through CUSTOMER_VARIABLE ([[RUL-71]]) or under the package's repository, never the working directory.
 - Checks: load() refuses a bad target ([[RUL-70]]), a repeated hotel key or name, a share outside 0 to 1, a floor at or above the ceiling, a curve that does not ascend, and a hotel short of seven weekday factors, rooms or a rate.
 - Reads: [[MOD-02]] for the Hotel and Competitor types
 - Writes: [[DAT-27]], [[DAT-04]]

@@ -5,18 +5,11 @@ A test marked slow runs a 20-seed sweep or several, and the nine together take a
 runs) includes them.
 """
 
-import os
-from pathlib import Path
-
 import pytest
 
-# The demo customer file, wherever the tests run from (the container runs them from /work).
-ROOT = Path(__file__).resolve().parents[1]
-os.environ.setdefault("HOTEL_MARKET_CUSTOMER", str(ROOT / "customers" / "demo.toml"))
-
-from hotel_market.bookings import Books  # noqa: E402
-from hotel_market.detect import detect_numbers  # noqa: E402
-from hotel_market.simulated import simulated_sources  # noqa: E402
+from hotel_market.bookings import Books
+from hotel_market.detect import detect_numbers
+from hotel_market.simulated import simulated_sources
 
 SEED = 7
 
