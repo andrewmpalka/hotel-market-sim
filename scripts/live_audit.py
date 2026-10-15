@@ -6,6 +6,10 @@ One seed with the live model, measured and audited.
     python scripts/live_audit.py --seed 7 --audit-only # audit the cache a live run left
     python scripts/live_audit.py --seed 7 --audit-only --elasticity fixed:1.0
                                                        # audit a bench arm's cache (bench.py)
+    python scripts/live_audit.py --seed 7 --record-fixture
+                                                       # run live, audit, then copy the cache
+                                                       # records and calls.jsonl into
+                                                       # tests/fixtures/live_seed7
 
 The run is the hotel-market command's run for the seed in the given mode. The default mode
 applies unless --elasticity says otherwise. It makes both simulations, decisions.jsonl and the
@@ -276,6 +280,12 @@ def main(argv: list[str] | None = None) -> None:
     )
     parser.add_argument("--react", action="store_true", help="the arm ran with --react")
     parser.add_argument(
+        "--record-fixture",
+        action="store_true",
+        help="after the run and the audit, copy the cache records and calls.jsonl into "
+        "tests/fixtures/live_seed7, replacing the recorded run the tests replay",
+    )
+    parser.add_argument(
         "--market-elasticity",
         dest="market_elasticity",
         type=float,
@@ -301,6 +311,32 @@ def main(argv: list[str] | None = None) -> None:
     audit(cache_dir)
     print()
     report_calls(calls)
+    if args.record_fixture:
+        record_fixture(cache_dir, calls_file or args.out / "calls.jsonl", FIXTURE)
+
+
+FIXTURE = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "live_seed7"
+
+
+def record_fixture(cache_dir: Path, calls_file: Path, target: Path = FIXTURE) -> list[Path]:
+    """Copy the arm's cache records and its calls.jsonl into the fixture folder, replacing what was
+    there, so the tests replay this run. Returns the files written."""
+    records = sorted(cache_dir.glob("day*_*.json"))
+    if not records:
+        raise SystemExit(f"no cache records under {cache_dir}; nothing to record")
+    if not calls_file.exists():
+        raise SystemExit(f"{calls_file} is missing; the run did not record its calls")
+    target.mkdir(parents=True, exist_ok=True)
+    for stale in list(target.glob("day*_*.json")) + [target / "calls.jsonl"]:
+        if stale.exists():
+            stale.unlink()
+    written = []
+    for source in [*records, calls_file]:
+        destination = target / ("calls.jsonl" if source == calls_file else source.name)
+        destination.write_bytes(source.read_bytes())
+        written.append(destination)
+    print(f"Recorded {len(records)} cache records and calls.jsonl into {target}")
+    return written
 
 
 if __name__ == "__main__":

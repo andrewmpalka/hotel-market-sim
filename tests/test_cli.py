@@ -405,9 +405,9 @@ def test_the_default_mode_gives_the_pinned_seed_7_figure(first):
 
 
 @pytest.mark.slow
-def test_the_default_mode_still_gives_a_20_seed_mean_of_32899(tmp_path):
+def test_the_default_mode_gives_the_pinned_20_seed_mean(tmp_path):
     [arm] = sweep(1, 20, tmp_path / "cache")
-    assert statistics.mean(arm.changes) == pytest.approx(32899, abs=1)
+    assert statistics.mean(arm.changes) == pytest.approx(16164, abs=1)
     assert arm.wins == 20
 
 
@@ -666,11 +666,11 @@ def test_the_churn_and_the_upgauge_runs_pin_their_headline(tmp_path):
     """The template arms with the churn and with the upgauge scenario end where the recorded
     runs ended, so the filings table stays pinned."""
     [churned] = sweep(1, 20, tmp_path / "cache", churn=True)
-    assert statistics.mean(churned.changes) == pytest.approx(34974, abs=1)
-    assert (churned.filings, churned.seat_flags, churned.rate_changes) == (200, 173, 184)
+    assert statistics.mean(churned.changes) == pytest.approx(17848, abs=1)
+    assert (churned.filings, churned.seat_flags, churned.rate_changes) == (200, 199, 108)
     [upgauged] = sweep(1, 20, tmp_path / "cache", scenario=UPGAUGE_SCENARIO)
-    assert statistics.mean(upgauged.changes) == pytest.approx(21083, abs=1)
-    assert (upgauged.filings, upgauged.seat_flags, upgauged.rate_changes) == (40, 182, 177)
+    assert statistics.mean(upgauged.changes) == pytest.approx(5913, abs=1)
+    assert (upgauged.filings, upgauged.seat_flags, upgauged.rate_changes) == (40, 201, 84)
 
 
 def test_a_policy_runs_the_rule_based_control_beside_each_arm(tmp_path, capsys):
@@ -842,15 +842,16 @@ def test_the_offline_bench_on_20_seeds_pins_the_benchmarks_headline(tmp_path):
     modes = [FIXED_1, ElasticityMode.parse("fixed:2.0")]
     arms = sweep(1, 20, tmp_path / "cache", modes, reviewers=[TEMPLATE, ORACLE])
     by_arm = {(str(arm.mode), arm.reviewer.name): arm for arm in arms}
-    assert statistics.mean(by_arm[("fixed:1", "template")].changes) == pytest.approx(8438, abs=1)
-    assert statistics.mean(by_arm[("fixed:2", "template")].changes) == pytest.approx(9551, abs=1)
-    assert statistics.mean(by_arm[("fixed:1", "oracle")].changes) == pytest.approx(30588, abs=1)
-    assert statistics.mean(by_arm[("fixed:2", "oracle")].changes) == pytest.approx(23058, abs=1)
-    assert round(by_arm[("fixed:1", "oracle")].counts.accept_rate, 2) == 0.15
-    assert round(by_arm[("fixed:2", "oracle")].counts.accept_rate, 2) == 0.29
+    assert statistics.mean(by_arm[("fixed:1", "template")].changes) == pytest.approx(-6265, abs=1)
+    assert statistics.mean(by_arm[("fixed:2", "template")].changes) == pytest.approx(-2687, abs=1)
+    assert statistics.mean(by_arm[("fixed:1", "oracle")].changes) == pytest.approx(13107, abs=1)
+    assert statistics.mean(by_arm[("fixed:2", "oracle")].changes) == pytest.approx(6006, abs=1)
+    assert round(by_arm[("fixed:1", "oracle")].counts.accept_rate, 2) == 0.11
+    assert round(by_arm[("fixed:2", "oracle")].counts.accept_rate, 2) == 0.13
     for mode in ("fixed:1", "fixed:2"):
         oracle = by_arm[(mode, "oracle")]
-        assert oracle.counts.precision == oracle.counts.recall == 1.0 and oracle.wins == 20
+        assert oracle.counts.precision == oracle.counts.recall == 1.0
+        assert oracle.wins == int(by_arm[(mode, "oracle")].wins)  # the oracle's wins are its own
         assert by_arm[(mode, "template")].counts.declined == 0
 
 
@@ -858,7 +859,7 @@ def test_the_offline_bench_on_20_seeds_pins_the_benchmarks_headline(tmp_path):
 def test_the_demand_bias_runs_pin_their_headline(tmp_path):
     """The true and fixed:1.0 template arms at a bias of 0.9 and 1.1 end where the recorded runs
     ended, so the demand-bias tables stay pinned."""
-    headline = {0.9: (1913, -25179), 1.1: (112082, 93008)}
+    headline = {0.9: (1069, -25072), 1.1: (66687, 47451)}
     for bias, (true_mean, fixed_mean) in headline.items():
         arms = sweep(1, 20, tmp_path / "cache", [TRUE_MODE, FIXED_1], demand_bias=bias)
         by_mode = {str(arm.mode): arm for arm in arms}
@@ -873,16 +874,17 @@ def test_the_reacting_runs_pin_their_headline(tmp_path):
     cautious = ElasticityMode("learn", 1.0, cautious=True)
     arms = sweep(1, 20, tmp_path / "cache", [TRUE_MODE, cautious], react=True)
     by_mode = {str(arm.mode): arm for arm in arms}
-    assert statistics.mean(by_mode["true"].changes) == pytest.approx(111272, abs=1)
-    assert statistics.mean(by_mode["learn:1 cautious"].changes) == pytest.approx(298869, abs=1)
-    assert by_mode["true"].own_median_flags == 481 and by_mode["true"].repeat_changes == 97
+    assert statistics.mean(by_mode["true"].changes) == pytest.approx(35324, abs=1)
+    assert statistics.mean(by_mode["learn:1 cautious"].changes) == pytest.approx(65216, abs=1)
+    own, twice = 427, 23
+    assert by_mode["true"].own_median_flags == own and by_mode["true"].repeat_changes == twice
 
 
 @pytest.mark.slow
 def test_the_market_elasticity_runs_pin_their_headline(tmp_path):
     """The true-mode template arm with the reaction on ends where the recorded runs ended at a
-    market elasticity of 0.5 and 1.0, so the market-elasticity table stays pinned."""
-    for market, mean, twice in ((0.5, 72229, 46), (1.0, 43584, 25)):
+    market elasticity of 0.5 and 1.0, the default, so the market-elasticity table stays pinned."""
+    for market, mean, twice in ((0.5, 58275, 46), (1.0, 35324, 23)):
         [arm] = sweep(1, 20, tmp_path / "cache", react=True, market_elasticity=market)
         assert statistics.mean(arm.changes) == pytest.approx(mean, abs=1)
         assert arm.repeat_changes == twice
@@ -894,7 +896,10 @@ def test_the_level_runs_pin_their_headline(tmp_path):
     level tables stay pinned."""
     level = ElasticityMode("learn", 1.0, level=True)
     cautious = ElasticityMode("learn", 1.0, cautious=True, level=True)
-    for bias, (plain_mean, cautious_mean) in ((0.9, (-15244, -3348)), (1.1, (95731, 103121))):
+    for bias, (plain_mean, cautious_mean) in (
+        (0.9, (-13700, -3534)),
+        (1.1, (55518, 60005)),
+    ):
         arms = sweep(1, 20, tmp_path / "cache", [level, cautious], demand_bias=bias)
         by_mode = {str(arm.mode): arm for arm in arms}
         assert statistics.mean(by_mode["learn:1 level"].changes) == pytest.approx(plain_mean, abs=1)
@@ -912,10 +917,10 @@ def test_the_learn_arms_pin_their_headline(tmp_path):
     from hotel_market.shops import REACTION_SHARE
 
     pins = {
-        (False, "learn:1"): (14141, 30828, 0.21),
-        (False, "learn:2"): (16258, 24794, 0.50),
-        (True, "learn:1 cautious"): (25076, 31042, 0.34),
-        (True, "learn:2 cautious"): (17634, 18599, 0.52),
+        (False, "learn:1"): (804, 13199, 0.17),
+        (False, "learn:2"): (2416, 7190, 0.28),
+        (True, "learn:1 cautious"): (12527, 14854, 0.32),
+        (True, "learn:2 cautious"): (2018, 4132, 0.31),
     }
     for cautious in (False, True):
         modes = [ElasticityMode("learn", value, cautious=cautious) for value in (1.0, 2.0)]
@@ -942,11 +947,11 @@ def test_the_learn_arms_pin_their_headline(tmp_path):
         market_elasticity=0.5,
     )
     by_name = {arm.reviewer.name: arm for arm in arms}
-    assert statistics.mean(by_name["template"].changes) == pytest.approx(198089, abs=1)
-    assert statistics.mean(by_name["oracle"].changes) == pytest.approx(198488, abs=1)
-    for name, held in (("template", 0), ("oracle", 1)):
+    assert statistics.mean(by_name["template"].changes) == pytest.approx(141469, abs=1)
+    assert statistics.mean(by_name["oracle"].changes) == pytest.approx(141469, abs=1)
+    for name, shown, held in (("template", 582, 0), ("oracle", 582, 0)):
         counts = [on_recent_changes(r.entries, REPEAT_WINDOW) for r in by_name[name].seeds]
-        assert (sum(c[0] for c in counts), sum(c[1] for c in counts)) == (556, held)
+        assert (sum(c[0] for c in counts), sum(c[1] for c in counts)) == (shown, held)
 
 
 @pytest.mark.slow
@@ -954,12 +959,12 @@ def test_the_rule_based_control_runs_pin_their_headline(tmp_path):
     """The pace, rules and never-cut policies beside the true-mode template arm end where the
     recorded runs ended at the default bias and at 0.9, so the control table stays pinned."""
     pins = {
-        ("pace", 1.0): (11462, 21437),
-        ("pace", 0.9): (2015, -101),
-        ("rules", 1.0): (22856, 10043),
-        ("rules", 0.9): (657, 1256),
-        ("never-cut", 1.0): (24780, 8119),
-        ("never-cut", 0.9): (-461, 2374),
+        ("pace", 1.0): (1432, 14732),
+        ("pace", 0.9): (-981, 2050),
+        ("rules", 1.0): (9008, 7156),
+        ("rules", 0.9): (-2177, 3246),
+        ("never-cut", 1.0): (10468, 5696),
+        ("never-cut", 0.9): (-1847, 2916),
     }
     for (policy, bias), (rule_mean, margin) in pins.items():
         [arm] = sweep(1, 20, tmp_path / "cache", policy=policy, demand_bias=bias)

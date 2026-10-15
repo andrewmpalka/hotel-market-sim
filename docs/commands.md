@@ -19,6 +19,8 @@ Python 3.11 or later, from the repository root:
     hotel-market run-day --seed 7 --as-of 20 --from 0   # days 0 to 20, one day at a time, through stored tables
     hotel-market replay --as-of 20                      # day 20's plans again, from the stored tables alone
     python scripts/live_audit.py --seed 7               # a live run, every model call measured, then audited
+    python scripts/live_audit.py --seed 7 --record-fixture
+                                                        # the same, then the cache records and calls.jsonl copied into tests/fixtures/live_seed7
     hotel-market demo-data --seed 7 --customer FILE     # demo.duckdb: the stored tables and the demo page's tables, reasons from the recorded run where it covers the request
     pip install -e ".[demo]" && HOTEL_MARKET_DEMO_FILE=demo.duckdb streamlit run src/hotel_market/demo_page.py
                                                         # the read-only demo page over that file; no API key

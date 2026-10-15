@@ -230,3 +230,32 @@ def test_the_recorded_live_run_replays_without_a_key_and_gives_28818(tmp_path):
     }
     names = {hotel.key: hotel.name for hotel in demo().hotels}
     assert {(e.day, names[e.hotel], e.id): e.reason for e in decided} == recorded
+
+
+def test_record_fixture_copies_the_cache_records_and_the_calls_into_the_fixture(tmp_path):
+    cache = tmp_path / "cache" / "seed7"
+    cache.mkdir(parents=True)
+    for name in ("day010_convention.json", "day020_airport.json"):
+        (cache / name).write_text('{"record": "%s"}' % name)
+    (cache / "notes.txt").write_text("not a record")
+    calls = cache / "calls.jsonl"
+    calls.write_text('{"call": 1}\n')
+    target = tmp_path / "fixture"
+    target.mkdir()
+    (target / "day034_convention.json").write_text("stale")  # an earlier run's record goes
+    written = audit.record_fixture(cache, calls, target)
+    assert sorted(p.name for p in written) == [
+        "calls.jsonl",
+        "day010_convention.json",
+        "day020_airport.json",
+    ]
+    assert sorted(p.name for p in target.iterdir()) == [
+        "calls.jsonl",
+        "day010_convention.json",
+        "day020_airport.json",
+    ]
+    assert (target / "day020_airport.json").read_text() == '{"record": "day020_airport.json"}'
+    assert (target / "calls.jsonl").read_text() == '{"call": 1}\n'
+    assert audit.FIXTURE.name == "live_seed7" and audit.FIXTURE.parent.name == "fixtures"
+    with pytest.raises(SystemExit, match="no cache records"):
+        audit.record_fixture(tmp_path / "empty", calls, target)

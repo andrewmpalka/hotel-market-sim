@@ -28,8 +28,9 @@ that shape the repository has the control arm and an oracle-scored reviewer, and
 it has no online or shadow evaluation, no human in the loop, no outcome labels
 from the world, no post-training and no incident path.
 
-The benchmark runs seeds 1 to 20 in three elasticity modes. Each mode has five
-reviewers: the template, which accepts every plan, the oracle, and the three
+The benchmark ran seeds 1 to 20 in three elasticity modes on world v1 (commit
+b178e7b); every figure below is that world's until the benchmark reruns on
+world v2. Each mode has five reviewers: the template, which accepts every plan, the oracle, and the three
 current Claude models. In the true mode, every plan is scored with the
 simulator's own elasticity, so accepting every plan is correct. The oracle and
 the three models accept every plan, and each earns the template's +$32,899 a

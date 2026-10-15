@@ -1841,10 +1841,10 @@ def _print_bench(
     if churn or scenario.name != DEFAULT_SCENARIO.name:
         print()
         print("\n".join(_revision_table(arms, named=True)))
-        print()
-        print("\n".join(_median_table(arms, named=True)))
-        print()
-        print("\n".join(_outcome_table(arms, named=True)))
+    print()
+    print("\n".join(_median_table(arms, named=True)))
+    print()
+    print("\n".join(_outcome_table(arms, named=True)))
     if policy:
         print()
         print("\n".join(_control_table(arms, policy, named=True)))

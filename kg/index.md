@@ -16,11 +16,11 @@ nodes and its words, len(text.split()) over the file.
 | measures.md | 14 | 962 |
 | sources.md | 4 | 855 |
 | decisions.md | 64 | 9,452 |
-| results.md | 42 | 7,233 |
+| results.md | 42 | 7,236 |
 | forks.md | 13 | 1,924 |
 | unknowns.md | 15 | 2,016 |
-| every node file | 360 | 38,345 |
-| index.md | | 2,995 |
+| every node file | 360 | 38,348 |
+| index.md | | 2,950 |
 
 ## Modules (`modules.md`)
 
@@ -315,24 +315,24 @@ nodes and its words, len(text.split()) over the file.
 - RES-22 [C] Seeds 1 to 20 at a demand bias of 1.1
 - RES-23 [C] The same arms at the default demand bias of 1.0
 - RES-24 [C] The competitor reaction on seeds 1 to 20
-- RES-25 [C] The comp median's path on seed 7's convention nights with the reaction on
+- RES-25 [C] The comp median's path on seed 7 with the reaction on
 - RES-26 [C] The market elasticity with the reaction on, seeds 1 to 20
-- RES-27 [C] The day-30 competitor cut on seed 7 at a market elasticity of 0.0 and 0.5
+- RES-27 [C] The day-30 competitor cut on seed 7 by market elasticity
 - RES-28 [C] The churn on seeds 1 to 20
 - RES-29 [C] The fitted level fed back at a demand bias of 0.9
 - RES-30 [C] The fitted level fed back at the default demand bias
 - RES-31 [C] The fitted level fed back at a demand bias of 1.1
-- RES-32 [C] The fitted level fed back with the reaction on at a market elasticity of 0.5
-- RES-33 [C] The agent against the pace and the rules policies on seeds 1 to 20
+- RES-32 [C] The fitted level fed back in the reacting market at 0.5
+- RES-33 [C] The agent against the pace and the rules policies
 - RES-34 [C] The reviewers at learn:1.0 on seeds 1 to 20
-- RES-35 [C] The reviewers at learn:1.0 with the cautious rule on seeds 1 to 20
-- RES-36 [C] The reviewers at learn:2.0, with and without the cautious rule, on seeds 1 to 20
-- RES-37 [C] The reviewers at learn:1.0 cautious with the reaction on at a market elasticity of 0.5
+- RES-35 [C] The reviewers at learn:1.0 with the cautious rule
+- RES-36 [C] The reviewers at learn:2.0, with and without the cautious rule
+- RES-37 [C] The reviewers at learn:1.0 cautious in the reacting market at 0.5
 - RES-38 [O] The decline rate by standard-error group in the learn arms
 - RES-39 [O] The reviewers ranked across the learned modes, and the learn arms' cost
-- RES-40 [C] The agent against the never-cut policy on seeds 1 to 20
-- RES-41 [C] The convention without the competitors' raise on seeds 1 to 20
-- RES-42 [C] The default agent in a revenue manager's measures on seeds 1 to 20
+- RES-40 [C] The agent against the never-cut policy
+- RES-41 [C] The convention without the competitors' raise
+- RES-42 [C] The default agent in a revenue manager's measures
 
 ## Open forks (`forks.md`)
 
