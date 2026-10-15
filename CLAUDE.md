@@ -134,6 +134,6 @@ with its command and its table in docs/results.md. A decision keeps one headline
 figure and links to its RES node. python kg_check.py --write-index rewrites
 kg/index.md from the nodes. python kg_check.py and tests/test_kg.py fail when
 the graph and the code disagree on what the check covers, which is the
-constants' values and kinds, the links and the cited test names; kg/README.md
-lists every check. A fact outside that list, such as a new shock, leaves the
-graph stale and the check content, so a change still needs a reader.
+constants' values and kinds, the links, the cited test names and the shocks'
+known days; kg/README.md lists every check. A fact outside that list leaves
+the graph stale and the check content, so a change still needs a reader.

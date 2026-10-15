@@ -121,6 +121,23 @@ def test_a_customer_setting_missing_from_the_graph_is_reported(kg_copy):
     assert _reported(kg_copy, "customers/demo.toml: detect.hold_days = 7 has no RUL node")
 
 
+def test_a_shock_in_the_code_without_a_node_is_reported(monkeypatch):
+    """A second event added to shocks.py has no SHK node, so the check fails until a node names
+    its file and its known day. The shipped shocks all have one."""
+    from dataclasses import replace
+
+    from hotel_market import shocks
+
+    assert not any("has no SHK node" in problem for problem in kg_check.problems())
+    second = replace(shocks.EVENTS[0], name="Trade fair", known_day=25, start_day=70, end_day=72)
+    monkeypatch.setattr(shocks, "EVENTS", shocks.EVENTS + [second])
+    assert any(
+        "src/hotel_market/shocks.py: the event 'Trade fair' known on day 25 has no SHK node "
+        "naming that day" in problem
+        for problem in kg_check.problems()
+    )
+
+
 def test_a_measure_whose_function_does_not_exist_is_reported(kg_copy):
     _replace(
         kg_copy / "measures.md",

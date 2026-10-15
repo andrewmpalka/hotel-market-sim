@@ -18,6 +18,8 @@ It reports a problem when:
 - a constant in kg/rules.md has no Kind, or one that is not parameter or label,
 - a public constant in the code, or a setting in the customer file, has no RUL node,
 - a measure's Function does not exist,
+- an Event, a RateCut or a scenario's Shock in the code has no SHK node naming its file and its
+  known day,
 - a RES node names no table in docs/results.md, or names one that is not there,
 - a [C] node gives "review" as its evidence but is not a policy node (Kind: policy),
 - a field line is longer than 240 characters, or a node has more than 8 fields,
@@ -154,6 +156,7 @@ def problems(kg_dir: Path = KG_DIR, root: Path = ROOT) -> list[str]:
     found += _bad_kinds(nodes)
     found += _unlisted_constants(nodes, root)
     found += _missing_functions(nodes)
+    found += _missing_shocks(nodes)
     found += _missing_tables(nodes, root)
     found += _bad_fields(nodes)
     found += _ungrouped_decisions(nodes)
@@ -598,6 +601,49 @@ def _missing_functions(nodes: list[Node]) -> list[str]:
         elif not _resolves(dotted):
             found.append(f"{node.where}: the function {dotted} does not exist")
     return found
+
+
+def _missing_shocks(nodes: list[Node]) -> list[str]:
+    """Every Event and RateCut in shocks.py and every Shock of a scenario in schedule.py has an SHK
+    node whose File is its file and whose Known on day starts with its known day. The churn is
+    drawn from the seed, so no constant holds its shocks; its node describes the rule."""
+    known = set()
+    for node in nodes:
+        if node.id.startswith("SHK-") and node.status != "H":
+            day = node.fields.get("Known on day", "").split(",")[0].strip()
+            if day.isdigit():
+                known.add((node.fields.get("File"), int(day)))
+    found = []
+    for file, shocks in _code_shocks():
+        for shock in shocks:
+            if (file, shock.known_day) not in known:
+                found.append(
+                    f"{file}: {_shock_name(shock)} known on day {shock.known_day} has no SHK node "
+                    f"naming that day"
+                )
+    return found
+
+
+def _code_shocks() -> list[tuple[str, list]]:
+    """(file, its shocks) for the two files that define them; a file whose import failed is
+    skipped, and warnings() names it."""
+    found = []
+    shocks = _module("src/hotel_market/shocks.py")
+    if shocks is not None:
+        found.append(("src/hotel_market/shocks.py", list(shocks.EVENTS) + list(shocks.RATE_CUTS)))
+    schedule = _module("src/hotel_market/schedule.py")
+    if schedule is not None:
+        filings = [s for scenario in schedule.SCENARIOS.values() for s in scenario.shocks]
+        found.append(("src/hotel_market/schedule.py", filings))
+    return found
+
+
+def _shock_name(shock) -> str:
+    if hasattr(shock, "uplift"):
+        return f"the event {shock.name!r}"
+    if hasattr(shock, "cut"):
+        return f"the rate cut at {shock.hotel!r}"
+    return f"the {shock.kind} filing"
 
 
 def _resolves(dotted: str) -> bool:

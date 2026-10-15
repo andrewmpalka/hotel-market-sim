@@ -3,7 +3,8 @@
 The four shocks, with the day each becomes known. Two live in the schedule
 ([[MOD-01]]) and two in shocks.py ([[MOD-03]]). Each one produces a flag on
 the day it becomes known, and every lookup on them takes the day it is made
-on ([[RUL-03]]).
+on ([[RUL-03]]). kg_check.py fails when a shock in the code has no node here
+whose File and Known on day match it, so a new shock needs a node.
 
 ### SHK-01 [C] The convention
 - Known on day: 10
