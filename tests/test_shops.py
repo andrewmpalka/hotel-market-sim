@@ -68,18 +68,20 @@ def test_rates_depend_only_on_the_seed():
     assert [comp_rates(0, hotel, s, seed=SEED) for s in range(90)] == first
     assert [comp_rates(0, hotel, s, seed=SEED + 1) for s in range(90)] != first
     assert [comp_rates(1, hotel, s, seed=SEED) for s in range(90)] != first  # fresh each shop day
-    # Each competitor draws from a stream keyed by its name, so the hotel's row in the file and
-    # the other competitors do not touch its rates.
-    same_name = shops._noise(SEED, "airport comp 1")
-    assert (shops._noise(SEED, "airport comp 1") == same_name).all()
-    assert (shops._noise(SEED, "airport comp 2") != same_name).any()
+    # Each competitor draws from a stream keyed by its hotel's key and its name, so the hotel's
+    # row in the file and the other competitors do not touch its rates.
+    same_name = shops._noise(SEED, "airport", "airport comp 1")
+    assert (shops._noise(SEED, "airport", "airport comp 1") == same_name).all()
+    assert (shops._noise(SEED, "airport", "airport comp 2") != same_name).any()
+    assert (shops._noise(SEED, "lifestyle", "airport comp 1") != same_name).any()
 
 
 def _without_noise(shop_day, hotel, stay_day):
     """Each competitor's shopped rate with that day's noise taken back out."""
     rates = comp_rates(shop_day, hotel, stay_day, seed=SEED)
     return {
-        comp.name: rates[comp.name] / (1 + shops._noise(SEED, comp.name)[shop_day + 1, stay_day])
+        comp.name: rates[comp.name]
+        / (1 + shops._noise(SEED, hotel.key, comp.name)[shop_day + 1, stay_day])
         for comp in hotel.competitors
     }
 

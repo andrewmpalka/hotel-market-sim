@@ -48,18 +48,18 @@ def test_the_requests_display_strings_and_whole_numbers_are_what_a_reason_may_qu
     phrases, tokens = audit.quotable(request)
     assert {
         "the same as holding",
-        "13.4% to 14.6% below the median",
-        "up 13.7% to 18.8%",
+        "10.6% to 13.7% below the median",
+        "up 10.3% to 17.1%",
     } <= phrases
-    assert {"955", "$220", "$242", "45 to 48", "1.5", "$180 less than holding"} <= phrases
+    assert {"992", "$220", "$242", "45 to 48", "1.5", "$140 less than holding"} <= phrases
     assert {"10", "5%", "10%", "45", "48"} <= tokens  # the day, and the figures inside names
     assert "8052.54" not in phrases | tokens  # raw values are not for quoting
     # A phrase must appear whole: a sign, a cut or one end of a range on its own is not a
     # quotation.
-    assert audit.appears("14.6%", "we sit 13.4% to 14.6% below the median", phrases, tokens)
-    assert not audit.appears("14.6%", "our rate sits 14.6% below the median", phrases, tokens)
-    assert not audit.appears("-14.6%", "we sit 13.4% to -14.6% below the median", phrases, tokens)
-    assert not audit.appears("$180", "the plan loses $180 in contribution", phrases, tokens)
+    assert audit.appears("13.7%", "we sit 10.6% to 13.7% below the median", phrases, tokens)
+    assert not audit.appears("13.7%", "our rate sits 13.7% below the median", phrases, tokens)
+    assert not audit.appears("-13.7%", "we sit 10.6% to -13.7% below the median", phrases, tokens)
+    assert not audit.appears("$140", "the plan loses $140 in contribution", phrases, tokens)
     assert audit.appears("10%", "we recommend raising 10% to $242", phrases, tokens)
     # The template copies the display strings whole, so every figure it quotes is known.
     [decision] = template_decisions(request)

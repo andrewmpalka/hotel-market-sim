@@ -317,7 +317,7 @@ def test_the_oracle_reviewer_accepts_every_queued_plan_in_true_mode(tmp_path):
     assert all(e.reason.endswith("so we take the plan.") for e in queued)
     # It decides what the template decides, so the run ends where the template run ends.
     change = sum(books.contribution(h) - simulate(SEED).contribution(h) for h in DEMO.hotels)
-    assert change == pytest.approx(14734, abs=1)
+    assert change == pytest.approx(19796, abs=1)
 
 
 @pytest.fixture(scope="module")

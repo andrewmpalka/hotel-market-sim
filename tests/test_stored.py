@@ -137,7 +137,7 @@ def test_each_decision_carries_its_request_its_answer_and_their_digests(
     from tests.test_cli import FakeClient
 
     db = tmp_path / "model.duckdb"
-    run_days(SEED, 0, 10, db, cache_dir=tmp_path / "cache", client=FakeClient())
+    run_days(SEED, 0, 20, db, cache_dir=tmp_path / "cache", client=FakeClient())
     connection = stored.connect(db, read_only=True)
     try:
         found = connection.execute(

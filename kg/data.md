@@ -52,14 +52,14 @@ the plans, the model's request and answer, and what the command writes.
 ### DAT-06 [C] The rate shop
 - File: src/hotel_market/shops.py
 - Made by: comp_rates(shop_day, hotel, stay_day, seed, hotel_change), a dict of competitor name to rate on the shop day. comp_median(...) is their median. hotel_change is the lagged change the competitors follow ([[DEC-51]]).
-- Noise: one read-only array per seed and competitor, shape (shop days, stay dates), from a stream keyed by the seed and the competitor's name ([[RUL-20]], [[DEC-62]]).
+- Noise: one read-only array per seed and competitor, shape (shop days, stay dates), from a stream keyed by the seed, the hotel's key and the competitor's name ([[RUL-20]], [[DEC-62]], [[DEC-64]]).
 - Read by: [[MOD-06]] (bookings scale with rate over comp median), [[MOD-07]] (rate against median, median change since yesterday), [[MOD-08]] (estimates)
 - Evidence: test_comp_median_moves_every_day_and_beyond_the_threshold_only_on_a_shock, test_hotel_starts_level_with_its_comp_median
 
 ### DAT-07 [C] Books
 - File: src/hotel_market/bookings.py
 - Fields: rooms (int, hotels x stay dates), revenue and rates (float, same shape). demand_bias ([[RUL-82]]), react ([[DEC-51]]), market_elasticity ([[RUL-87]]), scenario and churn ([[DEC-53]]) are the run's settings.
-- Draws: the random numbers for every draw of the run ([[DEC-22]]). The preload has one per hotel and stay date, and the loop one per day, hotel and stay date.
+- Draws: the random numbers for every draw of the run ([[DEC-22]]), each hotel's from a stream keyed by its key ([[DEC-64]]). The preload has one per hotel and stay date, and the loop one per day, hotel and stay date.
 - Log: daily_rooms, daily_rates and daily_medians, shape (days, hotels, stay dates), zero outside the day's window. preload holds the rooms loaded before day 0, and [[MOD-19]] serves the agent from the log as of any day.
 - Methods: book(day) and set_rates(changes). hotel_change() and comp_median() serve the reaction ([[DEC-51]]); the market term reads Hotel.starting_median() ([[DEC-52]]). The five measures are [[MEA-01]] to [[MEA-05]].
 - Written by: [[MOD-06]]; the agent's rate changes arrive through set_rates after each day's bookings

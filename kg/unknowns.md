@@ -80,7 +80,7 @@ and a RES node records the run. A claim that no test can confirm stays [U].
 - Resolves when: someone runs the file on one of them.
 - Links: [[DAT-28]], [[MOD-21]], [[DEC-42]]
 
-### UNK-11 [U] How competitors react to a rate change, and what that does to the revenue-target result
+### UNK-11 [U] How competitors react to a rate change and what that does to the revenue target
 - Unknown: the simulator's competitors never react ([[CON-03]]). The revenue target's gain ([[RES-07]]) comes from cuts that real competitors might match.
 - Best guess: a matched cut gives back most of the revenue gain. The contribution target's raises are less exposed, because a competitor need not follow a raise.
 - Measured: with --react, competitors move half of a change three days later ([[DEC-51]]). At a market elasticity of 0.0 the default mode then earns +$111,272 a seed ([[RES-24]]). At 0.5 it earns +$72,229 and at 1.0 +$43,584 ([[RES-26]]).

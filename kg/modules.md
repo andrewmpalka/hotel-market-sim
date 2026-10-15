@@ -47,7 +47,7 @@ which is also the order in which they depend on each other.
 ### MOD-05 [C] shops.py
 - File: src/hotel_market/shops.py
 - Owns: the rate shop: each competitor's rate for a stay date as seen on a shop day, and their median ([[DAT-06]]). The median's starting level is Hotel.starting_median() in [[MOD-02]] ([[DEC-52]]).
-- Holds: NOISE ([[RUL-19]]) and NOISE_STREAM ([[RUL-20]]). Rates are flat across the week ([[DEC-16]]). The noise is drawn afresh every shop day, per competitor from a stream keyed by its name ([[DEC-62]]).
+- Holds: NOISE ([[RUL-19]]) and NOISE_STREAM ([[RUL-20]]). Rates are flat across the week ([[DEC-16]]). The noise is drawn afresh every shop day, per competitor from a stream keyed by its hotel and name ([[DEC-62]], [[DEC-64]]).
 - Reaction: comp_rates() takes the hotel's lagged change in dollars and moves each competitor REACTION_SHARE of it ([[RUL-83]], [[RUL-84]], [[DEC-51]]). The Books pass it ([[DAT-07]]).
 - Reads: [[MOD-01]], [[MOD-02]], [[MOD-03]], [[MOD-20]]
 - Writes: [[DAT-06]]
@@ -264,7 +264,7 @@ which is also the order in which they depend on each other.
 - Scorecard: the nights already stayed for the hotel and for all together, as five large tiles each. With the checkbox on, the complete outcome's tiles follow each, in a compact size, and then the small line of the contribution difference.
 - Holds: the file, parameter, plot, tile, colour and mark constants, FILE_VARIABLE to REASON_MARKS ([[RUL-105]], [[RUL-106]], [[RUL-112]] to [[RUL-123]]), and STYLE.
 - Reads: nothing in the package; streamlit, altair and duckdb only, the optional extra demo. The page computes nothing, and a test parses it for an arithmetic operator or an aggregate call. Tests: tests/test_demo_page.py.
-- Evidence: test_the_page_imports_nothing_from_the_package_or_the_simulator, test_the_page_does_no_arithmetic_on_a_figure, test_the_page_shows_the_full_service_hotel_on_day_10, test_a_reason_with_two_dollar_amounts_shows_both_as_written
+- Evidence: test_the_page_imports_nothing_from_the_package_or_the_simulator, test_the_page_does_no_arithmetic_on_a_figure, test_the_page_shows_the_airport_hotel_on_day_20, test_a_reason_with_two_dollar_amounts_shows_both_as_written
 
 ### MOD-28 [C] scripts/demo_screenshots.py
 - File: scripts/demo_screenshots.py

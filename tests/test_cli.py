@@ -400,7 +400,7 @@ def test_the_seeds_command_prints_one_row_per_arm_and_a_learn_arms_estimates(mon
 def test_the_default_mode_gives_the_pinned_seed_7_figure(first):
     _, fixed, books, _ = first
     change = sum(books.contribution(h) - fixed.contribution(h) for h in DEMO.hotels)
-    assert change == pytest.approx(14734, abs=1)
+    assert change == pytest.approx(19796, abs=1)
 
 
 @pytest.mark.slow

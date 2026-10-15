@@ -8,7 +8,7 @@ import pytest
 from hotel_market.agent import MIN_STAY, Agent, ElasticityMode
 from hotel_market.bookings import Books, simulate
 from hotel_market.customer import demo
-from hotel_market.detect import AHEAD
+from hotel_market.detect import AHEAD, PACE
 from hotel_market.estimate import level_factor
 from hotel_market.model import MODEL
 from hotel_market.plan import HOLD, TRUE_PRICING, Pricing
@@ -72,7 +72,8 @@ def test_accepted_rates_apply_and_hold_those_stay_dates_for_7_days(run):
             assert books.rates[hotel.row, s] == pytest.approx(
                 last.get((hotel.key, s), hotel.start_rate)
             )
-    # The first accepted plan holds the stay dates it changed for 7 days.
+    # The first accepted plan holds the stay dates it changed for 7 days against pace flags; a
+    # shock flag on the same dates still comes through.
     plan = next(e for e in agent.entries if e.action != HOLD)
     assert plan.action == plan.plan and plan.new_rates
     for stay_day in plan.new_rates:
@@ -83,6 +84,7 @@ def test_accepted_rates_apply_and_hold_those_stay_dates_for_7_days(run):
             if e.hotel == plan.hotel
             and plan.day + 1 <= e.day <= plan.day + 7
             and e.first_stay <= stay_day <= e.last_stay
+            and set(e.causes) <= PACE
         ]
 
 
@@ -201,8 +203,8 @@ def test_plain_learn_mode_gives_the_same_results_as_before(tmp_path):
     agent = Agent(SEED, tmp_path, elasticity=ElasticityMode.parse("learn:1.0"))
     books = simulate(SEED, deciding(agent))
     change = sum(books.contribution(h) - fixed.contribution(h) for h in DEMO.hotels)
-    assert change == pytest.approx(3549.24, abs=0.01)
-    assert sum(1 for e in agent.entries if e.action != HOLD) == 31 and len(agent.entries) == 95
+    assert change == pytest.approx(11322.79, abs=0.01)
+    assert sum(1 for e in agent.entries if e.action != HOLD) == 34 and len(agent.entries) == 88
 
 
 def test_a_cautious_agent_records_the_band_and_what_it_rejected(tmp_path):

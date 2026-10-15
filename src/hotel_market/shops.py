@@ -11,7 +11,8 @@ hotels' starting rates nor their competitors' rates therefore follow the day of 
                       + REACTION_SHARE x the hotel's change from its start rate
 
 shop_day is the as_of_day of a rate shop. The noise is drawn afresh for every shop day, competitor
-and stay date, from a stream keyed by the run's seed and the competitor's name. A comp median
+and stay date, from a stream keyed by the run's seed, the hotel's key and the competitor's name,
+so a hotel added to the customer file leaves every other hotel's shops as they were. A comp median
 therefore moves a little every day and a lot only when a shock does, or when the hotel's own rate
 moved and the reaction is on. The level the market measures a median against is the comp set's
 base rates' median (Hotel.starting_median), which carries no noise.
@@ -34,7 +35,7 @@ from hotel_market.world import Hotel
 
 NOISE = 0.03  # each competitor's rate is off by up to 3% either way, drawn afresh on every shop day
 NOISE_STREAM = (
-    1  # keeps these draws apart from other draws on the same seed; the name joins the key
+    1  # apart from other draws on the seed; the hotel's key and competitor's name join it
 )
 # With --react, each competitor moves this share of the hotel's change from its start rate ...
 REACTION_SHARE = 0.5
@@ -43,10 +44,10 @@ REACTION_LAG = 3
 
 
 @lru_cache(maxsize=None)
-def _noise(seed: int, competitor: str) -> np.ndarray:
+def _noise(seed: int, hotel: str, competitor: str) -> np.ndarray:
     """One competitor's noise by [shop day + 1, stay date], for shop days -1 to the horizon's end,
-    from a stream keyed by its name, so another competitor's draws never move its shops."""
-    rng = np.random.default_rng([seed, NOISE_STREAM, *competitor.encode()])
+    from a stream keyed by the hotel's key and its name, so no other draw moves its shops."""
+    rng = np.random.default_rng([seed, NOISE_STREAM, *hotel.encode(), 0, *competitor.encode()])
     noise = rng.uniform(-NOISE, NOISE, size=(HORIZON_DAYS + 1, HORIZON_DAYS))
     noise.flags.writeable = False
     return noise
@@ -64,7 +65,7 @@ def comp_rates(
         comp.name: (
             comp.base_rate
             * raise_
-            * (1 + _noise(seed, comp.name)[shop_day + 1, stay_day])
+            * (1 + _noise(seed, hotel.key, comp.name)[shop_day + 1, stay_day])
             * (1 - rate_cut(hotel.key, comp.name, stay_day, shop_day))
             + reaction
         )

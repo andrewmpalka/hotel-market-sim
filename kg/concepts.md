@@ -58,7 +58,7 @@ the modules, constants and decisions that implement it.
 - Definition: a stay date whose rooms on the books reach the hotel's rooms.
 - Both sides: the simulator caps each day's draw at the rooms still unsold. The agent's estimate counts the chance of a sell-out through E[min(N, unsold)] ([[DEC-21]]). A night expected to come close to full is therefore where a raise pays.
 - Implemented by: Books.book() in [[MOD-06]], and expected_bookings() in [[MOD-08]].
-- Evidence: test_rooms_never_exceed_the_hotel, test_expected_bookings_is_the_mean_of_a_poisson_count_that_stops_at_the_unsold_rooms, test_a_raise_wins_where_the_night_would_often_sell_out_at_todays_rate
+- Evidence: test_rooms_never_exceed_the_hotel, test_expected_bookings_is_the_mean_of_a_poisson_count_that_stops_at_the_unsold_rooms, test_a_raise_wins_only_where_the_night_has_a_real_chance_of_selling_out
 
 ### CON-10 [C] Hold period
 - Definition: an accepted rate change on day d holds the changed stay dates on days d+1 to d+7 ([[RUL-66]]). A new shock that covers them lifts the hold ([[DEC-06]]). A pace gap alone raises no flag under it.

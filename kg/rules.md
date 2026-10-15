@@ -221,7 +221,7 @@ marked [H], with one line that names the node it moved to.
 - Value: 1
 - File: src/hotel_market/shops.py
 - Kind: parameter
-- Meaning: the random stream for the rate-shop noise, kept apart from the booking stream [[RUL-22]]. The competitor's name joins the key, so each competitor has its own draws ([[DEC-62]]).
+- Meaning: the random stream for the rate-shop noise, kept apart from the booking stream [[RUL-22]]. The hotel's key and the competitor's name join it, so each competitor has its own draws ([[DEC-62]], [[DEC-64]]).
 - Evidence: test_rates_depend_only_on_the_seed, test_the_default_mode_gives_the_pinned_seed_7_figure
 
 ### RUL-83 [C] REACTION_SHARE
@@ -251,7 +251,7 @@ marked [H], with one line that names the node it moved to.
 - Value: 2
 - File: src/hotel_market/bookings.py
 - Kind: parameter
-- Meaning: the random stream for every booking draw of a run. Another stream draws other bookings and other results.
+- Meaning: the random stream for every booking draw of a run, keyed with the hotel's key, so each hotel has its own draws and a hotel added to the file moves no other hotel's ([[DEC-64]]).
 - Evidence: test_same_seed_gives_the_same_books_and_another_seed_does_not, test_the_default_mode_gives_the_pinned_seed_7_figure
 
 ## forecast.py
@@ -776,14 +776,14 @@ hotels themselves are data ([[DAT-04]]).
 - File: src/hotel_market/demo_page.py
 - Kind: label
 - Meaning: the environment variable that names the demo file the page reads ([[DAT-33]]). make demo sets it, and the page test sets it to the file it built.
-- Evidence: test_the_page_shows_the_full_service_hotel_on_day_10
+- Evidence: test_the_page_shows_the_airport_hotel_on_day_20
 
 ### RUL-106 [C] DEFAULT_FILE
 - Value: "demo.duckdb"
 - File: src/hotel_market/demo_page.py
 - Kind: label
 - Meaning: the file the page reads when the variable is not set, the one hotel-market demo-data writes by default ([[MOD-26]]).
-- Evidence: test_the_page_shows_the_full_service_hotel_on_day_10
+- Evidence: test_the_page_shows_the_airport_hotel_on_day_20
 
 ### RUL-107 [C] ALL
 - Value: "all"
@@ -839,7 +839,7 @@ hotels themselves are data ([[DAT-04]]).
 - File: src/hotel_market/demo_page.py
 - Kind: label
 - Meaning: the key the page reads the scorecard rows for all hotels together by, the same value as [[RUL-107]].
-- Evidence: test_the_page_shows_the_full_service_hotel_on_day_10
+- Evidence: test_the_page_shows_the_airport_hotel_on_day_20
 
 ### RUL-115 [C] PLOT_HEIGHTS
 - Value: {"chart": 110, "small": 50}

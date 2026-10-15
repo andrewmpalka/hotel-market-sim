@@ -15,6 +15,7 @@ from hotel_market.policy import (
     RulesPolicy,
 )
 from hotel_market.simulated import deciding, simulated_sources
+from hotel_market.world import SIM_DAYS
 
 DEMO = demo()
 SEED = 7
@@ -32,15 +33,17 @@ def test_the_rule_raises_ahead_of_pace_and_lowers_behind_by_the_step(ruled):
     assert POLICIES == {"pace": PacePolicy, "rules": RulesPolicy, "never-cut": NeverCutPolicy}
     rule, books = ruled
     assert rule.changed >= rule.acted > 0  # one or more stay dates per flag acted on
-    # Replay day 0 on a fresh rule: every flag with a pace cause moves its stay dates by the
-    # step from the rate in force, clamped, and nothing else moves.
+    # Replay the first day with a pace flag on a fresh rule: every flag with a pace cause moves
+    # its stay dates by the step from the rate in force, clamped, and nothing else moves.
     fresh = PacePolicy()
-    day0 = simulate(SEED, last_day=0)
-    sources = simulated_sources(day0)
-    table = detect_numbers(0, sources, DEMO)
-    changes = fresh.decide(0, sources)
+    for day in range(SIM_DAYS):
+        sources = simulated_sources(simulate(SEED, last_day=day))
+        table = detect_numbers(day, sources, DEMO)
+        if any({AHEAD, BEHIND} & set(f.causes) for f in flags(day, table, customer=DEMO)):
+            break
+    changes = fresh.decide(day, sources)
     expected = {}
-    for flag in flags(0, table, customer=DEMO):
+    for flag in flags(day, table, customer=DEMO):
         factor = 1 + POLICY_STEP if AHEAD in flag.causes else 1 - POLICY_STEP
         if not {AHEAD, BEHIND} & set(flag.causes):
             continue
@@ -50,7 +53,7 @@ def test_the_rule_raises_ahead_of_pace_and_lowers_behind_by_the_step(ruled):
             if new != hotel.start_rate:
                 expected[(flag.hotel, stay_day)] = new
     assert changes == expected and changes
-    assert all(fresh.held[key] == 0 for key in changes)
+    assert all(fresh.held[key] == day for key in changes)
 
 
 def test_the_rule_keeps_the_hold_and_reads_only_the_sources(ruled):

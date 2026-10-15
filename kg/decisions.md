@@ -53,6 +53,13 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: test_passengers_are_seats_at_the_load_factor_and_a_new_route_ramps, test_known_passenger_revision_matches_the_schedule
 - Links: [[DEC-04]], [[DAT-02]], [[SRC-03]], [[SHK-02]], [[SHK-04]]
 
+
+### DEC-64 [C] Each hotel's luck and shop noise come from its own stream
+- Decided: the booking luck comes from a stream keyed by the seed and the hotel's key ([[RUL-22]]), and the shop noise from one keyed by the seed, the hotel's key and the competitor's name ([[RUL-20]]).
+- Replaces: one stream per run, where every hotel's draws sat in one array by row.
+- Reason: a hotel added to the customer file took a row in that array and moved every other hotel's draws. With its own stream, the other hotels' fixed-rate bookings stay as they were.
+- Evidence: test_a_fifth_hotel_leaves_the_other_hotels_fixed_rate_bookings_unchanged, test_rates_depend_only_on_the_seed
+- Links: [[DEC-22]], [[DEC-62]], [[MOD-05]], [[MOD-06]], [[DAT-07]]
 ### DEC-05 [C] The booking loop plays out to day 149 with rates frozen from day 60
 - Decided: the agent decides on days 0 to 59. The loop keeps booking to day 149 with no new decisions. The window stops at stay date 149, so every stay date from 0 to 149 ends complete.
 - Replaces: nothing built; the first plan stopped the loop at day 59.
@@ -200,6 +207,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Decided: every draw of the run has its own uniform random number, drawn in one go from the seed. The function poisson_draw turns it into a count by the Poisson quantile. A bigger mean never gives a smaller count on the same number.
 - Replaces: nothing built; a shared random stream was the alternative.
 - Reason: a rate change on one stay date leaves every other draw as it was. The fixed-rate and agent runs therefore differ only where the agent acted, and the changed-pairs comparison is exact.
+- Streams: since world v2 each hotel draws from its own stream, keyed by its key ([[DEC-64]]).
 - Measured: on seed 7 the 93 hotel-nights the agent changed carry the whole +$28,818 ([[RES-02]]). The other 507 book identically in both runs.
 - Commit: 054edd6
 - Evidence: test_a_rate_change_applies_from_the_next_day_and_touches_no_other_stay_date, test_every_other_pair_books_the_same_in_both_runs, test_a_bigger_mean_never_draws_fewer_rooms_on_the_same_luck
@@ -222,7 +230,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: review
 - Links: [[DAT-01]], [[MOD-01]], [[RUL-06]]
 
-### DEC-36 [C] The summary reports what the run produces; the rules are not tuned to force a gain
+### DEC-36 [C] The summary reports what the run produces; nothing is tuned to force a gain
 - Decided: the summary reports the comparison of the two runs as it comes out. It shows every rate-changing decision and the plans that lost money. The README states that the agent shares the simulator's demand formula.
 - Replaces: nothing.
 - Reason: a tuned gain would say nothing about the loop.
@@ -240,7 +248,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Replaced by: [[DEC-62]]
 - Links: [[MOD-05]], [[DAT-06]], [[CON-04]]
 
-### DEC-62 [C] The shop noise is drawn afresh every shop day
+### DEC-62 [C] The shop noise is fresh every shop day
 - Decided: each competitor's noise is drawn per shop day and stay date from a stream keyed by the seed and its name ([[RUL-20]]). The median's starting level is the comp set's base-rate median, with no noise, on both routes.
 - Replaces: [[DEC-37]], one draw per competitor and stay date, so a median moved only on a shock.
 - Reason: a rate shop that never moved between shocks made every comp-median flag a shock. The estimator saw a ratio that moved only when the hotel did. The name in the key keeps every other competitor's shops as they were.

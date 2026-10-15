@@ -196,21 +196,22 @@ def _sell_out_chance(hotel, table, stay_day, day):
     return 1 - np.exp(counts * math.log(mean) - mean - log_factorial).sum()
 
 
-def test_a_raise_wins_where_the_night_would_often_sell_out_at_todays_rate(day10):
-    # Day 10: the convention is announced and its competitors raise 15%. The full-service
-    # hotel's Thursday peak night (45) would then sell out at today's rate about as often as
-    # not, so a raise wins and the plan is queued. The convention hotel already holds most of
-    # its group business, so its Thursday hardly ever sells out and nothing worth the minimum
-    # beats holding.
+def test_a_raise_wins_only_where_the_night_has_a_real_chance_of_selling_out(day10):
+    # Day 10: the convention is announced and its competitors raise 15%. Both downtown hotels
+    # hold most of their group business already. The full-service hotel's Thursday peak night
+    # (45) sells out at today's rate on about one night in ten, so a small raise wins a little,
+    # under the minimum. The convention hotel's Thursday hardly ever sells out, and nothing beats
+    # holding.
     _, table = day10
     full_service, convention = DEMO.hotel("full-service"), DEMO.hotel("convention")
-    assert 0.3 < _sell_out_chance(full_service, table, 45, 10) < 0.6
+    assert 0.05 < _sell_out_chance(full_service, table, 45, 10) < 0.3
     assert _sell_out_chance(convention, table, 45, 10) < 0.05
     entries = {(f.hotel, f.first_stay): entry_for(10, f, table) for f in flags(10, table)}
     full_service_entry, convention_entry = entries["full-service", 45], entries["convention", 45]
     [thursday] = [g for g in full_service_entry.weekdays if g.stays == [45]]
-    assert thursday.best.name == "raise 10%" and full_service_entry.queued
-    assert convention_entry.value_at_stake < 10 and not convention_entry.queued
+    assert thursday.best.name == "raise 5%" and 0 < thursday.gain < 250
+    assert 0 < full_service_entry.value_at_stake < 250 and not full_service_entry.queued
+    assert convention_entry.value_at_stake == 0 and not convention_entry.queued
 
 
 def test_after_the_new_flights_the_airport_raises_every_night_close_to_full(books_through):
@@ -228,11 +229,11 @@ def test_after_the_new_flights_the_airport_raises_every_night_close_to_full(book
 
 
 def test_a_night_close_to_full_raises_where_a_cap_on_demand_would_hold(books_through):
-    # The lifestyle hotel's Fridays as of day 20, with the new flights just filed, are expected
-    # about 96% full.
+    # The lifestyle hotel's Fridays from day 76 on, as of day 20 with the new flights just
+    # filed, are expected about 97% full.
     lifestyle = DEMO.hotel("lifestyle")
     table = detect_numbers(20, simulated_sources(books_through(20)))
-    [flag] = [f for f in flags(20, table) if f.hotel == "lifestyle" and f.first_stay == 50]
+    [flag] = [f for f in flags(20, table) if f.hotel == "lifestyle" and f.first_stay == 76]
     entry = entry_for(20, flag, table)
     [friday] = [g for g in entry.weekdays if g.weekday == 4]
     rows = table.query("hotel == 'lifestyle'").set_index("stay_day")

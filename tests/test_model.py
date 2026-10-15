@@ -143,11 +143,11 @@ def test_every_figure_in_the_request_is_a_display_string(convention_request):
     # its direction in words and no sign, and a range as one phrase, the single value
     # when both ends read the same.
     assert asked["stay_dates"] == "45 to 48" and numbers["days_out"] == "35 to 38"
-    assert numbers["rate"] == "$220" and numbers["comp_median"] == "$254 to $258"
-    assert numbers["rate_vs_median"] == "13.4% to 14.6% below the median"
-    assert numbers["median_change"] == "up 13.7% to 18.8%"
+    assert numbers["rate"] == "$220" and numbers["comp_median"] == "$246 to $255"
+    assert numbers["rate_vs_median"] == "10.6% to 13.7% below the median"
+    assert numbers["median_change"] == "up 10.3% to 17.1%"
     assert numbers["seat_revision"] == "unchanged"
-    assert numbers["unsold_rooms"] == "955" and numbers["pace_gap"] == "15 rooms ahead of pace"
+    assert numbers["unsold_rooms"] == "992" and numbers["pace_gap"] == "22 rooms behind pace"
     assert asked["value_at_stake"] == "the same as holding"  # nothing beats holding
     assert request["hotel"]["floor"] == "$154" and request["hotel"]["rooms"] == "400"
     assert request["hotel"]["cost_per_occupied_room"] == "$73"
@@ -264,14 +264,14 @@ def test_without_a_client_the_template_accepts_the_plan_and_quotes_the_numbers(
     assert record["source"] == "template" and decision["choice"] == entry.plan
     # The template copies the request's display strings whole, as the model is told to.
     assert (
-        "the same as holding in contribution on the 955 rooms still unsold" in (decision["reason"])
+        "the same as holding in contribution on the 992 rooms still unsold" in (decision["reason"])
     )
     assert decision["reason"].startswith(
-        "The comp median is up 13.7% to 18.8% since yesterday and a convention was announced on "
+        "The comp median is up 10.3% to 17.1% since yesterday and a convention was announced on "
         "stay dates 45 to 48. We recommend the plan, "
     )
     assert decision["reason"].endswith(
-        "Bookings are 15 rooms ahead of pace, and our rate sits 13.4% to 14.6% below the median."
+        "Bookings are 22 rooms behind pace, and our rate sits 10.6% to 13.7% below the median."
     )
     # The template is never cached, so a client is asked afresh.
     assert not (tmp_path / "t.json").exists()

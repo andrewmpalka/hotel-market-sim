@@ -8,19 +8,19 @@ nodes and its words, len(text.split()) over the file.
 
 | File | Nodes | Words |
 | --- | ---: | ---: |
-| modules.md | 30 | 4,080 |
-| data.md | 33 | 4,328 |
-| rules.md | 127 | 5,442 |
+| modules.md | 30 | 4,083 |
+| data.md | 33 | 4,342 |
+| rules.md | 127 | 5,462 |
 | shocks.md | 7 | 762 |
 | concepts.md | 11 | 1,197 |
 | measures.md | 14 | 962 |
 | sources.md | 4 | 855 |
-| decisions.md | 63 | 9,323 |
+| decisions.md | 64 | 9,448 |
 | results.md | 42 | 7,233 |
 | forks.md | 13 | 1,924 |
 | unknowns.md | 15 | 2,016 |
-| every node file | 359 | 38,122 |
-| index.md | | 2,984 |
+| every node file | 360 | 38,284 |
+| index.md | | 2,995 |
 
 ## Modules (`modules.md`)
 
@@ -226,6 +226,7 @@ nodes and its words, len(text.split()) over the file.
 - DEC-03 [C] The day-0 preload: bookings made before the run starts
 - DEC-04 [C] The passenger revision is the trigger; the change is carried for the text
 - DEC-63 [C] Arriving passengers, not seats, drive demand
+- DEC-64 [C] Each hotel's luck and shop noise come from its own stream
 - DEC-05 [C] The booking loop plays out to day 149 with rates frozen from day 60
 - DEC-06 [C] The 7-day hold after an accepted rate change
 - DEC-07 [C] A pace flag needs a gap beyond both 10% of rooms and 3 standard deviations
@@ -246,9 +247,9 @@ nodes and its words, len(text.split()) over the file.
 - DEC-22 [C] One random number per booking draw, fixed by the seed before the run
 - DEC-26 [H] AGENT_ELASTICITY is the agent's own constant and never imports the simulator's
 - DEC-35 [C] Every number is synthetic, and the schedule's columns follow a published data dictionary
-- DEC-36 [C] The summary reports what the run produces; the rules are not tuned to force a gain
+- DEC-36 [C] The summary reports what the run produces; nothing is tuned to force a gain
 - DEC-37 [H] Competitor noise drawn once per competitor and stay date
-- DEC-62 [C] The shop noise is drawn afresh every shop day
+- DEC-62 [C] The shop noise is fresh every shop day
 - DEC-38 [C] The agent can learn its elasticity from the bookings
 - DEC-39 [C] The cautious rule changes a rate only where it beats holding across the band
 - DEC-43 [C] The cautious rule tests the band alone, and one minimum applies to the plan
@@ -361,7 +362,7 @@ nodes and its words, len(text.split()) over the file.
 - UNK-08 [U] Whether the measured gains say anything about a real hotel
 - UNK-09 [C] What a live run costs and how long it takes
 - UNK-10 [U] Whether sql/schema.sql runs on a cloud warehouse as written
-- UNK-11 [U] How competitors react to a rate change, and what that does to the revenue-target result
+- UNK-11 [U] How competitors react to a rate change and what that does to the revenue target
 - UNK-12 [U] The effect of cancellations, no-shows, groups and room types
 - UNK-13 [U] Whether a 5% cut is enough: the largest cut on the menu is 5%
 - UNK-14 [U] The bias in an elasticity estimate when a hotel prices to demand

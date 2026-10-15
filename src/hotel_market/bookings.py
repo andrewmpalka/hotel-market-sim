@@ -51,7 +51,9 @@ from hotel_market.shops import REACTION_LAG, comp_median
 from hotel_market.world import SIM_DAYS, Hotel, stay_window
 
 ELASTICITY = 1.5  # bookings scale with (rate / comp median) ** -ELASTICITY
-BOOKING_STREAM = 2  # keeps these draws apart from the rate-shop noise (stream 1)
+BOOKING_STREAM = (
+    2  # keeps these draws apart from the rate-shop noise (stream 1); the hotel's key joins it
+)
 
 
 def preload_mean(hotel: Hotel, stay_day: int, demand_bias: float = DEMAND_BIAS) -> float:
@@ -115,9 +117,14 @@ class Books:
         self.churn = churn  # whether the airline also files the seed's weekly revisions
         self.scenario = with_churn(scenario, seed) if churn else scenario  # the air schedule's
         hotels = self.customer.hotels
-        rng = np.random.default_rng([seed, BOOKING_STREAM])
-        self._preload_luck = rng.random((len(hotels), HORIZON_DAYS))
-        self._daily_luck = rng.random((HORIZON_DAYS, len(hotels), HORIZON_DAYS))
+        # Each hotel draws its luck from a stream keyed by its key, so a hotel added to the
+        # customer file leaves every other hotel's bookings as they were.
+        self._preload_luck = np.zeros((len(hotels), HORIZON_DAYS))
+        self._daily_luck = np.zeros((HORIZON_DAYS, len(hotels), HORIZON_DAYS))
+        for hotel in hotels:
+            rng = np.random.default_rng([seed, BOOKING_STREAM, *hotel.key.encode()])
+            self._preload_luck[hotel.row] = rng.random(HORIZON_DAYS)
+            self._daily_luck[:, hotel.row, :] = rng.random((HORIZON_DAYS, HORIZON_DAYS))
         self.rooms = np.zeros((len(hotels), HORIZON_DAYS), dtype=np.int64)
         self.revenue = np.zeros((len(hotels), HORIZON_DAYS))
         # Every stay date starts at the hotel's start rate; the agent changes them from here.

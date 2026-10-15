@@ -1,16 +1,19 @@
 """Module 5: the booking curve, the day-0 preload and the daily booking loop."""
 
 import math
+from pathlib import Path
 
 import numpy as np
 import pytest
 
 from hotel_market.bookings import ELASTICITY, Books, poisson_draw, preload_mean, simulate
-from hotel_market.customer import demo
+from hotel_market.customer import DEMO_FILE, demo, load
 from hotel_market.demand import DEMAND_BIAS, MARKET_ELASTICITY, expected_demand, normal_demand
 from hotel_market.schedule import HORIZON_DAYS
 from hotel_market.shops import REACTION_LAG, REACTION_SHARE, comp_median
 from hotel_market.world import SIM_DAYS
+
+ROOT = Path(__file__).resolve().parents[1]
 
 DEMO = demo()
 
@@ -135,6 +138,41 @@ def test_the_demand_bias_scales_the_preload_and_every_days_draw():
     assert (less.daily_medians == full.daily_medians).all()
     assert less.rooms.sum() / full.rooms.sum() == pytest.approx(0.9, abs=0.03)
     assert np.array_equal(simulate(SEED, demand_bias=1.0).rooms, full.rooms)
+
+
+def test_a_fifth_hotel_leaves_the_other_hotels_fixed_rate_bookings_unchanged(tmp_path, fixed):
+    # Each hotel's luck and each competitor's shop noise come from streams keyed by the hotel's
+    # key, so a hotel added to a copy of the customer file changes nothing at the other four.
+    text = (ROOT / DEMO_FILE).read_text()
+    fifth = """
+[[hotels]]
+key = "suburban"
+name = "Suburban hotel"
+rooms = 100
+start_rate = 120
+air_share = 0.30
+base_occupancy = 0.70
+weekday_factors = [1.00, 1.05, 1.05, 1.00, 0.95, 0.95, 1.00]
+booking_curve = { days_out = [0, 7, 30, 60, 90], share = [1.00, 0.60, 0.30, 0.10, 0.00] }
+competitors = [
+    { name = "suburban comp 1", offset = -0.08 },
+    { name = "suburban comp 2", offset = -0.03 },
+    { name = "suburban comp 3", offset = 0.03 },
+    { name = "suburban comp 4", offset = 0.08 },
+]
+"""
+    path = tmp_path / "five.toml"
+    path.write_text(text + fifth)
+    five = load(path)
+    assert [h.key for h in five.hotels][:4] == [h.key for h in DEMO.hotels]
+    books = simulate(SEED, customer=five)
+    assert books.rooms.shape == (5, HORIZON_DAYS)
+    assert np.array_equal(books.rooms[:4], fixed.rooms)
+    assert np.array_equal(books.revenue[:4], fixed.revenue)
+    assert books.rooms[4].sum() > 0
+    for hotel in DEMO.hotels:
+        for day, stay in [(0, 40), (10, 46), (30, 38)]:
+            assert books.comp_median(day, hotel, stay) == fixed.comp_median(day, hotel, stay)
 
 
 def test_same_seed_gives_the_same_books_and_another_seed_does_not(fixed):
