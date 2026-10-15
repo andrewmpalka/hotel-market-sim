@@ -118,7 +118,8 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-14 [C] Entry
 - File: src/hotel_market/plan.py
-- Fields: Entry(day, hotel, first_stay, last_stay, causes, numbers, weekdays, action, reason, reason_source, pricing, minimum, target), one per flag.
+- Fields: Entry(day, hotel, first_stay, last_stay, causes, numbers, weekdays, action, reason, reason_source, pricing, minimum, target, earlier_changes), one per flag.
+- History: earlier_changes lists the EarlierChange records for its stay dates as of today, set by [[MOD-10]] from the Change records it keeps; the request shows each as one string ([[DEC-45]]).
 - Derived: id "first-last", changed_weekdays, plan (the changes in words) and value_at_stake, summed over the days that change. queued means value at stake >= the minimum [[RUL-67]]; new_rates, current_rates and rejected_at_an_end follow.
 - JSON: to_json() adds target only when it is not contribution, so that a line for the demo market reads as before. pricing ([[DAT-21]]) is the elasticity every estimate assumed, and target ([[RUL-58]]) is what the estimates counted.
 - Written by: [[MOD-08]]; [[MOD-10]] sets action, reason and reason_source and gives the pricing
@@ -135,7 +136,7 @@ the plans, the model's request and answer, and what the command writes.
 ### DAT-16 [C] The model request
 - File: src/hotel_market/model.py
 - Made by: request_for(day, hotel, entries) writes day, hotel (name, rooms, floor, ceiling, cost_per_occupied_room) and elasticity, the shared pricing ([[DAT-21]]). It adds target only when it is revenue ([[RUL-58]]), then the entries.
-- Entry: id, stay_dates, what_changed, numbers ([[DAT-13]]), by_day_of_week, plan, value_at_stake and options [plan, "hold"].
+- Entry: id, stay_dates, what_changed, numbers ([[DAT-13]]), by_day_of_week, plan, value_at_stake, options [plan, "hold"] and earlier_changes_on_these_dates, display strings of the hotel's own changes ([[DEC-45]]).
 - Weekday: day, stay_dates, best and the candidates with rates, estimated_contribution and versus_hold. Under the cautious rule each candidate also carries its band values, and all but hold the band_verdict ([[DEC-56]]).
 - Figures: every figure is a display string from [[MOD-11]] in place of the raw number ([[DEC-44]]). Every number in it comes from code ([[RUL-01]]), and the mode reads "assumed" for the default pricing ([[RUL-75]]).
 - Digest: a change of elasticity or target changes the request, and the sorted-keys JSON is digested for the cache key ([[DEC-23]]).

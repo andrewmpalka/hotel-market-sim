@@ -414,7 +414,7 @@ marked [H], with one line that names the node it moved to.
 - File: src/hotel_market/model.py
 - Kind: label
 - Meaning: the system prompt. It tells the model what an entry is. Code picked the best candidate for each day of the week. The model chooses the plan or "hold" for each entry.
-- Writing: the model writes as "we" and states only what the entry shows. It makes no claim about price sensitivity or risk that the entry does not contain ([[DEC-44]]).
+- Writing: the model writes as "we" and states only what the entry shows. It makes no claim about price sensitivity or risk that the entry does not contain ([[DEC-44]]). It cites earlier changes as written, never computing from them.
 - Figures: every figure is written as a report writes it, with its direction in words. The model copies the phrases whole, with no sign, direction word or rounding of its own. It quotes no end of a range alone.
 - Allowed: "more than holding" may be written once in a sentence that lists several gains. An event's name is written in lower case inside a sentence. The prompt also explains the modes "assumed", "fixed" and "learn".
 - Band: under the cautious rule each candidate's band_verdict states the rule's result ([[DEC-56]]). The prompt tells the model to copy it as written.

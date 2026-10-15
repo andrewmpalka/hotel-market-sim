@@ -225,7 +225,7 @@ def test_running_a_day_twice_leaves_the_tables_unchanged(through_tables):
 def test_the_stored_state_is_what_the_earlier_decisions_left(in_memory, through_tables):
     _, _, agent = in_memory
     connection = stored.connect(through_tables, read_only=True)
-    held, advised = stored.state_before(connection, 30)
+    held, advised, changes = stored.state_before(connection, 30)
     connection.close()
     expected_held = {}
     for entry in agent.entries:
@@ -234,6 +234,9 @@ def test_the_stored_state_is_what_the_earlier_decisions_left(in_memory, through_
                 expected_held[(entry.hotel, stay_day)] = entry.day
     assert held == expected_held
     assert advised == {(a.hotel, a.event) for a in agent.advice if a.day < 30}
+    # The accepted changes come back as the agent kept them: exact rates and expected rooms.
+    kept = [c for found in agent.changes.values() for c in found if c.day < 30]
+    assert changes and sorted(changes, key=str) == sorted(kept, key=str)
 
 
 def test_replaying_a_past_day_reproduces_its_plans_exactly(in_memory, through_tables):

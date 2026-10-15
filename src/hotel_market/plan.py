@@ -224,10 +224,39 @@ class FlagNumbers:
         return asdict(self)  # a Range becomes its named pair
 
 
+@dataclass(frozen=True)
+class Change:
+    """An accepted rate change on one stay date, kept by the agent: the day it was accepted, the
+    rates before and after, and the rooms the plan expected to sell from the next day to the
+    night, which is its estimate for the night over the margin it was scored at."""
+
+    day: int
+    hotel: str  # hotel key
+    stay_day: int
+    old_rate: float
+    new_rate: float
+    expected_rooms: float
+
+
+@dataclass(frozen=True)
+class EarlierChange:
+    """An earlier change on one of an entry's stay dates as of today: the rooms booked since its
+    day against the rooms its plan expected over the same days, pro rata to the booking curve's
+    rise since then. The request shows each as one display string."""
+
+    day: int
+    stay_day: int
+    old_rate: float
+    new_rate: float
+    booked_since: int
+    expected_since: float
+
+
 @dataclass
 class Entry:
     """One flag's entry in the day's queue. It holds the best candidate for each day of the week,
-    and those together make the plan. It also holds what became of it.
+    and those together make the plan. It also holds what became of it, and the earlier changes on
+    its stay dates as of today, which the agent sets.
     """
 
     day: int
@@ -243,6 +272,7 @@ class Entry:
     pricing: Pricing = TRUE_PRICING  # the elasticity the estimates assume
     minimum: float = 0.0  # the customer's minimum value at stake for the queue
     target: str = "contribution"  # what the estimates count: contribution or revenue
+    earlier_changes: list[EarlierChange] = field(default_factory=list)  # as of today; not logged
 
     @property
     def id(self) -> str:

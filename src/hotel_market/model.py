@@ -28,7 +28,16 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from hotel_market.detect import MEDIAN_DOWN, MEDIAN_UP, NEW_EVENT, SEATS_CUT, SEATS_UP
-from hotel_market.plan import DAY_NAMES, HOLD, Candidate, Entry, FlagNumbers, Pricing, WeekdayGroup
+from hotel_market.plan import (
+    DAY_NAMES,
+    HOLD,
+    Candidate,
+    EarlierChange,
+    Entry,
+    FlagNumbers,
+    Pricing,
+    WeekdayGroup,
+)
 from hotel_market.text import (
     against_median_range,
     band_verdict,
@@ -44,7 +53,7 @@ from hotel_market.text import (
     versus_holding,
     versus_holding_at_end,
 )
-from hotel_market.world import Hotel
+from hotel_market.world import Hotel, weekday
 
 MODEL = "claude-opus-5-5"
 # The current model at each tier, the benchmark's default reviewers (bench.py); MODEL is first.
@@ -68,7 +77,10 @@ such as "14.6% below the median", "up 15.0%", "44 rooms ahead of pace" or \
 "$120 less than holding", and a range is one phrase, such as "10.7% to 14.6% \
 below the median" or "up 17.0% to 21.6%". Copy these phrases whole; do not \
 add a sign, a direction word or a rounding of your own, and do not quote one \
-end of a range on its own. In a sentence that lists several gains, "more than \
+end of a range on its own. Each entry also lists our earlier changes on its \
+stay dates, each with the rooms booked since it against the rooms expected; \
+you may cite these as written and must not compute from them. In a sentence \
+that lists several gains, "more than \
 holding" may be written once for all of them, as in "$280 on Tuesday and $60 \
 on Wednesday, $340 more than holding in all". Write an event's name in lower \
 case inside a sentence. The request's elasticity field says which price \
@@ -407,7 +419,24 @@ def _entry_request(entry: Entry) -> dict:
         "plan": entry.plan,
         "value_at_stake": versus_holding(entry.value_at_stake),
         "options": [entry.plan, HOLD],
+        # The hotel's own earlier changes on these dates, each with what has come of it so far.
+        "earlier_changes_on_these_dates": [
+            earlier_change_text(change) for change in entry.earlier_changes
+        ],
     }
+
+
+def earlier_change_text(change: EarlierChange) -> str:
+    """One earlier change as the model and the manager read it, such as "day 10: raised 10% to
+    $242 on Thu 45; since then 31 rooms booked against 24 expected". Code computed every figure
+    (agent.py), so the model may cite it and must not compute from it."""
+    moved = change.new_rate / change.old_rate - 1
+    return (
+        f"day {change.day}: {'raised' if moved > 0 else 'lowered'} {abs(moved):.0%} to "
+        f"{dollars(change.new_rate)} on {DAY_NAMES[weekday(change.stay_day)]} {change.stay_day}; "
+        f"since then {rooms(change.booked_since)} rooms booked against "
+        f"{rooms(change.expected_since)} expected"
+    )
 
 
 def _numbers_request(numbers: FlagNumbers) -> dict:
@@ -596,13 +625,15 @@ def _template_reason(entry: dict, elasticity: dict, target: str) -> str:
     held = f"; {', '.join(held_days)} hold" if held_days else ""
     counted = "contribution" if target == "contribution" else "room revenue"
     stays = entry["stay_dates"]
+    earlier = entry.get("earlier_changes_on_these_dates") or []
+    history = f" Our last change on these dates was on {earlier[-1]}." if earlier else ""
     return (
         f"{capitalize_first(_what_changed(entry['what_changed'], numbers))} on "
         f"stay date{'s' if ' to ' in stays else ''} {stays}. "
         f"We recommend the plan, {entry['plan']}{held}, which is estimated to earn "
         f"{entry['value_at_stake']} in {counted} on the {numbers['unsold_rooms']} rooms "
         f"still unsold. Bookings are {numbers['pace_gap']}, and our rate sits "
-        f"{numbers['rate_vs_median']}.{_elasticity_text(elasticity)}"
+        f"{numbers['rate_vs_median']}.{history}{_elasticity_text(elasticity)}"
     )
 
 

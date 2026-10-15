@@ -20,6 +20,7 @@ from hotel_market.model import (
     StaleCache,
     as_decision_list,
     ask,
+    earlier_change_text,
     prompt_digest,
     request_digest,
     request_for,
@@ -631,6 +632,45 @@ def test_the_three_values_reach_the_model_request(day10, tmp_path):
     )
 
 
+def test_an_entry_lists_the_earlier_changes_on_its_dates_with_the_rooms_booked_since(tmp_path):
+    # Seed 7: the lifestyle hotel's day-18 plan raises stay date 75 by 10%, and day 20 flags that
+    # date again. The day-20 entry then lists the change with the rooms booked on days 19 and 20
+    # against the rooms the plan expected over those days, pro rata to the curve's rise.
+    from hotel_market.agent import Agent
+    from hotel_market.bookings import simulate
+    from hotel_market.simulated import deciding
+
+    agent = Agent(7, cache_dir=tmp_path)
+    books = simulate(7, deciding(agent), last_day=20)
+    lifestyle = demo().hotel("lifestyle")
+    [first] = [e for e in agent.entries if e.day == 18 and e.hotel == "lifestyle"]
+    [again] = [
+        e for e in agent.entries if e.day == 20 and e.hotel == "lifestyle" and e.first_stay == 75
+    ]
+    assert first.new_rates == {75: pytest.approx(264.0)} and first.earlier_changes == []
+    [change] = again.earlier_changes
+    [group] = first.changed_weekdays
+    expected_total = group.best.estimates[75] / (264.0 - lifestyle.room_cost)
+    rise = (lifestyle.curve(75 - 20) - lifestyle.curve(75 - 18)) / (1 - lifestyle.curve(75 - 18))
+    assert (change.day, change.stay_day, change.old_rate, change.new_rate) == (18, 75, 240.0, 264.0)
+    assert change.booked_since == books.daily_rooms[19:21, lifestyle.row, 75].sum()
+    assert change.expected_since == pytest.approx(expected_total * rise)
+    text = earlier_change_text(change)
+    assert text.startswith("day 18: raised 10% to $264 on Sat 75; since then ")
+    assert text.endswith(
+        f"{change.booked_since} rooms booked against {round(change.expected_since)} expected"
+    )
+    request, answer = agent.asked[(20, "lifestyle")]
+    [asked] = [e for e in request["entries"] if e["id"] == "75-75"]
+    assert asked["earlier_changes_on_these_dates"] == [text]
+    assert all(
+        e["earlier_changes_on_these_dates"] == [] for e in request["entries"] if e["id"] != "75-75"
+    )
+    # The template cites the most recent one, whole.
+    [decision] = [d for d in answer["decisions"] if d["id"] == "75-75"]
+    assert f" Our last change on these dates was on {text}." in decision["reason"]
+
+
 def test_the_system_prompt_tells_the_model_how_to_choose_and_write():
     for phrase in (
         'choose the plan to recommend it, or "hold" to decline it',
@@ -639,6 +679,7 @@ def test_the_system_prompt_tells_the_model_how_to_choose_and_write():
         "make no claim about price sensitivity or risk",
         "Copy these phrases whole",
         "do not quote one end of a range on its own",
+        "you may cite these as written and must not compute from them",
         '"more than holding" may be written once',
         "Write an event's name in lower case",
         '"assumed" is a value the agent was given',

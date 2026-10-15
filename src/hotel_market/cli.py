@@ -269,7 +269,7 @@ def run_days(
             customer=customer,
             market_elasticity=market_elasticity,
         )
-        agent.resume(*stored.state_before(connection, day))
+        agent.resume(*stored.state_before(connection, day, customer))
         changes = agent.decide(day, stored.stored_sources(connection, customer, day))
         stored.write_decisions(connection, day, agent.entries, agent.advice, agent.asked)
         stored.write_outcomes(connection, day, customer)
@@ -311,7 +311,7 @@ def replay_day(
             raise LookupError(f"{db} holds no day {day}; run it first")
         # No cache: nothing is asked.
         agent = Agent(0, elasticity=mode, customer=customer, market_elasticity=market_elasticity)
-        agent.resume(*stored.state_before(connection, day))
+        agent.resume(*stored.state_before(connection, day, customer))
         sources = stored.stored_sources(connection, customer, day)
         entries = agent.plans_for(day, sources)
         for entry in entries:

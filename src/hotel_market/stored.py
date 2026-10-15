@@ -14,9 +14,9 @@ write_snapshot() copies one day of any Sources into the feed tables. write_decis
 day's flags, plans and decisions, each decision with the request the model saw, its answer and
 their digests. write_outcomes() stores what each accepted plan earned on the night that has just
 passed. All three delete the night's or the day's rows first, so writing a day twice leaves the
-tables as they were. state_before() gives an Agent the hold and the advice that earlier days
-left. rate_changes_before() gives a simulator the accepted rates to play back. The hotel-market
-run-day and replay commands (cli.py) drive them.
+tables as they were. state_before() gives an Agent the hold, the advice and the changes that
+earlier days left. rate_changes_before() gives a simulator the accepted rates to play back. The
+hotel-market run-day and replay commands (cli.py) drive them.
 
 This module imports nothing from the simulator. A table-backed run knows the market only through
 the tables and the customer file.
@@ -35,7 +35,7 @@ import pandas as pd
 
 from hotel_market.customer import Customer, demo
 from hotel_market.model import request_digest
-from hotel_market.plan import HOLD, Entry
+from hotel_market.plan import HOLD, Change, Entry
 from hotel_market.sources import (
     BookingHistory,
     Bookings,
@@ -614,9 +614,14 @@ def stored_days(connection) -> list[int]:
     return [int(day) for day in frame["as_of_day"]]
 
 
-def state_before(connection, day: int) -> tuple[dict[tuple[str, int], int], set[tuple[str, str]]]:
+def state_before(
+    connection, day: int, customer: Customer | None = None
+) -> tuple[dict[tuple[str, int], int], set[tuple[str, str]], list[Change]]:
     """What the decisions before a day leave an agent. That is the stay dates under the hold, by the
-    day of their last accepted change. It also holds the (hotel, event) pairs already advised."""
+    day of their last accepted change, the (hotel, event) pairs already advised, and the changes
+    accepted so far: each with the exact rates the plans table keeps, the rate in force that day
+    from daily_bookings, and the rooms the plan expected from its estimate over the margin."""
+    customer = customer or demo()
     frame = _frame(
         connection,
         "SELECT as_of_day, hotel, new_rates, simulated, event FROM decisions "
@@ -631,7 +636,46 @@ def state_before(connection, day: int) -> tuple[dict[tuple[str, int], int], set[
         elif isinstance(row.new_rates, str):  # NULL comes back as NaN, not None
             for stay_day in json.loads(row.new_rates):
                 held[(row.hotel, int(stay_day))] = int(row.as_of_day)
-    return held, advised
+    return held, advised, changes_before(connection, day, customer)
+
+
+def changes_before(connection, day: int, customer: Customer) -> list[Change]:
+    """The changes accepted before a day, in order, as the agent keeps them (Change)."""
+    plans = _frame(
+        connection,
+        "SELECT p.as_of_day, p.hotel, p.rates, p.estimates FROM plans p JOIN decisions d "
+        "ON d.as_of_day = p.as_of_day AND d.hotel = p.hotel "
+        "AND d.first_stay = p.first_stay AND d.last_stay = p.last_stay "
+        "WHERE p.as_of_day < ? AND p.is_best AND p.candidate <> ? "
+        "AND d.simulated AND d.action <> ? "
+        "ORDER BY p.as_of_day, p.hotel, p.first_stay, p.weekday",
+        [day, HOLD, HOLD],
+    )
+    if plans.empty:
+        return []
+    days = sorted({int(d) for d in plans["as_of_day"]})
+    in_force = _frame(
+        connection,
+        "SELECT as_of_day, hotel, stay_day, rate FROM daily_bookings "
+        f"WHERE as_of_day IN ({', '.join('?' * len(days))})",
+        days,
+    )
+    rate_on = {
+        (int(row.as_of_day), row.hotel, int(row.stay_day)): float(row.rate)
+        for row in in_force.itertuples(index=False)
+    }
+    changes = []
+    for row in plans.itertuples(index=False):
+        hotel = customer.hotel(row.hotel)
+        cost = hotel.room_cost if customer.scores_contribution() else 0.0
+        estimates = json.loads(row.estimates)
+        for stay_day, rate in json.loads(row.rates).items():
+            old = rate_on[(int(row.as_of_day), row.hotel, int(stay_day))]
+            expected = estimates[stay_day] / (float(rate) - cost)
+            changes.append(
+                Change(int(row.as_of_day), row.hotel, int(stay_day), old, float(rate), expected)
+            )
+    return changes
 
 
 def rate_changes_before(connection, day: int) -> dict[int, dict[tuple[str, int], float]]:

@@ -301,9 +301,9 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Outcome: the row holds the rooms sold and the room revenue over every booking day, the plan's estimate for the night on the rooms then unsold ([[DAT-11]]), and what the rooms sold after the decision earned in that measure.
 - Replaces: a record with the as-of numbers and every alternative and no request, no digest and no outcome. An operator could rebuild the plan and not show what it earned or what the model was shown.
 - Reason: from the tables alone an operator can now show what the agent knew, what the model saw, that the stored answer was the answer to that request, and what the plan earned.
-- Next: the request itself still carries no history of the hotel's own changes or their outcomes, so a reviewer cannot weigh a plan against the last ones ([[FRK-09]], [[RES-37]]). The next version puts it there.
+- Request: since world v2 each entry lists the hotel's earlier changes on its stay dates, with the rooms booked since each against the rooms expected ([[DAT-16]]). The template cites the latest; the prompt lets the model cite them.
 - Measured: a 60-day run through the tables still writes the in-memory run's decisions file byte for byte ([[RES-14]]), and the seed-7 checksum is unchanged ([[RES-02]]).
-- Evidence: test_each_decision_carries_its_request_its_answer_and_their_digests, test_the_outcomes_hold_each_accepted_plans_nights_once_they_pass, test_the_daily_commands_take_the_world_options
+- Evidence: test_each_decision_carries_its_request_its_answer_and_their_digests, test_an_entry_lists_the_earlier_changes_on_its_dates_with_the_rooms_booked_since, test_the_stored_state_is_what_the_earlier_decisions_left
 - Links: [[DAT-28]], [[DAT-16]], [[DAT-17]], [[MOD-10]], [[MOD-21]], [[DEC-42]], [[FRK-09]], [[RES-37]]
 
 ### DEC-46 [T] The agent reprices when data arrives during the day
@@ -505,7 +505,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 ### DEC-42 [C] Stored tables the agent can run against a day at a time
 - Decided: sql/schema.sql defines eight tables ([[DAT-28]]): four feeds and three agent outputs keyed by as_of_day, and the outcomes keyed by the decision's day. Its head lists the statements a cloud warehouse would change.
 - Stored: stored.py ([[MOD-21]]) implements the four interfaces over the tables and writes a day's rows. It deletes the day's rows first, so running a day twice leaves the tables unchanged. The simulated sources ([[MOD-19]]) are unchanged.
-- Daily run: the run-day command plays the simulator to day N with the stored rate changes and writes the day's feeds. A fresh agent resumes the stored hold and advice, decides the day from the tables alone and writes its output.
+- Daily run: the run-day command plays the simulator to day N with the stored rate changes and writes the day's feeds. A fresh agent resumes the stored hold, advice and changes, decides the day from the tables alone and writes its output.
 - Replay: hotel-market replay --as-of N rebuilds the day's plans from the tables alone and takes the actions the stored decisions record. It checks the rebuilt plans against the stored ones, and --from runs a range of days in one pass.
 - Reason: a real hotel's data arrives a day at a time and lives in tables. This is therefore the shape a deployment would take, with the simulator standing in for the feeds. It also checks the boundary ([[DEC-40]]).
 - Measured: a 60-day run through the tables writes the in-memory run's decisions file byte for byte, in about 6 seconds ([[RES-14]]).

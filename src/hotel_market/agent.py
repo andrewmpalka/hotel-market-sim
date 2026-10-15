@@ -37,6 +37,8 @@ from hotel_market.plan import (
     MODES,
     ORACLE_ELASTICITY,
     TRUE_PRICING,
+    Change,
+    EarlierChange,
     Entry,
     Pricing,
     entry_for,
@@ -152,6 +154,8 @@ class Agent:
         self.held: dict[
             tuple[str, int], int
         ] = {}  # (hotel key, stay day) -> day of its last rate change
+        # (hotel key, stay day) -> the changes accepted on it, in order, for the request's history
+        self.changes: dict[tuple[str, int], list[Change]] = {}
         self.advised: set[tuple[str, str]] = set()  # (hotel key, event name) already given advice
         self.entries: list[Entry] = []  # every flag's entry, in order
         self.today: list[
@@ -178,19 +182,61 @@ class Agent:
         pricing = {hotel.key: self._pricing(day, hotel, sources) for hotel in customer.hotels}
         levels = {key: p.level for key, p in pricing.items()}
         table = detect_numbers(day, sources, customer, self.market_elasticity, levels)
-        return [
+        entries = [
             entry_for(day, flag, table, pricing[flag.hotel], customer)
             for flag in flags(day, table, self.held, customer)
         ]
+        on_books = {day: sources.bookings.on_books(day)}
+        for entry in entries:
+            entry.earlier_changes = self._earlier_changes(day, entry, sources, on_books)
+        return entries
+
+    def _earlier_changes(
+        self, day: int, entry: Entry, sources: Sources, on_books: dict
+    ) -> list[EarlierChange]:
+        """The changes accepted on the entry's stay dates before today, each with the rooms booked
+        since its day against the rooms its plan expected by now. The plan expected its rooms over
+        the booking curve's rise from its day to the night, so the share due by today is the rise
+        so far over that whole rise."""
+        hotel = self.customer.hotel(entry.hotel)
+        found = []
+        for stay_day in range(entry.first_stay, entry.last_stay + 1):
+            for change in self.changes.get((hotel.key, stay_day), []):
+                if change.day not in on_books:
+                    on_books[change.day] = sources.bookings.on_books(change.day)
+                booked = (
+                    on_books[day][hotel.row, stay_day] - on_books[change.day][hotel.row, stay_day]
+                )
+                whole = 1 - hotel.curve(stay_day - change.day)
+                so_far = hotel.curve(stay_day - day) - hotel.curve(stay_day - change.day)
+                share = so_far / whole if whole > 0 else 1.0
+                found.append(
+                    EarlierChange(
+                        change.day,
+                        stay_day,
+                        change.old_rate,
+                        change.new_rate,
+                        int(booked),
+                        change.expected_rooms * share,
+                    )
+                )
+        return sorted(found, key=lambda change: (change.day, change.stay_day))
 
     def resume(
-        self, held: Mapping[tuple[str, int], int], advised: Iterable[tuple[str, str]]
+        self,
+        held: Mapping[tuple[str, int], int],
+        advised: Iterable[tuple[str, str]],
+        changes: Iterable[Change] = (),
     ) -> None:
         """Pick up the state that earlier days left. That state is the stay dates under the hold, by
-        the day of their last accepted change. It also holds the (hotel key, event) pairs already
-        advised. A table-backed run gives each day's agent its state this way."""
+        the day of their last accepted change, the (hotel key, event) pairs already advised, and
+        the changes accepted so far, which the request lists. A table-backed run gives each day's
+        agent its state this way."""
         self.held = dict(held)
         self.advised = set(advised)
+        self.changes = {}
+        for change in changes:
+            self.changes.setdefault((change.hotel, change.stay_day), []).append(change)
 
     @property
     def log(self) -> list[dict]:
@@ -235,14 +281,24 @@ class Agent:
                 entry.reason = _held_reason(entry)
 
     def _rate_changes(self, day: int, entries: list[Entry]) -> dict[tuple[str, int], float]:
-        """The accepted plans' rates by (hotel key, stay day); those dates go under the hold."""
+        """The accepted plans' rates by (hotel key, stay day); those dates go under the hold, and
+        each change is kept with the rooms its plan expected, for later requests."""
         changes = {}
         for entry in entries:
             if entry.action == HOLD:
                 continue
-            for stay_day, rate in entry.new_rates.items():
-                changes[(entry.hotel, stay_day)] = rate
-                self.held[(entry.hotel, stay_day)] = day
+            cost = (
+                self.customer.hotel(entry.hotel).room_cost if entry.target == "contribution" else 0
+            )
+            for group in entry.changed_weekdays:
+                for stay_day, rate in group.best.rates.items():
+                    changes[(entry.hotel, stay_day)] = rate
+                    self.held[(entry.hotel, stay_day)] = day
+                    expected = group.best.estimates[stay_day] / (rate - cost)
+                    old = group.hold.rates[stay_day]
+                    self.changes.setdefault((entry.hotel, stay_day), []).append(
+                        Change(day, entry.hotel, stay_day, old, rate, expected)
+                    )
         return changes
 
     def advice_for(self, day: int, entries: list[Entry], sources: Sources) -> list[Advice]:
