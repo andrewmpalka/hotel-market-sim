@@ -272,13 +272,15 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Measured: the fourth run copied every phrase and every range whole in 21,148 input tokens ([[RES-08]], [[DAT-29]]). No figure fell outside its request, and no sentence lacked a request figure.
 - Evidence: test_every_figure_in_the_request_is_a_display_string, test_a_range_is_one_phrase_and_the_single_value_when_both_ends_read_the_same, test_the_recorded_live_run_of_seed_7_passes_the_audit
 
-### DEC-45 [T] Each model request carries the hotel's past decisions and their outcomes
-- Decided: the request for a hotel's queue will carry the hotel's earlier decisions and what each earned. The model can then weigh a plan against what the last ones did.
-- Replaces: nothing built; today the model sees only the day's entries ([[DAT-16]]).
-- Reason: a revenue manager judges a recommendation against the last ones, and the model cannot.
-- Needs: a record of each accepted plan's realised gain on its stay dates. The changed-pairs comparison already computes that per run ([[RES-02]]). The request and the cache digest need a place for it ([[DEC-23]]).
-- Measured: Opus recovers 0.28 of the oracle's gain at fixed:1.0 and cites no past outcome ([[RES-16]]). In the reacting arm it did not decline the second raise as such ([[RES-37]]). The request carries no history of its own changes.
-- Links: [[DAT-16]], [[MOD-09]], [[MOD-10]], [[DEC-44]], [[RES-16]], [[RES-37]], [[FRK-09]]
+### DEC-45 [C] The tables keep each decision's request, answer and outcome
+- Decided: a decision's row holds the request its hotel's queue was asked with, the answer, the request's digest and, from a cache record, the prompt's digest and the model ([[DAT-28]]). An outcomes row holds what a plan earned on a night.
+- Outcome: the row holds the rooms sold and the room revenue over every booking day, the plan's estimate for the night on the rooms then unsold ([[DAT-11]]), and what the rooms sold after the decision earned in that measure.
+- Replaces: a record with the as-of numbers and every alternative and no request, no digest and no outcome. An operator could rebuild the plan and not show what it earned or what the model was shown.
+- Reason: from the tables alone an operator can now show what the agent knew, what the model saw, that the stored answer was the answer to that request, and what the plan earned.
+- Next: the request itself still carries no history of the hotel's own changes or their outcomes, so a reviewer cannot weigh a plan against the last ones ([[FRK-09]], [[RES-37]]). The next version puts it there.
+- Measured: a 60-day run through the tables still writes the in-memory run's decisions file byte for byte ([[RES-14]]), and the seed-7 checksum is unchanged ([[RES-02]]).
+- Evidence: test_each_decision_carries_its_request_its_answer_and_their_digests, test_the_outcomes_hold_each_accepted_plans_nights_once_they_pass, test_the_daily_commands_take_the_world_options
+- Links: [[DAT-28]], [[DAT-16]], [[DAT-17]], [[MOD-10]], [[MOD-21]], [[DEC-42]], [[FRK-09]], [[RES-37]]
 
 ### DEC-46 [T] The agent reprices when data arrives during the day
 - Decided: the agent will run again within a day when a feed delivers new data.

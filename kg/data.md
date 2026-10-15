@@ -245,13 +245,13 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-28 [C] The stored tables
 - File: sql/schema.sql
-- Tables: seven, each keyed by as_of_day, the day a row was known on. Day -1 ([[RUL-73]]) holds the position before the first day.
+- Tables: eight, seven keyed by as_of_day, the day a row was known on, and outcomes by the day its plan was accepted ([[DEC-45]]). Day -1 ([[RUL-73]]) is the opening position. The head lists what a warehouse would change ([[UNK-10]]).
 - Feeds: daily_bookings (as_of_day, hotel, stay_day, rooms_taken, rooms_on_books, rate) has a row per hotel and night in the window. rate_shops (as_of_day, hotel, stay_day, competitor, rate) runs from the shop day to the schedule's end.
 - More feeds: schedule_snapshots (as_of_day, stay_day, seats) is counted the way seats_by_day counts. events (as_of_day, name, known_day, start_day, end_day, hotels, uplift, comp_rate_raise) has one row per known event per day.
-- Output: flags (as_of_day, hotel, first_stay, last_stay, causes). plans has one row per candidate with its exact rates, estimate, versus_hold, band and is_best. decisions has one row per entry and advice, with the log line in record.
-- Warehouse: the file's head lists the statements a cloud warehouse would change. They are the type names, PRIMARY KEY enforcement, the JSON text columns and the transaction.
-- Used by: [[MOD-21]] writes them with write_snapshot and write_decisions, driven by run-day in [[MOD-12]], deleting a day's rows first ([[DEC-42]]). Its four sources and run readers read them back for run-day's playback and replay.
-- Evidence: test_the_schema_is_eight_tables_each_keyed_by_its_day, test_a_60_day_run_through_the_tables_gives_the_same_decisions_file, test_running_a_day_twice_leaves_the_tables_unchanged
+- Output: flags (as_of_day, hotel, first_stay, last_stay, causes). plans has a row per candidate with its rates and estimates by night, estimate, versus_hold, band and is_best. decisions has a row per entry and advice, with the log line.
+- More output: a queued decision adds request_digest, prompt_digest, model, request and answer (JSON). outcomes (decision_day, hotel, stay_day, rooms_sold, room_revenue, estimated, realised) has a row per accepted plan and passed night.
+- Used by: [[MOD-21]] writes them with write_snapshot, write_decisions and write_outcomes, driven by run-day in [[MOD-12]], deleting first ([[DEC-42]]). Its four sources and run readers read them back for the playback and replay.
+- Evidence: test_the_schema_is_eight_tables_each_keyed_by_its_day, test_a_60_day_run_through_the_tables_gives_the_same_decisions_file, test_the_outcomes_hold_each_accepted_plans_nights_once_they_pass
 
 ### DAT-29 [C] The recorded live run
 - File: tests/fixtures/live_seed7/

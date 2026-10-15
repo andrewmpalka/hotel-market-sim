@@ -9,18 +9,18 @@ nodes and its words, len(text.split()) over the file.
 | File | Nodes | Words |
 | --- | ---: | ---: |
 | modules.md | 30 | 4,050 |
-| data.md | 33 | 4,275 |
+| data.md | 33 | 4,293 |
 | rules.md | 123 | 5,158 |
 | shocks.md | 7 | 734 |
 | concepts.md | 11 | 1,154 |
 | measures.md | 14 | 962 |
 | sources.md | 4 | 849 |
-| decisions.md | 61 | 8,967 |
+| decisions.md | 61 | 9,051 |
 | results.md | 42 | 7,233 |
 | forks.md | 13 | 1,921 |
 | unknowns.md | 15 | 2,013 |
-| every node file | 353 | 37,316 |
-| index.md | | 2,973 |
+| every node file | 353 | 37,418 |
+| index.md | | 2,971 |
 
 ## Modules (`modules.md`)
 
@@ -247,7 +247,7 @@ nodes and its words, len(text.split()) over the file.
 - DEC-39 [C] The cautious rule: a learning agent changes a rate only where the change beats holding across its band
 - DEC-43 [C] The cautious rule tests the band alone, and one minimum applies to the plan
 - DEC-44 [C] Every request figure is a display string, and the prompt says to copy it whole
-- DEC-45 [T] Each model request carries the hotel's past decisions and their outcomes
+- DEC-45 [C] The tables keep each decision's request, answer and outcome
 - DEC-46 [T] The agent reprices when data arrives during the day
 - DEC-49 [C] The benchmark measures the reviewer in the mismatched modes
 - DEC-50 [C] A demand bias the agent never sees
