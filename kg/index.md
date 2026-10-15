@@ -15,12 +15,12 @@ nodes and its words, len(text.split()) over the file.
 | concepts.md | 11 | 1,197 |
 | measures.md | 14 | 962 |
 | sources.md | 4 | 855 |
-| decisions.md | 64 | 9,452 |
+| decisions.md | 66 | 9,717 |
 | results.md | 42 | 7,236 |
-| forks.md | 13 | 1,924 |
-| unknowns.md | 15 | 2,016 |
-| every node file | 360 | 38,348 |
-| index.md | | 2,950 |
+| forks.md | 13 | 1,918 |
+| unknowns.md | 16 | 2,163 |
+| every node file | 363 | 38,754 |
+| index.md | | 2,983 |
 
 ## Modules (`modules.md`)
 
@@ -227,6 +227,8 @@ nodes and its words, len(text.split()) over the file.
 - DEC-04 [C] The passenger revision is the trigger; the change is carried for the text
 - DEC-63 [C] Arriving passengers, not seats, drive demand
 - DEC-64 [C] Each hotel's luck and shop noise come from its own stream
+- DEC-65 [C] The market's price response is on by default, at 1.0
+- DEC-66 [C] Each hotel carries its own booking curve
 - DEC-05 [C] The booking loop plays out to day 149 with rates frozen from day 60
 - DEC-06 [C] The 7-day hold after an accepted rate change
 - DEC-07 [C] A pace flag needs a gap beyond both 10% of rooms and 3 standard deviations
@@ -347,7 +349,7 @@ nodes and its words, len(text.split()) over the file.
 - FRK-09 [O] A comp move that follows our own change as a flag cause
 - FRK-10 [O] An arrival time column
 - FRK-11 [O] A periodic re-plan beside the anomaly flags
-- FRK-12 [O] Per-hotel booking curves in the customer file
+- FRK-12 [H] Per-hotel booking curves in the customer file
 - FRK-13 [H] The stored route refuses a later day
 
 ## Unknowns (`unknowns.md`)
@@ -367,3 +369,4 @@ nodes and its words, len(text.split()) over the file.
 - UNK-13 [U] Whether a 5% cut is enough: the largest cut on the menu is 5%
 - UNK-14 [U] The bias in an elasticity estimate when a hotel prices to demand
 - UNK-15 [U] The real market-level price elasticity
+- UNK-16 [U] What the reviewers do on world v2

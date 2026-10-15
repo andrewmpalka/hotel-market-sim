@@ -85,12 +85,12 @@ it. None of these is in progress.
 - Needs: a cadence, and on it a plan for every stay date with the usual candidates. The queue's minimum would keep the model calls down. The oracle grades such plans as it grades any other.
 - Links: [[DEC-13]], [[DEC-54]], [[RES-31]], [[DEC-55]], [[UNK-08]]
 
-### FRK-12 [O] Per-hotel booking curves in the customer file
+### FRK-12 [H] Per-hotel booking curves in the customer file
 - Choice: whether each hotel should carry its own booking curve ([[CON-01]], [[RUL-68]], [[RUL-69]]), with a group base on the convention hotel's event dates and a late curve at the airport hotel.
-- Known: on world v1 one transient curve served all four hotels ([[DAT-27]]). The pace baseline is normal demand ([[MOD-07]]), so a hotel that received a shock runs ahead of pace every day until the stay date.
-- Consequence: "pace" means that a shock's bookings have arrived, and the pace control prices the shocks at one remove ([[DEC-55]], [[RES-42]]).
-- Needs: a curve per hotel in the file, read by [[MOD-20]] and used by [[MOD-06]] and [[MOD-18]]. Every pinned figure then changes. The template arms rerun for nothing and the live arms at about $86.
-- Links: [[CON-01]], [[DAT-27]], [[MOD-07]], [[DEC-55]], [[RES-42]]
+- Known: on world v1 one transient curve served all four hotels ([[DAT-27]]). The pace baseline is normal demand ([[MOD-07]]), so a hotel that received a shock ran ahead of pace every day until the stay date.
+- Consequence: "pace" meant that a shock's bookings had arrived, and the pace control priced the shocks at one remove ([[DEC-55]], [[RES-42]]).
+- Closed by: [[DEC-66]], on world v2. Every pinned figure changed, and the template arms reran for nothing; the live arms wait for the world v2 benchmark ([[UNK-16]]).
+- Links: [[CON-01]], [[DAT-27]], [[MOD-07]], [[DEC-55]], [[DEC-66]], [[RES-42]], [[UNK-16]]
 
 ### FRK-13 [H] The stored route refuses a later day
 - Choice: whether stored_sources should take the day it is made for and refuse a later one, as the simulated sources do ([[MOD-19]], [[MOD-21]]).

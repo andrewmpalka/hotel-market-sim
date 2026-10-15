@@ -106,8 +106,15 @@ and a RES node records the run. A claim that no test can confirm stays [U].
 - Links: [[MOD-16]], [[UNK-07]], [[FRK-05]], [[DEC-38]]
 
 ### UNK-15 [U] The real market-level price elasticity
-- Unknown: how much a market's total demand falls when every hotel's rate rises together. The simulator's default is 0.0 ([[RUL-87]]), so a matched raise costs no rooms. --market-elasticity sets another value for a run ([[DEC-52]]).
-- Measured: at 0.0, 0.5 and 1.0 with the reaction on, the default mode earns +$111,272, +$72,229 and +$43,584 a seed ([[RES-26]]). The value sets how much of the ratchet is real.
+- Unknown: how much a market's total demand falls when every hotel's rate rises together. Since world v2 the default is 1.0 ([[RUL-87]], [[DEC-65]]): a matched raise loses demand in proportion. --market-elasticity sets another value.
+- Measured: at 0.0, 0.5 and 1.0 with the reaction on, the default mode earns +$87,519, +$58,275 and +$35,324 a seed on world v2 ([[RES-26]]). The value sets how much of the ratchet is real.
 - Best guess: an inference from general industry knowledge, with nothing here to measure it. Between 0.3 and 1.0 for a city market over 90 days, below the share elasticity of 1.5 ([[RUL-21]]). A guest who must travel still books somewhere.
 - Resolves when: never within this repository; it needs market-level demand against market-level rates, with the shocks held apart.
 - Links: [[RUL-87]], [[DEC-52]], [[RES-26]], [[UNK-07]], [[UNK-11]], [[FRK-08]]
+
+### UNK-16 [U] What the reviewers do on world v2
+- Unknown: the reviewer benchmark ([[RES-16]] to [[RES-19]], [[RES-34]] to [[RES-39]]) and the live run of seed 7 ([[RES-08]]) were measured on world v1 (commit b178e7b). On world v2 what the models decline is not known.
+- Cost: the same commands on seeds 1 to 20 with the three models, the fixed and the learn modes, cost about $90 at list prices ([[RUL-80]]); the live run of seed 7 about $0.15.
+- Best guess: the models still accept nearly every plan in the true mode, where every plan pays, and decline a few raises in the mismatched modes, as on world v1.
+- Resolves when: `make live-audit SEED=7` re-records the fixture and `hotel-market bench --seeds 1 20` runs on world v2 under a cost gate of $120.
+- Links: [[RES-08]], [[RES-16]], [[RES-34]], [[DAT-29]], [[RUL-80]], [[FRK-12]]

@@ -60,6 +60,22 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Reason: a hotel added to the customer file took a row in that array and moved every other hotel's draws. With its own stream, the other hotels' fixed-rate bookings stay as they were.
 - Evidence: test_a_fifth_hotel_leaves_the_other_hotels_fixed_rate_bookings_unchanged, test_rates_depend_only_on_the_seed
 - Links: [[DEC-22]], [[DEC-62]], [[MOD-05]], [[MOD-06]], [[DAT-07]]
+
+### DEC-65 [C] The market's price response is on by default, at 1.0
+- Decided: the simulator's and the agent's defaults are 1.0 ([[RUL-87]], [[RUL-88]]), and the customer file records market.elasticity = 1.0 ([[RUL-124]]). --market-elasticity overrides it for a run; the agent is told the value.
+- Replaces: a default of 0.0, where a matched raise cost no rooms ([[DEC-52]]).
+- Reason: a market-wide rate rise should lose demand in proportion. The value is chosen on that reason and not on any result; the review found the convention's gain rode mostly on the competitors' raise through the rate ratio.
+- Measured: the default mode earns +$16,164 a seed on world v2 against +$32,899 on world v1 ([[RES-01]]).
+- Evidence: test_the_market_elasticity_scales_demand_with_the_medians_level, test_the_demo_file_describes_the_market_in_claude_md
+- Links: [[DEC-52]], [[RUL-87]], [[RUL-88]], [[RUL-124]], [[UNK-15]], [[RES-01]]
+
+### DEC-66 [C] Each hotel carries its own booking curve
+- Decided: each hotel entry in the customer file holds a booking_curve ([[RUL-68]], [[RUL-69]]), read by Hotel.curve() ([[CON-01]]). The preload, pace baseline, planner and estimator read it; the preload covers the whole horizon.
+- Replaces: one transient curve for all four hotels ([[FRK-12]]).
+- Reason: a convention hotel holds group blocks months out and an airport hotel books late. Each curve suits its kind of hotel: a quarter of the convention hotel's rooms 90 days out, a tenth at the full-service, none at the airport.
+- Measured: on seed 7 the two downtown hotels change no rate on the convention nights, because most of their business is in before the announcement ([[RES-02]], [[RES-41]]).
+- Evidence: test_curve_matches_the_points_and_is_linear_in_between, test_preload_mean_is_normal_demand_x_curve_of_days_out_plus_1, test_the_demo_file_describes_the_market_in_claude_md
+- Links: [[CON-01]], [[DAT-04]], [[DEC-03]], [[FRK-12]], [[RES-02]], [[RES-41]]
 ### DEC-05 [C] The booking loop plays out to day 149 with rates frozen from day 60
 - Decided: the agent decides on days 0 to 59. The loop keeps booking to day 149 with no new decisions. The window stops at stay date 149, so every stay date from 0 to 149 ends complete.
 - Replaces: nothing built; the first plan stopped the loop at day 59.
