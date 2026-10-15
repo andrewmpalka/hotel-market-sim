@@ -7,7 +7,8 @@ The read-only demo page: a Streamlit app over the file hotel-market demo-data wr
 The page reads the file and computes nothing. Every figure it shows is a row code wrote
 (demo_data.py, sql/demo.sql), and the page only formats and draws it. A test fails if this module
 imports anything from the package or does arithmetic on a figure. The sidebar picks one hotel and
-one day, and the query string can name them (?hotel=convention&day=10). The page then shows what
+one day, and the query string can name them (?hotel=convention&day=10). The sidebar also shows the
+file's seed and where its reasons came from, and defines contribution. The page then shows what
 became known that day, the stay dates ahead as two charts side by side, the day's queue with its
 reasons and held flags, and the scorecard: the nights already stayed for the hotel and for all
 the hotels together. A sidebar checkbox, off by default, adds the end-of-run result: the tiles
@@ -61,6 +62,9 @@ h3 {padding-top: 0 !important; padding-bottom: 0.25rem !important;}
 </style>"""
 
 MARKDOWN_MARKS = ("\\", "$", "*", "_", "`")  # what the page escapes so a text shows as written
+# What a reason has escaped: those marks and the link, image, strikethrough and autolink marks,
+# which a model's text could hold. A date's brackets are code's own and stay.
+REASON_MARKS = ("\\", "$", "*", "_", "`", "[", "]", "!", "~", "<", ">")
 
 
 def _reader(connection):
@@ -72,9 +76,9 @@ def _reader(connection):
     return rows
 
 
-def plain(text: str) -> str:
+def plain(text: str, marks: tuple[str, ...] = MARKDOWN_MARKS) -> str:
     """The text with its markdown marks escaped, so a dollar sign is a dollar sign."""
-    for mark in MARKDOWN_MARKS:
+    for mark in marks:
         text = text.replace(mark, f"\\{mark}")
     return text
 
@@ -174,6 +178,7 @@ def main() -> None:
         "SELECT key, name, rooms, rate_axis_low, rate_axis_high FROM hotels ORDER BY position"
     )
     days = rows("SELECT as_of_day, label, stay_window FROM days ORDER BY as_of_day")
+    run = rows("SELECT seed, reason_source FROM run").iloc[0]
     keys = hotels["key"].tolist()
     numbers = days["as_of_day"].tolist()
     wanted_hotel = st.query_params.get(HOTEL_PARAMETER)
@@ -189,9 +194,10 @@ def main() -> None:
         day = st.slider("Day", min_value=numbers[0], max_value=numbers[-1], value=first_day)
         show_end = st.checkbox("Show the end-of-run result", value=wanted_end in ON_VALUES)
         st.caption(
-            "Seed 7 of the simulated market. The reasons are the model's, from the recorded "
-            "live run. The page reads a file code wrote and computes nothing."
+            f"Seed {run['seed']} of the simulated market. The reasons are {run['reason_source']}. "
+            "The page reads a file code wrote and computes nothing."
         )
+        st.caption("Contribution is room revenue minus the cost of servicing every room sold.")
     st.markdown(_tile_style("compact" if show_end else "large"), unsafe_allow_html=True)
     hotel = hotels.loc[hotels["name"] == name].iloc[0]
     key = hotel["key"]
@@ -301,8 +307,9 @@ def main() -> None:
         if plans.empty:
             st.markdown("No plan was queued today.")
         for plan in plans.itertuples():
-            words = plain(f"{plan.plan} for {plan.stays}, {plan.value_text}. {plan.reason}")
-            st.markdown(f"**{plan.outcome.capitalize()}:** {words}")
+            words = plain(f"{plan.plan} for {plan.stays}, {plan.value_text}. ")
+            reason = plain(plan.reason, REASON_MARKS)
+            st.markdown(f"**{plan.outcome.capitalize()}:** {words}{reason}")
         if held.empty:
             st.markdown("No flag was held today.")
         else:

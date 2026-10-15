@@ -825,6 +825,13 @@ hotels themselves are data ([[DAT-04]]).
 - Meaning: the characters plain() escapes in a reason, a plan or a date, so the markdown shows them as written ([[DEC-58]]). The backslash goes first.
 - Evidence: test_a_reason_with_two_dollar_amounts_shows_both_as_written
 
+### RUL-123 [C] REASON_MARKS
+- Value: ("\\", "$", "*", "_", "`", "[", "]", "!", "~", "<", ">")
+- File: src/hotel_market/demo_page.py
+- Kind: label
+- Meaning: the characters a reason has escaped: those of [[RUL-117]] and the link, image, strikethrough and autolink marks a model's text could hold. A date's brackets are code's own, so the news and the stays keep them.
+- Evidence: test_a_reason_with_two_dollar_amounts_shows_both_as_written
+
 ### RUL-118 [C] END_PARAMETER
 - Value: "end"
 - File: src/hotel_market/demo_page.py

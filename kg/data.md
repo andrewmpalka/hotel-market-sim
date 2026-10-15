@@ -292,7 +292,7 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-33 [C] The demo file
 - File: sql/demo.sql
-- Tables: eight, beside the seven stored tables ([[DAT-28]]) for days 0 to 59 in the same DuckDB file. Every date is a calendar date with its day of the week and the day number in brackets, such as "Thu 18 Feb [45]" ([[DEC-58]]).
+- Tables: eight from sql/demo.sql beside the seven stored tables ([[DAT-28]]), and run (seed, reason_source), which demo_data.py creates for the sidebar. Every date reads as "Thu 18 Feb [45]" ([[DEC-58]]).
 - Hotels and days: hotels (position, key, name, rooms, start_rate, rate_axis_low, rate_axis_high). days (as_of_day, label, stay_window). news (as_of_day, hotel, position, kind, text) holds what became known, and one row says nothing did.
 - Chart: stay_dates (as_of_day, hotel, stay_day, label, tick, rate, comp_median, rooms_on_books, pace, flagged, causes, flag, planned_rate), one row per stay date in the window. planned_rate is NULL without an accepted plan.
 - Queue: queue (as_of_day, hotel, position, stays, causes, plan, value, value_text, reason, reason_source, queued, outcome, alternative, alternative_text). The outcome is accepted, declined or held. A held flag names its best alternative.

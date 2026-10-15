@@ -11,7 +11,8 @@ model's reasons, and it needs no API key. A request the recording does not cover
 command. For a seed with no recording, the template writes the reasons.
 
 The file adds the tables the page reads as they are (sql/demo.sql): hotels, days, news,
-stay_dates, queue, scorecard, outcome and gains. Code computes every figure in them and writes
+stay_dates, queue, scorecard, outcome and gains, and a run table with the seed and the words for
+where the reasons came from, which the sidebar shows. Code computes every figure in them and writes
 every date as a calendar date with its day of the week and the day number in brackets. The page
 (demo_page.py) formats and draws them and computes nothing. The scorecard holds the nights
 already stayed as of the day, stay dates 0 to the day before. The outcome holds the result once
@@ -155,9 +156,20 @@ def build(seed: int, out: Path = DEMO_FILE, customer: Customer | None = None) ->
             connection.executemany(
                 f"INSERT INTO {table} VALUES ({', '.join('?' * width)})", rows[table]
             )
+        connection.execute(
+            "CREATE TABLE IF NOT EXISTS run (seed INTEGER NOT NULL, reason_source VARCHAR NOT NULL)"
+        )
+        connection.execute("INSERT INTO run VALUES (?, ?)", [seed, reason_source(recording)])
     finally:
         connection.close()
     return recording is not None
+
+
+def reason_source(recording: Path | None) -> str:
+    """Where the file's reasons came from, as the sidebar says it."""
+    if recording is None:
+        return "the template's, as no run is recorded"
+    return "the model's, from the recorded live run"
 
 
 def demo_schema_path() -> Path:
@@ -483,8 +495,8 @@ def main(argv: list[str] | None = None) -> None:
     )
     args = parser.parse_args(argv)
     recorded = build(args.seed, args.out)
-    source = "the recorded live run" if recorded else "the template, as no run is recorded"
-    print(f"Wrote {args.out}: days 0 to {SIM_DAYS - 1} of seed {args.seed}, reasons from {source}.")
+    source = reason_source(recorded_run(args.seed) if recorded else None)
+    print(f"Wrote {args.out}: days 0 to {SIM_DAYS - 1} of seed {args.seed}, reasons {source}.")
 
 
 if __name__ == "__main__":

@@ -8,19 +8,19 @@ nodes and its words, len(text.split()) over the file.
 
 | File | Nodes | Words |
 | --- | ---: | ---: |
-| modules.md | 30 | 4,030 |
-| data.md | 33 | 4,252 |
-| rules.md | 121 | 5,033 |
+| modules.md | 30 | 4,031 |
+| data.md | 33 | 4,238 |
+| rules.md | 122 | 5,097 |
 | shocks.md | 7 | 707 |
 | concepts.md | 11 | 1,154 |
 | measures.md | 14 | 962 |
 | sources.md | 4 | 849 |
-| decisions.md | 60 | 8,777 |
+| decisions.md | 60 | 8,781 |
 | results.md | 42 | 7,233 |
 | forks.md | 13 | 1,906 |
 | unknowns.md | 15 | 2,013 |
-| every node file | 350 | 36,916 |
-| index.md | | 2,957 |
+| every node file | 351 | 36,971 |
+| index.md | | 2,958 |
 
 ## Modules (`modules.md`)
 
@@ -163,7 +163,7 @@ nodes and its words, len(text.split()) over the file.
 - RUL-115 [C] PLOT_HEIGHTS — src/hotel_market/demo_page.py
 - RUL-120 [C] AXIS_LABEL_SIZE — src/hotel_market/demo_page.py
 - RUL-121 [C] TILE_SIZES — src/hotel_market/demo_page.py
-- Labels: RUL-06, RUL-07, RUL-08, RUL-09, RUL-10, RUL-89, RUL-93, RUL-31, RUL-32, RUL-33, RUL-34, RUL-35, RUL-36, RUL-37, RUL-38, RUL-41, RUL-42, RUL-44, RUL-45, RUL-49, RUL-46, RUL-47, RUL-75, RUL-78, RUL-79, RUL-48, RUL-55, RUL-74, RUL-86, RUL-94, RUL-100, RUL-101, RUL-72, RUL-73, RUL-70, RUL-71, RUL-57, RUL-103, RUL-104, RUL-105, RUL-106, RUL-107, RUL-108, RUL-111, RUL-112, RUL-113, RUL-114, RUL-116, RUL-117, RUL-118, RUL-119
+- Labels: RUL-06, RUL-07, RUL-08, RUL-09, RUL-10, RUL-89, RUL-93, RUL-31, RUL-32, RUL-33, RUL-34, RUL-35, RUL-36, RUL-37, RUL-38, RUL-41, RUL-42, RUL-44, RUL-45, RUL-49, RUL-46, RUL-47, RUL-75, RUL-78, RUL-79, RUL-48, RUL-55, RUL-74, RUL-86, RUL-94, RUL-100, RUL-101, RUL-72, RUL-73, RUL-70, RUL-71, RUL-57, RUL-103, RUL-104, RUL-105, RUL-106, RUL-107, RUL-108, RUL-111, RUL-112, RUL-113, RUL-114, RUL-116, RUL-117, RUL-123, RUL-118, RUL-119
 
 ## Shocks (`shocks.md`)
 

@@ -104,6 +104,12 @@ def test_the_page_shows_the_convention_hotel_on_day_10(demo_file, monkeypatch):
     assert [metric.label for metric in page.metric] == labels * 2
     assert page.metric[1].value == "$220.00" and page.metric[1].delta == "0"
     assert not page.sidebar.checkbox[0].value and len(page.get("vega_lite_chart")) == 2
+    # The sidebar reads the seed and the reasons' source from the file, and defines contribution.
+    assert [caption.value for caption in page.sidebar.caption] == [
+        "Seed 7 of the simulated market. The reasons are the model's, from the recorded live "
+        "run. The page reads a file code wrote and computes nothing.",
+        "Contribution is room revenue minus the cost of servicing every room sold.",
+    ]
     # The checkbox adds the complete result for both scopes and the contribution line.
     page.sidebar.checkbox[0].check()
     page.run()
@@ -148,15 +154,17 @@ def test_the_query_string_opens_a_hotel_and_a_day_and_the_held_flags_are_open(
 
 
 def test_a_reason_with_two_dollar_amounts_shows_both_as_written(demo_file, monkeypatch, tmp_path):
-    # Streamlit's markdown reads a pair of dollar signs as a formula. The page escapes them, so
-    # the markdown holds "\$120" and the reader sees "$120".
+    # Streamlit's markdown reads a pair of dollar signs as a formula, a bracket pair followed by
+    # a parenthesis as a link, two tildes as strikethrough and angle brackets as an autolink.
+    # The page escapes every such mark, so the markdown holds "\$120" and the reader sees "$120".
     testing = pytest.importorskip("streamlit.testing.v1")
     file = tmp_path / "demo.duckdb"
     shutil.copy(demo_file, file)
     connection = stored.connect(file)
     try:
         connection.execute(
-            "UPDATE queue SET reason = 'A $120 raise earns $1,000 more than holding.' "
+            "UPDATE queue SET reason = 'A $120 raise earns $1,000 more than holding. "
+            "See [the plan](http://example.com), ~~hold~~ and <http://example.com>.' "
             "WHERE as_of_day = 10 AND hotel = 'convention' AND queued"
         )
     finally:
@@ -165,3 +173,6 @@ def test_a_reason_with_two_dollar_amounts_shows_both_as_written(demo_file, monke
     text = _text(page)
     assert "\\$8,050 more than holding. A \\$120 raise earns \\$1,000 more than holding." in text
     assert "$120 raise earns $1,000" not in text
+    assert (
+        "See \\[the plan\\](http://example.com), \\~\\~hold\\~\\~ and \\<http://example.com\\>."
+    ) in text

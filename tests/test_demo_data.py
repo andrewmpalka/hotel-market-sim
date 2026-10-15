@@ -75,6 +75,10 @@ def test_the_reasons_come_from_the_recorded_live_run(demo_file):
     assert held == [("code", "held")]
     assert recorded_run(7) == ROOT / "tests" / "fixtures" / "live_seed7"
     assert recorded_run(1) is None
+    # The file says where its reasons came from, for the page's sidebar.
+    assert _rows(demo_file, "SELECT seed, reason_source FROM run") == [
+        (7, "the model's, from the recorded live run")
+    ]
 
 
 def test_every_date_reads_as_a_calendar_date_with_its_day_number_in_brackets(demo_file):
@@ -314,8 +318,11 @@ def test_the_chart_rows_mark_the_flagged_stay_dates_and_carry_the_planned_rate(d
 
 def test_a_seed_with_no_recording_gets_the_templates_reasons(tmp_path, capsys):
     main(["--seed", "1", "--out", str(tmp_path / "one.duckdb")])
-    assert "reasons from the template, as no run is recorded." in capsys.readouterr().out
+    assert "reasons the template's, as no run is recorded." in capsys.readouterr().out
     sources = _rows(
         tmp_path / "one.duckdb", "SELECT DISTINCT reason_source FROM queue WHERE queued"
     )
     assert sources == [("template",)]
+    assert _rows(tmp_path / "one.duckdb", "SELECT seed, reason_source FROM run") == [
+        (1, "the template's, as no run is recorded")
+    ]
