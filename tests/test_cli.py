@@ -325,10 +325,11 @@ def test_the_seeds_command_prints_each_seed_and_the_mean_and_range(monkeypatch, 
     ) in out
     assert "Revenue change: mean -2 (sd 18, se 10), range -20 to +15." in out
     assert "Where the gain came from" in out
-    source, filings, medians = [
+    source, nights, filings, medians = [
         line.split() for line in out.splitlines() if line.startswith("true ")
     ]
     assert source == ["true", "3", "+94", "3", "-45"]
+    assert nights == ["true", "0", "+0", "+0", "nan"]  # the outcome table: no nights in these rows
     assert filings == ["true", "0", "0", "6"]  # the filings table: no filings in these rows
     assert medians == ["true", "0", "0", "0"]  # the comp-median flags: none in these rows
 

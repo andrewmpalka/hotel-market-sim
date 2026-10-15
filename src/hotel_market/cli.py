@@ -357,6 +357,8 @@ class SeedResult:
     control_change: float = 0.0  # --policy only: the rule's contribution change over fixed rates
     control_revenue_change: float = 0.0  # --policy only: the rule's room revenue change
     control_changes: int = 0  # --policy only: the (hotel, stay date) pairs the rule changed
+    # Each accepted plan's nights as the outcomes table records them (stored.Outcome)
+    outcomes: list[stored.Outcome] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -409,6 +411,21 @@ class ArmResult:
     @property
     def noise_median_flags(self) -> int:
         return sum(result.noise_median_flags for result in self.seeds)
+
+    @property
+    def nights(self) -> int:
+        """The nights the accepted plans changed, over the seeds."""
+        return sum(len(result.outcomes) for result in self.seeds)
+
+    @property
+    def estimated_on_nights(self) -> float:
+        """The plans' estimates for those nights, summed: the target on the rooms then unsold."""
+        return sum(outcome.estimated for result in self.seeds for outcome in result.outcomes)
+
+    @property
+    def realised_on_nights(self) -> float:
+        """What the rooms sold after each decision earned on those nights, summed."""
+        return sum(outcome.realised for result in self.seeds for outcome in result.outcomes)
 
     @property
     def repeat_changes(self) -> int:
@@ -557,6 +574,7 @@ def sweep(
                         bool(MEDIAN_CAUSES & set(e.causes)) and e.day not in median_shock_days()
                         for e in agent.entries
                     ),
+                    outcomes=outcomes_of(agent.entries, books, customer),
                     repeat_changes=repeat_changes(agent.entries),
                     seat_flags=sum(bool(SEAT_CAUSES & set(e.causes)) for e in agent.entries),
                     filings=len(books.scenario.filing_days(SIM_DAYS - 1)),
@@ -688,6 +706,35 @@ def repeat_changes(entries: Iterable[Entry], window: int = REPEAT_WINDOW) -> int
         any(later - earlier <= window for earlier, later in zip(changed, changed[1:]))
         for changed in (sorted(found) for found in days.values())
     )
+
+
+def outcomes_of(entries: Iterable[Entry], books: Books, customer: Customer) -> list[stored.Outcome]:
+    """What each accepted plan came to on each night it changed, from the run's own books, as the
+    outcomes table records it (stored.write_outcomes): the rooms sold and the room revenue over
+    every booking day, the plan's estimate for the night, and what the rooms sold after the
+    decision earned in the target's measure."""
+    found = []
+    for entry in entries:
+        if entry.action == HOLD:
+            continue
+        hotel = customer.hotel(entry.hotel)
+        cost = hotel.room_cost if entry.target == "contribution" else 0.0
+        for group in entry.changed_weekdays:
+            for stay_day, estimate in group.best.estimates.items():
+                after = books.daily_rooms[entry.day + 1 :, hotel.row, stay_day]
+                rates = books.daily_rates[entry.day + 1 :, hotel.row, stay_day]
+                found.append(
+                    stored.Outcome(
+                        entry.day,
+                        hotel.key,
+                        stay_day,
+                        int(books.rooms[hotel.row, stay_day]),
+                        float(books.revenue[hotel.row, stay_day]),
+                        estimate,
+                        float((after * (rates - cost)).sum()),
+                    )
+                )
+    return found
 
 
 def _gain_on(
@@ -1420,6 +1467,8 @@ def _print_sweep(
     print()
     print("\n".join(_source_table(arms)))
     print()
+    print("\n".join(_outcome_table(arms)))
+    print()
     print("\n".join(_revision_table(arms)))
     print()
     print("\n".join(_median_table(arms)))
@@ -1629,6 +1678,27 @@ def _arm_table(arms: list[ArmResult]) -> list[str]:
     return lines
 
 
+def _outcome_table(arms: list[ArmResult], named: bool = False) -> list[str]:
+    """The accepted plans' nights, summed over the seeds, as the outcomes table records them: each
+    plan's estimate for the night against what the rooms sold after the decision earned."""
+    reviewer_heading = f"{'reviewer':20}" if named else ""
+    lines = [
+        "What the accepted plans' nights came to, summed over the seeds: each plan's estimate for "
+        "the night against what the rooms sold after the decision earned",
+        f"{'elasticity':18}{reviewer_heading}{'nights':>8}{'estimated':>14}{'realised':>14}"
+        f"{'realised / estimated':>22}",
+    ]
+    for arm in arms:
+        reviewer = f"{arm.reviewer.name:20}" if named else ""
+        estimated, realised = arm.estimated_on_nights, arm.realised_on_nights
+        ratio = realised / estimated if estimated else float("nan")
+        lines.append(
+            f"{str(arm.mode):18}{reviewer}{arm.nights:>8}{estimated:>+14,.0f}{realised:>+14,.0f}"
+            f"{ratio:>22.2f}"
+        )
+    return lines
+
+
 def _source_table(arms: list[ArmResult]) -> list[str]:
     """Where each arm's gain came from. The first group is the plans the convention and the new
     flights raised, and the second is every other plan. Each group shows its rate changes and the
@@ -1773,6 +1843,8 @@ def _print_bench(
         print("\n".join(_revision_table(arms, named=True)))
         print()
         print("\n".join(_median_table(arms, named=True)))
+        print()
+        print("\n".join(_outcome_table(arms, named=True)))
     if policy:
         print()
         print("\n".join(_control_table(arms, policy, named=True)))

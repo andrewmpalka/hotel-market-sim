@@ -298,7 +298,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 
 ### DEC-45 [C] The tables keep each decision's request, answer and outcome
 - Decided: a decision's row holds the request its hotel's queue was asked with, the answer, the request's digest and, from a cache record, the prompt's digest and the model ([[DAT-28]]). An outcomes row holds what a plan earned on a night.
-- Outcome: the row holds the rooms sold and the room revenue over every booking day, the plan's estimate for the night on the rooms then unsold ([[DAT-11]]), and what the rooms sold after the decision earned in that measure.
+- Outcome: the row holds the rooms sold and the room revenue over every booking day, the plan's estimate for the night ([[DAT-11]]), and what the rooms sold after the decision earned. The sweep prints the same per arm ([[MOD-12]]).
 - Replaces: a record with the as-of numbers and every alternative and no request, no digest and no outcome. An operator could rebuild the plan and not show what it earned or what the model was shown.
 - Reason: from the tables alone an operator can now show what the agent knew, what the model saw, that the stored answer was the answer to that request, and what the plan earned.
 - Request: since world v2 each entry lists the hotel's earlier changes on its stay dates, with the rooms booked since each against the rooms expected ([[DAT-16]]). The template cites the latest; the prompt lets the model cite them.

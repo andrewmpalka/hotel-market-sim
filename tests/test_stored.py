@@ -5,8 +5,20 @@ import json
 import pytest
 
 from hotel_market import stored
+from hotel_market.agent import TRUE_MODE
 from hotel_market.bookings import simulate
-from hotel_market.cli import format_entry, main, queue, replay_day, run, run_day, run_days
+from hotel_market.cli import (
+    ArmResult,
+    SeedResult,
+    format_entry,
+    main,
+    outcomes_of,
+    queue,
+    replay_day,
+    run,
+    run_day,
+    run_days,
+)
 from hotel_market.customer import demo
 from hotel_market.model import MODEL, prompt_digest, request_digest
 from hotel_market.plan import HOLD
@@ -185,6 +197,32 @@ def test_the_outcomes_hold_each_accepted_plans_nights_once_they_pass(in_memory, 
     finally:
         connection.close()
     assert all(sum(json.loads(e).values()) == pytest.approx(total) for e, total in plans)
+
+
+def test_the_sweeps_outcome_records_are_the_stored_outcomes_rows(in_memory, through_tables):
+    """outcomes_of() gives the sweep, from a run's own books, the records write_outcomes() stores
+    through the tables: the same nights with the same figures, for every night that has passed."""
+    _, books, agent = in_memory
+    records = outcomes_of(agent.entries, books, demo())
+    assert records and any(o.stay_day >= SIM_DAYS for o in records)  # the run books on to 149
+    passed = sorted(o for o in records if o.stay_day < SIM_DAYS)
+    connection = stored.connect(through_tables, read_only=True)
+    try:
+        rows = connection.execute(
+            "SELECT decision_day, hotel, stay_day, rooms_sold, room_revenue, estimated, realised "
+            "FROM outcomes ORDER BY decision_day, hotel, stay_day"
+        ).fetchall()
+    finally:
+        connection.close()
+    assert len(rows) == len(passed)
+    for row, record in zip(rows, passed):
+        assert row[:4] == record[:4]
+        assert row[4:] == pytest.approx(record[4:])
+    # Per arm the sweep prints these summed: the estimates against what the rooms sold earned.
+    arm = ArmResult(TRUE_MODE, [SeedResult(SEED, 0.0, 0.0, 0, outcomes=records)])
+    assert arm.nights == len(records)
+    assert arm.estimated_on_nights == pytest.approx(sum(o.estimated for o in records))
+    assert arm.realised_on_nights == pytest.approx(sum(o.realised for o in records))
 
 
 def test_the_daily_commands_take_the_world_options(tmp_path, capsys):

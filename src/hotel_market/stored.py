@@ -28,6 +28,7 @@ import json
 from collections.abc import Iterable, Iterator, Mapping
 from contextlib import contextmanager
 from pathlib import Path
+from typing import NamedTuple
 
 import duckdb
 import numpy as np
@@ -530,6 +531,19 @@ def _decision_row(
     )
 
 
+class Outcome(NamedTuple):
+    """One row of the outcomes table: what an accepted plan came to on one night that has passed.
+    The sweep computes the same records from a run's books (cli.outcomes_of)."""
+
+    decision_day: int  # the day the plan was accepted
+    hotel: str  # hotel key
+    stay_day: int
+    rooms_sold: int  # on the books at the end of the night
+    room_revenue: float  # over every booking day of the night
+    estimated: float  # the plan's estimate for the night on the rooms then unsold
+    realised: float  # the same measure on the rooms sold after the decision day
+
+
 def write_outcomes(connection, day: int, customer: Customer | None = None) -> None:
     """The outcome of every accepted plan on the night that has just passed, stay date `day`: the
     rooms sold and the room revenue over every booking day, the plan's estimate for the night on
@@ -565,7 +579,9 @@ def write_outcomes(connection, day: int, customer: Customer | None = None) -> No
             if booked.as_of_day > decided.as_of_day:
                 realised += int(booked.rooms_taken) * (float(booked.rate) - cost)
         rows.append(
-            (int(decided.as_of_day), hotel.key, day, sold, revenue, estimates[str(day)], realised)
+            Outcome(
+                int(decided.as_of_day), hotel.key, day, sold, revenue, estimates[str(day)], realised
+            )
         )
     with _transaction(connection):
         _replace_day(connection, "outcomes", day, rows, key="stay_day")
