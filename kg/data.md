@@ -145,10 +145,10 @@ the plans, the model's request and answer, and what the command writes.
 ### DAT-17 [C] The cache record
 - File: src/hotel_market/model.py
 - Where: cache/seed<seed>/day<DDD>_<hotel key>.json, one file per model call, in the default mode and model. Another mode adds -<mode>, such as seed7-learn-1, a revenue target adds -revenue and another model adds -<model>.
-- Fields: request_digest (sha256 of the request's sorted-keys JSON), request, source "model" and decisions (id, choice, reason per entry). The model field names the model asked, [[RUL-46]] by default.
+- Fields: request_digest (sha256 of the request's sorted-keys JSON), prompt_digest (sha256 of [[RUL-47]]), request, source "model" and decisions (id, choice, reason per entry). model names the model asked ([[RUL-46]]).
 - Template: template answers are not cached ([[DEC-25]]). A file from an older version that holds one is ignored and overwritten. A record from before the model field has none and still reads back ([[DAT-29]]).
 - Written by: [[MOD-09]]
-- Read by: [[MOD-09]] on a rerun or a replay; a digest that does not match the request raises StaleCache
+- Read by: [[MOD-09]] on a rerun or a replay; a digest that does not match the request, or a prompt_digest that is not the running prompt's, raises StaleCache. A record with no prompt_digest is current.
 - Evidence: test_ask_calls_the_model_once_and_then_reads_the_cache, test_a_learn_run_keeps_its_own_cache_and_says_where_its_estimates_ended, test_another_model_gets_its_own_cache_folder_and_record
 
 ### DAT-18 [C] A decisions.jsonl line

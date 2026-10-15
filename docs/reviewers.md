@@ -10,7 +10,9 @@ compute.
 Every gain is measured against a control run with no rate changes. The same seed
 produces the same bookings in both runs, so the accepted plans are the only
 difference between them. A run can be repeated exactly, because the cache
-returns a stored answer before the model is asked again.
+returns a stored answer before the model is asked again, and each stored answer
+carries a digest of the system prompt, so an edited prompt stops the rerun
+instead of returning the old reasons.
 
 The oracle reviewer scores every plan with the simulator's own elasticity and
 declines the plan when holding scores at least as well. The oracle is the

@@ -20,6 +20,7 @@ from hotel_market.model import (
     StaleCache,
     as_decision_list,
     ask,
+    prompt_digest,
     request_digest,
     request_for,
     schema_for,
@@ -230,6 +231,27 @@ def test_a_cache_written_for_another_request_is_refused(convention_request, tmp_
     changed["entries"][0]["value_at_stake"] += " or so"
     with pytest.raises(StaleCache):
         ask(changed, tmp_path / "c.json", FakeClient())
+
+
+def test_a_cache_answered_under_another_prompt_is_refused(convention_request, tmp_path):
+    import hashlib
+
+    request, _ = convention_request
+    path = tmp_path / "p.json"
+    record = ask(request, path, FakeClient())
+    assert record["prompt_digest"] == prompt_digest() == hashlib.sha256(SYSTEM.encode()).hexdigest()
+    stored = json.loads(path.read_text())
+    assert stored["prompt_digest"] == prompt_digest()
+    # The same request answered under another prompt is refused, so a prompt edit cannot reuse
+    # the old answers in silence.
+    stored["prompt_digest"] = "0" * 64
+    path.write_text(json.dumps(stored))
+    with pytest.raises(StaleCache, match="another system prompt"):
+        ask(request, path, NoCalls(), replay=True)
+    # A record from before the digest was kept, such as the recorded run, reads as current.
+    del stored["prompt_digest"]
+    path.write_text(json.dumps(stored))
+    assert ask(request, path, NoCalls(), replay=True)["decisions"] == record["decisions"]
 
 
 def test_without_a_client_the_template_accepts_the_plan_and_quotes_the_numbers(

@@ -6,7 +6,9 @@ model may use. The answer is checked against the options in the request, so the 
 writes and nothing more.
 
 The model's answers are cached under cache/seed<seed>/, one file per day and hotel, keyed by a
-digest of the request. A rerun reads them first. With no client, a template accepts each plan and
+digest of the request. Each record also carries a digest of the system prompt, so an edited prompt
+stops a rerun instead of returning the old answers. A rerun reads them first. With no client, a
+template accepts each plan and
 writes a reason from the entry's numbers. The template is a function of the request, so it is
 never cached. Nothing here needs an API key. Each record names the model asked, and an agent
 given another model keeps its answers in their own folder (agent.py).
@@ -485,9 +487,10 @@ def ask(
     same way. Its decisions record its name as their source. With any other client, the model's
     cached answer is read first.
 
-    A cached answer written for a different request raises instead of answering the wrong
-    question. A replay never calls the model: it reads the cache or raises. A new record names
-    `model`, the model the client asks, so a cache with several models' answers tells them apart.
+    A cached answer written for a different request, or under a different system prompt, raises
+    instead of answering the wrong question. A replay never calls the model: it reads the cache or
+    raises. A new record names `model`, the model the client asks, so a cache with several
+    models' answers tells them apart, and carries the prompt's digest.
     """
     if client is None:
         return {"source": "template", "decisions": template_decisions(request)}
@@ -506,7 +509,13 @@ def ask(
         raise CacheMiss(f"{path} is missing; run without --replay first")
     answer = {"source": source, "decisions": _answer(client, request)}
     _check(answer["decisions"], request)
-    record = {"request_digest": digest, "request": request, **answer, "model": model}
+    record = {
+        "request_digest": digest,
+        "prompt_digest": prompt_digest(),
+        "request": request,
+        **answer,
+        "model": model,
+    }
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(record, indent=2) + "\n")
     return record
@@ -523,11 +532,18 @@ def request_digest(request: dict) -> str:
     return hashlib.sha256(json.dumps(request, sort_keys=True).encode()).hexdigest()
 
 
+def prompt_digest(system: str = SYSTEM) -> str:
+    """The sha256 of the system prompt, kept in each cache record so that a prompt edit is caught
+    on the next read instead of returning answers made under the old prompt."""
+    return hashlib.sha256(system.encode()).hexdigest()
+
+
 def _read_cache(path: Path, digest: str) -> dict | None:
     """The model's cached answer to this request, or None when there is none.
 
     A file from before template answers stopped being cached is not the model's answer. It is
-    ignored and overwritten by one.
+    ignored and overwritten by one. A record answered under another system prompt raises, and a
+    record from before the prompt digest was kept reads as current.
     """
     if not path.exists():
         return None
@@ -536,6 +552,11 @@ def _read_cache(path: Path, digest: str) -> dict | None:
         return None
     if cached["request_digest"] != digest:
         raise StaleCache(f"{path} was written for a different request; delete cache/ and rerun")
+    if cached.get("prompt_digest", prompt_digest()) != prompt_digest():
+        raise StaleCache(
+            f"{path} was answered under another system prompt; delete cache/ and rerun, or put "
+            f"the prompt back"
+        )
     return cached
 
 
