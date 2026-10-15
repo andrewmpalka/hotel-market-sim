@@ -297,12 +297,14 @@ def test_the_seeds_command_prints_each_seed_and_the_mean_and_range(monkeypatch, 
     printed = [line.split() for line in out.splitlines() if line[:4].strip().isdigit()]
     assert printed == [["1", "+100", "-20", "3"], ["2", "-51", "+15", "1"], ["3", "+10", "+0", "2"]]
     # The mean of the unrounded changes: (100.4 - 50.6 + 10.0) / 3 = 19.93.
+    # The standard deviation of the three changes is 76 and its standard error 44; two of three
+    # seeds ahead is what a fair coin gives, so the sign test's p is 1.0.
     assert (
-        "Contribution change: mean +20, range -51 to +100; "
-        "higher than the fixed-rate run in 2 of 3 seeds. "
+        "Contribution change: mean +20 (sd 76, se 44), range -51 to +100; "
+        "higher than the fixed-rate run in 2 of 3 seeds (sign test p 1.0). "
         "The accepted plans were estimated to earn +170 and earned +60."
     ) in out
-    assert "Revenue change: mean -2, range -20 to +15." in out
+    assert "Revenue change: mean -2 (sd 18, se 10), range -20 to +15." in out
     assert "Where the gain came from" in out
     source, filings = [line.split() for line in out.splitlines() if line.startswith("true ")]
     assert source == ["true", "3", "+94", "3", "-45"]
@@ -319,10 +321,11 @@ def test_a_revenue_target_arm_counts_wins_and_earnings_in_revenue(monkeypatch, c
     main(["--seeds", "1", "3", "--target", "revenue"])
     out = capsys.readouterr().out
     assert "candidates scored on revenue" in out
-    assert "Contribution change: mean +20, range -51 to +100." in out
+    assert "Contribution change: mean +20 (sd 76, se 44), range -51 to +100." in out
     assert (
-        "Revenue change: mean -2, range -20 to +15; higher than the fixed-rate run in 1 of 3 "
-        "seeds. The accepted plans were estimated to earn +170 and earned -5."
+        "Revenue change: mean -2 (sd 18, se 10), range -20 to +15; higher than the fixed-rate run "
+        "in 1 of 3 seeds (sign test p 1.0). The accepted plans were estimated to earn +170 and "
+        "earned -5."
     ) in out
 
 
@@ -346,15 +349,19 @@ def test_the_seeds_command_prints_one_row_per_arm_and_a_learn_arms_estimates(mon
     main(["--seeds", "1", "3", "--elasticity", "true", "--elasticity", "learn:1.0", "--cautious"])
     out = capsys.readouterr().out
     rows = [line.split() for line in out.splitlines() if line.startswith(("true", "learn:1"))]
-    # The mean revenue change of the rows is (-20 + 15 + 0) / 3 = -1.67.
+    # The mean revenue change of the rows is (-20 + 15 + 0) / 3 = -1.67. After the mean change
+    # come its standard deviation and standard error, and after the wins the sign test's p.
     assert rows[0] == [
         "true",
         "+20",
+        "76",
+        "44",
         "-2",
         "-51",
         "to",
         "+100",
         "2/3",
+        "1.0",
         "6",
         "+170",
         "+60",
@@ -467,13 +474,17 @@ def test_the_bench_command_prints_its_tables(bench_arms, monkeypatch, capsys):
         )
         counts = arm.counts
         rate = lambda value: "-" if math.isnan(value) else f"{value:.2f}"  # noqa: E731
+        sd = statistics.stdev(arm.changes)
         return [
             arm.reviewer.name,
             f"{mean:+,.0f}",
+            f"{sd:,.0f}",
+            f"{sd / math.sqrt(2):,.0f}",
             f"{min(arm.changes):+,.0f}",
             "to",
             f"{max(arm.changes):+,.0f}",
             f"{arm.wins}/2",
+            {2: "0.50", 1: "1.0", 0: "0.50"}[arm.wins],  # the sign test on two seeds
             str(arm.flags),
             str(arm.pace_flags),
             str(arm.rate_changes),
@@ -490,10 +501,10 @@ def test_the_bench_command_prints_its_tables(bench_arms, monkeypatch, capsys):
     assert rows["oracle"] == expected(oracle, ["-", "-", "-", "-", "-"])
     # regret, recovered share, then precision, recall, F1 and $ recall: the oracle is its own
     # reference, and the template recovers nothing and declines nothing.
-    assert rows["oracle"][9:11] == ["+0", "1.00"]
-    assert rows["oracle"][12:16] == ["1.00", "1.00", "1.00", "1.00"]
-    assert rows["template"][10] == "0.00" and rows["template"][12] == "-"
-    assert rows["template"][13] == "0.00"
+    assert rows["oracle"][12:14] == ["+0", "1.00"]
+    assert rows["oracle"][15:19] == ["1.00", "1.00", "1.00", "1.00"]
+    assert rows["template"][13] == "0.00" and rows["template"][15] == "-"
+    assert rows["template"][16] == "0.00"
     # The scripted model is live: its calls, tokens, median latency and cost are printed; its
     # model is not in the price table, so the cost is n/a.
     calls = len(scripted.calls)

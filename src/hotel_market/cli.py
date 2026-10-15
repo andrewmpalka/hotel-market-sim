@@ -1393,23 +1393,27 @@ def _world_suffix(
 
 def _control_table(arms: list[ArmResult], policy: str, named: bool = False) -> list[str]:
     """Each arm against the rule-based control, next to its gain against fixed rates: the mean
-    changes, the seeds ahead of the rule, and the rule's own mean change and pairs changed."""
+    changes, each with its standard deviation and standard error across the seeds, the seeds ahead
+    of the rule with the sign test's p, and the rule's own mean change and pairs changed."""
     reviewer_heading = f"{'reviewer':20}" if named else ""
     lines = [
         f"Against the {policy} policy, which prices with no estimate and no model: each arm's "
         f"mean change against fixed rates and against the policy, with the policy's own change",
-        f"{'elasticity':18}{reviewer_heading}{'vs fixed':>12}{'vs the rule':>13}"
-        f"{'ahead of it':>13}{'rule vs fixed':>15}{'rule changes':>14}",
+        f"{'elasticity':18}{reviewer_heading}{'vs fixed':>12}{'vs the rule':>13}{'sd':>10}"
+        f"{'se':>9}{'ahead of it':>13}{'p':>8}{'rule vs fixed':>15}{'sd':>10}{'se':>9}"
+        f"{'rule changes':>14}",
     ]
     for arm in arms:
         reviewer = f"{arm.reviewer.name:20}" if named else ""
         against = arm.against_control
+        sd, se = spread(against)
+        rule_sd, rule_se = spread(arm.control_changes)
         lines.append(
             f"{str(arm.mode):18}{reviewer}{statistics.mean(arm.target_changes):>+12,.0f}"
-            f"{statistics.mean(against):>+13,.0f}"
-            f"{f'{sum(change > 0 for change in against)}/{len(against)}':>13}"
-            f"{statistics.mean(arm.control_changes):>+15,.0f}"
-            f"{sum(result.control_changes for result in arm.seeds):>14}"
+            f"{statistics.mean(against):>+13,.0f}{_number(sd):>10}{_number(se):>9}"
+            f"{f'{sum(change > 0 for change in against)}/{len(against)}':>13}{_p(against):>8}"
+            f"{statistics.mean(arm.control_changes):>+15,.0f}{_number(rule_sd):>10}"
+            f"{_number(rule_se):>9}{sum(result.control_changes for result in arm.seeds):>14}"
         )
     return lines
 
@@ -1475,8 +1479,9 @@ def _standard_error_table(arm: ArmResult) -> list[str]:
 
 
 def _seed_table(arm: ArmResult) -> list[str]:
-    """One arm, seed by seed, then the mean and range of both measures. The target's line adds the
-    wins and the accepted plans' estimates against what they earned.
+    """One arm, seed by seed, then the mean of both measures with its standard deviation and
+    standard error across the seeds, and the range. The target's line adds the wins with the sign
+    test's p, and the accepted plans' estimates against what they earned.
     """
     lines = [
         f"Elasticity {arm.mode}",
@@ -1490,12 +1495,13 @@ def _seed_table(arm: ArmResult) -> list[str]:
             f"{r.rate_changes:>15}",
         )
     outcome = (
-        f"; higher than the fixed-rate run in {arm.wins} of {len(arm.seeds)} seeds. The accepted "
-        f"plans were estimated to earn {arm.estimated:+,.0f} and earned {arm.realised:+,.0f}."
+        f"; higher than the fixed-rate run in {arm.wins} of {len(arm.seeds)} seeds (sign test "
+        f"p {_p(arm.target_changes)}). The accepted plans were estimated to earn "
+        f"{arm.estimated:+,.0f} and earned {arm.realised:+,.0f}."
     )
     for name, changes in (("Contribution", arm.changes), ("Revenue", arm.revenue_changes)):
         lines.append(
-            f"{name} change: mean {statistics.mean(changes):+,.0f}, range "
+            f"{name} change: mean {statistics.mean(changes):+,.0f} ({_sd_se(changes)}), range "
             f"{min(changes):+,.0f} to {max(changes):+,.0f}"
             + (outcome if name.lower() == arm.target else ".")
         )
@@ -1508,23 +1514,25 @@ def _seed_table(arm: ArmResult) -> list[str]:
 
 
 def _arm_table(arms: list[ArmResult]) -> list[str]:
-    """Several arms side by side. Each row holds the mean change against the fixed-rate run, its
-    range, the winning seeds and the rate changes. It also holds the estimates summed against the
-    results and, for a cautious arm, the candidates its band rejected.
+    """Several arms side by side. Each row holds the mean change against the fixed-rate run with
+    its standard deviation and standard error across the seeds, its range, the winning seeds with
+    the sign test's p and the rate changes. It also holds the estimates summed against the results
+    and, for a cautious arm, the candidates its band rejected.
     """
     lines = [
-        f"{'elasticity':18}{'mean change':>14}{'mean revenue':>14}{'range':>24}{'wins':>8}"
-        f"{'rate changes':>14}{'estimated':>12}{'realised':>12}{'share':>8}"
-        f"{'rejected at an end':>20}"
+        f"{'elasticity':18}{'mean change':>14}{'sd':>10}{'se':>9}{'mean revenue':>14}"
+        f"{'range':>24}{'wins':>8}{'p':>8}{'rate changes':>14}{'estimated':>12}{'realised':>12}"
+        f"{'share':>8}{'rejected at an end':>20}"
     ]
     for arm in arms:
         share = f"{arm.estimated / arm.realised:.2f}" if arm.realised else "n/a"
         rejected = str(arm.rejected_at_an_end) if arm.mode.cautious else "-"
+        sd, se = spread(arm.changes)
         lines.append(
-            f"{str(arm.mode):18}{statistics.mean(arm.changes):>+14,.0f}"
-            f"{statistics.mean(arm.revenue_changes):>+14,.0f}"
+            f"{str(arm.mode):18}{statistics.mean(arm.changes):>+14,.0f}{_number(sd):>10}"
+            f"{_number(se):>9}{statistics.mean(arm.revenue_changes):>+14,.0f}"
             f"{f'{min(arm.changes):+,.0f} to {max(arm.changes):+,.0f}':>24}"
-            f"{f'{arm.wins}/{len(arm.seeds)}':>8}{arm.rate_changes:>14}"
+            f"{f'{arm.wins}/{len(arm.seeds)}':>8}{_p(arm.target_changes):>8}{arm.rate_changes:>14}"
             f"{arm.estimated:>+12,.0f}{arm.realised:>+12,.0f}{share:>8}{rejected:>20}"
         )
     return lines
@@ -1685,7 +1693,8 @@ def _print_bench(
 
 
 _BENCH_HEADER = (
-    f"{'reviewer':20}{'mean change':>13}{'range':>22}{'ahead':>8}{'flags':>7}{'pace':>6}"
+    f"{'reviewer':20}{'mean change':>13}{'sd':>10}{'se':>9}{'range':>22}{'ahead':>8}{'p':>8}"
+    f"{'flags':>7}{'pace':>6}"
     f"{'changes':>9}{'regret':>10}{'recovered':>11}"
     f"{'accept':>8}{'precision':>11}{'recall':>8}{'F1':>8}{'$ recall':>10}{'invalid':>9}"
     f"{'calls':>7}{'tokens in/out':>18}{'median s':>10}{'cost':>9}"
@@ -1693,9 +1702,10 @@ _BENCH_HEADER = (
 
 
 def _bench_table(mode: ElasticityMode, arms: list[ArmResult]) -> list[str]:
-    """One mode's arms, a row per reviewer. Each row holds the mean realised change and its range,
-    the seeds ahead of the fixed-rate run and the regret against the oracle arm. It counts the flags
-    raised, those with a pace cause and the plans that changed a rate.
+    """One mode's arms, a row per reviewer. Each row holds the mean realised change with its
+    standard deviation and standard error across the seeds, its range, the seeds ahead of the
+    fixed-rate run with the sign test's p, and the regret against the oracle arm. It counts the
+    flags raised, those with a pace cause and the plans that changed a rate.
 
     It also holds the recovered share of the oracle's gain over the template's and the accept
     rate. Then come the decline precision, recall, F1 and dollar-weighted recall. The last
@@ -1739,10 +1749,11 @@ def _bench_row(arm: ArmResult, oracle: ArmResult, template: ArmResult) -> str:
     is_live = arm.reviewer.live
     seconds = [float(call.get("seconds", 0.0)) for call in calls]
     median = f"{statistics.median(seconds):.1f}" if seconds else "-"
+    sd, se = spread(changes)
     return (
-        f"{arm.reviewer.name:20}{mean:>+13,.0f}"
+        f"{arm.reviewer.name:20}{mean:>+13,.0f}{_number(sd):>10}{_number(se):>9}"
         f"{f'{min(changes):+,.0f} to {max(changes):+,.0f}':>22}"
-        f"{f'{arm.wins}/{len(changes)}':>8}{arm.flags:>7}{arm.pace_flags:>6}"
+        f"{f'{arm.wins}/{len(changes)}':>8}{_p(changes):>8}{arm.flags:>7}{arm.pace_flags:>6}"
         f"{arm.rate_changes:>9}{regret(oracle_mean, mean):>+10,.0f}"
         f"{_rate(recovered_share(statistics.mean(template.target_changes), oracle_mean, mean)):>11}"
         f"{_rate(counts.accept_rate):>8}{_rate(counts.precision):>11}{_rate(counts.recall):>8}"
@@ -1755,6 +1766,49 @@ def _bench_row(arm: ArmResult, oracle: ArmResult, template: ArmResult) -> str:
 
 def _rate(value: float) -> str:
     return "-" if math.isnan(value) else f"{value:.2f}"
+
+
+def spread(values: Sequence[float]) -> tuple[float, float]:
+    """The standard deviation of the seeds' values and the standard error of their mean, both nan
+    with fewer than two seeds."""
+    if len(values) < 2:
+        return math.nan, math.nan
+    sd = statistics.stdev(values)
+    return sd, sd / math.sqrt(len(values))
+
+
+def sign_test(values: Sequence[float]) -> float:
+    """The two-sided sign test on the seeds above zero: the chance that a fair coin gives a count at
+    least as far from half as this one. A seed at exactly zero counts as not above. nan with no
+    seeds."""
+    n = len(values)
+    if not n:
+        return math.nan
+    wins = sum(value > 0 for value in values)
+    tail = min(_at_least(wins, n), _at_least(n - wins, n))  # P(X >= wins) and P(X <= wins)
+    return min(1.0, 2 * tail)
+
+
+def _at_least(count: int, n: int) -> float:
+    """P(X >= count) for X binomial with n fair trials."""
+    return sum(math.comb(n, k) for k in range(count, n + 1)) / 2**n
+
+
+def _number(value: float) -> str:
+    return "n/a" if math.isnan(value) else f"{value:,.0f}"
+
+
+def _sd_se(values: Sequence[float]) -> str:
+    sd, se = spread(values)
+    return f"sd {_number(sd)}, se {_number(se)}"
+
+
+def _p(values: Sequence[float]) -> str:
+    """The sign test's p to two significant figures, "<0.001" below that."""
+    p = sign_test(values)
+    if math.isnan(p):
+        return "n/a"
+    return "<0.001" if p < 0.001 else f"{p:#.2g}"
 
 
 def _tokens(calls: list[dict]) -> str:

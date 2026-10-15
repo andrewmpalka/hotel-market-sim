@@ -14,8 +14,9 @@ here for the rest.
 
 ### RES-01 [C] The default agent on seeds 1 to 20
 - Ran: `hotel-market --seeds 1 20`: the agent against the fixed-rate run on each seed, with template reasons and the simulator's elasticity. The runs cover stay dates 0 to 149.
-- Result: the agent run earns +$32,899 more contribution a seed, from +$13,479 to +$52,809. It is ahead in 20 of 20 seeds.
-- Detail: room revenue falls $22,861 a seed, and the agent changes 179 rates in all. The accepted plans' estimates sum to 1.04 times the realised gain ($681,054 against $657,979).
+- Result: the agent run earns +$32,899 more contribution a seed, from +$13,479 to +$52,809. It is ahead in 20 of 20 seeds, a sign test's p below 0.001.
+- Spread: the standard deviation across the seeds is $9,185 and the standard error of the mean $2,054. Room revenue falls $22,861 a seed, with a standard deviation of $12,777.
+- Detail: the agent changes 179 rates in all. The accepted plans' estimates sum to 1.04 times the realised gain ($681,054 against $657,979).
 - Table: docs/results.md, "Seeds 1 to 20 in the default mode"
 - Evidence: test_the_default_mode_still_gives_a_20_seed_mean_of_32899
 - Links: [[DEC-21]], [[DEC-36]], [[DEC-38]], [[MEA-05]], [[RES-02]], [[RES-06]]
@@ -185,10 +186,10 @@ here for the rest.
 
 ### RES-21 [C] Seeds 1 to 20 at a demand bias of 0.9
 - Ran: `hotel-market bench --seeds 1 20 --template --demand-bias 0.9 --elasticity true --elasticity fixed:1.0 --elasticity learn:1.0` on 2026-10-12. The same command with `--elasticity learn:1.0 --cautious` ran the cautious arm.
-- Result: the true mode earns +$1,913 a seed, ahead in 12 of 20, against +$32,899 at 1.0 ([[RES-23]]). Accept-all loses $25,179 a seed at fixed:1.0 and $14,376 at learn:1.0. The oracle earns +$2,334 to +$2,748 in every mode.
+- Result: the true mode earns +$1,913 a seed (sd $3,782, se $846), ahead in 12 of 20, which a sign test puts at p 0.50, against +$32,899 at 1.0 ([[RES-23]]). Accept-all loses $25,179 a seed at fixed:1.0 and $14,376 at learn:1.0.
 - Flags: each arm raises 2,541 to 3,230 flags over the 20 seeds, and 90% to 93% carry a pace cause. The true mode at 1.0 raises 1,952, 88% with a pace cause. Accept-all at fixed:1.0 changes 886 rates.
 - Estimates: the learn:1.0 arm's day-59 estimates are 1.36 to 1.46 by hotel, against 1.36 to 1.45 at 1.0. The cautious arm's are 1.26 to 1.48, against 1.28 to 1.43. The level error landed in the intercept ([[UNK-07]]).
-- Oracle: the oracle accepts 4% to 10% of the plans in the mismatched modes. Its learn arms therefore barely move a rate. Their day-59 estimates stay at 1.05 to 1.31, near the prior.
+- Oracle: the oracle earns +$2,334 to +$2,748 in every mode and accepts 4% to 10% of the plans in the mismatched modes. Its learn arms therefore barely move a rate. Their day-59 estimates stay at 1.05 to 1.31, near the prior.
 - Table: docs/results.md, "Seeds 1 to 20 at a demand bias of 0.9"
 - Evidence: test_the_demand_bias_runs_pin_their_headline
 - Links: [[DEC-50]], [[RUL-82]], [[RES-22]], [[RES-23]], [[UNK-07]], [[UNK-08]]
@@ -357,7 +358,7 @@ here for the rest.
 
 ### RES-40 [C] The agent against the never-cut policy on seeds 1 to 20
 - Ran: `hotel-market bench --seeds 1 20 --template --policy never-cut --demand-bias B --elasticity true` at B = 0.9, 1.0 and 1.1, and the same with `--react --market-elasticity 0.5` in place of the bias, on 2026-10-14.
-- Result: in the default world the never-cut policy earns +$24,780 a seed over frozen rates from 5,416 stay dates changed. The agent's +$32,899 is +$8,119 against it, ahead in 17 of 20.
+- Result: in the default world the never-cut policy earns +$24,780 a seed over frozen rates from 5,416 stay dates changed. The agent's +$32,899 is +$8,119 against it (sd $6,620, se $1,480), ahead in 17 of 20, p 0.0026.
 - Cuts: the rules policy earns +$22,856 there ([[RES-33]]), so its cuts cost it about $1,900 a seed. The start rate is the best rate on a night that will not sell out, so every cut loses.
 - Biases: at 0.9 the policy loses $461 a seed and the agent is +$2,374 against it, ahead in 14 of 20. At 1.1 it earns +$85,934 from 6,704 changes, and the agent's +$112,082 is +$26,148 against it.
 - Reacting: with the reaction on at a market elasticity of 0.5, the policy earns +$141,050 from 5,387 changes. The agent's +$72,229 is -$68,820 against it, behind in every seed.
