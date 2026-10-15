@@ -79,8 +79,9 @@ demo page's eight. scripts/live_audit.py runs and audits a live seed, and
 scripts/median_path.py prints a comp median's path next to the hotel's rate.
 scripts/no_comp_raise.py reruns the sweep with the convention's competitor
 raise at zero, scripts/measures.py prints both runs in a revenue manager's
-measures, and scripts/tick_sweep.py runs seeds 1 to 20 at one tick a day and
-at four, side by side.
+measures, scripts/tick_sweep.py runs seeds 1 to 20 at one tick a day and at
+four, side by side, and scripts/tick_lag.py prints the day-20 filing's five
+facts at each clock.
 scripts/demo_screenshots.py opens the demo page in a Chromium-based browser at
 1440 by 900, saves six screenshots, three pages with the end-of-run result off
 and on, and fails when a page is taller than the window. kg/ and kg_check.py are

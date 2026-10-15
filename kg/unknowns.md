@@ -74,7 +74,7 @@ and a RES node records the run. A claim that no test can confirm stays [U].
 - Evidence: test_the_recorded_live_run_of_seed_7_passes_the_audit, test_claude_client_sends_the_request_and_handles_a_refusal
 - Links: [[UNK-01]], [[RUL-46]], [[MOD-22]], [[DAT-29]], [[DEC-44]], [[RES-09]], [[RES-19]]
 
-### UNK-10 [U] Whether sql/schema.sql runs on a cloud warehouse as written
+### UNK-10 [U] Whether sql/schema.sql runs on a cloud warehouse unchanged
 - Unknown: the schema ([[DAT-28]]) was written for DuckDB and read against the documentation of BigQuery, Snowflake and Redshift. It has not been run on any of them ([[RES-14]]).
 - Best guess: the changes its head lists are the only ones, the type names and the PRIMARY KEY clauses first among them. The row writers in [[MOD-21]] would need each warehouse's own client.
 - Resolves when: someone runs the file on one of them.

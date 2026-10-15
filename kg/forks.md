@@ -25,7 +25,7 @@ it. None of these is in progress.
 - To decide it: write the booking draw for multi-night stays first and check that the fixed-rate occupancies stay within 60% to 90%. The one-random-number-per-draw rule ([[DEC-22]]) must survive it.
 - Links: [[DEC-10]], [[MOD-06]], [[UNK-12]]
 
-### FRK-04 [O] Swapping the model for a locally hosted one
+### FRK-04 [O] Swapping the model for a local one
 - Choice: whether the decisions could come from a model run on the owner's machine instead of the hosted one ([[RUL-46]]).
 - Known: the call sits behind the Client protocol in [[MOD-09]]. A client needs one method, complete(system, prompt, schema), returning JSON that fits the schema ([[DEC-34]]). The remaining choice is the local client itself.
 - Cache: the cache record names its model ([[DAT-17]]). An agent given another model keeps its answers in their own folder ([[DEC-23]]). Two models' answers are told apart.

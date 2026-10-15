@@ -298,3 +298,11 @@ which is also the order in which they depend on each other.
 - Run: each seed is the command's template run ([[MOD-12]]) at --ticks 1 and at the finer clock, with its decisions file in a temporary folder, and no model is called.
 - Tests: tests/test_tick_sweep.py
 - Evidence: test_the_sweep_runs_a_seed_at_each_clock_and_reads_the_lag_from_the_filing
+
+### MOD-32 [C] scripts/tick_lag.py
+- File: scripts/tick_lag.py
+- Owns: the day-20 filing at one tick a day and at a finer clock, five lines each: the tick the filing landed at, the tick the first seats flag rose at, the tick the first raise was accepted at, its stay dates and what they earned.
+- Page: the same five facts are the demo page's day-20 news line on a finer clock ([[MOD-26]], [[DEC-46]]); the script is the walkthrough's one screen for the clock.
+- Run: one seed and one hotel, the airport hotel by default, each as the command's template run ([[MOD-12]]) in a temporary folder, with no model call.
+- Tests: tests/test_tick_lag.py
+- Evidence: test_the_five_lines_follow_the_filing_at_each_clock

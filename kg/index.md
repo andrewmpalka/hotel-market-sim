@@ -8,7 +8,7 @@ nodes and its words, len(text.split()) over the file.
 
 | File | Nodes | Words |
 | --- | ---: | ---: |
-| modules.md | 31 | 4,292 |
+| modules.md | 32 | 4,408 |
 | data.md | 33 | 4,404 |
 | rules.md | 132 | 5,763 |
 | shocks.md | 7 | 762 |
@@ -17,10 +17,10 @@ nodes and its words, len(text.split()) over the file.
 | sources.md | 4 | 855 |
 | decisions.md | 68 | 10,118 |
 | results.md | 43 | 7,269 |
-| forks.md | 14 | 2,038 |
-| unknowns.md | 16 | 2,177 |
-| every node file | 373 | 39,845 |
-| index.md | | 2,996 |
+| forks.md | 14 | 2,037 |
+| unknowns.md | 16 | 2,176 |
+| every node file | 374 | 39,959 |
+| index.md | | 2,998 |
 
 ## Modules (`modules.md`)
 
@@ -55,6 +55,7 @@ nodes and its words, len(text.split()) over the file.
 - MOD-29 [C] scripts/no_comp_raise.py
 - MOD-30 [C] scripts/measures.py
 - MOD-31 [C] scripts/tick_sweep.py
+- MOD-32 [C] scripts/tick_lag.py
 
 ## Data (`data.md`)
 
@@ -350,7 +351,7 @@ nodes and its words, len(text.split()) over the file.
 - FRK-01 [H] Revenue or contribution as the target
 - FRK-02 [H] Setting AGENT_ELASTICITY apart from the simulator's ELASTICITY
 - FRK-03 [O] A length-of-stay model
-- FRK-04 [O] Swapping the model for a locally hosted one
+- FRK-04 [O] Swapping the model for a local one
 - FRK-05 [O] Deliberate price tests, to learn the elasticity faster
 - FRK-06 [O] A read-only dashboard over the stored tables
 - FRK-07 [O] Reviewers from other providers
@@ -373,7 +374,7 @@ nodes and its words, len(text.split()) over the file.
 - UNK-07 [U] The real price elasticity, and what the learned estimate settles
 - UNK-08 [U] Whether the measured gains say anything about a real hotel
 - UNK-09 [C] What a live run costs and takes
-- UNK-10 [U] Whether sql/schema.sql runs on a cloud warehouse as written
+- UNK-10 [U] Whether sql/schema.sql runs on a cloud warehouse unchanged
 - UNK-11 [U] How competitors react to a rate change, and what it does to revenue
 - UNK-12 [U] The effect of cancellations, no-shows, groups and room types
 - UNK-13 [U] Whether a 5% cut, the largest on the menu, is enough
