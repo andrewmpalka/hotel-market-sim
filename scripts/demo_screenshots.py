@@ -217,14 +217,15 @@ def free_port() -> int:
 
 
 def start_server(file: Path, port: int, log: Path) -> subprocess.Popen:
-    """The page's Streamlit server, headless, on the port, with everything it prints going to
-    the log file; returns once it answers."""
+    """The page's Streamlit server, headless, on the port of the loopback address only, with
+    everything it prints going to the log file; returns once it answers."""
     environment = dict(os.environ, HOTEL_MARKET_DEMO_FILE=str(file))
     with log.open("wb") as handle:
         process = subprocess.Popen(
             [
                 sys.executable, "-m", "streamlit", "run", str(PAGE),
                 "--server.headless", "true",
+                "--server.address", "127.0.0.1",
                 "--server.port", str(port),
                 "--server.fileWatcherType", "none",
                 "--browser.gatherUsageStats", "false",

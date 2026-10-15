@@ -267,7 +267,7 @@ which is also the order in which they depend on each other.
 
 ### MOD-28 [C] scripts/demo_screenshots.py
 - File: scripts/demo_screenshots.py
-- Owns: the check that the demo page fits one window ([[DEC-58]]). It starts the page's server on a free port, opens three pages in a headless Chromium-based browser at 1440 by 900, saves a screenshot of each and measures the content.
+- Owns: the check that the demo page fits one window ([[DEC-58]]). It starts the page's server on a free loopback port, opens three pages in a headless Chromium-based browser at 1440 by 900, and screenshots and measures each.
 - Pages: PAGES names them: the convention hotel on day 10, the airport hotel on day 20 and the full-service hotel on day 30, each with the end-of-run result off and on. The command fails when a page's content is taller than the window.
 - Browser: find_browser() takes the path in HOTEL_MARKET_BROWSER, else the first of BROWSERS found: a Chromium under /Applications or in Playwright's cache, Google Chrome, or a chromium or chrome on the PATH.
 - Driver: the Browser class drives it over the DevTools pipe, file descriptors 3 and 4, with no package beyond the standard library. The server's output goes to SERVER_LOG beside the screenshots, printed when a page does not render.

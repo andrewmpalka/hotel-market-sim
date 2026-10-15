@@ -45,7 +45,7 @@ With make, on a Mac or Linux machine:
     make run SEED=7            # the template run; make live SEED=7 uses the model
     make bench FIRST=1 LAST=3  # the reviewers benchmarked; make bench BENCH=--template runs it offline
     make day SEED=7 DAY=20     # a day through the stored tables; make day-replay DAY=20 replays it
-    make demo SEED=7           # write demo.duckdb from the recorded run and start the demo page
+    make demo SEED=7           # write demo.duckdb from the recorded run and start the demo page on 127.0.0.1
     make screenshots           # screenshot the demo page at 1440 by 900, in both states, and fail if a page is taller than the window
     make help                  # every target
 
