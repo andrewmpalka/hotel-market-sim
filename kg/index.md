@@ -8,19 +8,19 @@ nodes and its words, len(text.split()) over the file.
 
 | File | Nodes | Words |
 | --- | ---: | ---: |
-| modules.md | 30 | 4,177 |
+| modules.md | 31 | 4,290 |
 | data.md | 33 | 4,403 |
 | rules.md | 132 | 5,762 |
 | shocks.md | 7 | 762 |
 | concepts.md | 11 | 1,205 |
 | measures.md | 14 | 962 |
 | sources.md | 4 | 855 |
-| decisions.md | 67 | 9,884 |
-| results.md | 42 | 7,054 |
+| decisions.md | 67 | 9,875 |
+| results.md | 43 | 7,276 |
 | forks.md | 14 | 2,039 |
-| unknowns.md | 16 | 2,183 |
-| every node file | 370 | 39,286 |
-| index.md | | 2,988 |
+| unknowns.md | 16 | 2,180 |
+| every node file | 372 | 39,609 |
+| index.md | | 2,996 |
 
 ## Modules (`modules.md`)
 
@@ -54,6 +54,7 @@ nodes and its words, len(text.split()) over the file.
 - MOD-28 [C] scripts/demo_screenshots.py
 - MOD-29 [C] scripts/no_comp_raise.py
 - MOD-30 [C] scripts/measures.py
+- MOD-31 [C] scripts/tick_sweep.py
 
 ## Data (`data.md`)
 
@@ -251,11 +252,11 @@ nodes and its words, len(text.split()) over the file.
 - DEC-18 [H] One candidate moved all of a flag's stay dates together
 - DEC-19 [C] The best candidate is chosen per day of the week within a flag
 - DEC-20 [H] Expected bookings were capped at the unsold rooms
-- DEC-21 [C] Estimated bookings are the exact expectation E[min(N, unsold)] for a Poisson N
+- DEC-21 [C] Estimated bookings are E[min(N, unsold)] for a Poisson N
 - DEC-22 [C] One random number per booking draw, fixed by the seed
 - DEC-26 [H] AGENT_ELASTICITY is the agent's own constant and never imports the simulator's
-- DEC-35 [C] Every number is synthetic, and the schedule's columns follow a published data dictionary
-- DEC-36 [C] The summary reports what the run produces; nothing is tuned to force a gain
+- DEC-35 [C] Every number is synthetic; the schedule's columns follow a published dictionary
+- DEC-36 [C] The summary reports what the run produces; nothing is tuned
 - DEC-37 [H] Competitor noise drawn once per competitor and stay date
 - DEC-62 [C] The shop noise is fresh every shop day
 - DEC-38 [C] The agent can learn its elasticity from the bookings
@@ -341,6 +342,7 @@ nodes and its words, len(text.split()) over the file.
 - RES-40 [C] The agent against the never-cut policy
 - RES-41 [C] The convention without the competitors' raise
 - RES-42 [C] The default agent in a revenue manager's measures
+- RES-43 [O] The clock: one tick a day against four on seeds 1 to 20
 
 ## Open forks (`forks.md`)
 
@@ -374,6 +376,6 @@ nodes and its words, len(text.split()) over the file.
 - UNK-11 [U] How competitors react to a rate change, and what it does to revenue
 - UNK-12 [U] The effect of cancellations, no-shows, groups and room types
 - UNK-13 [U] Whether a 5% cut, the largest on the menu, is enough
-- UNK-14 [U] The bias in an elasticity estimate when a hotel prices to demand
+- UNK-14 [U] The estimate's bias when a hotel prices to demand
 - UNK-15 [U] The real market-level price elasticity
 - UNK-16 [O] What the reviewers do on world v2

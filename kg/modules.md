@@ -290,3 +290,11 @@ which is also the order in which they depend on each other.
 - Break-even: cost_table() gives the cost per occupied room, as a share of the start rate, at which a hotel's gain is zero ([[RUL-61]], [[UNK-06]]). A hotel whose room revenue rose prints a share below zero.
 - Tests: tests/test_measures.py
 - Evidence: test_the_measures_are_the_books_measures_over_the_seeds
+
+### MOD-31 [C] scripts/tick_sweep.py
+- File: scripts/tick_sweep.py
+- Owns: the template sweep on the daily clock and on a finer one, side by side ([[RES-43]]). seed_result() runs one seed at one clock; sweep() sums the seeds; table() prints the rows and the paired difference.
+- Lag: for the day-20 filing it counts the ticks from the filing's tick ([[RUL-130]]) to the first accepted raise with a seats cause on or after it, by moment_index in [[MOD-07]].
+- Run: each seed is the command's template run ([[MOD-12]]) at --ticks 1 and at the finer clock, with its decisions file in a temporary folder, and no model is called.
+- Tests: tests/test_tick_sweep.py
+- Evidence: test_the_sweep_runs_a_seed_at_each_clock_and_reads_the_lag_from_the_filing

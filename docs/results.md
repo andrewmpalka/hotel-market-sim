@@ -631,3 +631,18 @@ Seeds 1 to 20: what the agent run gave up and saved a seed, per hotel, and the c
 | Airport hotel | 632 | 2.81% | -$21,851 | +$29,482 | +$7,630 | 24.7% |
 
 The agent gives up rooms at every hotel, 5, 11, 166 and 632 room nights a seed by hotel, and RevPAR is flat at the two downtown hotels and lower at the other two, so the gain is room cost not paid rather than revenue earned. The airport hotel's gain holds only while the cost of an occupied room is above 24.7% of the rate, the lifestyle hotel's above 14.1% and the full-service hotel's above 18.2%, while the convention hotel gains at any cost because its room revenue rose.
+
+## The clock: one tick a day against four
+
+`python scripts/tick_sweep.py --seeds 1 20`, run on 2026-10-15 on world v2. Each seed runs twice with the template: at `--ticks 1`, the daily loop, and at `--ticks 4`, where each day is cut into four ticks, the rate shop lands at tick 2, the airlines' filings at tick 3, the events at tick 4 and the bookings at every tick, and the agent runs after each tick, reading the feeds as of that tick. The world is the same in both runs, and a fixed-rate run books the same rooms at either clock, because each day's bookings are drawn once and assigned to ticks from the hotel's own stream; the two runs differ only in when the agent saw the day's data and acted. Decisions off the last tick counts the entries decided at a tick other than the day's last, and accepted off the last tick the plans accepted among them. The lag is counted in ticks from the tick the day-20 filing lands at to the first accepted raise with a seats cause on the stay dates it changed, averaged over the seeds with one.
+
+Seeds 1 to 20 at one tick a day and at four, the template in the true mode, each against the fixed-rate run, run on 2026-10-15 on world v2.
+
+| Ticks a day | Mean change a seed | SD | SE | Range | Ahead | p | Decisions off the last tick | Accepted off the last tick | Seeds with a raise after the day-20 filing | Mean lag in ticks |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | +$16,164 | 3,166 | 708 | +$11,589 to +$23,394 | 20 of 20 | <0.001 | 0 | 0 | 20 of 20 | 0.00 |
+| 4 | +$16,204 | 3,113 | 696 | +$12,242 to +$23,524 | 20 of 20 | <0.001 | 4504 | 86 | 20 of 20 | 0.00 |
+
+Paired difference, 4 ticks minus 1: mean +$40 a seed (sd 483, se 108), range -$1,246 to +$1,001, the finer clock ahead in 10 of 20 seeds, sign test p 1.0.
+
+A finer clock earns nothing in this world: the paired difference is +$40 a seed with a standard error of $108, the finer clock ahead in 10 seeds of 20, which a sign test puts at p 1.0, because the world's demand moves once a day except at the shocks, and that is the expected result. The 4,504 decisions off the last tick are mostly pace flags the agent reads again at every tick, and 86 plans were accepted at a tick other than the last. The lag from the day-20 filing to the first accepted raise on its stay dates is 0 ticks at both clocks: the raise comes at the tick the filing lands, which at four ticks is three quarters of the way through the day rather than its end. A finer clock would earn in worlds where shops, filings or bookings move within the day, which this world's feeds do not.

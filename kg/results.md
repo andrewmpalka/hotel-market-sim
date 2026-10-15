@@ -384,3 +384,12 @@ here for the rest.
 - Evidence: test_the_measures_are_the_books_measures_over_the_seeds
 - Links: [[MEA-01]], [[MEA-02]], [[MEA-03]], [[RUL-61]], [[RES-01]], [[UNK-06]], [[MOD-30]]
 
+### RES-43 [O] The clock: one tick a day against four on seeds 1 to 20
+- Ran: `python scripts/tick_sweep.py --seeds 1 20` on 2026-10-15 on world v2: each seed with the template at --ticks 1 and at --ticks 4, the same world, each against the fixed-rate run ([[MOD-31]]).
+- Result: at four ticks the agent earns +$16,204 a seed against +$16,164 at one. The paired difference is +$40 a seed (sd $483, se $108), range -$1,246 to +$1,001, the finer clock ahead in 10 of 20, p 1.0.
+- Finding: a finer clock earns nothing in this world, because the world's demand moves once a day except at the shocks, and that is the expected result. It would earn where shops, filings or bookings move within the day.
+- Ticks: 4,504 decisions were made at a tick other than the day's last, mostly pace flags read again at every tick, and 86 plans were accepted at one.
+- Lag: the first accepted raise after the day-20 filing comes at the filing's own tick in 20 of 20 seeds at both clocks, a lag of 0 ticks; at four ticks that is tick 3 of the day, not its end.
+- Table: docs/results.md, "Seeds 1 to 20 at one tick a day and at four"
+- Links: [[DEC-67]], [[RUL-128]], [[RUL-130]], [[RES-01]], [[MOD-31]]
+

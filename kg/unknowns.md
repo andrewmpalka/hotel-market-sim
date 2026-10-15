@@ -99,7 +99,7 @@ and a RES node records the run. A claim that no test can confirm stays [U].
 - Resolves when: a run with a 10% cut on the menu is compared with the default on seeds 1 to 20.
 - Links: [[RUL-43]], [[RUL-42]], [[DEC-13]], [[RES-07]]
 
-### UNK-14 [U] The bias in an elasticity estimate when a hotel prices to demand
+### UNK-14 [U] The estimate's bias when a hotel prices to demand
 - Unknown: the estimator ([[MOD-16]]) reads the rate as given. A real hotel raises its rate when demand is strong. High rates then come with high bookings, and the slope reads too flat.
 - Best guess: the bias pulls a real estimate toward zero. The simulator does not show it, because its agent changes rates only on flags.
 - Resolves when: never within this repository; a real estimate would need an instrument or a controlled test ([[FRK-05]]).

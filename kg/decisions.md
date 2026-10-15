@@ -219,7 +219,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Commit: abef71f
 - Links: [[MOD-08]], [[RES-12]]
 
-### DEC-21 [C] Estimated bookings are the exact expectation E[min(N, unsold)] for a Poisson N
+### DEC-21 [C] Estimated bookings are E[min(N, unsold)] for a Poisson N
 - Decided: expected_bookings(mean, unsold) sums the Poisson probabilities below the unsold count and gives the rest to a sell-out. That is the booking noise the simulator draws.
 - Replaces: [[DEC-20]]
 - Reason: a night expected 97% full still sells out fairly often, so a small raise there pays.
@@ -245,7 +245,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Commit: abef71f
 - Links: [[RUL-39]], [[RUL-21]], [[FRK-02]], [[DEC-38]]
 
-### DEC-35 [C] Every number is synthetic, and the schedule's columns follow a published data dictionary
+### DEC-35 [C] Every number is synthetic; the schedule's columns follow a published dictionary
 - Decided: the city, airports, airlines, flights, hotels, competitors and bookings are invented. The schedule table's column names follow Cirium's published schedule data dictionary. The code therefore reads data shaped like a real feed.
 - Policy: the repository holds no Cirium data and has no affiliation with Cirium. It names no real hotel brand or employer anywhere.
 - Replaces: a schedule whose IS_WETLEASE was set wherever the carriers differed. A differing operating carrier is capacity purchase, so the flag is now False on every row. The carrier pair expresses the arrangement ([[MOD-01]]).
@@ -255,7 +255,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: review
 - Links: [[DAT-01]], [[MOD-01]], [[RUL-06]]
 
-### DEC-36 [C] The summary reports what the run produces; nothing is tuned to force a gain
+### DEC-36 [C] The summary reports what the run produces; nothing is tuned
 - Decided: the summary reports the comparison of the two runs as it comes out. It shows every rate-changing decision and the plans that lost money. The README states that the agent shares the simulator's demand formula.
 - Replaces: nothing.
 - Reason: a tuned gain would say nothing about the loop.
