@@ -44,7 +44,7 @@ from hotel_market.plan import (
     entry_for,
 )
 from hotel_market.sources import Event, Sources
-from hotel_market.world import Hotel
+from hotel_market.world import TICKS_PER_DAY, Hotel
 
 MIN_STAY = "two-night minimum stay"
 
@@ -133,9 +133,11 @@ class Agent:
         customer: Customer | None = None,
         model: str | None = None,
         market_elasticity: float | None = None,
+        ticks: int = TICKS_PER_DAY,
     ):
         self.customer = customer or demo()
         self.model = model or getattr(client, "model", None) or MODEL
+        self.ticks = ticks  # the ticks a day is cut into; the agent runs after each
         # The run's market price response, the customer file's unless the run set another.
         self.market_elasticity = (
             self.customer.market_elasticity if market_elasticity is None else market_elasticity
@@ -146,6 +148,8 @@ class Agent:
             folder += f"-{self.customer.target}"
         if self.model != MODEL:
             folder += f"-{self.model}"
+        if ticks != TICKS_PER_DAY:
+            folder += f"-ticks{ticks}"  # a finer clock asks other questions
         self.cache_dir = Path(cache_dir) / folder.replace(":", "-").replace(" ", "-")
         self.client = client
         self.replay = replay

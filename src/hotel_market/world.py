@@ -21,6 +21,10 @@ from hotel_market.schedule import HORIZON_DAYS, SIM_START
 
 SIM_DAYS = 60  # the agent decides on days 0 to 59; bookings run on to day 149
 LOOKAHEAD_DAYS = 90  # stay dates each hotel looks at on each simulation day
+# The ticks a day is cut into: the agent runs after each, and a moment is (day, tick) with the
+# ticks counted 1 to N. At 1, the default, a tick is the whole day and the loop is the daily one.
+# --ticks N sets a run's value; the sources default a question to the last tick of its day.
+TICKS_PER_DAY = 1
 
 
 @dataclass(frozen=True)
@@ -72,6 +76,11 @@ def stay_window(day: int) -> range:
     last day of the schedule.
     """
     return range(day, min(day + LOOKAHEAD_DAYS, HORIZON_DAYS))
+
+
+def last_tick(ticks: int = TICKS_PER_DAY) -> int:
+    """The last tick of a day, which a question with no tick means: after the whole day."""
+    return ticks
 
 
 def weekday(day: int) -> int:

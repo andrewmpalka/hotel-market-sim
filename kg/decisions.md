@@ -302,7 +302,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: test_under_the_cautious_rule_a_candidate_that_loses_at_one_end_is_held, test_a_plan_needs_at_least_the_minimum_value_to_enter_the_queue, test_a_cautious_agent_records_the_band_and_what_it_rejected
 - Links: [[DEC-39]], [[CON-11]], [[RUL-67]], [[MOD-08]], [[FRK-05]], [[RES-05]], [[RES-13]]
 
-### DEC-44 [C] Every request figure is a display string, and the prompt says to copy it whole
+### DEC-44 [C] Every request figure is a display string the prompt says to copy whole
 - Decided: every figure in the request ([[DAT-16]], built by [[MOD-09]]) is a display string written by code ([[MOD-11]]). The raw number stays in the log line and the stored tables ([[DAT-13]], [[DAT-18]]).
 - Phrases: a signed quantity reads as a phrase with its direction in words and no sign. A range reads as one phrase, and as the single value when both ends read the same.
 - Format: a rate, a median, a floor, a ceiling or a cost reads to the dollar. An estimate reads to the nearest $10, rooms to the room, and an elasticity with up to two decimals. A band-end gain under $10 reads to the dollar ([[DEC-56]]).
@@ -481,7 +481,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: test_the_agent_reads_only_through_the_interfaces, test_estimate_is_expected_contribution_on_the_unsold_rooms
 - Links: [[MOD-08]], [[MOD-09]], [[MOD-10]], [[MOD-11]]
 
-### DEC-33 [C] ruff formats the code at 100 columns, and the format check is part of lint
+### DEC-33 [C] ruff formats the code at 100 columns, and lint checks the format
 - Decided: ruff format owns the layout, and make lint runs ruff check . and ruff format --check .. The route table in schedule.py keeps one route per line under a bare fmt: off marker.
 - Note: ruff ignores the marker when text follows it on the same line.
 - Replaces: hand formatting at up to 120 columns.
@@ -567,7 +567,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: test_the_page_imports_nothing_from_the_package_or_the_simulator, test_the_page_does_no_arithmetic_on_a_figure, test_the_reasons_come_from_the_recorded_live_run
 - Links: [[MOD-26]], [[MOD-27]], [[DAT-33]], [[DAT-28]], [[DAT-29]], [[DEC-42]], [[DEC-58]], [[RUL-01]], [[RES-02]]
 
-### DEC-58 [C] The demo page fits one window, and every date on it is a calendar date
+### DEC-58 [C] The demo page fits one window, and every date is a calendar date
 - Decided: the page fits 1440 by 900 pixels with nothing cut off: the title, the news, both charts, the queue and the scorecard. scripts/demo_screenshots.py ([[MOD-28]]) screenshots three pages headless and fails when one is taller.
 - Dates: every stay date reads as a calendar date with its day of the week and the day number in brackets, on the axes and in the text ([[DAT-33]]). The model's recorded reasons keep their day numbers, so the brackets tie the two together.
 - Plan: on the day a plan is accepted, the rate chart draws the new rate as a dashed line beside the current one. A held day of the week keeps the current rate on that line.

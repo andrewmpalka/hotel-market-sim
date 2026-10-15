@@ -48,7 +48,7 @@ from hotel_market.customer import Customer, demo
 from hotel_market.demand import DEMAND_BIAS, expected_demand, normal_demand
 from hotel_market.schedule import DEFAULT_SCENARIO, HORIZON_DAYS, Scenario, with_churn
 from hotel_market.shops import REACTION_LAG, comp_median
-from hotel_market.world import SIM_DAYS, Hotel, stay_window
+from hotel_market.world import SIM_DAYS, TICKS_PER_DAY, Hotel, stay_window
 
 ELASTICITY = 1.5  # bookings scale with (rate / comp median) ** -ELASTICITY
 BOOKING_STREAM = (
@@ -105,9 +105,11 @@ class Books:
         market_elasticity: float | None = None,
         scenario: Scenario = DEFAULT_SCENARIO,
         churn: bool = False,
+        ticks: int = TICKS_PER_DAY,
     ):
         self.seed = seed
         self.customer = customer or demo()
+        self.ticks = ticks  # the ticks a day is cut into; the sources default to the last
         self.demand_bias = demand_bias  # multiplies the preload and every day's expected demand
         self.react = react  # whether competitors react to the hotels' rate changes
         # The market's response to the median's level: the customer file's unless the run set one.
@@ -250,6 +252,7 @@ def simulate(
     market_elasticity: float | None = None,
     scenario: Scenario = DEFAULT_SCENARIO,
     churn: bool = False,
+    ticks: int = TICKS_PER_DAY,
 ) -> Books:
     """Run the booking loop on days 0 to last_day (149 for a full run) and return the books.
 
@@ -259,9 +262,9 @@ def simulate(
     competitors follow the hotels' rate changes (shops.py). The market elasticity
     is the market's response to the comp median's level (demand.py), the
     customer file's unless given. The scenario is the air schedule's filings,
-    and churn adds the seed's weekly revisions.
+    and churn adds the seed's weekly revisions. ticks is the clock the run's sources answer on.
     """
-    books = Books(seed, customer, demand_bias, react, market_elasticity, scenario, churn)
+    books = Books(seed, customer, demand_bias, react, market_elasticity, scenario, churn, ticks)
     for day in range(last_day + 1):
         books.book(day)
         if decide is not None and day < SIM_DAYS:

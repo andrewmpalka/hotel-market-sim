@@ -707,10 +707,11 @@ def test_the_command_and_the_bench_take_a_demand_bias(monkeypatch, capsys):
         scenario=DEFAULT_SCENARIO,
         churn=False,
         policy=None,
+        ticks=1,
     ):
         seen["bias"], seen["reviewers"], seen["react"] = demand_bias, list(reviewers), react
         seen["market"], seen["scenario"], seen["churn"] = market_elasticity, scenario, churn
-        seen["policy"] = policy
+        seen["policy"], seen["ticks"] = policy, ticks
         return [ArmResult(mode, ROWS, reviewer=r) for mode in modes for r in reviewers]
 
     monkeypatch.setattr("hotel_market.cli.sweep", fake_sweep)

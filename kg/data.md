@@ -222,7 +222,7 @@ the plans, the model's request and answer, and what the command writes.
 - Bookings: on_books(as_of_day) by [hotel row, stay day] after that day's bookings, and rates(as_of_day), each hotel's rate in force that day. history(as_of_day) is a [[DAT-26]].
 - RateShops: competitor_rates(shop_day, hotel, stay_day), median(...), the median of those rates, and median_history(as_of_day) by [shop day, hotel row, stay day]. first_median(hotel) is the base-rate median on both routes ([[DEC-62]]).
 - Schedules: seats(as_of_day) and passengers(as_of_day) by stay day as filed by the day. The interface computes passenger_change against the first schedule known and passenger_revision against the day before ([[DEC-63]]).
-- Events: known(as_of_day). Sources(bookings, shops, schedules, events) bundles one of each. Every method returns only what was known on the day it is asked on, and a source made for a day refuses a later one ([[RUL-03]], [[DEC-61]]).
+- Events: known(as_of_day). Sources bundles one of each feed. Every method also takes as_of_tick, the day's last tick by default; a source made for a moment refuses a later one ([[RUL-03]], [[RUL-128]], [[DEC-61]]).
 - Written by: [[MOD-19]], the simulator's implementation, and [[MOD-21]], the one over the stored tables ([[DAT-28]])
 - Read by: [[MOD-07]], [[MOD-18]], [[MOD-16]], [[MOD-10]]; nothing on the agent's side reads anything else ([[DEC-40]])
 - Evidence: test_the_agent_reads_only_through_the_interfaces, test_the_simulated_sources_answer_as_of_the_day, test_the_stored_sources_answer_as_the_simulated_ones_do

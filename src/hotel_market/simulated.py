@@ -5,12 +5,13 @@ simulator knew on that day. The bookings come from the Books' daily log and the 
 the shops the simulator used. The schedule and event records are as of that day. deciding() wraps
 an Agent as the simulator's decide hook.
 
-The sources are made for a day, the as_of_day the simulator is deciding. Each copies what it will
-read when it is made, the log through that day and the seats and events known by then, and holds
-nothing else: no Books, no Scenario and no draw of a later day, so a decider cannot reach tomorrow
-through an attribute either. A question about a later day raises ValueError, and every array they
-hand out is a copy, so nothing the agent does reaches the simulator's own log. When they are made
-with no day, as a test may make them, they copy the whole log and answer any day.
+The sources are made for a day, the as_of_day the simulator is deciding, and for a tick of it.
+Each copies what it will read when it is made, the log through that day and the seats and events
+known by then, and holds nothing else: no Books, no Scenario and no draw of a later day, so a
+decider cannot reach tomorrow through an attribute either. A question about a later day, or a
+later tick of the day, raises ValueError, and every array they hand out is a copy, so nothing the
+agent does reaches the simulator's own log. When they are made with no day, as a test may make
+them, they copy the whole log and answer any day.
 
 Run `python -m hotel_market.simulated --seed 7` to print the flags of a fixed-rate run.
 """
@@ -48,7 +49,7 @@ from hotel_market.sources import (
     Schedules,
     Sources,
 )
-from hotel_market.world import SIM_DAYS, Hotel
+from hotel_market.world import SIM_DAYS, TICKS_PER_DAY, Hotel
 
 
 def _through(as_of_day: int | None) -> int:
@@ -59,18 +60,20 @@ def _through(as_of_day: int | None) -> int:
 class SimulatedBookings(Limited, Bookings):
     """The Books' daily log through the day, copied when the source is made, read as of a day."""
 
-    def __init__(self, books: Books, as_of_day: int | None = None):
+    def __init__(self, books: Books, as_of_day: int | None = None, as_of_tick: int | None = None):
         self.as_of_day = as_of_day
+        self.as_of_tick = as_of_tick
+        self.ticks = books.ticks
         self._preload = books.preload.copy()
         self._daily_rooms = books.daily_rooms[: _through(as_of_day)].copy()
         self._daily_rates = books.daily_rates[: _through(as_of_day)].copy()
 
-    def on_books(self, as_of_day: int) -> np.ndarray:
-        self._known(as_of_day)
+    def on_books(self, as_of_day: int, as_of_tick: int | None = None) -> np.ndarray:
+        self._known(as_of_day, as_of_tick)
         return self._preload + self._daily_rooms[: as_of_day + 1].sum(axis=0)
 
-    def rates(self, as_of_day: int) -> np.ndarray:
-        self._known(as_of_day)
+    def rates(self, as_of_day: int, as_of_tick: int | None = None) -> np.ndarray:
+        self._known(as_of_day, as_of_tick)
         return self._daily_rates[as_of_day].copy()
 
     def history(self, as_of_day: int) -> BookingHistory:
@@ -87,8 +90,10 @@ class SimulatedRateShops(Limited, RateShops):
     through the day, copied. With the reaction on, each shop carries the hotel's lagged change,
     read from the copied rates, so the agent sees the shop the simulator used."""
 
-    def __init__(self, books: Books, as_of_day: int | None = None):
+    def __init__(self, books: Books, as_of_day: int | None = None, as_of_tick: int | None = None):
         self.as_of_day = as_of_day
+        self.as_of_tick = as_of_tick
+        self.ticks = books.ticks
         self._seed = books.seed
         self._react = books.react
         self._daily_rates = books.daily_rates[: _through(as_of_day)].copy()
@@ -97,8 +102,10 @@ class SimulatedRateShops(Limited, RateShops):
     def _hotel_change(self, shop_day: int, hotel: Hotel, stay_day: int) -> float:
         return lagged_change(self._daily_rates, self._react, shop_day, hotel, stay_day)
 
-    def competitor_rates(self, shop_day: int, hotel: Hotel, stay_day: int) -> dict[str, float]:
-        self._known(shop_day)
+    def competitor_rates(
+        self, shop_day: int, hotel: Hotel, stay_day: int, as_of_tick: int | None = None
+    ) -> dict[str, float]:
+        self._known(shop_day, as_of_tick)
         return comp_rates(
             shop_day,
             hotel,
@@ -107,8 +114,10 @@ class SimulatedRateShops(Limited, RateShops):
             hotel_change=self._hotel_change(shop_day, hotel, stay_day),
         )
 
-    def median(self, shop_day: int, hotel: Hotel, stay_day: int) -> float:
-        self._known(shop_day)
+    def median(
+        self, shop_day: int, hotel: Hotel, stay_day: int, as_of_tick: int | None = None
+    ) -> float:
+        self._known(shop_day, as_of_tick)
         return comp_median(
             shop_day,
             hotel,
@@ -127,20 +136,30 @@ class SimulatedSchedules(Limited, Schedules):
     to arriving seats and passengers once per filing. It holds those counts and not the scenario,
     so a filing still to come is not in it."""
 
-    def __init__(self, scenario: Scenario = DEFAULT_SCENARIO, as_of_day: int | None = None):
+    def __init__(
+        self,
+        scenario: Scenario = DEFAULT_SCENARIO,
+        as_of_day: int | None = None,
+        as_of_tick: int | None = None,
+        ticks: int = TICKS_PER_DAY,
+    ):
         self.as_of_day = as_of_day
+        self.as_of_tick = as_of_tick
+        self.ticks = ticks
         last = HORIZON_DAYS - 1 if as_of_day is None else as_of_day
         self._filed = {day: _counts(day, scenario) for day in (-1, *scenario.filing_days(last))}
 
-    def _filing(self, as_of_day: int) -> tuple[np.ndarray, np.ndarray]:
-        self._known(as_of_day)
+    def _filing(
+        self, as_of_day: int, as_of_tick: int | None = None
+    ) -> tuple[np.ndarray, np.ndarray]:
+        self._known(as_of_day, as_of_tick)
         return self._filed[max(day for day in self._filed if day <= as_of_day)]
 
-    def seats(self, as_of_day: int) -> np.ndarray:
-        return self._filing(as_of_day)[0]
+    def seats(self, as_of_day: int, as_of_tick: int | None = None) -> np.ndarray:
+        return self._filing(as_of_day, as_of_tick)[0]
 
-    def passengers(self, as_of_day: int) -> np.ndarray:
-        return self._filing(as_of_day)[1]
+    def passengers(self, as_of_day: int, as_of_tick: int | None = None) -> np.ndarray:
+        return self._filing(as_of_day, as_of_tick)[1]
 
 
 @lru_cache(maxsize=None)
@@ -157,24 +176,33 @@ class SimulatedEvents(Limited, Events):
     """The events announced by the day, copied from the calendar, so an event still to be
     announced is not in it."""
 
-    def __init__(self, as_of_day: int | None = None):
+    def __init__(
+        self,
+        as_of_day: int | None = None,
+        as_of_tick: int | None = None,
+        ticks: int = TICKS_PER_DAY,
+    ):
         self.as_of_day = as_of_day
+        self.as_of_tick = as_of_tick
+        self.ticks = ticks
         self._events = events_as_of(HORIZON_DAYS if as_of_day is None else as_of_day)
 
-    def known(self, as_of_day: int) -> list[Event]:
-        self._known(as_of_day)
+    def known(self, as_of_day: int, as_of_tick: int | None = None) -> list[Event]:
+        self._known(as_of_day, as_of_tick)
         return [event for event in self._events if event.known_day <= as_of_day]
 
 
-def simulated_sources(books: Books, as_of_day: int | None = None) -> Sources:
-    """The four sources, made for as_of_day from copies of what these books knew by then: a
-    question about a later day is refused, and no attribute reaches the books. With no day they
-    answer any day."""
+def simulated_sources(
+    books: Books, as_of_day: int | None = None, as_of_tick: int | None = None
+) -> Sources:
+    """The four sources, made for as_of_day, and for a tick of it, from copies of what these
+    books knew by then: a question about a later day or tick is refused, and no attribute reaches
+    the books. With no day they answer any day, and with no tick any tick of the day."""
     return Sources(
-        SimulatedBookings(books, as_of_day),
-        SimulatedRateShops(books, as_of_day),
-        SimulatedSchedules(books.scenario, as_of_day),
-        SimulatedEvents(as_of_day),
+        SimulatedBookings(books, as_of_day, as_of_tick),
+        SimulatedRateShops(books, as_of_day, as_of_tick),
+        SimulatedSchedules(books.scenario, as_of_day, as_of_tick, books.ticks),
+        SimulatedEvents(as_of_day, as_of_tick, books.ticks),
     )
 
 

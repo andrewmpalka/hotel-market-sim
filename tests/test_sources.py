@@ -219,3 +219,51 @@ def test_a_decider_cannot_reach_a_future_draw_the_live_rooms_or_the_scenarios_sh
     assert all(held.shape[0] == 6 for held in arrays if held.ndim == 3)  # the log through day 5
     assert seen["events"]["_events"] == []  # the convention is announced on day 10
     assert set(seen["schedules"]["_filed"]) == {-1}  # the first filing is on day 20
+
+
+def test_a_source_made_for_a_tick_refuses_a_later_tick_of_its_day_on_both_routes(tmp_path):
+    """A source made for (day, tick) answers that tick, the ticks before it and every earlier day,
+    and refuses a later tick of its day as it refuses a later day. With no tick named, a
+    question means the day's last tick, which the source made for an earlier tick also refuses.
+    The same guard runs over the stored tables."""
+    from hotel_market import stored
+
+    books = simulate(7, last_day=20, ticks=4)
+    hotel = DEMO.hotels[0]
+    connection = stored.connect(tmp_path / "ticks.duckdb")
+    try:
+        for sources in (
+            simulated_sources(books, 20, 2),
+            stored.stored_sources(connection, DEMO, 20, 2, ticks=4),
+        ):
+            assert (sources.bookings.ticks, sources.events.ticks) == (4, 4)
+            assert sources.bookings.on_books(20, 2).shape == (len(DEMO.hotels), 150)
+            assert sources.bookings.on_books(20, 1).shape == (len(DEMO.hotels), 150)
+            assert sources.bookings.on_books(19).shape == (len(DEMO.hotels), 150)
+            assert sources.events.known(19) == sources.events.known(19, 4)
+            for ask in (
+                lambda: sources.bookings.on_books(20, 3),
+                lambda: sources.bookings.on_books(20),  # no tick: the last, tick 4
+                lambda: sources.bookings.rates(20, 4),
+                lambda: sources.shops.competitor_rates(20, hotel, 50, 3),
+                lambda: sources.shops.median(20, hotel, 50),
+                lambda: sources.schedules.seats(20, 3),
+                lambda: sources.schedules.passengers(20),
+                lambda: sources.schedules.passenger_change(20, 3),
+                lambda: sources.schedules.passenger_revision(20),
+                lambda: sources.events.known(20, 3),
+            ):
+                with pytest.raises(ValueError, match="tick [34] of day 20 on tick 2"):
+                    ask()
+            with pytest.raises(ValueError, match="day 21 on day 20"):
+                sources.events.known(21, 1)
+            with pytest.raises(ValueError, match="tick 5 is not 1 to 4"):
+                sources.events.known(19, 5)
+    finally:
+        connection.close()
+    # With one tick a day, the default, every question means the whole day, as before.
+    daily = simulated_sources(simulate(7, last_day=20), 20)
+    assert daily.bookings.ticks == 1 and daily.bookings.as_of_tick is None
+    assert (daily.bookings.on_books(20) == daily.bookings.on_books(20, 1)).all()
+    with pytest.raises(ValueError, match="tick 2 is not 1 to 1"):
+        daily.bookings.on_books(20, 2)

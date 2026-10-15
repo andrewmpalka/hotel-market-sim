@@ -48,7 +48,7 @@ and a RES node records the run. A claim that no test can confirm stays [U].
 - Resolves when: never within this repository.
 - Links: [[DEC-12]], [[FRK-01]], [[DEC-41]]
 
-### UNK-07 [U] The real price elasticity, and what the learned estimate does and does not settle
+### UNK-07 [U] The real price elasticity, and what the learned estimate settles
 - Unknown: the real elasticity of any hotel. 1.5 is assumed in the simulator ([[RUL-21]]) and, in the default mode, handed to the agent as an oracle ([[RUL-56]]).
 - Settled: the agent recovers a value it is not told ([[DEC-38]], [[RES-10]]). Day-59 estimates from 1.0 or 2.0 land at 1.36 to 1.68 ([[RES-04]]). What a wrong value costs is measured ([[RES-03]] to [[RES-05]]), which closed [[FRK-02]].
 - Reacting: the simulator's 1.5 fits a hotel whose competitors never move. Under the reaction the true mode is too timid. The learner's lower estimate raises more and is right to ([[RES-26]]). A reacting market needs the effective one.

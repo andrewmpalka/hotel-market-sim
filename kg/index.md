@@ -8,19 +8,19 @@ nodes and its words, len(text.split()) over the file.
 
 | File | Nodes | Words |
 | --- | ---: | ---: |
-| modules.md | 30 | 4,118 |
-| data.md | 33 | 4,398 |
-| rules.md | 127 | 5,474 |
+| modules.md | 30 | 4,119 |
+| data.md | 33 | 4,393 |
+| rules.md | 128 | 5,561 |
 | shocks.md | 7 | 762 |
 | concepts.md | 11 | 1,197 |
 | measures.md | 14 | 962 |
 | sources.md | 4 | 855 |
-| decisions.md | 66 | 9,727 |
+| decisions.md | 66 | 9,720 |
 | results.md | 42 | 7,055 |
 | forks.md | 14 | 2,039 |
-| unknowns.md | 16 | 2,195 |
-| every node file | 364 | 38,782 |
-| index.md | | 2,996 |
+| unknowns.md | 16 | 2,191 |
+| every node file | 365 | 38,854 |
+| index.md | | 2,991 |
 
 ## Modules (`modules.md`)
 
@@ -108,6 +108,7 @@ nodes and its words, len(text.split()) over the file.
 - RUL-127 [C] RAMP_DAYS — src/hotel_market/schedule.py
 - RUL-12 [C] SIM_DAYS — src/hotel_market/world.py
 - RUL-13 [C] LOOKAHEAD_DAYS — src/hotel_market/world.py
+- RUL-128 [C] TICKS_PER_DAY — src/hotel_market/world.py
 - RUL-14 [H] FLOOR_SHARE — kg/rules.md
 - RUL-15 [H] CEILING_SHARE — kg/rules.md
 - RUL-16 [H] COST_SHARE — kg/rules.md
@@ -255,7 +256,7 @@ nodes and its words, len(text.split()) over the file.
 - DEC-38 [C] The agent can learn its elasticity from the bookings
 - DEC-39 [C] The cautious rule changes a rate only where it beats holding across the band
 - DEC-43 [C] The cautious rule tests the band alone, and one minimum applies to the plan
-- DEC-44 [C] Every request figure is a display string, and the prompt says to copy it whole
+- DEC-44 [C] Every request figure is a display string the prompt says to copy whole
 - DEC-45 [C] The tables keep each decision's request, answer and outcome
 - DEC-46 [T] The agent reprices when data arrives during the day
 - DEC-49 [C] The benchmark measures the reviewer in the mismatched modes
@@ -278,7 +279,7 @@ nodes and its words, len(text.split()) over the file.
 - DEC-30 [C] No hosted CI; the checks run locally through make and pytest
 - DEC-31 [H] One agent.py held the planning, the model call and the daily loop
 - DEC-32 [C] The agent is three modules: plan.py, model.py and agent.py, with text.py for shared wording
-- DEC-33 [C] ruff formats the code at 100 columns, and the format check is part of lint
+- DEC-33 [C] ruff formats the code at 100 columns, and lint checks the format
 - DEC-34 [C] The answer schema lists the request's own entry ids and options as enums
 - DEC-40 [C] The agent reads data only through four interfaces; the simulator is one implementation
 - DEC-41 [C] Everything specific to the market is a customer file
@@ -287,7 +288,7 @@ nodes and its words, len(text.split()) over the file.
 - DEC-48 [C] The bench is one sweep with a reviewer per arm
 - DEC-56 [C] The band verdict is a display field; a small band-end gain reads to the dollar
 - DEC-57 [C] A read-only demo page over a file code writes
-- DEC-58 [C] The demo page fits one window, and every date on it is a calendar date
+- DEC-58 [C] The demo page fits one window, and every date is a calendar date
 - DEC-60 [C] Every printed mean carries its spread, and every ahead count a sign test
 - DEC-61 [C] The sources hold only what the day knows, on both routes
 
@@ -361,7 +362,7 @@ nodes and its words, len(text.split()) over the file.
 - UNK-04 [H] Whether the suite passes on Python 3.12 and 3.13
 - UNK-05 [U] How a change in arriving passengers turns into hotel demand in a real market
 - UNK-06 [U] The real cost to service an occupied room
-- UNK-07 [U] The real price elasticity, and what the learned estimate does and does not settle
+- UNK-07 [U] The real price elasticity, and what the learned estimate settles
 - UNK-08 [U] Whether the measured gains say anything about a real hotel
 - UNK-09 [C] What a live run costs and how long it takes
 - UNK-10 [U] Whether sql/schema.sql runs on a cloud warehouse as written

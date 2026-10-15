@@ -371,7 +371,7 @@ def test_the_stored_sources_refuse_a_later_day_and_the_daily_commands_make_them_
     seen = []
     original = stored.stored_sources
 
-    def spy(connection, customer=None, as_of_day=None):
+    def spy(connection, customer=None, as_of_day=None, as_of_tick=None, ticks=1):
         seen.append(as_of_day)
         return original(connection, customer, as_of_day)
 

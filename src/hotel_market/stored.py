@@ -6,9 +6,9 @@ known on. The feeds are daily bookings, rate shops, schedule snapshots and event
 plans and decisions hold what the agent made of them.
 
 Day -1 holds the position before the first day. A source answering as of a day reads only the
-rows known by that day, and a source made for a day refuses a later one, as the simulated sources
-do. The tables therefore keep the simulator's rule: nothing is used before the day it became
-known, and a replay of a day cannot read the days after it.
+rows known by that day. A source made for a day, and for a tick of it, refuses a later one,
+as the simulated sources do. The tables therefore keep the simulator's rule: nothing is used
+before the day it became known, and a replay of a day cannot read the days after it.
 
 write_snapshot() copies one day of any Sources into the feed tables. write_decisions() stores the
 day's flags, plans and decisions, each decision with the request the model saw, its answer and
@@ -47,7 +47,7 @@ from hotel_market.sources import (
     Schedules,
     Sources,
 )
-from hotel_market.world import HORIZON_DAYS, LOOKAHEAD_DAYS, Hotel, stay_window
+from hotel_market.world import HORIZON_DAYS, LOOKAHEAD_DAYS, TICKS_PER_DAY, Hotel, stay_window
 
 SCHEMA_FILE = Path("sql") / "schema.sql"  # relative to the repository root
 TABLES = (
@@ -182,17 +182,26 @@ def _frame(connection, sql: str, parameters: list | None = None) -> pd.DataFrame
 class StoredBookings(Limited, Bookings):
     """daily_bookings, read as of a day."""
 
-    def __init__(self, connection, customer: Customer, as_of_day: int | None = None):
+    def __init__(
+        self,
+        connection,
+        customer: Customer,
+        as_of_day: int | None = None,
+        as_of_tick: int | None = None,
+        ticks: int = TICKS_PER_DAY,
+    ):
         self.connection = connection
         self.as_of_day = as_of_day
+        self.as_of_tick = as_of_tick
+        self.ticks = ticks
         self.hotels = customer.hotels
         self._rows = {hotel.key: hotel.row for hotel in self.hotels}
 
     def _row_index(self, frame: pd.DataFrame) -> np.ndarray:
         return frame["hotel"].map(self._rows).to_numpy(dtype=np.int64)
 
-    def on_books(self, as_of_day: int) -> np.ndarray:
-        self._known(as_of_day)
+    def on_books(self, as_of_day: int, as_of_tick: int | None = None) -> np.ndarray:
+        self._known(as_of_day, as_of_tick)
         frame = _frame(
             self.connection,
             "SELECT hotel, stay_day, CAST(SUM(rooms_taken) AS BIGINT) AS rooms "
@@ -203,8 +212,8 @@ class StoredBookings(Limited, Bookings):
         rooms[self._row_index(frame), frame["stay_day"].to_numpy()] = frame["rooms"].to_numpy()
         return rooms
 
-    def rates(self, as_of_day: int) -> np.ndarray:
-        self._known(as_of_day)
+    def rates(self, as_of_day: int, as_of_tick: int | None = None) -> np.ndarray:
+        self._known(as_of_day, as_of_tick)
         frame = _frame(
             self.connection,
             "SELECT hotel, stay_day, rate FROM daily_bookings WHERE as_of_day = ?",
@@ -246,14 +255,25 @@ class StoredBookings(Limited, Bookings):
 class StoredRateShops(Limited, RateShops):
     """rate_shops, one shop day at a time."""
 
-    def __init__(self, connection, customer: Customer, as_of_day: int | None = None):
+    def __init__(
+        self,
+        connection,
+        customer: Customer,
+        as_of_day: int | None = None,
+        as_of_tick: int | None = None,
+        ticks: int = TICKS_PER_DAY,
+    ):
         self.connection = connection
         self.as_of_day = as_of_day
+        self.as_of_tick = as_of_tick
+        self.ticks = ticks
         self.hotels = customer.hotels
         self._shops: dict[int, dict[tuple[str, int], dict[str, float]]] = {}
 
-    def competitor_rates(self, shop_day: int, hotel: Hotel, stay_day: int) -> dict[str, float]:
-        self._known(shop_day)
+    def competitor_rates(
+        self, shop_day: int, hotel: Hotel, stay_day: int, as_of_tick: int | None = None
+    ) -> dict[str, float]:
+        self._known(shop_day, as_of_tick)
         shop = self._shop(shop_day)
         if (hotel.key, stay_day) not in shop:
             raise LookupError(
@@ -316,14 +336,24 @@ def _median(values: np.ndarray) -> np.ndarray:
 class StoredSchedules(Limited, Schedules):
     """schedule_snapshots: the seats and passengers arriving each day, as filed by a day."""
 
-    def __init__(self, connection, as_of_day: int | None = None):
+    def __init__(
+        self,
+        connection,
+        as_of_day: int | None = None,
+        as_of_tick: int | None = None,
+        ticks: int = TICKS_PER_DAY,
+    ):
         self.connection = connection
         self.as_of_day = as_of_day
+        self.as_of_tick = as_of_tick
+        self.ticks = ticks
         self._snapshots: dict[int, tuple[np.ndarray, np.ndarray]] = {}
 
-    def _snapshot(self, as_of_day: int) -> tuple[np.ndarray, np.ndarray]:
+    def _snapshot(
+        self, as_of_day: int, as_of_tick: int | None = None
+    ) -> tuple[np.ndarray, np.ndarray]:
         """(seats, passengers) by stay day as filed by the day, read once."""
-        self._known(as_of_day)
+        self._known(as_of_day, as_of_tick)
         if as_of_day not in self._snapshots:
             frame = _frame(
                 self.connection,
@@ -339,23 +369,31 @@ class StoredSchedules(Limited, Schedules):
             self._snapshots[as_of_day] = (seats, passengers)
         return self._snapshots[as_of_day]
 
-    def seats(self, as_of_day: int) -> np.ndarray:
-        return self._snapshot(as_of_day)[0]
+    def seats(self, as_of_day: int, as_of_tick: int | None = None) -> np.ndarray:
+        return self._snapshot(as_of_day, as_of_tick)[0]
 
-    def passengers(self, as_of_day: int) -> np.ndarray:
-        return self._snapshot(as_of_day)[1]
+    def passengers(self, as_of_day: int, as_of_tick: int | None = None) -> np.ndarray:
+        return self._snapshot(as_of_day, as_of_tick)[1]
 
 
 class StoredEvents(Limited, Events):
     """events: the calendar as of a day, read once per day asked about."""
 
-    def __init__(self, connection, as_of_day: int | None = None):
+    def __init__(
+        self,
+        connection,
+        as_of_day: int | None = None,
+        as_of_tick: int | None = None,
+        ticks: int = TICKS_PER_DAY,
+    ):
         self.connection = connection
         self.as_of_day = as_of_day
+        self.as_of_tick = as_of_tick
+        self.ticks = ticks
         self._read: dict[int, list[Event]] = {}
 
-    def known(self, as_of_day: int) -> list[Event]:
-        self._known(as_of_day)
+    def known(self, as_of_day: int, as_of_tick: int | None = None) -> list[Event]:
+        self._known(as_of_day, as_of_tick)
         if as_of_day not in self._read:
             frame = _frame(
                 self.connection,
@@ -379,17 +417,21 @@ class StoredEvents(Limited, Events):
 
 
 def stored_sources(
-    connection, customer: Customer | None = None, as_of_day: int | None = None
+    connection,
+    customer: Customer | None = None,
+    as_of_day: int | None = None,
+    as_of_tick: int | None = None,
+    ticks: int = TICKS_PER_DAY,
 ) -> Sources:
-    """The four sources, answering from the tables, made for as_of_day: a question about a later
-    day is refused, as the simulated sources refuse it. With no day they answer any day the
-    tables hold."""
+    """The four sources, answering from the tables, made for as_of_day, and for a tick of it: a
+    question about a later day or tick is refused, as the simulated sources refuse it. With no
+    day they answer any day the tables hold."""
     customer = customer or demo()
     return Sources(
-        StoredBookings(connection, customer, as_of_day),
-        StoredRateShops(connection, customer, as_of_day),
-        StoredSchedules(connection, as_of_day),
-        StoredEvents(connection, as_of_day),
+        StoredBookings(connection, customer, as_of_day, as_of_tick, ticks),
+        StoredRateShops(connection, customer, as_of_day, as_of_tick, ticks),
+        StoredSchedules(connection, as_of_day, as_of_tick, ticks),
+        StoredEvents(connection, as_of_day, as_of_tick, ticks),
     )
 
 

@@ -122,7 +122,7 @@ from hotel_market.shocks import EVENTS, RATE_CUTS
 from hotel_market.shops import REACTION_LAG, REACTION_SHARE
 from hotel_market.simulated import deciding, simulated_sources
 from hotel_market.text import capitalize_first, money_range, pace_text, percent_range, stay_range
-from hotel_market.world import SIM_DAYS, Hotel
+from hotel_market.world import SIM_DAYS, TICKS_PER_DAY, Hotel
 
 REPORT_DAYS = (10, 20, 30, 40, 59)  # the days a sweep reports a learn arm's estimates for
 # The causes that mark a plan as raised by the convention or the new flights; a sweep
@@ -155,12 +155,14 @@ def run(
     market_elasticity: float | None = None,
     scenario: Scenario = DEFAULT_SCENARIO,
     churn: bool = False,
+    ticks: int = TICKS_PER_DAY,
 ) -> tuple[Books, Books, Agent]:
     """The fixed-rate run, the agent run, and the agent. Writes decisions.jsonl. The demand bias
     and the reaction go to both runs and never to the agent. The market elasticity goes to both
-    runs and to the agent, which is told it. The scenario and the churn set the air schedule."""
+    runs and to the agent, which is told it. The scenario and the churn set the air schedule, and
+    ticks the clock both runs and the agent keep."""
     customer = customer or demo()
-    world = _world(demand_bias, react, market_elasticity, scenario, churn)
+    world = _world(demand_bias, react, market_elasticity, scenario, churn, ticks)
     fixed = simulate(seed, customer=customer, **world)
     cache_dir = cache_root(cache_dir, demand_bias, react, market_elasticity, scenario, churn)
     agent = Agent(
@@ -170,6 +172,7 @@ def run(
         elasticity=mode,
         customer=customer,
         market_elasticity=market_elasticity,
+        ticks=ticks,
     )
     books = simulate(seed, deciding(agent), customer=customer, **world)
     out.write_text("".join(json.dumps(line) + "\n" for line in agent.log))
@@ -188,6 +191,7 @@ def replay(
     market_elasticity: float | None = None,
     scenario: Scenario = DEFAULT_SCENARIO,
     churn: bool = False,
+    ticks: int = TICKS_PER_DAY,
 ) -> tuple[list[Entry], list[Advice]]:
     """A day's entries and advice, rebuilt without a model call. They come from the cache when there
     is a client, else from the template.
@@ -202,8 +206,9 @@ def replay(
         elasticity=mode,
         customer=customer,
         market_elasticity=market_elasticity,
+        ticks=ticks,
     )
-    world = _world(demand_bias, react, market_elasticity, scenario, churn)
+    world = _world(demand_bias, react, market_elasticity, scenario, churn, ticks)
     simulate(seed, deciding(agent), last_day=day, customer=customer, **world)
     return (
         [entry for entry in agent.entries if entry.day == day],
@@ -229,6 +234,7 @@ def run_days(
     market_elasticity: float | None = None,
     scenario: Scenario = DEFAULT_SCENARIO,
     churn: bool = False,
+    ticks: int = TICKS_PER_DAY,
 ) -> tuple[list[Entry], list[Advice]]:
     """Days first to last through the stored tables, in one pass of the simulator.
 
@@ -242,7 +248,7 @@ def run_days(
     uses it. Returns the last day's entries and advice.
     """
     customer = customer or demo()
-    world = _world(demand_bias, react, market_elasticity, scenario, churn)
+    world = _world(demand_bias, react, market_elasticity, scenario, churn, ticks)
     cache_dir = cache_root(cache_dir, demand_bias, react, market_elasticity, scenario, churn)
     connection = stored.connect(db)
     missing = sorted(set(range(first)) - set(stored.stored_days(connection)))
@@ -268,9 +274,10 @@ def run_days(
             elasticity=mode,
             customer=customer,
             market_elasticity=market_elasticity,
+            ticks=ticks,
         )
         agent.resume(*stored.state_before(connection, day, customer))
-        changes = agent.decide(day, stored.stored_sources(connection, customer, day))
+        changes = agent.decide(day, stored.stored_sources(connection, customer, day, ticks=ticks))
         stored.write_decisions(connection, day, agent.entries, agent.advice, agent.asked)
         stored.write_outcomes(connection, day, customer)
         outcome["entries"], outcome["advice"] = agent.entries, agent.advice
@@ -511,6 +518,7 @@ def sweep(
     scenario: Scenario = DEFAULT_SCENARIO,
     churn: bool = False,
     policy: str | None = None,
+    ticks: int = TICKS_PER_DAY,
 ) -> list[ArmResult]:
     """Seeds first to last: one fixed-rate run per seed, and one agent run per seed, mode and
     reviewer. Each agent run is compared with the fixed-rate run. The arms come mode by mode, a
@@ -524,7 +532,7 @@ def sweep(
     customer = customer or demo()
     hotels = customer.hotels
     cache_dir = cache_root(cache_dir, demand_bias, react, market_elasticity, scenario, churn)
-    world = _world(demand_bias, react, market_elasticity, scenario, churn)
+    world = _world(demand_bias, react, market_elasticity, scenario, churn, ticks)
     truth = (demand_bias, market_elasticity, REACTION_SHARE if react else 0.0)  # the oracle's
     arms: dict[tuple[ElasticityMode, Reviewer], list[SeedResult]] = {
         (mode, reviewer): [] for mode in modes for reviewer in reviewers
@@ -540,6 +548,7 @@ def sweep(
                 customer=customer,
                 model=reviewer.model,
                 market_elasticity=market_elasticity,
+                ticks=ticks,
             )
             agent.client = reviewer.client_for(agent)
             books = simulate(seed, deciding(agent), customer=customer, **world)
@@ -606,6 +615,7 @@ def _world(
     market_elasticity: float | None,
     scenario: Scenario,
     churn: bool,
+    ticks: int = TICKS_PER_DAY,
 ) -> dict:
     """The simulator's settings for a run, as simulate() takes them."""
     return {
@@ -614,6 +624,7 @@ def _world(
         "market_elasticity": market_elasticity,
         "scenario": scenario,
         "churn": churn,
+        "ticks": ticks,
     }
 
 
@@ -624,7 +635,7 @@ def _control(seed: int, policy: str | None, fixed: Books, customer: Customer, wo
     if policy is None:
         return {}
     rule = POLICIES[policy](customer)
-    books = simulate(seed, deciding(rule), customer=customer, **world)
+    books = simulate(seed, deciding(rule), customer=customer, **{**world, "ticks": TICKS_PER_DAY})
     hotels = customer.hotels
     return {
         "control_change": sum(books.contribution(h) - fixed.contribution(h) for h in hotels),
@@ -1062,6 +1073,7 @@ def main(argv: list[str] | None = None) -> None:
         args.market_elasticity,
         SCENARIOS[args.scenario],
         args.churn,
+        args.ticks,
     )
     if args.seeds:
         _print_sweep(*args.seeds, args.modes, customer, *world, policy=args.policy)
@@ -1127,6 +1139,8 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     args = parser.parse_args(argv)
     if args.seeds and args.seeds[0] > args.seeds[1]:
         parser.error("--seeds: FIRST must not be after LAST")
+    if args.policy and args.ticks != TICKS_PER_DAY:
+        parser.error("--policy runs the rule-based control on the daily clock; drop --ticks")
     if args.seed is not None and args.elasticity and len(args.elasticity) > 1:
         parser.error("--seed takes one --elasticity; --seeds takes several")
     if args.replay is not None and args.seed is None:
@@ -1196,6 +1210,14 @@ def _add_world_options(parser: argparse.ArgumentParser, policy: bool = True) -> 
         help="the airline also files weekly revisions below the detect threshold, drawn from "
         "the seed (default: off)",
     )
+    parser.add_argument(
+        "--ticks",
+        type=_ticks,
+        default=TICKS_PER_DAY,
+        metavar="N",
+        help=f"cut each day into N ticks: the feeds land at fixed ticks and the agent runs "
+        f"after each (default: {TICKS_PER_DAY}, the daily loop)",
+    )
     if not policy:
         return
     parser.add_argument(
@@ -1239,6 +1261,7 @@ def _daily_main(argv: list[str]) -> None:
             market_elasticity=args.market_elasticity,
             scenario=SCENARIOS[args.scenario],
             churn=args.churn,
+            ticks=args.ticks,
         )
         print("\n".join(_queue_lines(args.as_of, entries, advice)) or f"Day {args.as_of}: no flags")
         print(f"\nDay {args.as_of}'s feeds, flags, plans, decisions and outcomes are in {args.db}.")
@@ -1350,6 +1373,17 @@ def _nonnegative(text: str) -> float:
     return value
 
 
+def _ticks(text: str) -> int:
+    """The ticks a day is cut into: a whole number, one or more."""
+    try:
+        ticks = int(text)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"{text!r} is not a whole number") from None
+    if ticks < 1:
+        raise argparse.ArgumentTypeError(f"{text} is under 1; a day has one tick or more")
+    return ticks
+
+
 def _factor(text: str) -> float:
     """A factor on the simulator's demand: a number above zero."""
     try:
@@ -1385,9 +1419,10 @@ def _print_run(
     market_elasticity: float | None = None,
     scenario: Scenario = DEFAULT_SCENARIO,
     churn: bool = False,
+    ticks: int = TICKS_PER_DAY,
     policy: str | None = None,
 ) -> None:
-    world = _world(demand_bias, react, market_elasticity, scenario, churn)
+    world = _world(demand_bias, react, market_elasticity, scenario, churn, ticks)
     fixed, books, agent = run(seed, client=client, mode=mode, customer=customer, **world)
     for day in sorted({entry.day for entry in agent.entries}):
         lines = _queue_lines(day, agent.entries, agent.advice)
@@ -1431,8 +1466,9 @@ def _print_replay(
     market_elasticity: float | None = None,
     scenario: Scenario = DEFAULT_SCENARIO,
     churn: bool = False,
+    ticks: int = TICKS_PER_DAY,
 ) -> None:
-    world = _world(demand_bias, react, market_elasticity, scenario, churn)
+    world = _world(demand_bias, react, market_elasticity, scenario, churn, ticks)
     entries, advice = replay(seed, day, client=client, mode=mode, customer=customer, **world)
     print(f"Day {day} queue, replayed from the cache (seed {seed})\n")
     blocks = [format_entry(e, customer) for e in queue(entries)]
@@ -1450,9 +1486,10 @@ def _print_sweep(
     market_elasticity: float | None = None,
     scenario: Scenario = DEFAULT_SCENARIO,
     churn: bool = False,
+    ticks: int = TICKS_PER_DAY,
     policy: str | None = None,
 ) -> None:
-    world = _world(demand_bias, react, market_elasticity, scenario, churn)
+    world = _world(demand_bias, react, market_elasticity, scenario, churn, ticks)
     arms = sweep(first, last, modes=modes, customer=customer, policy=policy, **world)
     market = customer.market_elasticity if market_elasticity is None else market_elasticity
     print(
@@ -1737,6 +1774,7 @@ def _bench_main(argv: list[str]) -> None:
         args.market_elasticity,
         SCENARIOS[args.scenario],
         args.churn,
+        args.ticks,
         args.policy,
     )
 
@@ -1786,6 +1824,8 @@ def _parse_bench_args(argv: list[str]) -> argparse.Namespace:
         parser.error("--seeds: FIRST must not be after LAST")
     if args.template and args.model:
         parser.error("--template runs no model; drop --model")
+    if args.policy and args.ticks != TICKS_PER_DAY:
+        parser.error("--policy runs the rule-based control on the daily clock; drop --ticks")
     modes = args.elasticity or [ElasticityMode.parse(text) for text in BENCH_MODES]
     args.modes = _learn_flags(parser, modes, args.cautious, args.level)
     args.models = [] if args.template else args.model or list(MODELS)
@@ -1808,9 +1848,10 @@ def _print_bench(
     market_elasticity: float | None = None,
     scenario: Scenario = DEFAULT_SCENARIO,
     churn: bool = False,
+    ticks: int = TICKS_PER_DAY,
     policy: str | None = None,
 ) -> None:
-    settings = _world(demand_bias, react, market_elasticity, scenario, churn)
+    settings = _world(demand_bias, react, market_elasticity, scenario, churn, ticks)
     arms = sweep(
         first, last, modes=modes, customer=customer, reviewers=reviewers, policy=policy, **settings
     )
