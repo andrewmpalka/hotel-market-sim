@@ -51,7 +51,7 @@ MODEL = "claude-opus-5-5"
 MODELS = ("claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5")
 
 SYSTEM = """\
-You advise the central revenue manager of four hotels. Each entry below is a \
+You advise the central revenue manager of a brand's hotels. Each entry below is a \
 run of stay dates at one hotel where something changed. For each day of the \
 week in the entry, code has compared candidate rate actions by their estimated \
 contribution (room revenue minus the cost of servicing the rooms) on the rooms \
