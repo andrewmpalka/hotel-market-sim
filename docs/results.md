@@ -173,7 +173,7 @@ The suite on each Python version. The run of 2026-10-12 came from a fresh virtua
 | 3.12.6 | `make setup` then `make test` in a fresh clone, the dev extra alone | 353 passed, 14 skipped |
 | 3.13.7 | `python -m pytest` | 352 passed, 14 skipped |
 
-The live answers under cache/ are the only copy of about $86 of model calls, so they are archived as a dated tar outside the repository, with the archive's sha256 beside it: cache-2026-10-15.tar.gz under ~/backups/hotel-market-sim, sha256 TODO.
+The live answers under cache/ are the only copy of about $86 of model calls, so they are archived as a dated tar outside the repository, with the archive's sha256 and a per-file list beside it. The archive of 2026-10-15 is cache-2026-10-15-0406.tar.gz under ~/backups/hotel-market-sim, 8,203 files with the sha256 ab3b5f7a6f49e81a81716ed9baa626efee668f79be5328ebd5d77addb6c3d9c6, and it restores with `tar -xzf` from the repository root.
 
 The container image on each Python version, built on 2026-10-12. Docker 28.4.0 ran on an aarch64 Ubuntu VM with 4 CPUs and 4 GiB. Each image ran the suite from its copy of the repository, and the 3.12 image ran seed 7 with the template. pandas 3.0.6, duckdb 1.5.6 and anthropic 1.13.0 were installed on every version, and every dependency came as a wheel, 3.14 included. The images were not rebuilt; the native plain suite has since grown to 357 passed and 9 skipped.
 
