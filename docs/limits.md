@@ -93,6 +93,10 @@
   convention hotel's early booking curve, while its uplift applies only to
   demand after day 0, so an event announced on day 10 adds little; the next
   version puts an event known before the run into the preload.
+- The seed-7 checksum is a byte-for-byte test on one platform: this machine's
+  numpy 2.5.4 and pandas 3.0.6 give 263387b3, and a Linux run on numpy 2.5.3
+  and pandas 3.0.5 gave 8faafad0 with the same decisions. The decisions file,
+  not its hash, is the cross-platform test.
 
 The next version reprices when data arrives during the day, adds per-weekday
 terms to the estimator, and adds cancellations and segments. Since world v2 the

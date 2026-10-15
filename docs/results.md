@@ -200,7 +200,7 @@ The container image on each Python version, built on 2026-10-12. Docker 28.4.0 r
 | Python | numpy | Build | Image | Tests | Suite time | Seed-7 run | decisions.jsonl |
 | --- | --- | ---: | ---: | --- | ---: | ---: | --- |
 | 3.11.15 | 2.4.6 | 24 s | 615 MB | 278 passed, 3 skipped | 45 s | | |
-| 3.12.13 | 2.5.4 | 24 s | 592 MB | 278 passed, 3 skipped | 45 s | 1.6 s | matched the native run on world v1; the native checksum is 263387b3 on world v2, was 19b766b8 on world v1 once the plan records gained two fields, and 8ce570ea when the image ran |
+| 3.12.13 | 2.5.4 | 24 s | 592 MB | 278 passed, 3 skipped | 45 s | 1.6 s | matched the native run on world v1; on world v2 the native checksum is 263387b3 on this machine's numpy 2.5.4 and pandas 3.0.6, and a Linux run on numpy 2.5.3 and pandas 3.0.5 gave 8faafad0 with the same decisions; it was 19b766b8 on world v1 once the plan records gained two fields, and 8ce570ea when the image ran |
 | 3.14.8 | 2.5.4 | 24 s | 600 MB | 278 passed, 3 skipped | 45 s | | |
 
 ## The benchmark of the reviewers
