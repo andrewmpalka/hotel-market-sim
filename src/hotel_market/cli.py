@@ -70,10 +70,11 @@ reviewer, then a ranking over the mismatched modes.
 
 The two daily commands run the agent one day at a time against the tables of sql/schema.sql
 (stored.py). The command run-day plays the simulator to the day with the rate changes already
-stored. It writes the day's feeds, runs the agent on the tables and writes its rows. Running a
-day twice leaves the tables as they were. The command replay rebuilds a day's plans from the
-tables alone, with the actions the stored decisions record. It checks them against the stored
-plans.
+stored, under the world the same options describe. It writes the day's feeds, runs the agent on
+the tables and writes its rows, each decision with its request and answer, and the outcome of
+every accepted plan on the night that has just passed. Running a day twice leaves the tables as
+they were. The command replay rebuilds a day's plans from the tables alone, with the actions the
+stored decisions record. It checks them against the stored plans.
 """
 
 from __future__ import annotations
@@ -220,17 +221,26 @@ def run_days(
     mode: ElasticityMode = TRUE_MODE,
     customer: Customer | None = None,
     observe: Callable[[int, Books, Agent], None] | None = None,
+    demand_bias: float = DEMAND_BIAS,
+    react: bool = False,
+    market_elasticity: float = MARKET_ELASTICITY,
+    scenario: Scenario = DEFAULT_SCENARIO,
+    churn: bool = False,
 ) -> tuple[list[Entry], list[Advice]]:
     """Days first to last through the stored tables, in one pass of the simulator.
 
-    The simulator stands in for the hotel's feeds. It plays the days before `first` with the rate
-    changes the tables already hold. On each day from `first` to `last`, its position is written to
-    the feed tables as that day's snapshot. A fresh agent then picks up the state the stored
-    decisions left and decides the day from the tables alone. Its flags, plans and decisions are
-    written. observe, if given, sees each decided day's books and agent; the demo data uses it.
-    Returns the last day's entries and advice.
+    The simulator stands in for the hotel's feeds, under the world the settings describe, as
+    run() takes them. It plays the days before `first` with the rate changes the tables already
+    hold. On each day from `first` to `last`, its position is written to the feed tables as that
+    day's snapshot. A fresh agent then picks up the state the stored decisions left and decides
+    the day from the tables alone. Its flags, plans and decisions are written, with the request
+    and the answer behind each, and so is the outcome of every accepted plan on the night that
+    has just passed. observe, if given, sees each decided day's books and agent; the demo data
+    uses it. Returns the last day's entries and advice.
     """
     customer = customer or demo()
+    world = _world(demand_bias, react, market_elasticity, scenario, churn)
+    cache_dir = cache_root(cache_dir, demand_bias, react, market_elasticity, scenario, churn)
     connection = stored.connect(db)
     missing = sorted(set(range(first)) - set(stored.stored_days(connection)))
     if missing:
@@ -248,17 +258,25 @@ def run_days(
         if day == 0:
             stored.write_snapshot(connection, stored.OPENING_DAY, feed, customer)
         stored.write_snapshot(connection, day, feed, customer)
-        agent = Agent(seed, cache_dir, client, elasticity=mode, customer=customer)
+        agent = Agent(
+            seed,
+            cache_dir,
+            client,
+            elasticity=mode,
+            customer=customer,
+            market_elasticity=market_elasticity,
+        )
         agent.resume(*stored.state_before(connection, day))
         changes = agent.decide(day, stored.stored_sources(connection, customer, day))
-        stored.write_decisions(connection, day, agent.entries, agent.advice)
+        stored.write_decisions(connection, day, agent.entries, agent.advice, agent.asked)
+        stored.write_outcomes(connection, day, customer)
         outcome["entries"], outcome["advice"] = agent.entries, agent.advice
         if observe is not None:
             observe(day, books, agent)
         return changes
 
     try:
-        simulate(seed, decide, last_day=last, customer=customer)
+        simulate(seed, decide, last_day=last, customer=customer, **world)
     finally:
         connection.close()
     return outcome["entries"], outcome["advice"]
@@ -276,17 +294,20 @@ def replay_day(
     db: Path = DEFAULT_DB,
     mode: ElasticityMode = TRUE_MODE,
     customer: Customer | None = None,
+    market_elasticity: float = MARKET_ELASTICITY,
 ) -> tuple[list[Entry], list[Advice], list[str]]:
     """A day's entries and advice rebuilt from the stored tables alone, with the actions the stored
     decisions record. The third value is how the rebuilt plans differ from the stored ones, empty
-    when they match. Neither the simulator nor the model is involved, and nothing is written."""
+    when they match. The market elasticity is the one the run's agent was told. Neither the
+    simulator nor the model is involved, and nothing is written."""
     customer = customer or demo()
     connection = stored.connect(db, read_only=True)
     try:
         decided = stored.decided_on(connection, day)
         if day not in stored.stored_days(connection):
             raise LookupError(f"{db} holds no day {day}; run it first")
-        agent = Agent(0, elasticity=mode, customer=customer)  # no cache: nothing is asked
+        # No cache: nothing is asked.
+        agent = Agent(0, elasticity=mode, customer=customer, market_elasticity=market_elasticity)
         agent.resume(*stored.state_before(connection, day))
         sources = stored.stored_sources(connection, customer, day)
         entries = agent.plans_for(day, sources)
@@ -1066,9 +1087,10 @@ def _learn_flags(
     ]
 
 
-def _add_world_options(parser: argparse.ArgumentParser) -> None:
+def _add_world_options(parser: argparse.ArgumentParser, policy: bool = True) -> None:
     """The simulator's settings for a run: the demand bias and the reaction, which the agent never
-    sees, the market elasticity, which it is told, and the air schedule's scenario and churn."""
+    sees, the market elasticity, which it is told, and the air schedule's scenario and churn. The
+    daily commands take them without the rule-based control."""
     parser.add_argument(
         "--demand-bias",
         dest="demand_bias",
@@ -1108,6 +1130,8 @@ def _add_world_options(parser: argparse.ArgumentParser) -> None:
         help="the airline also files weekly revisions below the detect threshold, drawn from "
         "the seed (default: off)",
     )
+    if not policy:
+        return
     parser.add_argument(
         "--policy",
         choices=sorted(POLICIES),
@@ -1144,11 +1168,18 @@ def _daily_main(argv: list[str]) -> None:
             client=_client(args.template),
             mode=args.mode,
             customer=customer,
+            demand_bias=args.demand_bias,
+            react=args.react,
+            market_elasticity=args.market_elasticity,
+            scenario=SCENARIOS[args.scenario],
+            churn=args.churn,
         )
         print("\n".join(_queue_lines(args.as_of, entries, advice)) or f"Day {args.as_of}: no flags")
-        print(f"\nDay {args.as_of}'s feeds, flags, plans and decisions are in {args.db}.")
+        print(f"\nDay {args.as_of}'s feeds, flags, plans, decisions and outcomes are in {args.db}.")
         return
-    entries, advice, differences = replay_day(args.as_of, args.db, args.mode, customer)
+    entries, advice, differences = replay_day(
+        args.as_of, args.db, args.mode, customer, args.market_elasticity
+    )
     print(f"Day {args.as_of} queue, rebuilt from the tables in {args.db}\n")
     blocks = [format_entry(e, customer) for e in queue(entries)]
     blocks += [format_advice(a) for a in advice]
@@ -1212,6 +1243,7 @@ def _parse_daily_args(argv: list[str]) -> argparse.Namespace:
         subparser.add_argument(
             "--level", action="store_true", help="in learn mode, the fitted demand level fed back"
         )
+        _add_world_options(subparser, policy=False)
         _add_customer_options(subparser)
     args = parser.parse_args(argv)
     if not 0 <= args.as_of < SIM_DAYS:

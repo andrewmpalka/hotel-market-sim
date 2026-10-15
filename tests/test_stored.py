@@ -1,11 +1,14 @@
 """Module 12, stored.py: the four sources from stored tables, and the daily commands."""
 
+import json
+
 import pytest
 
 from hotel_market import stored
 from hotel_market.bookings import simulate
 from hotel_market.cli import format_entry, main, queue, replay_day, run, run_day, run_days
 from hotel_market.customer import demo
+from hotel_market.model import MODEL, prompt_digest, request_digest
 from hotel_market.plan import HOLD
 from hotel_market.simulated import simulated_sources
 from hotel_market.world import SIM_DAYS
@@ -41,19 +44,22 @@ def _dump(db) -> dict[str, list[tuple]]:
         connection.close()
 
 
-def test_the_schema_is_seven_tables_each_keyed_by_as_of_day(tmp_path):
+def test_the_schema_is_eight_tables_each_keyed_by_its_day(tmp_path):
     connection = stored.connect(tmp_path / "new.duckdb")
     tables = connection.execute(
         "SELECT table_name FROM information_schema.tables ORDER BY table_name"
     ).fetchall()
-    assert {name for (name,) in tables} == set(stored.TABLES)
+    assert {name for (name,) in tables} == set(stored.TABLES) and len(stored.TABLES) == 8
     for table in stored.TABLES:
         columns = connection.execute(
             "SELECT column_name FROM information_schema.columns WHERE table_name = ? "
             "ORDER BY ordinal_position",
             [table],
         ).fetchall()
-        assert columns[0] == ("as_of_day",), table
+        # The feeds and the agent's output are keyed by the day they were known on; an outcome
+        # by the day its plan was accepted, so the plan is one join away.
+        assert columns[0] == (("decision_day",) if table == "outcomes" else ("as_of_day",)), table
+        assert tuple(name for (name,) in columns) == stored._COLUMNS[table], table
     connection.close()
     assert _dump(tmp_path / "new.duckdb") == {table: [] for table in stored.TABLES}
 
@@ -101,6 +107,116 @@ def test_the_stored_sources_answer_as_the_simulated_ones_do(in_memory, through_t
     connection.close()
 
 
+def test_each_decision_carries_its_request_its_answer_and_their_digests(
+    in_memory, through_tables, tmp_path
+):
+    """A queued entry's row holds the request its hotel's queue was asked with, the answer and the
+    request's digest. The template run has no prompt digest and no model; a model's cached
+    record gives both. Held flags and advice carry NULLs."""
+    _, _, agent = in_memory
+    connection = stored.connect(through_tables, read_only=True)
+    try:
+        rows = connection.execute(
+            "SELECT as_of_day, hotel, first_stay, last_stay, queued, simulated, request_digest, "
+            "prompt_digest, model, request, answer FROM decisions ORDER BY as_of_day, position"
+        ).fetchall()
+    finally:
+        connection.close()
+    queued = [row for row in rows if row[4]]
+    assert queued and all(row[6] and row[9] and row[10] for row in queued)
+    assert {(row[7], row[8]) for row in queued} == {(None, None)}  # the template answered
+    for day, hotel, first, last, _, _, digest, _, _, request, answer in queued:
+        request, answer = json.loads(request), json.loads(answer)
+        assert digest == request_digest(request) and request["day"] == day
+        assert request["hotel"]["name"] == demo().hotel(hotel).name
+        assert f"{first}-{last}" in {entry["id"] for entry in request["entries"]}
+        assert {d["id"] for d in answer} == {entry["id"] for entry in request["entries"]}
+        stored_request, _ = agent.asked[(day, hotel)]
+        assert request == stored_request
+    assert all(row[6:] == (None,) * 5 for row in rows if not row[4])
+    # With a model answering, the cache record's prompt digest and model come along.
+    from tests.test_cli import FakeClient
+
+    db = tmp_path / "model.duckdb"
+    run_days(SEED, 0, 10, db, cache_dir=tmp_path / "cache", client=FakeClient())
+    connection = stored.connect(db, read_only=True)
+    try:
+        found = connection.execute(
+            "SELECT DISTINCT prompt_digest, model FROM decisions WHERE queued"
+        ).fetchall()
+    finally:
+        connection.close()
+    assert found == [(prompt_digest(), MODEL)]
+
+
+def test_the_outcomes_hold_each_accepted_plans_nights_once_they_pass(in_memory, through_tables):
+    """Once a night has passed, every accepted plan that changed its rate has an outcome row: the
+    rooms sold and the room revenue of the in-memory run, the plan's estimate for that night, and
+    what the rooms sold after the decision earned. Nights after the last day run have none."""
+    _, books, agent = in_memory
+    connection = stored.connect(through_tables, read_only=True)
+    try:
+        rows = connection.execute(
+            "SELECT decision_day, hotel, stay_day, rooms_sold, room_revenue, estimated, realised "
+            "FROM outcomes ORDER BY decision_day, hotel, stay_day"
+        ).fetchall()
+    finally:
+        connection.close()
+    expected = {}
+    for entry in agent.entries:
+        if entry.action == HOLD:
+            continue
+        for group in entry.changed_weekdays:
+            for stay, estimate in group.best.estimates.items():
+                if stay < SIM_DAYS:
+                    expected[(entry.day, entry.hotel, stay)] = estimate
+    assert expected and {row[:3] for row in rows} == set(expected)
+    for decision_day, key, stay, sold, revenue, estimated, realised in rows:
+        hotel = demo().hotel(key)
+        assert sold == books.rooms[hotel.row, stay]
+        assert revenue == pytest.approx(books.revenue[hotel.row, stay])
+        assert estimated == pytest.approx(expected[(decision_day, key, stay)])
+        after = books.daily_rooms[decision_day + 1 :, hotel.row, stay]
+        rates = books.daily_rates[decision_day + 1 :, hotel.row, stay]
+        assert realised == pytest.approx(float((after * (rates - hotel.room_cost)).sum()))
+    # The plans table carries each candidate's estimate per night, summing to its estimate.
+    connection = stored.connect(through_tables, read_only=True)
+    try:
+        plans = connection.execute("SELECT estimates, estimate FROM plans").fetchall()
+    finally:
+        connection.close()
+    assert all(sum(json.loads(e).values()) == pytest.approx(total) for e, total in plans)
+
+
+def test_the_daily_commands_take_the_world_options(tmp_path, capsys):
+    """run-day runs the simulator under the world its options describe, as the sweep does, and
+    the agent is told the market elasticity; replay needs the same value to rebuild the plans."""
+    db = tmp_path / "world.duckdb"
+    main(
+        ["run-day", "--seed", str(SEED), "--as-of", "12", "--from", "0", "--db", str(db)]
+        + ["--react", "--market-elasticity", "0.5", "--demand-bias", "0.9", "--template"]
+    )
+    out = capsys.readouterr().out
+    assert "feeds, flags, plans, decisions and outcomes are in" in out
+    connection = stored.connect(db, read_only=True)
+    try:
+        records = stored.records_on(connection, 12)
+        rooms = connection.execute(
+            "SELECT SUM(rooms_taken) FROM daily_bookings WHERE as_of_day = 0"
+        ).fetchone()[0]
+    finally:
+        connection.close()
+    assert records and all(r["elasticity"]["market_elasticity"] == 0.5 for r in records)
+    plain = simulate(SEED, last_day=0)
+    assert rooms < plain.daily_rooms[0].sum()  # a tenth less demand booked fewer rooms
+    # On day 10 the convention moved the comp medians, so the market term reaches the estimates:
+    # told the run's value the replay rebuilds the plans, told the default it does not.
+    assert replay_day(10, db, market_elasticity=0.5)[2] == []
+    with pytest.raises(SystemExit):
+        main(["replay", "--as-of", "10", "--db", str(db)])
+    assert "The rebuilt plans differ from the stored plans" in capsys.readouterr().out
+
+
 def test_running_a_day_twice_leaves_the_tables_unchanged(through_tables):
     before = _dump(through_tables)
     run_day(SEED, 20, through_tables)
@@ -145,7 +261,7 @@ def test_the_daily_commands_run_a_day_and_replay_it(tmp_path, capsys):
     db = tmp_path / "run.duckdb"
     main(["run-day", "--seed", str(SEED), "--as-of", "1", "--from", "0", "--db", str(db)])
     out = capsys.readouterr().out
-    assert "Day 1's feeds, flags, plans and decisions are in" in out
+    assert "Day 1's feeds, flags, plans, decisions and outcomes are in" in out
     main(["replay", "--as-of", "1", "--db", str(db)])
     out = capsys.readouterr().out
     assert out.startswith("Day 1 queue, rebuilt from the tables in")

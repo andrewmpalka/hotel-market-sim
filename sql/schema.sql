@@ -1,12 +1,14 @@
 -- The tables the daily command writes and the stored sources read.
 --
--- Every table is keyed by as_of_day, the simulation day a row was known on,
--- so that a query as of a day sees only what was known then. The first four
--- tables are the feeds: a day's bookings, rate shops, schedule and known
--- events. The last three are what the agent made of them: its flags, the
--- plans it scored and the decisions it recorded. Day -1 holds the position
--- before the first day: the rooms already on the books, the first rate shop
--- and the first schedule.
+-- Every table but the last is keyed by as_of_day, the simulation day a row was
+-- known on, so that a query as of a day sees only what was known then. The
+-- first four tables are the feeds: a day's bookings, rate shops, schedule and
+-- known events. The next three are what the agent made of them: its flags,
+-- the plans it scored and the decisions it recorded, each decision with the
+-- request the model saw and its answer. The last, outcomes, holds what each
+-- accepted plan earned on each night once that night has passed, keyed by the
+-- day the plan was accepted. Day -1 holds the position before the first day:
+-- the rooms already on the books, the first rate shop and the first schedule.
 --
 -- Plain SQL, written so that a cloud warehouse would accept it with few
 -- changes. What would need to change:
@@ -17,7 +19,8 @@
 --     ENFORCED after it, and Snowflake and Redshift accept it without
 --     enforcing it, so the daily command's delete-then-insert is what keeps a
 --     day's rows unique there.
---   * The columns holding JSON text (rates, new_rates and record) are VARCHAR.
+--   * The columns holding JSON text (rates, estimates, new_rates, record,
+--     request and answer) are VARCHAR.
 --     A warehouse with a JSON type (BigQuery JSON, Snowflake VARIANT,
 --     Redshift SUPER) could type them.
 --   * The transaction around a day's writes. DuckDB, Snowflake and Redshift
@@ -96,6 +99,7 @@ CREATE TABLE IF NOT EXISTS plans (
     weekday INTEGER NOT NULL,          -- Monday is 0
     candidate VARCHAR NOT NULL,        -- hold, raise 5%, raise 10%, lower 5%, lower halfway to the new median
     rates VARCHAR NOT NULL,            -- JSON: the candidate's rate by night
+    estimates VARCHAR NOT NULL,        -- JSON: the candidate's estimate by night, summing to estimate
     estimate DOUBLE NOT NULL,          -- estimated contribution (or room revenue) on the unsold rooms
     versus_hold DOUBLE NOT NULL,       -- the estimate minus hold's
     band_low DOUBLE,                   -- cautious rule only: the estimate at the band's low elasticity
@@ -125,5 +129,27 @@ CREATE TABLE IF NOT EXISTS decisions (
     simulated BOOLEAN NOT NULL,        -- FALSE for advice the simulator cannot test
     event VARCHAR,                     -- advice only
     record VARCHAR NOT NULL,           -- the decisions.jsonl line
+    request_digest VARCHAR,            -- queued entries only: the sha256 of the request's sorted-keys JSON
+    prompt_digest VARCHAR,             -- the sha256 of the system prompt the model answered under; NULL for the template or an older record
+    model VARCHAR,                     -- the model asked, from the cache record; NULL for the template or an uncached client
+    request VARCHAR,                   -- JSON: the request the hotel's queue was asked with, every figure a display string
+    answer VARCHAR,                    -- JSON: the decisions answered, one per entry of the request
     PRIMARY KEY (as_of_day, position)
+);
+
+-- The outcome of each accepted plan on each night it changed, written by
+-- run-day once the night has passed: the rooms sold and the room revenue over
+-- every booking day, the plan's estimate for the night on the rooms then
+-- unsold, and what the rooms sold after the decision earned in the same
+-- measure. Keyed by the day the plan was accepted, so the plan is one join
+-- away, and complete only for the nights up to the last day run.
+CREATE TABLE IF NOT EXISTS outcomes (
+    decision_day INTEGER NOT NULL,     -- the day the plan was accepted
+    hotel VARCHAR NOT NULL,
+    stay_day INTEGER NOT NULL,         -- the night, which has passed
+    rooms_sold INTEGER NOT NULL,       -- on the books at the end of the night
+    room_revenue DOUBLE NOT NULL,      -- over every booking day of the night
+    estimated DOUBLE NOT NULL,         -- the plan's estimate for the night: contribution, or room revenue under that target
+    realised DOUBLE NOT NULL,          -- the same measure on the rooms sold after the decision day
+    PRIMARY KEY (decision_day, hotel, stay_day)
 );

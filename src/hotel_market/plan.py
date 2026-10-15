@@ -121,6 +121,7 @@ class Candidate:
     rates: dict[int, float]  # rate by stay day, clamped to the floor and ceiling
     estimate: float  # estimated contribution on the rooms still unsold
     band: tuple[float, float] | None = None  # cautious only: the estimate at the band's ends
+    estimates: dict[int, float] = field(default_factory=dict)  # the estimate by stay day
 
 
 @dataclass
@@ -437,15 +438,21 @@ def _candidates(
         }
         options.append((HALFWAY, halfway))
     band = pricing.band
-    return [
-        Candidate(
-            name,
-            rates,
-            _estimate(stay_dates, rates, pricing.elasticity, cost),
-            None if band is None else tuple(_estimate(stay_dates, rates, e, cost) for e in band),
+    found = []
+    for name, rates in options:
+        estimates = stay_estimates(stay_dates, rates, pricing.elasticity, cost)
+        found.append(
+            Candidate(
+                name,
+                rates,
+                sum(estimates.values()),
+                None
+                if band is None
+                else tuple(_estimate(stay_dates, rates, e, cost) for e in band),
+                estimates,
+            )
         )
-        for name, rates in options
-    ]
+    return found
 
 
 def rescored(
@@ -489,7 +496,25 @@ def _estimate(
     """Estimated contribution (or revenue, when cost is 0) on the rooms still unsold,
     summed over the stay dates. The agent's path never passes a demand bias, a market
     elasticity or a reaction share: it scores every candidate against the median as shopped."""
-    total = 0.0
+    estimates = stay_estimates(
+        stay_dates, rates, elasticity, cost, demand_bias, market_elasticity, reaction_share
+    )
+    return sum(estimates.values())
+
+
+def stay_estimates(
+    stay_dates: list[StayDate],
+    rates: dict[int, float],
+    elasticity: float,
+    cost: float,
+    demand_bias: float = 1.0,
+    market_elasticity: float = 0.0,
+    reaction_share: float = 0.0,
+) -> dict[int, float]:
+    """Each stay date's estimated contribution (or revenue, when cost is 0) on its rooms still
+    unsold, in stay-date order, so that the sum is the estimate and the outcome record can hold
+    the plan's estimate for one night."""
+    found = {}
     for s in stay_dates:
         rate = rates[s.stay_day]
         median = s.comp_median + reaction_share * (rate - s.rate)
@@ -499,8 +524,8 @@ def _estimate(
             * (median / s.comp_median) ** -market_elasticity
             * (rate / median) ** -elasticity
         )
-        total += expected_bookings(demand, s.unsold) * (rate - cost)
-    return total
+        found[s.stay_day] = expected_bookings(demand, s.unsold) * (rate - cost)
+    return found
 
 
 def _flag_numbers(rows: pd.DataFrame, stay_dates: list[StayDate]) -> FlagNumbers:

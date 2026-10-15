@@ -587,11 +587,11 @@ marked [H], with one line that names the node it moved to.
 ## stored.py
 
 ### RUL-72 [C] TABLES
-- Value: ("daily_bookings", "rate_shops", "schedule_snapshots", "events", "flags", "plans", "decisions")
+- Value: ("daily_bookings", "rate_shops", "schedule_snapshots", "events", "flags", "plans", "decisions", "outcomes")
 - File: src/hotel_market/stored.py
 - Kind: label
-- Meaning: the seven tables sql/schema.sql defines ([[DAT-28]]), the four feeds first.
-- Evidence: test_the_schema_is_seven_tables_each_keyed_by_as_of_day
+- Meaning: the eight tables sql/schema.sql defines ([[DAT-28]]), the four feeds first and the outcomes last.
+- Evidence: test_the_schema_is_eight_tables_each_keyed_by_its_day
 
 ### RUL-73 [C] OPENING_DAY
 - Value: -1

@@ -477,7 +477,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: test_the_demo_file_describes_the_market_in_claude_md, test_the_revenue_target_scores_candidates_on_the_rate_alone, test_the_command_takes_a_customer_file_and_a_target
 
 ### DEC-42 [C] The feeds and the agent's output are stored tables the agent can run against a day at a time
-- Decided: sql/schema.sql defines seven tables ([[DAT-28]]), four feeds and three agent outputs, each keyed by as_of_day. The file is plain SQL, and its head lists the statements a cloud warehouse would change.
+- Decided: sql/schema.sql defines eight tables ([[DAT-28]]): four feeds and three agent outputs keyed by as_of_day, and the outcomes keyed by the decision's day. Its head lists the statements a cloud warehouse would change.
 - Stored: stored.py ([[MOD-21]]) implements the four interfaces over the tables and writes a day's rows. It deletes the day's rows first, so running a day twice leaves the tables unchanged. The simulated sources ([[MOD-19]]) are unchanged.
 - Daily run: the run-day command plays the simulator to day N with the stored rate changes and writes the day's feeds. A fresh agent resumes the stored hold and advice, decides the day from the tables alone and writes its output.
 - Replay: hotel-market replay --as-of N rebuilds the day's plans from the tables alone and takes the actions the stored decisions record. It checks the rebuilt plans against the stored ones, and --from runs a range of days in one pass.

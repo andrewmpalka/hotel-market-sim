@@ -154,6 +154,9 @@ class Agent:
             Entry
         ] = []  # the day's entries while they are decided; a client may read them
         self.advice: list[Advice] = []
+        # (day, hotel key) -> the request the hotel's queue was asked with and the answer, for the
+        # stored decisions (stored.write_decisions)
+        self.asked: dict[tuple[int, str], tuple[dict, dict]] = {}
 
     def decide(self, day: int, sources: Sources) -> dict[tuple[str, int], float]:
         """Decide the day's flags and return the rate changes to apply from tomorrow."""
@@ -217,6 +220,7 @@ class Agent:
             path = self.cache_dir / f"day{day:03d}_{hotel.key}.json"
             request = request_for(day, hotel, queued)
             answer = ask(request, path, self.client, self.replay, model=self.model)
+            self.asked[(day, hotel.key)] = (request, answer)
             decisions = {decision["id"]: decision for decision in answer["decisions"]}
             for entry in queued:
                 entry.action = decisions[entry.id]["choice"]

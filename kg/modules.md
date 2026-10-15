@@ -95,7 +95,7 @@ which is also the order in which they depend on each other.
 ### MOD-10 [C] agent.py
 - File: src/hotel_market/agent.py
 - Owns: the daily decision, decide(day, sources): detect numbers, flags, entries and the queue of plans worth the minimum. It makes one model or template call per hotel and records the accepted changes, their hold and the log ([[DAT-18]]).
-- Also: the minimum-stay advice ([[DAT-15]], [[DEC-10]]), named by MIN_STAY ([[RUL-48]]). decide() keeps the day's entries in agent.today for the oracle ([[MOD-23]]). Agent(model=) names the model and its cache folder ([[DEC-23]]).
+- Also: the minimum-stay advice ([[DAT-15]], [[DEC-10]]), named by MIN_STAY ([[RUL-48]]). decide() keeps the day's entries in agent.today for the oracle ([[MOD-23]]) and each request with its answer in agent.asked for the tables.
 - Modes: the elasticity modes ([[DAT-22]]): true, fixed:X or learn:X. In learn mode it re-estimates every hotel's elasticity every day ([[MOD-16]], [[DEC-38]]). It passes the cautious and level flags into each day's pricing ([[CON-11]]).
 - Resume: plans_for() builds a day's entries and advice_for() the advice. resume() picks up the hold and the advice that earlier days left. That is how a table-backed run gives each day's agent its state ([[MOD-21]], [[DEC-42]]).
 - Reads: [[MOD-02]], [[MOD-07]], [[MOD-08]], [[MOD-09]], [[MOD-16]], [[MOD-17]], [[MOD-18]], [[MOD-20]]; never the simulator, which wraps it with deciding() ([[MOD-19]])
@@ -116,7 +116,7 @@ which is also the order in which they depend on each other.
 - File: src/hotel_market/cli.py
 - Owns: the hotel-market command: the fixed-rate and agent runs, decisions.jsonl ([[DAT-18]]), the replay of a day and the bench ([[DEC-48]]). It prints the queues and the summary tables ([[DAT-20]]), which name who answered the queue.
 - Sweep: sweep() runs one arm per seed, mode ([[DAT-24]]) and reviewer ([[DAT-32]]). bench runs the template, the oracle and each --model in every --elasticity mode. It prints a table per mode, a ranking and the groups of [[MEA-13]].
-- Daily: run_days() plays the simulator to a day with the stored changes and writes the feeds. A fresh agent then runs on the tables ([[MOD-21]]). replay_day() rebuilds a day's plans from the tables and checks them ([[DEC-42]]).
+- Daily: run_days() plays the simulator to a day under the run's world options and writes the feeds. A fresh agent then runs on the tables ([[MOD-21]]). replay_day() rebuilds a day's plans from the tables and checks them ([[DEC-42]]).
 - Holds: REPORT_DAYS ([[RUL-53]]), SHOCK_PLAN_CAUSES ([[RUL-55]]), DAILY_COMMANDS ([[RUL-74]]), BENCH_MODES ([[RUL-81]]), NO_KEY_LINE ([[RUL-122]]) and DEFAULT_DB. --customer and --target name the market and its target ([[DEC-41]]).
 - Reads: [[MOD-01]], [[MOD-02]], [[MOD-06]], [[MOD-08]], [[MOD-09]], [[MOD-10]], [[MOD-11]], [[MOD-16]], [[MOD-19]], [[MOD-20]], [[MOD-21]], [[MOD-23]], [[MOD-26]] (the hotel count's words)
 - Tests: tests/test_cli.py
@@ -201,7 +201,7 @@ which is also the order in which they depend on each other.
 ### MOD-21 [C] stored.py
 - File: src/hotel_market/stored.py
 - Owns: the four sources read from stored tables ([[DAT-28]], [[DEC-42]]), the second implementation of [[DAT-25]]: StoredBookings, StoredRateShops, StoredSchedules and StoredEvents. Made for a day, each refuses a later one ([[DEC-61]]).
-- Writers: write_snapshot() copies one day of any Sources into the feed tables. write_decisions() stores a day's flags, plans and decisions. Each writer deletes the day's rows first, in one transaction.
+- Writers: write_snapshot() copies one day of any Sources into the feed tables. write_decisions() stores a day's flags, plans and decisions with each request and answer, and write_outcomes() a passed night's outcomes. Each deletes first.
 - Readers: state_before() gives an agent its hold and advice, and rate_changes_before() gives the simulator its playback. decided_on(), records_on(), decisions_file() and plan_differences() read a run back.
 - Holds: TABLES ([[RUL-72]]) and OPENING_DAY ([[RUL-73]]). connect() opens the DuckDB file and creates the tables from sql/schema.sql. It imports nothing from the simulator and is one of the modules the import test covers.
 - Reads: [[MOD-02]], [[MOD-08]] (the Entry, for the plan and decision rows), [[MOD-17]] (the interfaces), [[MOD-20]]; never the simulator ([[DEC-40]])

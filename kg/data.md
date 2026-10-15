@@ -90,7 +90,7 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-11 [C] Candidate
 - File: src/hotel_market/plan.py
-- Fields: Candidate(name, rates by stay day clamped to the floor and ceiling, estimate, band). The names are the entries of [[RUL-43]], plus [[RUL-42]] when the comp median dropped.
+- Fields: Candidate(name, rates by stay day clamped to the floor and ceiling, estimate, band, estimates by stay day, which sum to the estimate). The names are the entries of [[RUL-43]], plus [[RUL-42]] when the comp median dropped.
 - Band: None unless the cautious rule is on ([[CON-11]]); then it holds the estimate at the band's low and high elasticity.
 - Written by: [[MOD-08]]
 - Read by: [[MOD-08]], [[MOD-09]], [[MOD-12]]
@@ -251,7 +251,7 @@ the plans, the model's request and answer, and what the command writes.
 - Output: flags (as_of_day, hotel, first_stay, last_stay, causes). plans has one row per candidate with its exact rates, estimate, versus_hold, band and is_best. decisions has one row per entry and advice, with the log line in record.
 - Warehouse: the file's head lists the statements a cloud warehouse would change. They are the type names, PRIMARY KEY enforcement, the JSON text columns and the transaction.
 - Used by: [[MOD-21]] writes them with write_snapshot and write_decisions, driven by run-day in [[MOD-12]], deleting a day's rows first ([[DEC-42]]). Its four sources and run readers read them back for run-day's playback and replay.
-- Evidence: test_the_schema_is_seven_tables_each_keyed_by_as_of_day, test_a_60_day_run_through_the_tables_gives_the_same_decisions_file, test_running_a_day_twice_leaves_the_tables_unchanged
+- Evidence: test_the_schema_is_eight_tables_each_keyed_by_its_day, test_a_60_day_run_through_the_tables_gives_the_same_decisions_file, test_running_a_day_twice_leaves_the_tables_unchanged
 
 ### DAT-29 [C] The recorded live run
 - File: tests/fixtures/live_seed7/
@@ -292,7 +292,7 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-33 [C] The demo file
 - File: sql/demo.sql
-- Tables: eight from sql/demo.sql beside the seven stored tables ([[DAT-28]]), and run (seed, reason_source), which demo_data.py creates for the sidebar. Every date reads as "Thu 18 Feb [45]" ([[DEC-58]]).
+- Tables: eight from sql/demo.sql beside the eight stored tables ([[DAT-28]]), and run (seed, reason_source), which demo_data.py creates for the sidebar. Every date reads as "Thu 18 Feb [45]" ([[DEC-58]]).
 - Hotels and days: hotels (position, key, name, rooms, start_rate, rate_axis_low, rate_axis_high). days (as_of_day, label, stay_window). news (as_of_day, hotel, position, kind, text) holds what became known, and one row says nothing did.
 - Chart: stay_dates (as_of_day, hotel, stay_day, label, tick, rate, comp_median, rooms_on_books, pace, flagged, causes, flag, planned_rate), one row per stay date in the window. planned_rate is NULL without an accepted plan.
 - Queue: queue (as_of_day, hotel, position, stays, causes, plan, value, value_text, reason, reason_source, queued, outcome, alternative, alternative_text). The outcome is accepted, declined or held. A held flag names its best alternative.

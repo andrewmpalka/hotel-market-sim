@@ -72,7 +72,7 @@ with pip install -e ".[dev]" and import it as hotel_market.<module>.
 
 Around the package, tests/ holds one test file per module, conftest.py and
 tests/fixtures/live_seed7/, one recorded live run. customers/demo.toml is the
-demo market, sql/schema.sql defines the seven stored tables and sql/demo.sql the
+demo market, sql/schema.sql defines the eight stored tables and sql/demo.sql the
 demo page's eight. scripts/live_audit.py runs and audits a live seed, and
 scripts/median_path.py prints a comp median's path next to the hotel's rate.
 scripts/no_comp_raise.py reruns the sweep with the convention's competitor

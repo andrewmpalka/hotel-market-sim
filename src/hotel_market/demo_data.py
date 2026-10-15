@@ -5,7 +5,7 @@ The demo page's data. One command writes one DuckDB file with everything the pag
     hotel-market demo-data --seed 7              # writes demo.duckdb
     hotel-market demo-data --seed 7 --out FILE --customer customers/demo.toml
 
-The file holds the seven stored tables for days 0 to 59 (stored.py). The daily path writes them
+The file holds the eight stored tables for days 0 to 59 (stored.py). The daily path writes them
 with a client that answers from the recorded live run (tests/fixtures/live_seed7) wherever the
 recording holds the same request, so the page shows the model's reasons, and it needs no API
 key. A request the recording does not cover, because the market or the world changed, gets the

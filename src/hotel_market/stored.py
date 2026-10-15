@@ -11,8 +11,10 @@ do. The tables therefore keep the simulator's rule: nothing is used before the d
 known, and a replay of a day cannot read the days after it.
 
 write_snapshot() copies one day of any Sources into the feed tables. write_decisions() stores the
-day's flags, plans and decisions. Both delete the day's rows first, so writing a day twice leaves
-the tables as they were. state_before() gives an Agent the hold and the advice that earlier days
+day's flags, plans and decisions, each decision with the request the model saw, its answer and
+their digests. write_outcomes() stores what each accepted plan earned on the night that has just
+passed. All three delete the night's or the day's rows first, so writing a day twice leaves the
+tables as they were. state_before() gives an Agent the hold and the advice that earlier days
 left. rate_changes_before() gives a simulator the accepted rates to play back. The hotel-market
 run-day and replay commands (cli.py) drive them.
 
@@ -23,7 +25,7 @@ the tables and the customer file.
 from __future__ import annotations
 
 import json
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable, Iterator, Mapping
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -32,6 +34,7 @@ import numpy as np
 import pandas as pd
 
 from hotel_market.customer import Customer, demo
+from hotel_market.model import request_digest
 from hotel_market.plan import HOLD, Entry
 from hotel_market.sources import (
     BookingHistory,
@@ -54,6 +57,7 @@ TABLES = (
     "flags",
     "plans",
     "decisions",
+    "outcomes",
 )
 OPENING_DAY = -1  # the position before the first day: the opening rooms, shop and schedule
 
@@ -80,6 +84,7 @@ _COLUMNS = {
         "weekday",
         "candidate",
         "rates",
+        "estimates",
         "estimate",
         "versus_hold",
         "band_low",
@@ -105,12 +110,38 @@ _COLUMNS = {
         "simulated",
         "event",
         "record",
+        "request_digest",
+        "prompt_digest",
+        "model",
+        "request",
+        "answer",
+    ),
+    "outcomes": (
+        "decision_day",
+        "hotel",
+        "stay_day",
+        "rooms_sold",
+        "room_revenue",
+        "estimated",
+        "realised",
     ),
 }
 # Columns that may be NULL: None is kept as NULL rather than becoming NaN.
 _NULLABLE = {
     "plans": ("band_low", "band_high"),
-    "decisions": ("plan", "value_at_stake", "elasticity", "elasticity_mode", "new_rates", "event"),
+    "decisions": (
+        "plan",
+        "value_at_stake",
+        "elasticity",
+        "elasticity_mode",
+        "new_rates",
+        "event",
+        "request_digest",
+        "prompt_digest",
+        "model",
+        "request",
+        "answer",
+    ),
 }
 
 
@@ -409,11 +440,21 @@ def write_snapshot(connection, day: int, feed: Sources, customer: Customer | Non
         _replace_day(connection, "events", day, events)
 
 
-def write_decisions(connection, day: int, entries: list[Entry], advice: Iterable) -> None:
-    """The day's flags, plans and decisions, replacing any stored for the day."""
+def write_decisions(
+    connection,
+    day: int,
+    entries: list[Entry],
+    advice: Iterable,
+    asked: Mapping[tuple[str, int], tuple[dict, dict]] | None = None,
+) -> None:
+    """The day's flags, plans and decisions, replacing any stored for the day. asked maps (hotel
+    key, day) to the request the hotel's queue was asked with and the answer, as Agent.asked
+    keeps them; each queued entry's row then carries the request, the answer, the request's
+    digest and, from a cache record, the prompt's digest and the model."""
+    asked = asked or {}
     flags = [(day, e.hotel, e.first_stay, e.last_stay, ",".join(e.causes)) for e in entries]
     decisions = [
-        _decision_row(day, position, record.to_json())
+        _decision_row(day, position, record.to_json(), asked.get((day, record.hotel)))
         for position, record in enumerate([*entries, *advice])
     ]
     with _transaction(connection):
@@ -438,6 +479,7 @@ def plan_rows(entries: list[Entry]) -> list[tuple]:
                         group.weekday,
                         candidate.name,
                         json.dumps({str(s): r for s, r in sorted(candidate.rates.items())}),
+                        json.dumps({str(s): e for s, e in sorted(candidate.estimates.items())}),
                         float(candidate.estimate),
                         float(candidate.estimate - group.hold.estimate),
                         low,
@@ -448,9 +490,14 @@ def plan_rows(entries: list[Entry]) -> list[tuple]:
     return rows
 
 
-def _decision_row(day: int, position: int, line: dict) -> tuple:
-    """A decisions row from a decisions.jsonl line, for an entry or an advice."""
+def _decision_row(
+    day: int, position: int, line: dict, asked: tuple[dict, dict] | None = None
+) -> tuple:
+    """A decisions row from a decisions.jsonl line, for an entry or an advice. A queued entry's
+    row ends with the request its hotel's queue was asked with and the answer; the other rows end
+    with NULLs."""
     pricing = line.get("elasticity") or {}
+    request, answer = asked if asked is not None and line.get("queued") else (None, None)
     return (
         day,
         position,
@@ -470,7 +517,53 @@ def _decision_row(day: int, position: int, line: dict) -> tuple:
         bool(line["simulated"]),
         line.get("event"),
         json.dumps(line),
+        (answer.get("request_digest") or request_digest(request)) if request else None,
+        answer.get("prompt_digest") if answer else None,
+        answer.get("model") if answer else None,
+        json.dumps(request) if request else None,
+        json.dumps(answer["decisions"]) if answer else None,
     )
+
+
+def write_outcomes(connection, day: int, customer: Customer | None = None) -> None:
+    """The outcome of every accepted plan on the night that has just passed, stay date `day`: the
+    rooms sold and the room revenue over every booking day, the plan's estimate for the night on
+    the rooms then unsold, and what the rooms sold after the decision earned in the same measure.
+    The night's rows are deleted first, so writing a day twice leaves the table as it was."""
+    customer = customer or demo()
+    accepted = _frame(
+        connection,
+        "SELECT d.as_of_day, d.hotel, p.estimates FROM decisions d JOIN plans p "
+        "ON p.as_of_day = d.as_of_day AND p.hotel = d.hotel "
+        "AND p.first_stay = d.first_stay AND p.last_stay = d.last_stay "
+        "WHERE d.as_of_day <= ? AND d.simulated AND d.action <> ? AND p.is_best "
+        "AND p.candidate <> ? AND d.first_stay <= ? AND d.last_stay >= ?",
+        [day, HOLD, HOLD, day, day],
+    )
+    rows = []
+    for decided in accepted.itertuples(index=False):
+        estimates = json.loads(decided.estimates)
+        if str(day) not in estimates:  # another day of the week within the same flag
+            continue
+        hotel = customer.hotel(decided.hotel)
+        cost = hotel.room_cost if customer.scores_contribution() else 0.0
+        bookings = _frame(
+            connection,
+            "SELECT as_of_day, rooms_taken, rate FROM daily_bookings "
+            "WHERE hotel = ? AND stay_day = ? ORDER BY as_of_day",
+            [hotel.key, day],
+        )
+        sold, revenue, realised = 0, 0.0, 0.0
+        for booked in bookings.itertuples(index=False):
+            sold += int(booked.rooms_taken)
+            revenue += int(booked.rooms_taken) * float(booked.rate)
+            if booked.as_of_day > decided.as_of_day:
+                realised += int(booked.rooms_taken) * (float(booked.rate) - cost)
+        rows.append(
+            (int(decided.as_of_day), hotel.key, day, sold, revenue, estimates[str(day)], realised)
+        )
+    with _transaction(connection):
+        _replace_day(connection, "outcomes", day, rows, key="stay_day")
 
 
 @contextmanager
@@ -484,9 +577,11 @@ def _transaction(connection) -> Iterator[None]:
     connection.commit()
 
 
-def _replace_day(connection, table: str, day: int, rows: list[tuple]) -> None:
-    """Delete the day's rows of a table and insert these instead."""
-    connection.execute(f"DELETE FROM {table} WHERE as_of_day = ?", [day])
+def _replace_day(
+    connection, table: str, day: int, rows: list[tuple], key: str = "as_of_day"
+) -> None:
+    """Delete the day's rows of a table, by the key column, and insert these instead."""
+    connection.execute(f"DELETE FROM {table} WHERE {key} = ?", [day])
     if not rows:
         return
     columns = _COLUMNS[table]
