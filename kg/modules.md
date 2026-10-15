@@ -88,8 +88,8 @@ which is also the order in which they depend on each other.
 - Owns: the model call: the request the model sees ([[DAT-16]]) and the system prompt ([[RUL-47]]). It builds the answer schema from the request's own options ([[DEC-34]]) and checks the answer against them.
 - Holds: the cache ([[DAT-17]], [[DEC-23]], [[DEC-25]]), the Claude client with its refusal fallback and the template, which needs no key. Measured wraps any client, records each call ([[DAT-30]]) and retries it after an error.
 - Names: MODEL and MODELS ([[RUL-46]], [[RUL-79]]), MODE_NAMES ([[RUL-75]]) and, for Measured, RETRIES, BACKOFF_SECONDS and SDK_ERRORS ([[RUL-76]] to [[RUL-78]]). Every request figure is a display string from [[MOD-11]] ([[DEC-44]]).
-- Reads: [[MOD-02]], [[MOD-07]], [[MOD-08]], [[MOD-11]]
-- Writes: [[DAT-16]], [[DAT-17]], [[DAT-30]]
+- Definition: The template is a stand-in that answers in the model's place when there is no key; it says yes to every plan and writes a reason from the entry's own figures.
+- Reads and writes: reads [[MOD-02]], [[MOD-07]], [[MOD-08]] and [[MOD-11]]; writes [[DAT-16]], [[DAT-17]] and [[DAT-30]]
 - Tests: tests/test_model.py
 - Evidence: test_ask_calls_the_model_once_and_then_reads_the_cache, test_a_choice_that_is_not_the_plan_or_hold_is_rejected, test_every_figure_in_the_request_is_a_display_string, test_a_measured_client_records_one_call
 

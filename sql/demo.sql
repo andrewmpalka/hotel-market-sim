@@ -1,5 +1,5 @@
 -- The tables the demo page reads, written by hotel-market demo-data into the
--- same file as the seven stored tables (schema.sql). The page formats and draws
+-- same file as the eight stored tables (schema.sql). The page formats and draws
 -- these rows and computes nothing, so every figure here is final: code wrote it.
 -- Every date reads as a calendar date with its day of the week and the day
 -- number in brackets, such as "Thu 18 Feb [45]". A table keyed by as_of_day and

@@ -28,52 +28,55 @@ that shape the repository has the control arm and an oracle-scored reviewer, and
 it has no online or shadow evaluation, no human in the loop, no outcome labels
 from the world, no post-training and no incident path.
 
-The benchmark ran seeds 1 to 20 in three elasticity modes on 2026-10-15 on
-world v2. Each mode has five reviewers: the template, which accepts every plan,
-the oracle, and the three current Claude models. In the true mode, every plan is
-scored with the simulator's own elasticity, so accepting every plan is correct.
-The oracle and the three models accept every plan, and each earns the
-template's +$16,164 a seed. The headline figures in that mode therefore measure
-the plans and not the model. The two modes with a wrong elasticity separate the
-reviewers.
+The benchmark ran seeds 1 to 20 in three elasticity modes on 2026-10-15 on world
+v2. Each mode has five reviewers: the template, which says yes to every plan,
+the oracle, and the three current Claude models. The template is a stand-in that
+answers in the model's place when there is no key; it says yes to every plan and
+writes a reason from the entry's own figures. In the true mode, every plan is
+scored with the simulator's own elasticity, so saying yes to every plan is
+correct. The oracle and the three models say yes to every plan, and each earns
+the template's +$16,164 a seed. The headline figures in that mode therefore
+measure the plans and not the model. The two modes with a wrong elasticity
+separate the reviewers.
 
-At a fixed elasticity of 1.0, accepting every plan loses $6,265 a seed, because
-the agent prices with an elasticity below the simulator's 1.5 and raises too
-often. The oracle earns +$13,107 and accepts 11% of the plans. The difference,
-$19,372 a seed, is the value a reviewer can recover. Opus recovers 34% of it. It
-earns +$305 a seed and beats the fixed-rate run in 8 of 20 seeds.
+At a fixed elasticity of 1.0, saying yes to every plan loses $6,265 a seed,
+because the agent prices with an elasticity below the simulator's 1.5 and raises
+too often. The oracle earns +$13,107 and accepts 11% of the plans. The
+difference, $19,372 a seed, is the value a reviewer can recover. Opus recovers
+34% of it. It earns +$305 a seed and beats the fixed-rate run in 8 of 20 seeds.
 
 Opus declines 230 plans, and the oracle declines every one of them, so its
 precision is 1.00. Because it catches three in ten of the oracle's declines, its
 recall is 0.31, and its dollar-weighted recall is 0.33. At a fixed elasticity of
-2.0, accepting every plan loses $2,687 a seed and the oracle earns +$6,006. Opus
-declines 40 plans with a precision of 0.93 and earns -$2,442, a recovered share
-of 0.03.
+2.0, saying yes to every plan loses $2,687 a seed and the oracle earns +$6,006.
+Opus declines 40 plans with a precision of 0.93 and earns -$2,442, a recovered
+share of 0.03.
 
 Sonnet declines 8 plans at 1.0 and 5 at 2.0, each one the oracle also declines,
-and Haiku declines none, so both stay within $100 a seed of accepting every
+and Haiku declines none, so both stay within $100 a seed of saying yes to every
 plan. At a fixed elasticity of 1.0 Opus's calls cost $0.71 per seed, Sonnet's
 $0.26 and Haiku's $0.02. For the two cheaper models, the value of the run is in
 the code, and the model writes the reasons.
 
 The learned modes then ran live, from a prior of 1.0 and of 2.0, with and
 without the cautious rule. One arm ran in the reacting market at a market
-elasticity of 0.5. From a prior of 1.0, accepting every plan earns +$804 a seed
-and the oracle +$13,199. The $12,395 a seed between them is open to a reviewer,
-and Opus recovers 10% of it. It declines 41 plans, the oracle agrees with every
-one, and it earns +$2,049. Sonnet declines 4 plans and Haiku 2. Opus's declines now follow the
-uncertainty the request shows: it declines 7 of the 8 plans whose estimate has
-a standard error under 0.15 and 6 of the 345 at 0.35 and over. With the
-cautious rule, accepting every plan earns +$12,527 and the oracle +$14,854. Opus
-declines 5 plans and earns +$12,561, Sonnet declines none, and Haiku declines
-one plan the oracle accepts. From a prior of 2.0, Opus declines 12 plans without
-the rule, with a precision of 0.92, and none with it. In the reacting arm Opus
-held 27 of the 583 plans it was shown on stay dates the hotel had changed within
-14 days, and the oracle held none, because the simulator pays the second raise.
-The holds cost $2,238 a seed. Since world v2 the request lists the hotel's
-earlier changes on those dates, with the rooms booked since against the rooms
-expected. The five learn commands made 3,737 calls for $48.73 at list prices,
-and the fixed modes 4,006 calls for $37.19 (docs/results.md).
+elasticity of 0.5. From a prior of 1.0, saying yes to every plan earns +$804 a
+seed and the oracle +$13,199. The $12,395 a seed between them is open to a
+reviewer, and Opus recovers 10% of it. It declines 41 plans, the oracle agrees
+with every one, and it earns +$2,049. Sonnet declines 4 plans and Haiku 2.
+Opus's declines now follow the uncertainty the request shows: it declines 7 of
+the 8 plans whose estimate has a standard error under 0.15 and 6 of the 345 at
+0.35 and over. With the cautious rule, saying yes to every plan earns +$12,527
+and the oracle +$14,854. Opus declines 5 plans and earns +$12,561, Sonnet
+declines none, and Haiku declines one plan the oracle accepts. From a prior of
+2.0, Opus declines 12 plans without the rule, with a precision of 0.92, and none
+with it. In the reacting arm Opus held 27 of the 583 plans it was shown on stay
+dates the hotel had changed within 14 days, and the oracle held none, because
+the simulator pays the second raise. The holds cost $2,238 a seed. Since world
+v2 the request lists the hotel's earlier changes on those dates, with the rooms
+booked since against the rooms expected. The five learn commands made 3,737
+calls for $48.73 at list prices, and the fixed modes 4,006 calls for $37.19
+(docs/results.md).
 
 This repository does no post-training. Every booking in this world comes from
 code in this repository. A model trained on these runs learns the simulator's

@@ -9,10 +9,12 @@ The schedule columns follow Cirium's published data dictionary, but every row
 is synthetic. The repository has no Cirium data and no affiliation with Cirium.
 
 The agent's demand forecast is the simulator's own formula and reads the
-simulator's own event uplift from the events feed, so every headline figure is
-a perfect-information result that measures the loop and not a forecast. In the
-default run every reviewer, the template and the three models, accepts every
-plan, so those figures measure the plans and not the model.
+simulator's own event uplift from the events feed, so every headline figure is a
+perfect-information result that measures the loop and not a forecast. In the
+default run every reviewer, the template and the three models, says yes to every
+plan, so those figures measure the plans and not the model. The template is a
+stand-in that answers in the model's place when there is no key; it says yes to
+every plan and writes a reason from the entry's own figures.
 
 ## Run it
 
@@ -86,19 +88,19 @@ never-cut control earns +$112,877 and the agent is -$54,602 against it,
 ahead in 0 seeds of 20, which docs/results.md explains as the ratchet
 (docs/results.md, The rule-based control).
 
-**What the model adds, and what learns.** Measured on 2026-10-15 on world v2:
-in the default run the model added nothing, because every reviewer accepted
+**What the model adds, and what learns.** Measured on 2026-10-15 on world v2: in
+the default run the model added nothing, because every reviewer said yes to
 every plan, and as a reviewer in a mode where the agent's elasticity was wrong,
-Opus recovered 34% of what a perfect reviewer could at a fixed elasticity of
-1.0 and 10% in a learned mode, by declining 230 and 41 plans that the oracle
-also declined, while Sonnet declined 8 and 4 and Haiku none and 2, so those two
-tie with accepting every plan. In those modes accepting every plan earns
+Opus recovered 34% of what a perfect reviewer could at a fixed elasticity of 1.0
+and 10% in a learned mode, by declining 230 and 41 plans that the oracle also
+declined, while Sonnet declined 8 and 4 and Haiku none and 2, so those two tie
+with saying yes to every plan. In those modes saying yes to every plan earns
 -$6,265 and +$804 a seed against the oracle's +$13,107 and +$13,199, so the
-reviewer matters more on world v2 than it did on world v1. The benchmark's
-7,743 calls cost $85.92 at list prices. The one piece that learns from the
-bookings is the elasticity estimator, a Poisson regression with a prior, and on
-world v2 the agent that uses it keeps little of the gain unless the cautious
-rule is on (docs/reviewers.md for the reviewers, docs/results.md for the rest).
+reviewer matters more on world v2 than it did on world v1. The benchmark's 7,743
+calls cost $85.92 at list prices. The one piece that learns from the bookings is
+the elasticity estimator, a Poisson regression with a prior, and on world v2 the
+agent that uses it keeps little of the gain unless the cautious rule is on
+(docs/reviewers.md for the reviewers, docs/results.md for the rest).
 
 ## The limit that matters
 
@@ -116,5 +118,6 @@ docs/limits.md.
 - docs/schedule-feed.md: the air schedule feed as this repository models it.
 - kg/: a map of the repository for agents, with kg/README.md as the legend.
 
-The next version reprices as data arrives during the day, adds per-weekday
-terms to the estimator, and adds cancellations and segments.
+The next version reprices as data arrives during the day, adds per-weekday terms
+to the estimator, adds cancellations and segments, and puts an event known
+before the run into the preload.

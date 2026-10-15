@@ -138,7 +138,7 @@ MEDIAN_CAUSES = frozenset({MEDIAN_UP, MEDIAN_DOWN})
 SEAT_CAUSES = frozenset({SEATS_UP, SEATS_CUT})  # the flags a filing raises
 # Printed first by a single run that asked for the model and found no key, so that the template's
 # answers are never mistaken for a review.
-NO_KEY_LINE = "No API key: the template accepts every plan"
+NO_KEY_LINE = "No API key: the template says yes to every plan"
 
 # ---- the three things the command can do ----------------------------------
 

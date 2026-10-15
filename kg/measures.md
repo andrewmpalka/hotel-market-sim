@@ -75,7 +75,7 @@ the agent changed.
 - Evidence: test_decline_precision_recall_and_f1_against_the_oracle
 
 ### MEA-12 [C] Recovered share
-- Formula: (the arm's mean realised change - the template's) / (the oracle's - the template's), on the same seeds and mode. 1 is the oracle's, 0 is accept-all's, and below 0 the reviewer lost money against accept-all.
+- Formula: (the arm's mean realised change - the template's) / (the oracle's - the template's), on the same seeds and mode. 1 is the oracle's, 0 is say-yes-to-everything's, and below 0 the reviewer lost money against say-yes-to-everything.
 - Function: hotel_market.bench.recovered_share
 - Tie: nan when the oracle and the template tie, as in the true mode, since there is nothing to recover ([[DEC-47]]).
 - Used by: the bench report ([[MOD-23]]), per mode and pooled over the mismatched modes. It is the one figure that says how much of the value a reviewer could recover this one did.

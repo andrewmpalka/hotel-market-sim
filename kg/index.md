@@ -8,19 +8,19 @@ nodes and its words, len(text.split()) over the file.
 
 | File | Nodes | Words |
 | --- | ---: | ---: |
-| modules.md | 30 | 4,081 |
+| modules.md | 30 | 4,118 |
 | data.md | 33 | 4,398 |
-| rules.md | 127 | 5,472 |
+| rules.md | 127 | 5,474 |
 | shocks.md | 7 | 762 |
 | concepts.md | 11 | 1,197 |
 | measures.md | 14 | 962 |
 | sources.md | 4 | 855 |
-| decisions.md | 66 | 9,723 |
+| decisions.md | 66 | 9,725 |
 | results.md | 42 | 7,014 |
-| forks.md | 13 | 1,917 |
-| unknowns.md | 16 | 2,193 |
-| every node file | 363 | 38,574 |
-| index.md | | 2,983 |
+| forks.md | 14 | 2,039 |
+| unknowns.md | 16 | 2,195 |
+| every node file | 364 | 38,739 |
+| index.md | | 2,996 |
 
 ## Modules (`modules.md`)
 
@@ -351,6 +351,7 @@ nodes and its words, len(text.split()) over the file.
 - FRK-11 [O] A periodic re-plan beside the anomaly flags
 - FRK-12 [H] Per-hotel booking curves in the customer file
 - FRK-13 [H] The stored route refuses a later day
+- FRK-14 [O] An event known before the run goes into the preload
 
 ## Unknowns (`unknowns.md`)
 

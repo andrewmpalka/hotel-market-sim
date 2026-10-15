@@ -332,8 +332,8 @@ design keeps its node, marked [H], and names the decision that replaced it.
 ### DEC-49 [C] The benchmark measures the reviewer in the mismatched modes
 - Decided: the bench measures every reviewer at fixed:1.0 and fixed:2.0 and keeps the true mode as a check. The ranking pools the two mismatched modes ([[DEC-48]]).
 - Replaces: nothing built; the live model had been measured in the true mode only ([[UNK-01]]).
-- Reason: in the true mode every plan is scored at the simulator's elasticity, so accepting every plan is right. The oracle accepts all ([[DEC-47]]). Only where the code's elasticity is wrong can a decline be right ([[DEC-38]]).
-- Measured: at fixed:1.0 on world v2 Opus recovers 0.34 of the oracle's gain over accept-all, and Sonnet and Haiku recover none ([[RES-16]], [[RES-19]]).
+- Reason: in the true mode every plan is scored at the simulator's elasticity, so saying yes to every plan is right. The oracle accepts all ([[DEC-47]]). Only where the code's elasticity is wrong can a decline be right ([[DEC-38]]).
+- Measured: at fixed:1.0 on world v2 Opus recovers 0.34 of the oracle's gain over say-yes-to-everything, and Sonnet and Haiku recover none ([[RES-16]], [[RES-19]]).
 - Commit: 5935444
 - Evidence: test_the_oracle_reviewer_accepts_every_queued_plan_in_true_mode, test_the_offline_bench_on_20_seeds_pins_the_benchmarks_headline
 - Links: [[UNK-01]], [[DEC-38]], [[DEC-47]], [[DEC-48]], [[MEA-12]], [[RES-16]], [[RES-17]], [[RES-18]], [[RES-19]]
@@ -381,7 +381,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Decided: learn:X --level scales the agent's forecast, the pace baseline included, by exp(intercept) ([[RUL-96]] to [[RUL-98]]). The factor is 1 until the fit has enough observations. Every plan record carries it ([[DAT-21]]).
 - Baseline: the estimator's baseline stays unscaled, so the intercept keeps measuring the level against the raw forecast ([[MOD-16]]). The factor therefore does not compound.
 - Reason: the intercept absorbed a demand-level error and the agent discarded it ([[DEC-38]]). At a bias of 0.9 the plain learner lost money ([[RES-21]]). The arm asks whether the level fed back recovers that, and what it costs at 1.0.
-- Measured: the level is learned by day 10 in every world ([[RES-29]] to [[RES-32]]). The gain at 0.9 does not recover: accept-all earns -$15,244 a seed with it.
+- Measured: the level is learned by day 10 in every world ([[RES-29]] to [[RES-32]]). The gain at 0.9 does not recover: say-yes-to-everything earns -$15,244 a seed with it.
 - Evidence: test_a_level_agent_scales_its_forecast_by_the_fitted_demand_level, test_a_level_scales_one_hotels_pace_baseline_and_expected_demand, test_the_level_factor_is_the_fitted_level_once_the_fit_has_enough_observations
 - Links: [[DEC-38]], [[DEC-50]], [[DEC-52]], [[RUL-96]], [[RUL-97]], [[RUL-98]], [[RES-29]], [[RES-30]], [[RES-31]], [[RES-32]], [[UNK-07]], [[UNK-08]]
 

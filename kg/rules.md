@@ -540,7 +540,7 @@ marked [H], with one line that names the node it moved to.
 - Evidence: test_the_demo_file_describes_the_market_in_claude_md
 
 ### RUL-122 [C] NO_KEY_LINE
-- Value: "No API key: the template accepts every plan"
+- Value: "No API key: the template says yes to every plan"
 - File: src/hotel_market/cli.py
 - Kind: label
 - Meaning: the first line a single run prints when it did not ask for the template and found no key. The summary then names the template as the source of the declines.

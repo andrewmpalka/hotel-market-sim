@@ -98,3 +98,10 @@ it. None of these is in progress.
 - Known: the simulated sources are made for a day and refuse a later one. The stored sources answer any day the tables hold, so a replay of day 10 can read day 34 ([[DEC-42]]).
 - Needs: an as_of_day on the four stored sources and on stored_sources(), passed by run-day and replay ([[MOD-12]]). No figure changes.
 - Links: [[MOD-19]], [[MOD-21]], [[DEC-40]], [[DEC-42]], [[RUL-03]]
+
+### FRK-14 [O] An event known before the run goes into the preload
+- Choice: whether an event announced before day 0 shapes the day-0 preload ([[DEC-03]]). Today only the demand after day 0 carries its uplift ([[DEC-09]], [[SRC-04]]).
+- Known: on world v2 the convention hotel's early booking curve ([[DEC-66]]) puts most of the convention's business on the books before day 0. The uplift applies to demand after day 0 only.
+- Consequence: an event announced on day 10 adds little. The convention plans earn +$614 a seed on their stay dates ([[RES-41]]).
+- Open: the next version puts an event known before the run into the preload, so the day-0 books carry it.
+- Links: [[DEC-03]], [[DEC-09]], [[DEC-66]], [[SRC-04]], [[RES-41]]

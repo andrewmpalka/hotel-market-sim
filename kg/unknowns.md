@@ -6,7 +6,7 @@ when a test confirms the answer, and it becomes [H] when a run settled it
 and a RES node records the run. A claim that no test can confirm stays [U].
 
 ### UNK-01 [C] How the live model decides, compared with the template
-- Was unknown: no run had asked the model. Every number in the README's Results section came from the template, which accepts every plan.
+- Was unknown: no run had asked the model. Every number in the README's Results section came from the template, which says yes to every plan.
 - Before: four live runs of seed 7 on world v1 accepted all 28 plans ([[RES-08]]), and the world v2 run of 2026-10-15 accepted all 6 ([[RES-09]]). The decisions and the contribution change were the template's each time.
 - Reasons: the reasons differed by request format. The fourth format, with each range as one phrase, copied every phrase whole ([[DEC-44]]). The world v2 run restated three gains and paraphrased an earlier change.
 - Kept: the figures here come from the recorded world v2 run of seed 7, kept as [[DAT-29]]. The world v1 runs are quoted from the sessions that made them.

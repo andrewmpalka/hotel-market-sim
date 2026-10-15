@@ -9,29 +9,28 @@
   forecast is wrong by that factor. At 0.9 the default run keeps +$1,913 a seed
   of its +$32,899, because every raise sells fewer rooms than the agent's
   estimate says. At 1.1 it earns +$112,082 a seed, because the start rates were
-  set for a smaller market. The learning agent's day-59 elasticity stays at
-  1.26 to 1.49 at both biases, so a level error that is a constant factor lands
-  in the estimator's intercept as designed. A weekday or an event error lands
-  in the slope instead, by two to three standard errors, because it moves with
-  the rate ratio on the dates where the medians and the rates move. The
-  estimator learns only where the hotel has moved its own rate by several per
-  cent across most of its bookings, so in a run where the hotel barely moves
-  its rate the estimate stays near the prior. With `--level` the agent feeds
-  that intercept back
-  into its forecast and learns the level by day 10, but the gain at 0.9 does
-  not recover, because the opportunity shrank: the gain here comes from
+  set for a smaller market. The learning agent's day-59 elasticity stays at 1.26
+  to 1.49 at both biases, so a level error that is a constant factor lands in
+  the estimator's intercept as designed. A weekday or an event error lands in
+  the slope instead, by two to three standard errors, because it moves with the
+  rate ratio on the dates where the medians and the rates move. The estimator
+  learns only where the hotel has moved its own rate by several per cent across
+  most of its bookings, so in a run where the hotel barely moves its rate the
+  estimate stays near the prior. With `--level` the agent feeds that intercept
+  back into its forecast and learns the level by day 10, but the gain at 0.9
+  does not recover, because the opportunity shrank: the gain here comes from
   scarcity on the shock dates, and a market a tenth smaller has fewer nights
   that sell out, so the level halved the false pace flags and could not make
-  rooms scarce. At 1.1 the level removes the false flags and the correct
-  raises go with them, because the agent acts only on a flag and a market
-  that is simply larger raises none (docs/results.md).
+  rooms scarce. At 1.1 the level removes the false flags and the correct raises
+  go with them, because the agent acts only on a flag and a market that is
+  simply larger raises none (docs/results.md).
 - By default the agent is handed the simulator's elasticity of 1.5;
   `--elasticity fixed:X` and `learn:X` take it away.
 - Demand moves by the hotel's share of guests arriving by air times the change
   in arriving passengers, the seats at each flight's load factor; that link and
   the load factors are modelling choices.
-- The minimum-stay recommendation is advice only. The simulator has no length
-  of stay, and the advice is not in any estimate or result.
+- The minimum-stay recommendation is advice only. The simulator has no length of
+  stay, and the advice is not in any estimate or result.
 - The estimates assume the simulator's Poisson booking noise; real bookings
   arrive less evenly, with groups, cancellations and no-shows.
 - The cost of an occupied room is one third of the start rate, which makes the
@@ -50,9 +49,9 @@
   flights run ahead of pace every day until the stay date, and the pace and
   rules controls therefore price the shocks at one remove.
 - The air schedule files two changes by default and, with `--churn`, weekly
-  revisions held under the threshold by construction. A second scenario holds
-  an upgauge and a frequency cut. A real feed revises in more ways than these,
-  and its rows carry an arrival time (docs/schedule-feed.md).
+  revisions held under the threshold by construction. A second scenario holds an
+  upgauge and a frequency cut. A real feed revises in more ways than these, and
+  its rows carry an arrival time (docs/schedule-feed.md).
 - By default competitors never react, so `--react` makes each competitor move
   half of a hotel's change three days after it takes effect. The market's own
   price response is the customer file's 1.0 since world v2, chosen because a
@@ -60,29 +59,40 @@
   `--market-elasticity E` sets another value for a run, with the agent told E.
   On world v1, where the default was 0.0, the reacting run earned +$111,272 a
   seed at an E of 0.0, +$72,229 at 0.5 and +$43,584 at 1.0, against +$32,899
-  with neither; what those figures showed, and the loop they exposed, is in
-  the market section of docs/results.md.
+  with neither; what those figures showed, and the loop they exposed, is in the
+  market section of docs/results.md.
 - There is one rate per hotel and stay date, with no room types, group blocks,
   cancellations or no-shows.
 - Without an API key, every plan is accepted. A single run that did not ask for
   the template says so in its first line and names the template in its summary,
   and each decision records the reason source, but a hotel that ran it with a
   missing key would still put every queued raise live under a reason that reads
-  like a review. With a key, a call that still fails after the client's retries
-  stops the run with a traceback, and the single-run route then writes no
-  decisions file for the days before it.
+  like a review. The template is a stand-in that answers in the model's place
+  when there is no key; it says yes to every plan and writes a reason from the
+  entry's own figures. With a key, a call that still fails after the client's
+  retries stops the run with a traceback, and the single-run route then writes
+  no decisions file for the days before it.
 - A change to the world, such as a fifth hotel or a second event, invalidates
   the pinned tests, the seed-7 recording under tests/fixtures and the live
   benchmark tables. The template sweeps rerun for nothing, a new recording of
   seed 7 costs about $0.08, and the live tables cost about $86 to make again.
 - The benchmark ran the live models on seeds 1 to 20 in the fixed and the
-  learned modes on 2026-10-15 on world v2 (docs/results.md). Only Opus
-  recovered any of the oracle's margin, 34% in a fixed mode and 10% in a
-  learned one; Sonnet and Haiku tie with accepting every plan. In the reacting
-  market Opus held 27 of the 583 plans on dates changed within 14 days, and the
-  oracle held none.
+  learned modes on 2026-10-15 on world v2 (docs/results.md). Only Opus recovered
+  any of the oracle's margin, 34% in a fixed mode and 10% in a learned one;
+  Sonnet and Haiku tie with saying yes to every plan. In the reacting market
+  Opus held 27 of the 583 plans on dates changed within 14 days, and the oracle
+  held none.
 - The container image was built on Python 3.11, 3.12 and 3.14 and passed the
-  suite on each. A seed-7 run inside it matches the native run (docs/results.md).
+  suite on each. A seed-7 run inside it matches the native run
+  (docs/results.md).
+- The audit's phrase matcher does not recognise a request figure quoted in a
+  different phrase, so a reason that writes "$2,780 on Monday" for the request's
+  "$2,780 more than holding" is listed as unmatched; the figure is in the
+  request, and the seed-7 recording has two such lines.
+- On world v2 the convention is mostly on the books before day 0 because of the
+  convention hotel's early booking curve, while its uplift applies only to
+  demand after day 0, so an event announced on day 10 adds little; the next
+  version puts an event known before the run into the preload.
 
 The next version reprices when data arrives during the day, adds per-weekday
 terms to the estimator, and adds cancellations and segments. Since world v2 the

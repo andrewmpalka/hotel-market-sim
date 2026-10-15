@@ -187,8 +187,8 @@ here for the rest.
 
 ### RES-21 [C] Seeds 1 to 20 at a demand bias of 0.9
 - Ran: `hotel-market bench --seeds 1 20 --template --demand-bias 0.9 --elasticity true --elasticity fixed:1.0 --elasticity learn:1.0` on 2026-10-15 on world v2. The same command with `--elasticity learn:1.0 --cautious` ran the cautious arm.
-- Result: the true mode earns +$1,069 a seed (sd $3,270, se $731), ahead in 12 of 20, p 0.50, against +$16,164 at 1.0 ([[RES-23]]). Accept-all earns -$25,072 at fixed:1.0 and -$15,174 at learn:1.0.
-- Flags: the true mode raises 4648 flags over the 20 seeds, 85% with a pace cause, and changes 63 rates. Accept-all at fixed:1.0 changes 1448.
+- Result: the true mode earns +$1,069 a seed (sd $3,270, se $731), ahead in 12 of 20, p 0.50, against +$16,164 at 1.0 ([[RES-23]]). Say-yes-to-everything earns -$25,072 at fixed:1.0 and -$15,174 at learn:1.0.
+- Flags: the true mode raises 4648 flags over the 20 seeds, 85% with a pace cause, and changes 63 rates. Say-yes-to-everything at fixed:1.0 changes 1448.
 - Estimates: the learn:1.0 arm's day-59 estimates are 1.40 to 1.51 by hotel, against 1.42 to 1.49 at 1.0. The cautious arm's are 1.36 to 1.50.
 - Oracle: the oracle earns +$321 to +$613 in the mismatched modes and accepts 1% to 5% of the plans there.
 - Table: docs/results.md, "Seeds 1 to 20 at a demand bias of 0.9"
@@ -197,7 +197,7 @@ here for the rest.
 
 ### RES-22 [C] Seeds 1 to 20 at a demand bias of 1.1
 - Ran: the two commands of [[RES-21]] with `--demand-bias 1.1`, on 2026-10-15 on world v2.
-- Result: the true mode earns +$66,687 a seed, ahead in 20 of 20; accept-all earns +$47,451 at fixed:1.0 and +$56,213 at learn:1.0. The oracle earns +$66,455 to +$63,660 in the mismatched modes.
+- Result: the true mode earns +$66,687 a seed, ahead in 20 of 20; say-yes-to-everything earns +$47,451 at fixed:1.0 and +$56,213 at learn:1.0. The oracle earns +$66,455 to +$63,660 in the mismatched modes.
 - Flags: the true mode raises 11132 flags over the 20 seeds, 93% with a pace cause. It changes 343 rates against 106 at 1.0. The start rates were set for a smaller market, so the dates run ahead of pace.
 - Estimates: the learn:1.0 arm's day-59 estimates are 1.43 to 1.50 by hotel, against 1.42 to 1.49 at 1.0 ([[RES-23]]). The cautious arm's are 1.40 to 1.48.
 - Table: docs/results.md, "Seeds 1 to 20 at a demand bias of 1.1"
@@ -208,7 +208,7 @@ here for the rest.
 - Ran: the two commands of [[RES-21]] with `--demand-bias 1.0`, on 2026-10-15 on world v2. The run read no cache and made no call.
 - Result: the true, fixed:1.0 and template learn arms repeat [[RES-01]], [[RES-03]], [[RES-04]] and [[RES-05]] to the dollar. They earn +$16,164, -$6,265, +$804 and +$12,527 a seed.
 - Oracle: in learn:1.0 the oracle earns +$13,199 a seed and accepts 17% of the plans. In the cautious arm it earns +$14,854 and accepts 32%.
-- Flags: the true mode raises 2009 flags over the 20 seeds, 67% with a pace cause. Accept-all at fixed:1.0 raises 1099 and changes 766 rates, each holding its stay dates for seven days ([[RUL-66]]).
+- Flags: the true mode raises 2009 flags over the 20 seeds, 67% with a pace cause. Say-yes-to-everything at fixed:1.0 raises 1099 and changes 766 rates, each holding its stay dates for seven days ([[RUL-66]]).
 - Table: docs/results.md, "Seeds 1 to 20 at the default demand bias of 1.0"
 - Evidence: test_the_offline_bench_on_20_seeds_pins_the_benchmarks_headline, test_the_default_mode_gives_the_pinned_20_seed_mean
 - Links: [[DEC-50]], [[RUL-82]], [[RES-01]], [[RES-04]], [[RES-05]], [[RES-16]], [[RES-21]], [[RES-22]]
@@ -260,7 +260,7 @@ here for the rest.
 
 ### RES-29 [C] The fitted level fed back at a demand bias of 0.9
 - Ran: `hotel-market bench --seeds 1 20 --template --demand-bias 0.9 --elasticity learn:1.0 --level` and the same with `--level --cautious`, on 2026-10-15 on world v2. The plain learn arms are [[RES-21]]'s.
-- Result: the level is 0.90 to 0.90 by day 59 at every hotel. Accept-all earns -$13,700 a seed with it against -$15,174 without, and the cautious arm -$3,534 against -$4,122.
+- Result: the level is 0.90 to 0.90 by day 59 at every hotel. Say-yes-to-everything earns -$13,700 a seed with it against -$15,174 without, and the cautious arm -$3,534 against -$4,122.
 - Why: the level fixes the forecast, and the flags fall from 5420 to 1538. The loss is the prior elasticity's: it prices the shock raises as cheaper than they are with a tenth less demand.
 - Ceiling: the oracle earns +$664 and +$999 a seed on the level arms' candidates. The true mode earns +$1,069 there ([[RES-21]]), so there was little to recover.
 - Table: docs/results.md, "Seeds 1 to 20 at a demand bias of 0.9, the learning agent with and without the fitted level"
@@ -269,7 +269,7 @@ here for the rest.
 
 ### RES-30 [C] The fitted level fed back at the default demand bias
 - Ran: the two commands of [[RES-29]] with `--demand-bias 1.0`, on 2026-10-15 on world v2. The plain learn arms are [[RES-23]]'s.
-- Result: the level is 0.99 to 1.00 by hotel on day 59. Accept-all earns +$825 a seed against +$804 without the level, and the cautious arm +$12,346 against +$12,527.
+- Result: the level is 0.99 to 1.00 by hotel on day 59. Say-yes-to-everything earns +$825 a seed against +$804 without the level, and the cautious arm +$12,346 against +$12,527.
 - Cost: the oracle's ceiling on the level arms is +$13,171 and +$14,352.
 - Table: docs/results.md, "Seeds 1 to 20 at the default demand bias of 1.0, the same arms"
 - Evidence: test_the_default_mode_gives_the_pinned_20_seed_mean
@@ -277,7 +277,7 @@ here for the rest.
 
 ### RES-31 [C] The fitted level fed back at a demand bias of 1.1
 - Ran: the two commands of [[RES-29]] with `--demand-bias 1.1`, on 2026-10-15 on world v2. The plain learn arms are [[RES-22]]'s.
-- Result: the level is 1.09 to 1.10 by day 59. Accept-all earns +$55,518 a seed against +$56,213 without the level, and the cautious arm +$60,005 against +$60,666.
+- Result: the level is 1.09 to 1.10 by day 59. Say-yes-to-everything earns +$55,518 a seed against +$56,213 without the level, and the cautious arm +$60,005 against +$60,666.
 - Why: the corrected pace baseline removes raises on dates the start rates underprice: 683 changes against 1007. Those raises paid ([[RES-22]]).
 - Table: docs/results.md, "Seeds 1 to 20 at a demand bias of 1.1, the same arms"
 - Evidence: test_the_level_runs_pin_their_headline
@@ -285,7 +285,7 @@ here for the rest.
 
 ### RES-32 [C] The fitted level fed back in the reacting market at 0.5
 - Ran: `hotel-market bench --seeds 1 20 --template --react --market-elasticity 0.5 --elasticity learn:1.0`, then with `--level` and with `--level --cautious`, on 2026-10-15 on world v2. The cautious plain arm is [[RES-26]]'s.
-- Result: the level is 0.99 to 1.00 by day 59. Accept-all earns +$304,114 a seed with it against +$302,095 without, and the cautious arm +$139,141 against +$141,469.
+- Result: the level is 0.99 to 1.00 by day 59. Say-yes-to-everything earns +$304,114 a seed with it against +$302,095 without, and the cautious arm +$139,141 against +$141,469.
 - Ratchet: the plain learner changes 1959 rates and the oracle, told the reaction, accepts 96% of them. That is the ratchet at its fullest, which [[FRK-09]] holds.
 - Table: docs/results.md, "Seeds 1 to 20 with the reaction on at a market elasticity of 0.5, the same arms"
 - Evidence: test_the_level_runs_pin_their_headline
