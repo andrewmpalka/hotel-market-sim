@@ -3,12 +3,14 @@
 The demo page's data. One command writes one DuckDB file with everything the page shows.
 
     hotel-market demo-data --seed 7              # writes demo.duckdb
-    hotel-market demo-data --seed 7 --out FILE
+    hotel-market demo-data --seed 7 --out FILE --customer customers/demo.toml
 
 The file holds the seven stored tables for days 0 to 59 (stored.py). The daily path writes them
-with the recorded live run as the cache (tests/fixtures/live_seed7). The page therefore shows the
-model's reasons, and it needs no API key. A request the recording does not cover stops the
-command. For a seed with no recording, the template writes the reasons.
+with a client that answers from the recorded live run (tests/fixtures/live_seed7) wherever the
+recording holds the same request, so the page shows the model's reasons, and it needs no API
+key. A request the recording does not cover, because the market or the world changed, gets the
+template's answer, and the command prints one warning line naming the day and the hotel. For a
+seed with no recording, the template writes every reason.
 
 The file adds the tables the page reads as they are (sql/demo.sql): hotels, days, news,
 stay_dates, queue, scorecard, outcome and gains, and a run table with the seed and the words for
@@ -24,8 +26,8 @@ from __future__ import annotations
 
 import argparse
 import itertools
+import json
 import math
-import shutil
 import tempfile
 from collections.abc import Iterable, Sequence
 from datetime import timedelta
@@ -34,8 +36,9 @@ from pathlib import Path
 from hotel_market import stored
 from hotel_market.agent import Agent
 from hotel_market.bookings import Books, simulate
-from hotel_market.customer import Customer, demo
+from hotel_market.customer import Customer, demo, load
 from hotel_market.detect import detect_numbers
+from hotel_market.model import request_digest, template_decisions
 from hotel_market.plan import DAY_NAMES, HOLD, PLAN_ORDER, Entry, WeekdayGroup
 from hotel_market.schedule import SIM_START
 from hotel_market.simulated import simulated_sources
@@ -64,12 +67,35 @@ NUMBER_WORDS = ("no", "one", "two", "three", "four", "five", "six", "seven", "ei
 
 
 class Recorded:
-    """A client that never answers: every request must be in the recorded run's cache."""
+    """A client that answers from a recorded live run and falls back to the template. It is
+    uncached, so it looks each request up itself: the record for the day and hotel, when it holds
+    the same request, gives the model's decisions under the name model. Otherwise the template's
+    decisions answer under the name template, and one warning line names the day and the hotel.
+    ask() reads the name after each answer, so each decision records its own source."""
+
+    cached = False
+
+    def __init__(self, recording: Path, customer: Customer):
+        self.recording = recording
+        self.keys = {hotel.name: hotel.key for hotel in customer.hotels}
+        self.name = "model"
+        self.fallbacks = 0  # the requests the recording did not cover
 
     def complete(self, system: str, prompt: str, schema: dict) -> str:
-        raise LookupError(
-            "the recorded run does not cover this request; record a live run of the seed again"
+        request = json.loads(prompt)
+        day, hotel = request["day"], request["hotel"]["name"]
+        path = self.recording / f"day{day:03d}_{self.keys[hotel]}.json"
+        record = json.loads(path.read_text()) if path.exists() else None
+        if record is not None and record["request_digest"] == request_digest(request):
+            self.name = "model"
+            return json.dumps({"decisions": record["decisions"]})
+        self.name = "template"
+        self.fallbacks += 1
+        print(
+            f"Warning: the recorded run does not cover day {day} at {hotel}, so the template "
+            f"answered."
         )
+        return json.dumps({"decisions": template_decisions(request)})
 
 
 def recorded_run(seed: int) -> Path | None:
@@ -82,10 +108,10 @@ def recorded_run(seed: int) -> Path | None:
     return None
 
 
-def build(seed: int, out: Path = DEMO_FILE, customer: Customer | None = None) -> bool:
+def build(seed: int, out: Path = DEMO_FILE, customer: Customer | None = None) -> str:
     """Write the demo file for the seed: the stored tables for days 0 to 59 and the page's
-    tables. Both runs book on to day 149, so the outcome is complete. Returns whether the reasons
-    came from a recorded live run."""
+    tables. Both runs book on to day 149, so the outcome is complete. Returns the words for where
+    the reasons came from, as the file's run table and the sidebar say them."""
     from hotel_market.cli import run_days  # here, because cli imports this module
 
     customer = customer or demo()
@@ -127,22 +153,19 @@ def build(seed: int, out: Path = DEMO_FILE, customer: Customer | None = None) ->
         figures.update(_stayed(day, "fixed", books, customer))
         return {}
 
-    with tempfile.TemporaryDirectory() as folder:
-        cache_dir = Path(folder) / "cache"
-        if recording is not None:
-            shutil.copytree(
-                recording, cache_dir / f"seed{seed}", ignore=shutil.ignore_patterns("*.jsonl")
-            )
+    client = Recorded(recording, customer) if recording is not None else None
+    with tempfile.TemporaryDirectory() as folder:  # the client is uncached, so nothing lands here
         run_days(
             seed,
             0,
             HORIZON_DAYS - 1,
             out,
-            cache_dir=cache_dir,
-            client=Recorded() if recording is not None else None,
+            cache_dir=Path(folder) / "cache",
+            client=client,
             customer=customer,
             observe=observe,
         )
+    source = reason_source(recording, client.fallbacks if client is not None else 0)
     final["fixed"] = simulate(seed, record_fixed, customer=customer)
     rows["scorecard"] = _scorecard_rows(figures, customer)
     rows["outcome"] = _outcome_rows(final["agent"], final["fixed"], customer)
@@ -159,16 +182,23 @@ def build(seed: int, out: Path = DEMO_FILE, customer: Customer | None = None) ->
         connection.execute(
             "CREATE TABLE IF NOT EXISTS run (seed INTEGER NOT NULL, reason_source VARCHAR NOT NULL)"
         )
-        connection.execute("INSERT INTO run VALUES (?, ?)", [seed, reason_source(recording)])
+        connection.execute("INSERT INTO run VALUES (?, ?)", [seed, source])
     finally:
         connection.close()
-    return recording is not None
+    return source
 
 
-def reason_source(recording: Path | None) -> str:
-    """Where the file's reasons came from, as the sidebar says it."""
+def reason_source(recording: Path | None, fallbacks: int = 0) -> str:
+    """Where the file's reasons came from, as the sidebar says it: the recorded run's, the
+    template's, or the recorded run's where it covers the request and the template's for the
+    rest."""
     if recording is None:
         return "the template's, as no run is recorded"
+    if fallbacks:
+        return (
+            f"the model's where the recorded live run covers the request and the template's for "
+            f"the {fallbacks} it does not"
+        )
     return "the model's, from the recorded live run"
 
 
@@ -481,7 +511,8 @@ def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
         prog="hotel-market demo-data",
         description="Write the demo page's DuckDB file: the stored tables for days 0 to 59 and "
-        "the page's tables, with the reasons from the recorded live run.",
+        "the page's tables, with the reasons from the recorded live run where it covers the "
+        "request and from the template elsewhere.",
     )
     parser.add_argument(
         "--seed", type=int, default=7, help="the seed (default 7, the recorded one)"
@@ -493,9 +524,14 @@ def main(argv: list[str] | None = None) -> None:
         metavar="FILE",
         help=f"the file (default {DEMO_FILE})",
     )
+    parser.add_argument(
+        "--customer",
+        type=Path,
+        metavar="FILE",
+        help="the market's customer file (default: customers/demo.toml)",
+    )
     args = parser.parse_args(argv)
-    recorded = build(args.seed, args.out)
-    source = reason_source(recorded_run(args.seed) if recorded else None)
+    source = build(args.seed, args.out, load(args.customer) if args.customer else None)
     print(f"Wrote {args.out}: days 0 to {SIM_DAYS - 1} of seed {args.seed}, reasons {source}.")
 
 

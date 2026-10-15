@@ -142,7 +142,7 @@ class Client(Protocol):
     attribute name is the source a decision records, "model" when absent. The attribute cached
     says whether the answers are kept in the cache, True when absent. An uncached client, such as
     the oracle grader in bench.py, answers like the template. Nothing is written, and nothing of
-    the model's is read."""
+    the model's is read. Its name is read after each answer, so it may name the answer's source."""
 
     def complete(self, system: str, prompt: str, schema: dict) -> str:
         """Send one request and return the model's JSON text."""
@@ -491,11 +491,12 @@ def ask(
     """
     if client is None:
         return {"source": "template", "decisions": template_decisions(request)}
-    source = getattr(client, "name", "model")
     if not getattr(client, "cached", True):
-        answer = {"source": source, "decisions": _answer(client, request)}
+        decisions = _answer(client, request)  # its name is read after, so it may name each answer
+        answer = {"source": getattr(client, "name", "model"), "decisions": decisions}
         _check(answer["decisions"], request)
         return answer
+    source = getattr(client, "name", "model")
     digest = request_digest(request)
     cached = _read_cache(path, digest)
     if cached is not None:

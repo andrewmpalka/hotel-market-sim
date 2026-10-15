@@ -20,9 +20,10 @@ plan, so those figures measure the plans and not the model.
     make test           # the tests; make test-all adds the nine slow ones
     make demo SEED=7    # demo.duckdb from the recorded run, then the demo page
 
-make demo needs the network once, to install streamlit, and needs no API key for
-the shipped market at seed 7, which is what the recorded run covers. Every other
-command is in docs/commands.md.
+make demo needs the network once, to install streamlit, and needs no API key.
+The recorded run covers the shipped market at seed 7, and any other market or
+seed gets the template's reasons where it does not. Every other command is in
+docs/commands.md.
 
 ## Results
 

@@ -8,7 +8,7 @@ import pytest
 
 from hotel_market import stored
 from hotel_market.bookings import simulate
-from hotel_market.customer import demo
+from hotel_market.customer import DEMO_FILE, demo
 from hotel_market.demo_data import (
     ALL,
     DEMO_TABLES,
@@ -314,6 +314,41 @@ def test_the_chart_rows_mark_the_flagged_stay_dates_and_carry_the_planned_rate(d
         low == pytest.approx(0.75 * rate) and high == pytest.approx(1.25 * rate)
         for rate, low, high in axis
     )
+
+
+def test_a_request_the_recording_does_not_cover_gets_the_templates_answer_and_a_warning(
+    tmp_path, capsys
+):
+    """The recorded run covers the shipped market at seed 7. In a market whose airport hotel has
+    another name, that hotel's requests differ, so the template answers them and the command
+    warns once per request; the other hotels keep the model's reasons, and the file says so."""
+    market = tmp_path / "market.toml"
+    market.write_text(
+        (ROOT / DEMO_FILE).read_text().replace('name = "Airport hotel"', 'name = "Airport inn"')
+    )
+    main(["--seed", "7", "--out", str(tmp_path / "inn.duckdb"), "--customer", str(market)])
+    out = capsys.readouterr().out
+    assert (
+        "Warning: the recorded run does not cover day 20 at Airport inn, so the template answered."
+        in out
+    )
+    assert out.count("Warning:") == 1
+    phrase = (
+        "the model's where the recorded live run covers the request and the template's for "
+        "the 1 it does not"
+    )
+    assert f"reasons {phrase}." in out
+    assert _rows(tmp_path / "inn.duckdb", "SELECT seed, reason_source FROM run") == [(7, phrase)]
+    sources = _rows(
+        tmp_path / "inn.duckdb",
+        "SELECT hotel, reason_source FROM queue WHERE queued ORDER BY as_of_day, hotel",
+    )
+    assert ("airport", "template") in sources and ("convention", "model") in sources
+    assert {source for hotel, source in sources if hotel != "airport"} == {"model"}
+    sources = _rows(
+        tmp_path / "inn.duckdb", "SELECT DISTINCT reason_source FROM decisions WHERE queued"
+    )
+    assert sorted(source for (source,) in sources) == ["model", "template"]
 
 
 def test_a_seed_with_no_recording_gets_the_templates_reasons(tmp_path, capsys):

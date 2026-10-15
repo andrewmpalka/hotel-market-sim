@@ -8,18 +8,18 @@ nodes and its words, len(text.split()) over the file.
 
 | File | Nodes | Words |
 | --- | ---: | ---: |
-| modules.md | 30 | 4,040 |
+| modules.md | 30 | 4,041 |
 | data.md | 33 | 4,238 |
 | rules.md | 122 | 5,097 |
 | shocks.md | 7 | 734 |
 | concepts.md | 11 | 1,154 |
 | measures.md | 14 | 962 |
 | sources.md | 4 | 849 |
-| decisions.md | 60 | 8,781 |
+| decisions.md | 60 | 8,783 |
 | results.md | 42 | 7,233 |
 | forks.md | 13 | 1,906 |
 | unknowns.md | 15 | 2,013 |
-| every node file | 351 | 37,007 |
+| every node file | 351 | 37,010 |
 | index.md | | 2,958 |
 
 ## Modules (`modules.md`)

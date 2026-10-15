@@ -50,7 +50,7 @@ def demo_file(tmp_path_factory):
     from hotel_market.demo_data import build
 
     path = tmp_path_factory.mktemp("demo") / "demo.duckdb"
-    assert build(7, path), "the recorded run of seed 7 was not found"
+    assert build(7, path) == "the model's, from the recorded live run", "the recording is stale"
     return path
 
 
