@@ -22,7 +22,7 @@ from hotel_market.detect import (
     shock_known,
 )
 from hotel_market.schedule import seat_revision
-from hotel_market.shops import comp_median, starting_median
+from hotel_market.shops import comp_median
 from hotel_market.simulated import SimulatedSchedules, simulated_sources, watch
 from hotel_market.world import SIM_DAYS
 
@@ -63,24 +63,22 @@ def test_each_shock_flags_on_the_day_it_becomes_known(run):
     _, found, _ = run
     convention = set(range(45, 49))
     assert _flagged(found, 10, NEW_EVENT) == {key: convention for key in DOWNTOWN}
-    assert _flagged(found, 10, MEDIAN_UP) == {key: convention for key in DOWNTOWN}
     assert _flagged(found, 20, SEATS_UP) == {key: set(range(50, 110)) for key in EVERY_HOTEL}
-    assert _flagged(found, 30, MEDIAN_DOWN) == {"full-service": set(range(37, 40))}
     assert _flagged(found, 40, SEATS_CUT) == {key: set(range(70, 91)) for key in EVERY_HOTEL}
+    # The shop noise can flag a comp median on any day, so the shocks' flags are among them.
+    median_up, median_down = _flagged(found, 10, MEDIAN_UP), _flagged(found, 30, MEDIAN_DOWN)
+    assert all(convention <= median_up.get(key, set()) for key in DOWNTOWN)
+    assert set(range(37, 40)) <= median_down.get("full-service", set())
 
 
 def test_shock_causes_appear_only_on_the_days_shocks_become_known(run):
-    # seat_change stays up from day 20 on, but only seat_revision raises flags.
+    # seat_change stays up from day 20 on, but only seat_revision raises flags. A comp-median
+    # cause can come from the shop noise on any day, so only the shocks' days are pinned.
     _, found, _ = run
     causes = (NEW_EVENT, MEDIAN_UP, MEDIAN_DOWN, SEATS_UP, SEATS_CUT)
     days = {cause: {f.day for f in found if cause in f.causes} for cause in causes}
-    assert days == {
-        NEW_EVENT: {10},
-        MEDIAN_UP: {10},
-        MEDIAN_DOWN: {30},
-        SEATS_UP: {20},
-        SEATS_CUT: {40},
-    }
+    assert (days[NEW_EVENT], days[SEATS_UP], days[SEATS_CUT]) == ({10}, {20}, {40})
+    assert 10 in days[MEDIAN_UP] and 30 in days[MEDIAN_DOWN]
 
 
 def test_detect_runs_after_each_of_days_0_to_59(run):
@@ -105,7 +103,7 @@ def test_numbers_follow_the_definitions():
             on_pace = demand.normal_demand(hotel, stay_day) * hotel.curve(stay_day - 30)
             median = comp_median(30, hotel, stay_day, seed=SEED)
             assert row["rooms"] == books.rooms[i, stay_day]
-            ratio = median / starting_median(hotel, stay_day, seed=SEED)
+            ratio = median / hotel.starting_median()
             assert row["expected_demand"] == pytest.approx(
                 demand.expected_demand(hotel, stay_day, 30, 1.0, ratio, DEMO.market_elasticity)
             )
@@ -157,11 +155,13 @@ def test_shock_known_follows_what_is_known_on_the_day():
     airport, convention, full_service = (
         DEMO.hotel(k) for k in ("airport", "convention", "full-service")
     )
-    s = simulated_sources(Books(SEED))
-    assert not shock_known(airport, 60, 19, s) and shock_known(airport, 60, 20, s)  # new flights
-    assert not shock_known(airport, 46, 25, s)  # convention is downtown only
-    assert not shock_known(convention, 46, 9, s) and shock_known(convention, 46, 10, s)
-    assert not shock_known(full_service, 38, 29, s) and shock_known(full_service, 38, 30, s)
+    s, t = simulated_sources(Books(SEED)), DEMO.median_threshold
+    assert not shock_known(airport, 60, 19, s, t) and shock_known(airport, 60, 20, s, t)
+    assert not shock_known(airport, 46, 25, s, t)  # convention is downtown only
+    assert not shock_known(convention, 46, 9, s, t) and shock_known(convention, 46, 10, s, t)
+    assert not shock_known(full_service, 38, 29, s, t) and shock_known(full_service, 38, 30, s, t)
+    # The shop noise alone never reaches the threshold, so no other day or date counts.
+    assert not any(shock_known(airport, s_, d, s, t) for d in range(0, 19) for s_ in range(d, 50))
 
 
 def test_pace_causes_follow_the_gap_against_the_threshold(run):

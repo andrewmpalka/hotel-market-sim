@@ -143,11 +143,12 @@ def test_every_figure_in_the_request_is_a_display_string(convention_request):
     # its direction in words and no sign, and a range as one phrase, the single value
     # when both ends read the same.
     assert asked["stay_dates"] == "45 to 48" and numbers["days_out"] == "35 to 38"
-    assert numbers["rate"] == "$220" and numbers["comp_median"] == "$246 to $258"
-    assert numbers["rate_vs_median"] == "10.7% to 14.6% below the median"
-    assert numbers["median_change"] == "up 15.0%" and numbers["seat_revision"] == "unchanged"
-    assert numbers["unsold_rooms"] == "956" and numbers["pace_gap"] == "14 rooms ahead of pace"
-    assert asked["value_at_stake"] == "the same as holding"  # an estimate, to the $10: $5
+    assert numbers["rate"] == "$220" and numbers["comp_median"] == "$254 to $258"
+    assert numbers["rate_vs_median"] == "13.4% to 14.6% below the median"
+    assert numbers["median_change"] == "up 13.7% to 18.8%"
+    assert numbers["seat_revision"] == "unchanged"
+    assert numbers["unsold_rooms"] == "955" and numbers["pace_gap"] == "15 rooms ahead of pace"
+    assert asked["value_at_stake"] == "the same as holding"  # nothing beats holding
     assert request["hotel"]["floor"] == "$154" and request["hotel"]["rooms"] == "400"
     assert request["hotel"]["cost_per_occupied_room"] == "$73"
     for weekday in asked["by_day_of_week"]:
@@ -159,7 +160,7 @@ def test_every_figure_in_the_request_is_a_display_string(convention_request):
     thursday = asked["by_day_of_week"][0]["candidates"]
     assert [c["rates"] for c in thursday] == ["$220", "$231", "$242", "$209"]
     assert thursday[0]["versus_hold"] == "the same as holding"
-    assert thursday[2]["versus_hold"] == "$60 less than holding"
+    assert thursday[2]["versus_hold"] == "$80 less than holding"
     # The only raw numbers left are the day and each day of the week's own stay dates,
     # which are a list of dates and not a range; every other figure is a string.
     assert _number_paths(request) == {"day", "entries.by_day_of_week.stay_dates"}
@@ -263,14 +264,14 @@ def test_without_a_client_the_template_accepts_the_plan_and_quotes_the_numbers(
     assert record["source"] == "template" and decision["choice"] == entry.plan
     # The template copies the request's display strings whole, as the model is told to.
     assert (
-        "the same as holding in contribution on the 956 rooms still unsold" in (decision["reason"])
+        "the same as holding in contribution on the 955 rooms still unsold" in (decision["reason"])
     )
     assert decision["reason"].startswith(
-        "The comp median is up 15.0% since yesterday and a convention was announced on stay "
-        "dates 45 to 48. We recommend the plan, "
+        "The comp median is up 13.7% to 18.8% since yesterday and a convention was announced on "
+        "stay dates 45 to 48. We recommend the plan, "
     )
     assert decision["reason"].endswith(
-        "Bookings are 14 rooms ahead of pace, and our rate sits 10.7% to 14.6% below the median."
+        "Bookings are 15 rooms ahead of pace, and our rate sits 13.4% to 14.6% below the median."
     )
     # The template is never cached, so a client is asked afresh.
     assert not (tmp_path / "t.json").exists()

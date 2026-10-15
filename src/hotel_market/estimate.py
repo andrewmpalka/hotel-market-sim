@@ -132,13 +132,12 @@ def _baselines(
         rise = curve(stays - day) - curve(stays - day + 1)
         baselines[day, stays] = normal[stays] * seat_factor * uplift * rise
     if market_elasticity:
-        # The comp medians shopped on each booking day, over each stay date's starting level,
-        # where the day's window shopped the date; the forecast uses the same ratio.
+        # The comp medians shopped on each booking day, over the comp set's starting level, where
+        # the day's window shopped the date; the forecast uses the same ratio.
         medians = sources.shops.median_history(as_of_day)[:, hotel.row, :]
-        first = np.array([sources.shops.first_median(hotel, s) for s in range(HORIZON_DAYS)])
         ratio = np.ones_like(baselines)
         shopped = medians > 0
-        ratio[shopped] = (medians / first[None, :])[shopped]
+        ratio[shopped] = medians[shopped] / sources.shops.first_median(hotel)
         baselines *= ratio**-market_elasticity
     return baselines
 

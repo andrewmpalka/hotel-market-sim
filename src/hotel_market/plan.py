@@ -529,7 +529,7 @@ def stay_estimates(
 
 
 def _flag_numbers(rows: pd.DataFrame, stay_dates: list[StayDate]) -> FlagNumbers:
-    announced = [name for name in rows["new_event"].tolist() if name]
+    announced = [name for name in rows["new_event"].tolist() if isinstance(name, str) and name]
     return FlagNumbers(
         days_out=Range(int(rows["days_out"].min()), int(rows["days_out"].max())),
         rooms_on_books=int(rows["rooms"].sum()),

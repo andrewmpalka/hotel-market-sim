@@ -24,23 +24,24 @@ def median_path():
 def test_the_median_follows_the_hotels_change_after_the_lag(median_path, capsys):
     stays, days = range(45, 49), range(8, 18)
     rows, agent, books, fixed = median_path.median_path(7, "full-service", stays, days, react=True)
-    assert books.react and fixed.react and [day for day, _ in rows] == list(days)
+    plain, _, plain_books, _ = median_path.median_path(7, "full-service", stays, days)
+    assert books.react and fixed.react and not plain_books.react
+    assert [day for day, _ in rows] == [day for day, _ in plain] == list(days)
     assert all((fixed.rates[h.row] == h.start_rate).all() for h in demo().hotels)
     rate = {day: cells[0][0] for day, cells in rows}  # stay 45
     median = {day: cells[0][1] for day, cells in rows}
+    unmoved = {day: cells[0][1] for day, cells in plain}  # the same shop with no reaction
     # The convention is announced on day 10, the competitors raise that day, and the plan the
-    # agent accepts takes effect on day 11. The median then follows REACTION_LAG days later.
+    # agent accepts takes effect on day 11. The median then follows REACTION_LAG days later. The
+    # shop noise moves both runs alike, so the reaction is the gap between them.
     assert rate[10] == 190 and rate[11] > 190 and rate[17] == rate[11]
-    assert median[10] > median[9]
-    for day in range(11, 11 + REACTION_LAG):
-        assert median[day] == median[10]
-    moved = 11 + REACTION_LAG
-    assert median[moved] - median[moved - 1] == pytest.approx(REACTION_SHARE * (rate[11] - 190))
-    assert median[17] == median[moved]
-    # Without the reaction the median stays where the shock left it.
-    plain, _, plain_books, _ = median_path.median_path(7, "full-service", stays, days)
-    assert not plain_books.react
-    assert all(cells[0][1] == median[10] for day, cells in plain if day >= 10)
+    assert median[10] > 1.05 * median[9]
+    for day in range(8, 11 + REACTION_LAG):
+        assert median[day] == unmoved[day]
+    for day in range(11 + REACTION_LAG, 18):
+        assert median[day] - unmoved[day] == pytest.approx(REACTION_SHARE * (rate[11] - 190))
+    # Without the reaction the median stays within the noise of where the shock left it.
+    assert all(abs(unmoved[day] / (1.15 * 190) - 1) <= 0.03 for day in range(10, 18))
     median_path.main(
         [
             "--seed",
@@ -72,9 +73,10 @@ def test_a_market_elasticity_softens_a_competitor_cut_for_the_hotel(median_path)
     )
     row = plain.customer.hotel("full-service").row
     # The cut on day 30 drops the median by about a tenth and the hotel holds its rate. A
-    # cheaper market draws more demand at 0.5, so the hotel sells more rooms on each stay date.
+    # cheaper market draws more demand at 0.5, so the hotel sells more rooms over the stay dates.
     medians = {day: cells[0][1] for day, cells in rows}
     assert medians[30] < 0.92 * medians[29]
+    sold = [int(answered.rooms[row, s] - plain.rooms[row, s]) for s in stays]
+    assert min(sold) >= 0 and sum(sold) > 0
     for s in stays:
-        assert answered.rooms[row, s] > plain.rooms[row, s]
         assert answered_fixed.rooms[row, s] == answered.rooms[row, s]  # nothing changed here

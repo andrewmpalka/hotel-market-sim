@@ -18,14 +18,14 @@ was written without access to any feed.
 - Evidence: test_the_simulated_sources_answer_as_of_the_day, test_the_stored_sources_answer_as_the_simulated_ones_do, test_decisions_see_the_books_after_that_days_bookings
 
 ### SRC-02 [C] Competitor rate shops
-- Stands in: SimulatedRateShops in [[MOD-19]]. It gives each competitor's rate for a stay date as shopped on a day ([[MOD-05]], [[DAT-06]]). The rates come from one seeded noise array with the scripted shocks applied.
+- Stands in: SimulatedRateShops in [[MOD-19]]. It gives each competitor's rate for a stay date as shopped on a day ([[MOD-05]], [[DAT-06]]). Each rate is seeded noise, fresh each shop day, with the shocks applied ([[DEC-62]]).
 - Medians: it also keeps the log of the medians the simulator used.
 - Real feed (assumption): a rate-shopping service would supply each competitor's lowest public rate per shop date, hotel, stay date and length of stay. There would be gaps where a competitor was sold out or not shopped.
 - Stored: StoredRateShops in [[MOD-21]] reads the rate_shops table and computes the medians as the interface does. The table has one row per shop day, hotel, competitor and night, from the shop day to the schedule's end.
-- Reach: the stored shop reaches every night the schedule covers, because shock_known ([[MOD-07]]) compares a night's median with the day-0 shop.
+- Reach: the stored shop reaches every night the schedule covers. shock_known ([[MOD-07]]) compares a night's median with its starting level, the comp set's base-rate median, beyond the median threshold ([[RUL-65]]).
 - To read one: a real shop would be loaded into that table one shop day at a time. The comp median ([[CON-04]]) and the median-change flag ([[RUL-65]]) would need a rule for missing competitors. The stand-in never has any.
-- Horizon: a shop with a shorter horizon than the schedule would need a change in shock_known. It would compare with the first shop that covered the night rather than the day-0 shop.
-- Evidence: test_the_simulated_sources_answer_as_of_the_day, test_the_stored_sources_answer_as_the_simulated_ones_do, test_comp_median_moves_only_when_a_shock_becomes_known
+- Horizon: a shop with a shorter horizon than the schedule would need a rule for the nights beyond it, because the detect numbers read every night's median each day.
+- Evidence: test_the_simulated_sources_answer_as_of_the_day, test_the_stored_sources_answer_as_the_simulated_ones_do, test_comp_median_moves_every_day_and_beyond_the_threshold_only_on_a_shock
 
 ### SRC-03 [C] Air schedules
 - Stands in: SimulatedSchedules in [[MOD-19]]. It gives the seats as filed by a day, from the synthetic schedule [[MOD-01]] builds for that day ([[DAT-01]]). The schedule carries the two air shocks filed on days 20 and 40.

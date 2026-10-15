@@ -112,16 +112,13 @@ def test_the_simulated_rate_shops_carry_the_reaction_the_simulator_used():
     assert sources.shops.median_history(10)[9, hotel.row, 50] == sources.shops.median(9, hotel, 50)
 
 
-def test_the_simulated_first_median_is_the_shop_before_any_shock():
-    from hotel_market.shops import comp_median
-
+def test_the_first_median_is_the_comp_sets_base_rate_median_before_any_shock_or_noise():
     sources = simulated_sources(simulate(7, last_day=12))
     convention = DEMO.hotel("convention")
-    assert sources.shops.first_median(convention, 46) == comp_median(-1, convention, 46, seed=7)
-    assert sources.shops.first_median(convention, 46) == sources.shops.median(0, convention, 46)
-    assert sources.shops.median(10, convention, 46) == pytest.approx(
-        1.15 * sources.shops.first_median(convention, 46)
-    )
+    first = sources.shops.first_median(convention)
+    assert first == convention.starting_median() == convention.start_rate
+    assert abs(sources.shops.median(0, convention, 46) / first - 1) <= 0.03  # the noise alone
+    assert sources.shops.median(10, convention, 46) == pytest.approx(1.15 * first, rel=0.03)
 
 
 def test_the_simulated_schedules_follow_the_runs_scenario():

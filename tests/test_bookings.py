@@ -9,7 +9,7 @@ from hotel_market.bookings import ELASTICITY, Books, poisson_draw, preload_mean,
 from hotel_market.customer import demo
 from hotel_market.demand import DEMAND_BIAS, MARKET_ELASTICITY, expected_demand, normal_demand
 from hotel_market.schedule import HORIZON_DAYS
-from hotel_market.shops import REACTION_LAG, REACTION_SHARE, comp_median, starting_median
+from hotel_market.shops import REACTION_LAG, REACTION_SHARE, comp_median
 from hotel_market.world import SIM_DAYS
 
 DEMO = demo()
@@ -100,9 +100,12 @@ def test_expected_new_bookings_follow_the_formula():
     airport = DEMO.hotel("airport")
     for day, stay_day in [(0, 0), (0, 89), (19, 55), (20, 55), (45, 80)]:
         days_out = stay_day - day
-        price = airport.start_rate / comp_median(day, airport, stay_day, seed=SEED)
+        median = comp_median(day, airport, stay_day, seed=SEED)
+        price = airport.start_rate / median
+        # The market term reads the day's shop over the comp set's starting level.
+        ratio = median / airport.starting_median()
         formula = (
-            expected_demand(airport, stay_day, day)
+            expected_demand(airport, stay_day, day, 1.0, ratio, DEMO.market_elasticity)
             * (airport.curve(days_out) - airport.curve(days_out + 1))
             * price**-ELASTICITY
         )
@@ -294,14 +297,17 @@ def test_the_market_elasticity_scales_each_days_draw_by_the_medians_level():
     # The customer file's value is the default, and it is the module's default too.
     assert Books(SEED).market_elasticity == DEMO.market_elasticity == MARKET_ELASTICITY == 1.0
     assert plain.market_elasticity == 0.0 and market.market_elasticity == 0.5
-    assert market.starting_median(convention, 46) == starting_median(convention, 46, seed=SEED)
-    # Before the convention is known the median is at its start, so nothing changes. On day 10
-    # the competitors raise 15%, and the market's demand falls by 1.15 ** -0.5.
+    assert convention.starting_median() == convention.start_rate
+    # Before the convention is known the median moves only with the shop noise, within 3% of
+    # its start. On day 10 the competitors raise 15%, and the market's demand falls by the
+    # shopped ratio ** -0.5.
+    before = plain.comp_median(9, convention, 46) / convention.starting_median()
+    assert 0.97 <= before <= 1.03
     assert market.expected_new_bookings(convention, 46, 9) == pytest.approx(
-        plain.expected_new_bookings(convention, 46, 9)
+        plain.expected_new_bookings(convention, 46, 9) * before**-0.5
     )
-    ratio = plain.comp_median(10, convention, 46) / market.starting_median(convention, 46)
-    assert ratio == pytest.approx(1.15)
+    ratio = plain.comp_median(10, convention, 46) / convention.starting_median()
+    assert ratio == pytest.approx(1.15, rel=0.03)
     assert market.expected_new_bookings(convention, 46, 10) == pytest.approx(
         plain.expected_new_bookings(convention, 46, 10) * ratio**-0.5
     )

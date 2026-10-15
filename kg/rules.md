@@ -193,14 +193,14 @@ marked [H], with one line that names the node it moved to.
 - Value: 0.03
 - File: src/hotel_market/shops.py
 - Kind: parameter
-- Meaning: each competitor's rate is off its base by up to 3% either way. The noise is drawn once per competitor and stay date ([[DEC-37]]).
+- Meaning: each competitor's rate is off its base by up to 3% either way. The noise is drawn afresh for every shop day, competitor and stay date ([[DEC-62]]).
 - Evidence: test_competitor_rates_are_base_rate_x_noise_with_no_weekly_pattern
 
 ### RUL-20 [C] NOISE_STREAM
 - Value: 1
 - File: src/hotel_market/shops.py
 - Kind: parameter
-- Meaning: the random stream for the rate-shop noise, kept apart from the booking stream [[RUL-22]]. Another stream draws other noise and other results.
+- Meaning: the random stream for the rate-shop noise, kept apart from the booking stream [[RUL-22]]. The competitor's name joins the key, so each competitor has its own draws ([[DEC-62]]).
 - Evidence: test_rates_depend_only_on_the_seed, test_the_default_mode_gives_the_pinned_seed_7_figure
 
 ### RUL-83 [C] REACTION_SHARE

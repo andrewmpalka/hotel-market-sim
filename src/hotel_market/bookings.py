@@ -47,7 +47,7 @@ import numpy as np
 from hotel_market.customer import Customer, demo
 from hotel_market.demand import DEMAND_BIAS, expected_demand, normal_demand
 from hotel_market.schedule import DEFAULT_SCENARIO, HORIZON_DAYS, Scenario, with_churn
-from hotel_market.shops import REACTION_LAG, comp_median, starting_median
+from hotel_market.shops import REACTION_LAG, comp_median
 from hotel_market.world import SIM_DAYS, Hotel, stay_window
 
 ELASTICITY = 1.5  # bookings scale with (rate / comp median) ** -ELASTICITY
@@ -114,7 +114,6 @@ class Books:
         )
         self.churn = churn  # whether the airline also files the seed's weekly revisions
         self.scenario = with_churn(scenario, seed) if churn else scenario  # the air schedule's
-        self._starting: dict[tuple[int, int], float] = {}  # (hotel row, stay day) -> median
         hotels = self.customer.hotels
         rng = np.random.default_rng([seed, BOOKING_STREAM])
         self._preload_luck = rng.random((len(hotels), HORIZON_DAYS))
@@ -153,20 +152,11 @@ class Books:
         if median is None:
             median = self.comp_median(day, hotel, stay_day)
         curve = hotel.curve
-        ratio = median / self.starting_median(hotel, stay_day) if self.market_elasticity else 1.0
+        ratio = median / hotel.starting_median() if self.market_elasticity else 1.0
         demand = expected_demand(
             hotel, stay_day, day, self.demand_bias, ratio, self.market_elasticity, self.scenario
         )
         return demand * (curve(days_out) - curve(days_out + 1)) * (rate / median) ** -ELASTICITY
-
-    def starting_median(self, hotel: Hotel, stay_day: int) -> float:
-        """The comp median's starting level for a stay date (shops.starting_median), kept once."""
-        key = (hotel.row, stay_day)
-        if key not in self._starting:
-            self._starting[key] = starting_median(
-                hotel, stay_day, seed=self.seed, customer=self.customer
-            )
-        return self._starting[key]
 
     def hotel_change(self, day: int, hotel: Hotel, stay_day: int) -> float:
         """The hotel's change from its start rate that its competitors react to on a shop day
@@ -176,9 +166,7 @@ class Books:
     def comp_median(self, day: int, hotel: Hotel, stay_day: int) -> float:
         """The comp median the run shops on a day, with the reaction when it is on."""
         change = self.hotel_change(day, hotel, stay_day)
-        return comp_median(
-            day, hotel, stay_day, seed=self.seed, customer=self.customer, hotel_change=change
-        )
+        return comp_median(day, hotel, stay_day, seed=self.seed, hotel_change=change)
 
     def book(self, day: int) -> None:
         """Draw one day's new bookings for every hotel and stay date in the window."""

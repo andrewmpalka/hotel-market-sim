@@ -34,7 +34,7 @@ def test_the_forecast_is_the_simulators_demand_for_the_demo_market(as_of_day, so
             # The market term mirrors demand.py's: at every market elasticity, the default 1.0
             # included, the forecast equals the simulator's demand at the same median ratio.
             ratio = sources.shops.median(as_of_day, hotel, stay_day) / sources.shops.first_median(
-                hotel, stay_day
+                hotel
             )
             forecast = expected_demand(hotel, stay_day, as_of_day, sources)
             assert forecast == pytest.approx(
@@ -61,9 +61,9 @@ def test_convention_peak_night_is_its_busiest_night_as_of_day_10(sources):
 
 
 def test_peak_night_uses_what_is_known_on_the_day_the_event_becomes_known(sources):
-    # Airport hotel, nights 49 (a Monday) to 55: with no new flights, Monday 49
-    # ties for the busiest night and wins as the earliest. Once the day-20
-    # filing is known, Thursday 52 and Sunday 55 gain 17% seats and 52 wins.
+    # Airport hotel, nights 49 (a Monday) to 55: with no new flights, Monday 49, Thursday 52
+    # and Sunday 55 tie for the busiest night, and the shop noise in the market term picks one.
+    # Once the day-20 filing is known, 52 and 55 gain 17% seats and one of them wins.
     airport = DEMO.hotel("airport")
     event = Event(
         "Test",
@@ -74,19 +74,25 @@ def test_peak_night_uses_what_is_known_on_the_day_the_event_becomes_known(source
         uplift=0.0,
         comp_rate_raise=0.0,
     )
-    assert peak_night(airport, event, sources) == 49
-    assert peak_night(airport, replace(event, known_day=20), sources) == 52
+    assert peak_night(airport, event, sources) in {49, 52, 55}
+    assert peak_night(airport, replace(event, known_day=20), sources) in {52, 55}
 
 
 def test_the_agents_market_elasticity_starts_at_1_and_lowers_demand_where_the_median_rose(sources):
     assert ORACLE_MARKET_ELASTICITY == 1.0 == DEMO.market_elasticity
     convention = DEMO.hotel("convention")
-    # Before the convention is known the median is at its start, so the term is 1.
-    assert expected_demand(convention, 46, 9, sources, 0.5) == expected_demand(
-        convention, 46, 9, sources, 0.0
+    # Before the convention is known the median moves only with the shop noise, within 3% of its
+    # start, and the term at 0.5 is the square root of the shopped ratio.
+    first = sources.shops.first_median(convention)
+    before = sources.shops.median(9, convention, 46) / first
+    assert 0.97 <= before <= 1.03
+    assert expected_demand(convention, 46, 9, sources, 0.5) == pytest.approx(
+        expected_demand(convention, 46, 9, sources, 0.0) * before**-0.5
     )
-    # From day 10 the competitors are 15% up on the convention nights, so the market term takes
-    # a proportionate share of the demand by default and the square root of it at 0.5.
+    # From day 10 the competitors are 15% up on the convention nights, within the noise, so the
+    # market term takes a proportionate share of the demand by default and the square root at 0.5.
+    ratio = sources.shops.median(10, convention, 46) / first
+    assert ratio == pytest.approx(1.15, rel=0.03)
     plain = expected_demand(convention, 46, 10, sources, 0.0)
-    assert expected_demand(convention, 46, 10, sources) == pytest.approx(plain / 1.15)
-    assert expected_demand(convention, 46, 10, sources, 0.5) == pytest.approx(plain * 1.15**-0.5)
+    assert expected_demand(convention, 46, 10, sources) == pytest.approx(plain / ratio)
+    assert expected_demand(convention, 46, 10, sources, 0.5) == pytest.approx(plain * ratio**-0.5)

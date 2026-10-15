@@ -325,9 +325,12 @@ def test_the_seeds_command_prints_each_seed_and_the_mean_and_range(monkeypatch, 
     ) in out
     assert "Revenue change: mean -2 (sd 18, se 10), range -20 to +15." in out
     assert "Where the gain came from" in out
-    source, filings = [line.split() for line in out.splitlines() if line.startswith("true ")]
+    source, filings, medians = [
+        line.split() for line in out.splitlines() if line.startswith("true ")
+    ]
     assert source == ["true", "3", "+94", "3", "-45"]
     assert filings == ["true", "0", "0", "6"]  # the filings table: no filings in these rows
+    assert medians == ["true", "0", "0", "0"]  # the comp-median flags: none in these rows
 
 
 def test_a_revenue_target_arm_counts_wins_and_earnings_in_revenue(monkeypatch, capsys):
@@ -397,7 +400,7 @@ def test_the_seeds_command_prints_one_row_per_arm_and_a_learn_arms_estimates(mon
 def test_the_default_mode_gives_the_pinned_seed_7_figure(first):
     _, fixed, books, _ = first
     change = sum(books.contribution(h) - fixed.contribution(h) for h in DEMO.hotels)
-    assert change == pytest.approx(18756, abs=1)
+    assert change == pytest.approx(17154, abs=1)
 
 
 @pytest.mark.slow

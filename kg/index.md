@@ -8,19 +8,19 @@ nodes and its words, len(text.split()) over the file.
 
 | File | Nodes | Words |
 | --- | ---: | ---: |
-| modules.md | 30 | 4,051 |
-| data.md | 33 | 4,291 |
-| rules.md | 124 | 5,305 |
+| modules.md | 30 | 4,081 |
+| data.md | 33 | 4,300 |
+| rules.md | 124 | 5,314 |
 | shocks.md | 7 | 734 |
-| concepts.md | 11 | 1,183 |
+| concepts.md | 11 | 1,197 |
 | measures.md | 14 | 962 |
-| sources.md | 4 | 849 |
-| decisions.md | 61 | 9,071 |
+| sources.md | 4 | 856 |
+| decisions.md | 62 | 9,204 |
 | results.md | 42 | 7,233 |
 | forks.md | 13 | 1,924 |
 | unknowns.md | 15 | 2,013 |
-| every node file | 354 | 37,616 |
-| index.md | | 2,977 |
+| every node file | 355 | 37,818 |
+| index.md | | 2,979 |
 
 ## Modules (`modules.md`)
 
@@ -243,7 +243,8 @@ nodes and its words, len(text.split()) over the file.
 - DEC-26 [H] AGENT_ELASTICITY is the agent's own constant and never imports the simulator's
 - DEC-35 [C] Every number is synthetic, and the schedule's columns follow a published data dictionary
 - DEC-36 [C] The summary reports what the run produces; the rules are not tuned to force a gain
-- DEC-37 [C] Competitor noise is drawn once per competitor and stay date, so a comp median moves only on a shock
+- DEC-37 [H] Competitor noise drawn once per competitor and stay date
+- DEC-62 [C] The shop noise is drawn afresh every shop day
 - DEC-38 [C] The agent can learn its elasticity from the bookings
 - DEC-39 [C] The cautious rule: a learning agent changes a rate only where the change beats holding across its band
 - DEC-43 [C] The cautious rule tests the band alone, and one minimum applies to the plan

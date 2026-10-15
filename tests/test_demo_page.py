@@ -18,14 +18,15 @@ FIGURE_FUNCTIONS = {
 }  # fmt: skip
 ALLOWED_IMPORTS = {"os", "pathlib", "altair", "duckdb", "streamlit"}
 FULL_SERVICE_DAY_10 = (  # the plan line, then the template's reason, its dollar signs escaped
-    "**Accepted:** raise 10% on Thu for Thu 18 Feb [45] to Sun 21 Feb [48], \\$420 more than "
-    "holding. The comp median is up 15.0% since yesterday and a convention was announced on stay "
-    "dates 45 to 48. We recommend the plan, raise 10% on Thu; Fri, Sat, Sun hold, which is "
-    "estimated to earn \\$420 more than holding in contribution on the 651 rooms still unsold."
+    "**Accepted:** raise 5% on Sat; raise 10% on Thu for Thu 18 Feb [45] to Sun 21 Feb [48], "
+    "\\$370 more than holding. The comp median is up 11.7% to 18.0% since yesterday and a "
+    "convention was announced on stay dates 45 to 48. We recommend the plan, raise 5% on Sat; "
+    "raise 10% on Thu; Fri, Sun hold, which is estimated to earn \\$370 more than holding in "
+    "contribution on the 648 rooms still unsold."
 )
 SIDEBAR = (  # the run table's words until the recording covers world v2
     "Seed 7 of the simulated market. The reasons are the model's where the recorded live run "
-    "covers the request and the template's for the 3 it does not. The page reads a file code "
+    "covers the request and the template's for the 5 it does not. The page reads a file code "
     "wrote and computes nothing."
 )
 
@@ -92,10 +93,13 @@ def test_the_page_shows_the_full_service_hotel_on_day_10(demo_file, monkeypatch)
     assert page.subheader[0].value == "Downtown full-service hotel, Thu 14 Jan 2027 [day 10]"
     text = _text(page)
     assert "An event, the convention, was announced for Thu 18 Feb [45] to Sun 21 Feb [48]." in text
-    assert "The comp set median is up 15.0% for Thu 18 Feb [45] to Sun 21 Feb [48]." in text
+    assert (
+        "The comp set median is up 11.7% to 18.0% for Thu 18 Feb [45] to Sun 21 Feb [48]." in text
+    )
     assert "**Stay dates ahead, Thu 14 Jan [10] to Tue 13 Apr [99].**" in text
     assert FULL_SERVICE_DAY_10 in text
-    assert "No flag was held today." in text and not page.expander
+    # The shop noise flagged stay date 52 the same day, and that flag was held.
+    assert page.expander[0].label == "Held flags: 1" and "No flag was held today." not in text
     # The accepted plan's rate is a dashed line in its own colour, with a legend entry.
     spec = _rate_chart_spec(page)
     assert '"planned_rate"' in spec and "#1baf7a" in spec and "#2a78d6" in spec
@@ -128,8 +132,8 @@ def test_the_page_shows_the_full_service_hotel_on_day_10(demo_file, monkeypatch)
         "Contribution difference by stay date, once every stay date is complete",
     ]
     assert [metric.label for metric in page.metric] == labels * 4
-    assert page.metric[9].value == "$3,671,750" and page.metric[9].delta == "-$570"
-    assert page.metric[19].value == "$14,553,782" and page.metric[19].delta == "+$18,756"
+    assert page.metric[9].value == "$3,668,425" and page.metric[9].delta == "-$728"
+    assert page.metric[19].value == "$14,550,227" and page.metric[19].delta == "+$17,154"
     assert len(page.get("vega_lite_chart")) == 3
 
 
@@ -147,7 +151,7 @@ def test_the_query_string_opens_a_hotel_and_a_day_and_the_held_flags_are_open(
     held = "\n".join(block.value for block in page.expander[0].markdown)
     assert (
         "Wed 10 Feb [37] to Fri 12 Feb [39], comp median down. The best alternative, raise 5% "
-        "on Wed, Fri; lower halfway to the new median on Thu, is \\$10 less than holding."
+        "on Wed, Thu, Fri, is \\$20 less than holding."
     ) in held
     assert "Fri 19 Feb [46], ahead of pace. The best alternative, raise 5% on Fri, is" in held
     # A day with no night stayed, and a query string the file does not know.
@@ -176,7 +180,7 @@ def test_a_reason_with_two_dollar_amounts_shows_both_as_written(demo_file, monke
         connection.close()
     page = _page(testing, monkeypatch, file, "full-service", 10)
     text = _text(page)
-    assert "\\$420 more than holding. A \\$120 raise earns \\$1,000 more than holding." in text
+    assert "\\$370 more than holding. A \\$120 raise earns \\$1,000 more than holding." in text
     assert "$120 raise earns $1,000" not in text
     assert (
         "See \\[the plan\\](http://example.com), \\~\\~hold\\~\\~ and \\<http://example.com\\>."

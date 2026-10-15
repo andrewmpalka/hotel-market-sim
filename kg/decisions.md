@@ -224,13 +224,21 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: review
 - Links: [[MOD-12]], [[DAT-20]], [[RES-01]], [[RES-02]]
 
-### DEC-37 [C] Competitor noise is drawn once per competitor and stay date, so a comp median moves only on a shock
-- Decided: the rate-shop noise is one array per seed with shape (hotels, competitors, stay dates). It is drawn before the run on its own stream ([[RUL-20]]). The shop day only applies the shocks known by then.
+### DEC-37 [H] Competitor noise drawn once per competitor and stay date
+- Decided: the rate-shop noise was one array per seed with shape (hotels, competitors, stay dates), drawn before the run on its own stream ([[RUL-20]]). The shop day only applied the shocks known by then.
 - Replaces: nothing built; fresh noise on every shop day was the alternative.
-- Reason: fresh noise would move every comp median every day and raise comp-median flags from nothing. Drawn once, only the convention nights move on day 10 and the cut nights on day 30.
+- Reason: fresh noise would have moved every comp median every day and raised comp-median flags from nothing. Drawn once, only the convention nights moved on day 10 and the cut nights on day 30.
 - Commit: bd556fb
-- Evidence: test_comp_median_moves_only_when_a_shock_becomes_known
+- Replaced by: [[DEC-62]]
 - Links: [[MOD-05]], [[DAT-06]], [[CON-04]]
+
+### DEC-62 [C] The shop noise is drawn afresh every shop day
+- Decided: each competitor's noise is drawn per shop day and stay date from a stream keyed by the seed and its name ([[RUL-20]]). The median's starting level is the comp set's base-rate median, with no noise, on both routes.
+- Replaces: [[DEC-37]], one draw per competitor and stay date, so a median moved only on a shock.
+- Reason: a rate shop that never moved between shocks made every comp-median flag a shock. The estimator saw a ratio that moved only when the hotel did. The name in the key keeps every other competitor's shops as they were.
+- Measured: docs/results.md counts the comp-median flags on the days no shock moved a median, over seeds 1 to 20.
+- Evidence: test_comp_median_moves_every_day_and_beyond_the_threshold_only_on_a_shock, test_rates_depend_only_on_the_seed
+- Links: [[MOD-05]], [[DAT-06]], [[CON-04]], [[RUL-19]], [[RUL-65]]
 
 ### DEC-38 [C] The agent can learn its elasticity from the bookings
 - Decided: --elasticity picks where the agent's elasticity comes from ([[RUL-49]], [[DAT-22]]). The default, true, is the oracle value ([[RUL-56]]).
@@ -319,7 +327,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Links: [[DEC-37]], [[DEC-50]], [[RUL-83]], [[RUL-84]], [[RUL-85]], [[RES-24]], [[RES-25]], [[UNK-11]], [[CON-03]]
 
 ### DEC-52 [C] The market can answer the comp median's level
-- Decided: expected demand scales with (the comp median as shopped / its starting level) ** -MARKET_ELASTICITY ([[RUL-87]]). The default is 0.0, so every pinned result stands. --market-elasticity sets it on both commands.
+- Decided: expected demand scales with (the comp median as shopped / its starting level) ** -MARKET_ELASTICITY ([[RUL-87]]). The starting level is the comp set's base-rate median ([[DEC-62]]). --market-elasticity sets it on both commands.
 - Why: bookings follow the hotel's rate against the comp median alone ([[RUL-21]]). A raise the competitors follow therefore costs no rooms, and the reaction run measured the ratchet that makes ([[DEC-51]], [[RES-24]]).
 - Agent: forecast.py mirrors the term and the equality test covers it ([[RUL-88]]). The agent is told the run's value, and every plan record carries it as market_elasticity. A set value changes the request digest.
 - Oracle: the command tells the oracle the value and the reaction's share. It then scores a candidate against the median the reaction moves, with the market's answer. It is the ceiling again.

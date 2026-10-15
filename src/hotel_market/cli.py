@@ -118,6 +118,7 @@ from hotel_market.model import MODELS, ClaudeClient, Client
 from hotel_market.plan import DAY_NAMES, HOLD, Entry, Pricing
 from hotel_market.policy import POLICIES
 from hotel_market.schedule import DEFAULT_SCENARIO, HORIZON_DAYS, SCENARIOS, Scenario
+from hotel_market.shocks import EVENTS, RATE_CUTS
 from hotel_market.shops import REACTION_LAG, REACTION_SHARE
 from hotel_market.simulated import deciding, simulated_sources
 from hotel_market.text import capitalize_first, money_range, pace_text, percent_range, stay_range
@@ -349,6 +350,7 @@ class SeedResult:
     pace_flags: int = 0  # those with a pace cause, ahead of or behind pace
     median_flags: int = 0  # those with a comp-median cause
     own_median_flags: int = 0  # react only: the comp-median flags the hotel's own change caused
+    noise_median_flags: int = 0  # the comp-median flags on a day no scripted shock moved a median
     repeat_changes: int = 0  # stay dates changed twice or more within REPEAT_WINDOW days
     seat_flags: int = 0  # the flags with a seat cause
     filings: int = 0  # the days the airline filed something, through the last decided day
@@ -403,6 +405,10 @@ class ArmResult:
     @property
     def own_median_flags(self) -> int:
         return sum(result.own_median_flags for result in self.seeds)
+
+    @property
+    def noise_median_flags(self) -> int:
+        return sum(result.noise_median_flags for result in self.seeds)
 
     @property
     def repeat_changes(self) -> int:
@@ -547,6 +553,10 @@ def sweep(
                         bool(MEDIAN_CAUSES & set(entry.causes)) for entry in agent.entries
                     ),
                     own_median_flags=own_median_flags(agent.entries, books),
+                    noise_median_flags=sum(
+                        bool(MEDIAN_CAUSES & set(e.causes)) and e.day not in median_shock_days()
+                        for e in agent.entries
+                    ),
                     repeat_changes=repeat_changes(agent.entries),
                     seat_flags=sum(bool(SEAT_CAUSES & set(e.causes)) for e in agent.entries),
                     filings=len(books.scenario.filing_days(SIM_DAYS - 1)),
@@ -633,6 +643,13 @@ def cache_root(
     if market_elasticity not in (None, MARKET_ELASTICITY):
         root = root / f"market-{market_elasticity:g}"
     return root
+
+
+def median_shock_days() -> frozenset[int]:
+    """The days a scripted shock first moves a comp median: an event's competitor raise or a
+    rate cut. A comp-median flag on any other day came from the shop noise or the reaction."""
+    raises = {e.known_day for e in EVENTS if e.comp_rate_raise}
+    return frozenset(raises | {c.known_day for c in RATE_CUTS})
 
 
 def own_median_flags(entries: Iterable[Entry], books: Books) -> int:
@@ -1404,6 +1421,8 @@ def _print_sweep(
     print("\n".join(_source_table(arms)))
     print()
     print("\n".join(_revision_table(arms)))
+    print()
+    print("\n".join(_median_table(arms)))
     if react:
         print()
         print("\n".join(_reaction_table(arms, market_elasticity=market)))
@@ -1484,6 +1503,26 @@ def _revision_table(arms: list[ArmResult], named: bool = False) -> list[str]:
         lines.append(
             f"{str(arm.mode):18}{reviewer}{arm.filings:>9}{arm.seat_flags:>12}"
             f"{arm.rate_changes:>14}"
+        )
+    return lines
+
+
+def _median_table(arms: list[ArmResult], named: bool = False) -> list[str]:
+    """The comp-median flags, summed over the seeds: those on a day a scripted shock moved a
+    median, and those on any other day, where the shop noise or the reaction moved it."""
+    reviewer_heading = f"{'reviewer':20}" if named else ""
+    days = ", ".join(str(day) for day in sorted(median_shock_days()))
+    lines = [
+        f"The comp-median flags, summed over the seeds: on the days a shock moved a median "
+        f"({days}) and on every other day, where the shop noise or the reaction moved it",
+        f"{'elasticity':18}{reviewer_heading}{'median flags':>14}{'on a shock day':>16}"
+        f"{'other days':>12}",
+    ]
+    for arm in arms:
+        reviewer = f"{arm.reviewer.name:20}" if named else ""
+        lines.append(
+            f"{str(arm.mode):18}{reviewer}{arm.median_flags:>14}"
+            f"{arm.median_flags - arm.noise_median_flags:>16}{arm.noise_median_flags:>12}"
         )
     return lines
 
@@ -1732,6 +1771,8 @@ def _print_bench(
     if churn or scenario.name != DEFAULT_SCENARIO.name:
         print()
         print("\n".join(_revision_table(arms, named=True)))
+        print()
+        print("\n".join(_median_table(arms, named=True)))
     if policy:
         print()
         print("\n".join(_control_table(arms, policy, named=True)))

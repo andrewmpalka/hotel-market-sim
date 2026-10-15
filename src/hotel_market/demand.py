@@ -16,9 +16,9 @@ loop passes it to every draw. The agent never receives it, so at a bias other th
 forecast is wrong by that factor. The error is in the demand level alone.
 
 MARKET_ELASTICITY is the market's own price response. Expected demand is multiplied by (the comp
-median as shopped that day / the median's starting level for that stay date) ** -MARKET_ELASTICITY.
-The starting level is the median with no shock and no reaction (shops.starting_median). The
-default is 1.0, a market-wide rate rise losing demand in proportion, which the customer file
+median as shopped that day / the comp set's starting level) ** -MARKET_ELASTICITY. The starting
+level is the base rates' median, with no shock, no reaction and no noise (Hotel.starting_median).
+The default is 1.0, a market-wide rate rise losing demand in proportion, which the customer file
 records and the command's --market-elasticity overrides. The agent is told the run's value
 (forecast.py), as it is told the share elasticity.
 

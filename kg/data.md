@@ -33,7 +33,7 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-04 [C] Hotel, Competitor and the customer's hotels
 - File: src/hotel_market/world.py
-- Fields: Hotel(key, name, rooms, start_rate, air_share, base_occupancy, weekday_factors, curve_days_out, curve_share, competitors, floor, ceiling, room_cost, row) with clamp() and curve(days_out), and Competitor(name, base_rate).
+- Fields: Hotel(key, name, rooms, start_rate, air_share, base_occupancy, weekday_factors, curve_days_out, curve_share, competitors, floor, ceiling, room_cost, row) with clamp(), curve() and starting_median(); Competitor(name, base_rate).
 - Built by: [[MOD-20]] from the customer file ([[DAT-27]]). Floor, ceiling and room_cost are the file's shares of the start rate ([[RUL-59]] to [[RUL-61]]).
 - Offsets: each competitor's base rate is the start rate at its offset. row is the hotel's place in the file and in every array indexed by hotel.
 - Values: convention: 400 rooms, $220, air share 0.60, base occupancy 0.75. Full-service: 250, $190, 0.45, 0.75. Lifestyle: 120, $240, 0.50, 0.75. Airport: 150, $140, 0.80, 0.85 ([[DEC-14]]).
@@ -52,16 +52,16 @@ the plans, the model's request and answer, and what the command writes.
 ### DAT-06 [C] The rate shop
 - File: src/hotel_market/shops.py
 - Made by: comp_rates(shop_day, hotel, stay_day, seed, hotel_change), a dict of competitor name to rate on the shop day. comp_median(...) is their median. hotel_change is the lagged change the competitors follow ([[DEC-51]]).
-- Noise: one read-only array per seed, shape (hotels, competitors, stay dates), drawn on the seed's noise stream [[RUL-20]].
+- Noise: one read-only array per seed and competitor, shape (shop days, stay dates), from a stream keyed by the seed and the competitor's name ([[RUL-20]], [[DEC-62]]).
 - Read by: [[MOD-06]] (bookings scale with rate over comp median), [[MOD-07]] (rate against median, median change since yesterday), [[MOD-08]] (estimates)
-- Evidence: test_comp_median_moves_only_when_a_shock_becomes_known, test_hotel_starts_level_with_its_comp_median
+- Evidence: test_comp_median_moves_every_day_and_beyond_the_threshold_only_on_a_shock, test_hotel_starts_level_with_its_comp_median
 
 ### DAT-07 [C] Books
 - File: src/hotel_market/bookings.py
 - Fields: rooms (int, hotels x stay dates), revenue and rates (float, same shape). demand_bias ([[RUL-82]]), react ([[DEC-51]]), market_elasticity ([[RUL-87]]), scenario and churn ([[DEC-53]]) are the run's settings.
 - Draws: the random numbers for every draw of the run ([[DEC-22]]). The preload has one per hotel and stay date, and the loop one per day, hotel and stay date.
 - Log: daily_rooms, daily_rates and daily_medians, shape (days, hotels, stay dates), zero outside the day's window. preload holds the rooms loaded before day 0, and [[MOD-19]] serves the agent from the log as of any day.
-- Methods: book(day) and set_rates(changes). hotel_change() and comp_median() serve the reaction ([[DEC-51]]), and starting_median() the market term ([[DEC-52]]). The five measures are [[MEA-01]] to [[MEA-05]].
+- Methods: book(day) and set_rates(changes). hotel_change() and comp_median() serve the reaction ([[DEC-51]]); the market term reads Hotel.starting_median() ([[DEC-52]]). The five measures are [[MEA-01]] to [[MEA-05]].
 - Written by: [[MOD-06]]; the agent's rate changes arrive through set_rates after each day's bookings
 - Read by: [[MOD-19]], [[MOD-12]]
 - Evidence: test_day_0_starts_with_the_bookings_made_before_the_run, test_contribution_is_revenue_minus_the_cost_of_every_room_sold, test_the_simulated_sources_answer_as_of_the_day
@@ -219,7 +219,7 @@ the plans, the model's request and answer, and what the command writes.
 ### DAT-25 [C] The four sources
 - File: src/hotel_market/sources.py
 - Bookings: on_books(as_of_day) by [hotel row, stay day] after that day's bookings, and rates(as_of_day), each hotel's rate in force that day. history(as_of_day) is a [[DAT-26]].
-- RateShops: competitor_rates(shop_day, hotel, stay_day), median(...), the median of those rates, and median_history(as_of_day) by [shop day, hotel row, stay day]. first_median(hotel, stay_day) is the median's starting level ([[DEC-52]]).
+- RateShops: competitor_rates(shop_day, hotel, stay_day), median(...), the median of those rates, and median_history(as_of_day) by [shop day, hotel row, stay day]. first_median(hotel) is the base-rate median on both routes ([[DEC-62]]).
 - Schedules: seats(as_of_day), the arriving seats by stay day as filed by the day. From them the interface computes seat_change(as_of_day) against the first schedule known and seat_revision(as_of_day) against the day before.
 - Events: known(as_of_day). Sources(bookings, shops, schedules, events) bundles one of each. Every method returns only what was known on the day it is asked on, and a source made for a day refuses a later one ([[RUL-03]], [[DEC-61]]).
 - Written by: [[MOD-19]], the simulator's implementation, and [[MOD-21]], the one over the stored tables ([[DAT-28]])

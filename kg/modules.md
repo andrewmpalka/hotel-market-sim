@@ -18,6 +18,7 @@ which is also the order in which they depend on each other.
 ### MOD-02 [C] world.py
 - File: src/hotel_market/world.py
 - Owns: the types a market is described with: Hotel and Competitor ([[DAT-04]]). A Hotel carries its rooms, start rate, air share, base occupancy, weekday factors, booking curve ([[CON-01]]), comp set, floor, ceiling, room cost and row.
+- Level: Hotel.starting_median() is the comp set's base-rate median, the level the market term and the forecast measure a shopped median against ([[DEC-52]], [[DEC-62]]).
 - Holds: the calendar: SIM_DAYS ([[RUL-12]]), the 90-day window ([[RUL-13]]) and weekday. The hotels themselves come from the customer file ([[MOD-20]], [[DEC-41]]). Nothing here is random or secret.
 - Reads: [[MOD-01]] for SIM_START and HORIZON_DAYS
 - Writes: [[DAT-04]]
@@ -45,13 +46,13 @@ which is also the order in which they depend on each other.
 
 ### MOD-05 [C] shops.py
 - File: src/hotel_market/shops.py
-- Owns: the rate shop: each competitor's rate for a stay date as seen on a shop day, and their median ([[DAT-06]]). starting_median() is the median's starting level ([[DEC-52]]).
-- Holds: NOISE ([[RUL-19]]) and NOISE_STREAM ([[RUL-20]]). Rates are flat across the week ([[DEC-16]]). The noise is drawn once per competitor and stay date from the seed ([[DEC-37]]).
+- Owns: the rate shop: each competitor's rate for a stay date as seen on a shop day, and their median ([[DAT-06]]). The median's starting level is Hotel.starting_median() in [[MOD-02]] ([[DEC-52]]).
+- Holds: NOISE ([[RUL-19]]) and NOISE_STREAM ([[RUL-20]]). Rates are flat across the week ([[DEC-16]]). The noise is drawn afresh every shop day, per competitor from a stream keyed by its name ([[DEC-62]]).
 - Reaction: comp_rates() takes the hotel's lagged change in dollars and moves each competitor REACTION_SHARE of it ([[RUL-83]], [[RUL-84]], [[DEC-51]]). The Books pass it ([[DAT-07]]).
 - Reads: [[MOD-01]], [[MOD-02]], [[MOD-03]], [[MOD-20]]
 - Writes: [[DAT-06]]
 - Tests: tests/test_shops.py
-- Evidence: test_comp_median_moves_only_when_a_shock_becomes_known, test_rates_depend_only_on_the_seed
+- Evidence: test_comp_median_moves_every_day_and_beyond_the_threshold_only_on_a_shock, test_rates_depend_only_on_the_seed
 
 ### MOD-06 [C] bookings.py
 - File: src/hotel_market/bookings.py

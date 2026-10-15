@@ -11,6 +11,7 @@ Nothing here is random. The seed only matters once competitor rates and bookings
 
 from __future__ import annotations
 
+import statistics
 from dataclasses import dataclass
 from datetime import timedelta
 
@@ -55,6 +56,12 @@ class Hotel:
         """Share of final bookings normally on the books this many days before arrival: linear
         between the pinned points and flat beyond the last."""
         return np.interp(days_out, self.curve_days_out, self.curve_share)
+
+    def starting_median(self) -> float:
+        """The comp set's median before any shock, reaction or noise: the median of its base rates,
+        which the symmetric offsets put at the start rate. The market's price response and the
+        agent's forecast measure the shopped median against it."""
+        return statistics.median(c.base_rate for c in self.competitors)
 
 
 def stay_window(day: int) -> range:

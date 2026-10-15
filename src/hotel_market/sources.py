@@ -81,10 +81,11 @@ class RateShops(ABC):
         """The comp medians shopped before as_of_day, by [shop day, hotel row, stay day]. It is 0
         where a stay date was not shopped that day."""
 
-    @abstractmethod
-    def first_median(self, hotel: Hotel, stay_day: int) -> float:
-        """The comp median's starting level for a stay date: its level with no shock and no
-        reaction. The forecast measures the median against it (forecast.py)."""
+    def first_median(self, hotel: Hotel) -> float:
+        """The comp median's starting level: its level with no shock, no reaction and no noise,
+        which is the median of the comp set's base rates. The forecast measures the shopped
+        median against it (forecast.py). A feed with its own starting level may override it."""
+        return hotel.starting_median()
 
 
 class Schedules(ABC):

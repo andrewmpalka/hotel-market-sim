@@ -59,9 +59,7 @@ def expected_demand(
         * (1 + event_uplift(hotel, stay_day, as_of_day, sources))
     )
     if market_elasticity:
-        ratio = sources.shops.median(as_of_day, hotel, stay_day) / sources.shops.first_median(
-            hotel, stay_day
-        )
+        ratio = sources.shops.median(as_of_day, hotel, stay_day) / sources.shops.first_median(hotel)
         demand *= ratio**-market_elasticity
     return demand
 

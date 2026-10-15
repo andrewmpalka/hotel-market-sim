@@ -19,15 +19,15 @@ the modules, constants and decisions that implement it.
 
 ### CON-03 [C] Competitor set
 - Definition: the four competitors each hotel is compared with. They are priced 8% and 3% below and 3% and 8% above its start rate ([[DAT-04]]). The set's median therefore starts level with the hotel.
-- Reaction: by default competitors never react to the hotel, and their rates move only with the scripted shocks ([[SHK-01]], [[SHK-03]]). With --react each moves half of the hotel's change three days later ([[DEC-51]]).
+- Reaction: competitors never react by default. Their rates move a little with the shop noise ([[DEC-62]]) and a lot only with the shocks ([[SHK-01]], [[SHK-03]]). With --react each moves half of the hotel's change after a lag ([[DEC-51]]).
 - Implemented by: Competitor and Hotel.competitors in [[MOD-02]] ([[DAT-04]]), which [[MOD-20]] builds from the offsets in the customer file. The rate shop is in [[MOD-05]].
-- Evidence: test_each_hotel_has_four_competitors_within_10_percent_of_its_rate, test_comp_set_median_starts_at_the_hotels_own_rate, test_comp_median_moves_only_when_a_shock_becomes_known
+- Evidence: test_each_hotel_has_four_competitors_within_10_percent_of_its_rate, test_comp_set_median_starts_at_the_hotels_own_rate, test_comp_median_moves_every_day_and_beyond_the_threshold_only_on_a_shock
 
 ### CON-04 [C] Competitor median
 - Definition: the median of the four competitors' rates for a stay date as shopped on a day. With four rates it is the mean of the middle two.
 - Use: every rate ratio ([[CON-05]]) is measured against it. A move of 5% or more since yesterday raises a flag ([[RUL-65]]).
-- Implemented by: comp_median() in [[MOD-05]] ([[DAT-06]]). The noise behind it is drawn once per competitor and stay date ([[DEC-37]]).
-- Evidence: test_comp_median_moves_only_when_a_shock_becomes_known, test_hotel_starts_level_with_its_comp_median
+- Implemented by: comp_median() in [[MOD-05]] ([[DAT-06]]). The noise behind it is drawn afresh every shop day ([[DEC-62]]); the noise alone never moves it 5% from its starting level.
+- Evidence: test_comp_median_moves_every_day_and_beyond_the_threshold_only_on_a_shock, test_hotel_starts_level_with_its_comp_median
 
 ### CON-05 [C] Rate ratio
 - Definition: the hotel's rate divided by its competitor median for the same stay date. Bookings scale with the ratio to the power of minus the elasticity ([[CON-06]]). The detect table carries it as rate_vs_median ([[DAT-08]]).

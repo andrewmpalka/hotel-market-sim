@@ -7,7 +7,7 @@ import pytest
 from hotel_market import shops
 from hotel_market.customer import demo
 from hotel_market.schedule import HORIZON_DAYS
-from hotel_market.shops import comp_median, comp_rates, starting_median
+from hotel_market.shops import comp_median, comp_rates
 
 DEMO = demo()
 
@@ -39,20 +39,26 @@ def test_competitor_rates_are_base_rate_x_noise_with_no_weekly_pattern():
     assert 0.02 < max(offsets) <= 0.03
 
 
-def test_comp_median_moves_only_when_a_shock_becomes_known():
-    # Noise is drawn once per competitor and stay date, so day-to-day moves come from shocks.
-    moved = set()
+def test_comp_median_moves_every_day_and_beyond_the_threshold_only_on_a_shock():
+    # The noise is drawn afresh every shop day, so a median moves almost every day. Noise alone
+    # moves it at most 3% from its starting level, so the 5% threshold marks the shocks alone:
+    # the convention nights from day 10 and the cut nights from day 30.
+    moved, beyond = 0, set()
     for hotel in DEMO.hotels:
+        start = hotel.starting_median()
         for stay_day in range(HORIZON_DAYS):
             medians = [comp_median(d, hotel, stay_day, seed=SEED) for d in range(HORIZON_DAYS)]
-            moved |= {
+            moved += sum(medians[d] != medians[d - 1] for d in range(1, HORIZON_DAYS))
+            beyond |= {
                 (d, hotel.key, stay_day)
-                for d in range(1, HORIZON_DAYS)
-                if medians[d] != medians[d - 1]
+                for d in range(HORIZON_DAYS)
+                if abs(medians[d] / start - 1) >= DEMO.median_threshold
             }
-    convention = {(10, key, s) for key in DOWNTOWN for s in range(45, 49)}
-    rate_cut = {(30, "full-service", s) for s in range(37, 40)}
-    assert moved == convention | rate_cut
+    assert moved > 0.99 * len(DEMO.hotels) * HORIZON_DAYS * (HORIZON_DAYS - 1)
+    days = range(10, HORIZON_DAYS)
+    convention = {(d, key, s) for d in days for key in DOWNTOWN for s in range(45, 49)}
+    rate_cut = {(d, "full-service", s) for d in range(30, HORIZON_DAYS) for s in range(37, 40)}
+    assert beyond == convention | rate_cut
 
 
 def test_rates_depend_only_on_the_seed():
@@ -61,15 +67,31 @@ def test_rates_depend_only_on_the_seed():
     shops._noise.cache_clear()  # draw the noise again from scratch
     assert [comp_rates(0, hotel, s, seed=SEED) for s in range(90)] == first
     assert [comp_rates(0, hotel, s, seed=SEED + 1) for s in range(90)] != first
+    assert [comp_rates(1, hotel, s, seed=SEED) for s in range(90)] != first  # fresh each shop day
+    # Each competitor draws from a stream keyed by its name, so the hotel's row in the file and
+    # the other competitors do not touch its rates.
+    same_name = shops._noise(SEED, "airport comp 1")
+    assert (shops._noise(SEED, "airport comp 1") == same_name).all()
+    assert (shops._noise(SEED, "airport comp 2") != same_name).any()
+
+
+def _without_noise(shop_day, hotel, stay_day):
+    """Each competitor's shopped rate with that day's noise taken back out."""
+    rates = comp_rates(shop_day, hotel, stay_day, seed=SEED)
+    return {
+        comp.name: rates[comp.name] / (1 + shops._noise(SEED, comp.name)[shop_day + 1, stay_day])
+        for comp in hotel.competitors
+    }
 
 
 def test_downtown_competitors_raise_rates_15_percent_on_convention_nights_from_shop_day_10():
     for hotel in DEMO.hotels:
         factor = 1.15 if hotel.key in DOWNTOWN else 1.0
         for stay_day in range(45, 49):
-            before = comp_rates(9, hotel, stay_day, seed=SEED)
-            after = comp_rates(10, hotel, stay_day, seed=SEED)
+            before = _without_noise(9, hotel, stay_day)
+            after = _without_noise(10, hotel, stay_day)
             assert after == pytest.approx({name: rate * factor for name, rate in before.items()})
+            assert before == pytest.approx({c.name: c.base_rate for c in hotel.competitors})
 
 
 def test_two_cheapest_full_service_competitors_cut_20_percent_from_shop_day_30():
@@ -81,8 +103,8 @@ def test_two_cheapest_full_service_competitors_cut_20_percent_from_shop_day_30()
         "full-service comp 4": 1.00,
     }
     for stay_day in range(37, 40):
-        before = comp_rates(29, hotel, stay_day, seed=SEED)
-        after = comp_rates(30, hotel, stay_day, seed=SEED)
+        before = _without_noise(29, hotel, stay_day)
+        after = _without_noise(30, hotel, stay_day)
         assert after == pytest.approx({name: rate * factor[name] for name, rate in before.items()})
         # Big enough for detect.py's 5% comp median flag.
         drop = (
@@ -110,16 +132,15 @@ def test_competitors_move_half_of_the_hotels_change_when_they_are_told_it():
         assert all(cut[name] == pytest.approx(plain[name] - 5.5) for name in plain)
 
 
-def test_the_starting_median_is_the_shop_of_day_minus_1_with_no_shock_and_no_reaction():
+def test_the_starting_median_is_the_base_rates_median_with_no_shock_reaction_or_noise():
     convention = DEMO.hotel("convention")
-    for stay_day in (0, 46, 120):
-        start = starting_median(convention, stay_day, seed=SEED)
-        assert start == comp_median(-1, convention, stay_day, seed=SEED)
-        assert start == comp_median(0, convention, stay_day, seed=SEED)  # nothing known on day 0
-    # On the convention nights the day-10 shop is 15% above it, and a reaction moves it too.
-    assert comp_median(10, convention, 46, seed=SEED) == pytest.approx(
-        1.15 * starting_median(convention, 46, seed=SEED)
-    )
-    assert comp_median(0, convention, 46, seed=SEED, hotel_change=22.0) > starting_median(
-        convention, 46, seed=SEED
+    start = convention.starting_median()
+    assert start == statistics.median(c.base_rate for c in convention.competitors) == 220
+    # Every shop wanders around it within the noise; the day-10 shop on a convention night is
+    # 15% above it, within the noise, and a reaction moves it too.
+    for shop_day, stay_day in [(-1, 0), (0, 46), (9, 46), (40, 120)]:
+        assert abs(comp_median(shop_day, convention, stay_day, seed=SEED) / start - 1) <= 0.03
+    assert comp_median(10, convention, 46, seed=SEED) == pytest.approx(1.15 * start, rel=0.03)
+    assert comp_median(0, convention, 46, seed=SEED, hotel_change=22.0) > comp_median(
+        0, convention, 46, seed=SEED
     )

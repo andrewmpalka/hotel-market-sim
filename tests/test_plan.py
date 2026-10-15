@@ -26,7 +26,6 @@ from hotel_market.plan import (
     expected_bookings,
     rescored,
 )
-from hotel_market.shops import starting_median
 from hotel_market.simulated import simulated_sources
 from hotel_market.world import weekday
 
@@ -164,7 +163,7 @@ def test_estimate_is_expected_contribution_on_the_unsold_rooms(day10):
         hotel = DEMO.hotel(key)
         [group] = entry_for(10, Flag(10, key, stay_day, stay_day, (AHEAD,)), table).weekdays
         row = table.query("hotel == @key and stay_day == @stay_day").iloc[0]
-        ratio = row["comp_median"] / starting_median(hotel, stay_day, seed=7)
+        ratio = row["comp_median"] / hotel.starting_median()
         demand = expected_demand(hotel, stay_day, 10, 1.0, ratio, DEMO.market_elasticity)
         remaining = demand * (1 - hotel.curve(stay_day - 10))
         unsold = hotel.rooms - row["rooms"]
@@ -188,7 +187,7 @@ def test_on_nights_that_will_not_sell_out_the_start_rate_is_already_best(books_t
 def _sell_out_chance(hotel, table, stay_day, day):
     """The chance that the night sells out at today's rate: P(Poisson(mean) >= unsold)."""
     row = table.query("hotel == @hotel.key and stay_day == @stay_day").iloc[0]
-    ratio = row["comp_median"] / starting_median(hotel, stay_day, seed=7)
+    ratio = row["comp_median"] / hotel.starting_median()
     demand = expected_demand(hotel, stay_day, day, 1.0, ratio, DEMO.market_elasticity)
     mean = demand * (1 - hotel.curve(stay_day - day)) * (row["rate"] / row["comp_median"]) ** -1.5
     unsold = int(hotel.rooms - row["rooms"])
@@ -207,10 +206,11 @@ def test_a_raise_wins_where_the_night_would_often_sell_out_at_todays_rate(day10)
     full_service, convention = DEMO.hotel("full-service"), DEMO.hotel("convention")
     assert 0.3 < _sell_out_chance(full_service, table, 45, 10) < 0.6
     assert _sell_out_chance(convention, table, 45, 10) < 0.05
-    entries = {f.hotel: entry_for(10, f, table) for f in flags(10, table)}
-    [thursday] = [g for g in entries["full-service"].weekdays if g.stays == [45]]
-    assert thursday.best.name == "raise 10%" and entries["full-service"].queued
-    assert entries["convention"].value_at_stake < 10 and not entries["convention"].queued
+    entries = {(f.hotel, f.first_stay): entry_for(10, f, table) for f in flags(10, table)}
+    full_service_entry, convention_entry = entries["full-service", 45], entries["convention", 45]
+    [thursday] = [g for g in full_service_entry.weekdays if g.stays == [45]]
+    assert thursday.best.name == "raise 10%" and full_service_entry.queued
+    assert convention_entry.value_at_stake < 10 and not convention_entry.queued
 
 
 def test_after_the_new_flights_the_airport_raises_every_night_close_to_full(books_through):

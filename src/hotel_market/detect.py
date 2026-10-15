@@ -100,7 +100,9 @@ def detect_numbers(
                 "new_event": next(
                     (e.name for e in announced if e.covers(hotel.key, stay_day)), None
                 ),
-                "shock_known": shock_known(hotel, stay_day, day, sources),
+                "shock_known": shock_known(
+                    hotel, stay_day, day, sources, customer.median_threshold
+                ),
             }
             row["causes"] = _causes(row, customer)
             rows.append(row)
@@ -161,16 +163,19 @@ def _held(
     return accepted is not None and 0 < day - accepted <= hold_days
 
 
-def shock_known(hotel: Hotel, stay_day: int, as_of_day: int, sources: Sources) -> bool:
+def shock_known(
+    hotel: Hotel, stay_day: int, as_of_day: int, sources: Sources, median_threshold: float
+) -> bool:
     """Whether a shock known by as_of_day moves demand or competitor rates for this hotel and stay
     date. That is true when the seats have changed, a known event covers the date or today's comp
-    median differs from the first shop.
+    median sits the median threshold or more away from its starting level, which the shop noise
+    alone never reaches.
     """
+    median = sources.shops.median(as_of_day, hotel, stay_day)
     return (
         sources.schedules.seat_change(as_of_day)[stay_day] != 0
         or any(e.covers(hotel.key, stay_day) for e in sources.events.known(as_of_day))
-        or sources.shops.median(as_of_day, hotel, stay_day)
-        != sources.shops.median(0, hotel, stay_day)
+        or abs(median / sources.shops.first_median(hotel) - 1) >= median_threshold
     )
 
 

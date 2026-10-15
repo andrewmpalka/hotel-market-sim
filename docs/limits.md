@@ -37,12 +37,12 @@
   start rate contribution-best on a night that will not sell out.
 - The $250 minimum applies to a whole plan, so a small change on one day of the
   week can ride inside a plan that clears the minimum on its other days.
-- The rate shop never moves between shocks, because each competitor's noise is
-  drawn once per stay date. A comp median therefore changes only when a shock or
-  the reaction moves it, so the median-change flag has never met ordinary shop
-  noise, and the learned elasticity comes from a ratio that moves only when the
-  hotel moves it. That is why the estimator's standard errors stay at 0.17 to
-  0.31 after about 5,300 observations.
+- The rate shop moves every day: each competitor's noise is drawn afresh per
+  shop day, so a comp median wanders up to 3% around its starting level between
+  shocks, and the median-change flag now meets ordinary shop noise. The comp
+  median flags on days when no shock moved a median are counted in
+  docs/results.md. The noise is uniform and the same size at every competitor,
+  which no real shop is.
 - Each hotel has its own booking curve, but the pace baseline is still normal
   demand on that curve with no group base, so "pace" here means that a shock's
   bookings have arrived. The hotels that received the convention and the new

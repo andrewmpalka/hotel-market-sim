@@ -34,6 +34,12 @@ Seed 7, days 0 to 59: what became of the flags.
 | ---: | ---: | ---: | ---: | ---: | ---: |
 | 113 | 7 | 49 | 57 | 0 | 1 |
 
+Comp-median flags over seeds 1 to 20 in the default mode, from the same sweep: those on a day a scripted shock moved a median (10, the convention's competitor raise, and 30, the rate cut) and those on every other day, where only the shop noise moved it. Since world v2 the rate shop moves every day, so the 5% threshold meets ordinary noise. Measured on 2026-10-15 with `hotel-market --seeds 1 20 --template`.
+
+| Median flags | On a shock day | On other days |
+| ---: | ---: | ---: |
+| 523 | 80 | 443 |
+
 Seed 7: room revenue and contribution per hotel, the fixed-rate run against the agent run, stay dates 0 to 149.
 
 | Hotel | Revenue, fixed | Revenue, agent | Change | Contribution, fixed | Contribution, agent | Change |

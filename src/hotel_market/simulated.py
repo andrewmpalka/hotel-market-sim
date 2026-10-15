@@ -36,7 +36,7 @@ from hotel_market.schedule import (
     seats_by_day,
 )
 from hotel_market.shocks import events_as_of
-from hotel_market.shops import comp_median, comp_rates, starting_median
+from hotel_market.shops import comp_median, comp_rates
 from hotel_market.sources import (
     BookingHistory,
     Bookings,
@@ -89,11 +89,9 @@ class SimulatedRateShops(Limited, RateShops):
     def __init__(self, books: Books, as_of_day: int | None = None):
         self.as_of_day = as_of_day
         self._seed = books.seed
-        self._customer = books.customer
         self._react = books.react
         self._daily_rates = books.daily_rates[: _through(as_of_day)].copy()
         self._daily_medians = books.daily_medians[: _through(as_of_day)].copy()
-        self._starting: dict[tuple[int, int], float] = {}  # (hotel row, stay day) -> median
 
     def _hotel_change(self, shop_day: int, hotel: Hotel, stay_day: int) -> float:
         return lagged_change(self._daily_rates, self._react, shop_day, hotel, stay_day)
@@ -105,7 +103,6 @@ class SimulatedRateShops(Limited, RateShops):
             hotel,
             stay_day,
             seed=self._seed,
-            customer=self._customer,
             hotel_change=self._hotel_change(shop_day, hotel, stay_day),
         )
 
@@ -116,18 +113,8 @@ class SimulatedRateShops(Limited, RateShops):
             hotel,
             stay_day,
             seed=self._seed,
-            customer=self._customer,
             hotel_change=self._hotel_change(shop_day, hotel, stay_day),
         )
-
-    def first_median(self, hotel: Hotel, stay_day: int) -> float:
-        """The shop of day -1: no shock is known yet, and no rate has changed."""
-        key = (hotel.row, stay_day)
-        if key not in self._starting:
-            self._starting[key] = starting_median(
-                hotel, stay_day, seed=self._seed, customer=self._customer
-            )
-        return self._starting[key]
 
     def median_history(self, as_of_day: int) -> np.ndarray:
         self._known(as_of_day, before=True)
