@@ -36,6 +36,7 @@ it. None of these is in progress.
 ### FRK-05 [O] Deliberate price tests, to learn the elasticity faster
 - Choice: whether a learning agent should make small deliberate rate changes on ordinary nights, far from selling out. The aim is to sharpen its elasticity estimate sooner.
 - Known: in a fixed-rate run the rate ratio barely moves, so the bookings alone would pin the elasticity near the prior. The agent's own rate changes supply most of the usable variation ([[RES-10]], [[DEC-38]]).
+- Precision: the rate ratio's spread in a fixed-rate run is 0.011 to 0.027 by hotel ([[RES-10]]). The data then cannot outweigh the prior. Only the hotel's own moves of several per cent across most of its bookings do.
 - Timing: the convention and the new flights are decided on days 10 and 20. A learning agent's estimate still sits near its prior then ([[RES-04]]). The cautious rule ([[DEC-39]], [[DEC-43]]) holds wherever the band is wide.
 - Cost: a test costs the contribution the moved nights give up. On this market that is small for a 5% move on a night that will not sell out ([[DEC-12]]). The simulator could measure it.
 - Owner: the owner's choice was to record this and leave the agent alone.
@@ -59,6 +60,7 @@ it. None of these is in progress.
 - Known: at 0.0 a matched raise is free, and the reaction run measured the ratchet ([[RES-24]]). With the reaction on, 0.5 and 1.0 cut the gain by a third and by more than half ([[RES-26]]).
 - Without: without the reaction, the term acts only where a shock moves the median ([[RES-27]]).
 - Needs: a value with a source ([[UNK-15]]). Then a run of seeds 1 to 20 at it, with and without the reaction. [[RES-01]] and [[RES-02]] would then need new pins, and the README's results would change.
+- Reaction: the README's next version also makes the competitors react by default ([[DEC-51]]). A matched raise would then stop being a demand gift ([[DEC-59]], [[RES-41]]).
 - Links: [[RUL-87]], [[DEC-52]], [[RES-01]], [[RES-02]], [[RES-24]], [[RES-26]], [[RES-27]], [[UNK-15]]
 
 ### FRK-09 [O] A comp move that follows our own change as a flag cause
@@ -82,3 +84,16 @@ it. None of these is in progress.
 - Reason: the agent acts only on a flag, and a market that is simply larger raises none. The pace rule of Part D is anomaly-driven in the same way and will share the blind spot.
 - Needs: a cadence, and on it a plan for every stay date with the usual candidates. The queue's minimum would keep the model calls down. The oracle grades such plans as it grades any other.
 - Links: [[DEC-13]], [[DEC-54]], [[RES-31]], [[DEC-55]], [[UNK-08]]
+
+### FRK-12 [O] Per-hotel booking curves in the customer file
+- Choice: whether each hotel should carry its own booking curve ([[CON-01]], [[RUL-68]], [[RUL-69]]), with a group base on the convention hotel's event dates and a late curve at the airport hotel.
+- Known: one transient curve serves all four hotels ([[DAT-27]]). The pace baseline is normal demand ([[MOD-07]]), so a hotel that received a shock runs ahead of pace every day until the stay date.
+- Consequence: "pace" means that a shock's bookings have arrived, and the pace control prices the shocks at one remove ([[DEC-55]], [[RES-42]]).
+- Needs: a curve per hotel in the file, read by [[MOD-20]] and used by [[MOD-06]] and [[MOD-18]]. Every pinned figure then changes. The template arms rerun for nothing and the live arms at about $86.
+- Links: [[CON-01]], [[DAT-27]], [[MOD-07]], [[DEC-55]], [[RES-42]]
+
+### FRK-13 [O] The stored route refuses a later day
+- Choice: whether stored_sources should take the day it is made for and refuse a later one, as the simulated sources do ([[MOD-19]], [[MOD-21]]).
+- Known: the simulated sources are made for a day and refuse a later one. The stored sources answer any day the tables hold, so a replay of day 10 can read day 34 ([[DEC-42]]).
+- Needs: an as_of_day on the four stored sources and on stored_sources(), passed by run-day and replay ([[MOD-12]]). No figure changes.
+- Links: [[MOD-19]], [[MOD-21]], [[DEC-40]], [[DEC-42]], [[RUL-03]]

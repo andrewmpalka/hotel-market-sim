@@ -15,7 +15,7 @@ here for the rest.
 ### RES-01 [C] The default agent on seeds 1 to 20
 - Ran: `hotel-market --seeds 1 20`: the agent against the fixed-rate run on each seed, with template reasons and the simulator's elasticity. The runs cover stay dates 0 to 149.
 - Result: the agent run earns +$32,899 more contribution a seed, from +$13,479 to +$52,809. It is ahead in 20 of 20 seeds, a sign test's p below 0.001.
-- Spread: the standard deviation across the seeds is $9,185 and the standard error of the mean $2,054. Room revenue falls $22,861 a seed, with a standard deviation of $12,777.
+- Spread: the standard deviation across the seeds is $9,185 and the standard error of the mean $2,054 ([[DEC-60]]). Room revenue falls $22,861 a seed, with a standard deviation of $12,777.
 - Detail: the agent changes 179 rates in all. The accepted plans' estimates sum to 1.04 times the realised gain ($681,054 against $657,979).
 - Table: docs/results.md, "Seeds 1 to 20 in the default mode"
 - Evidence: test_the_default_mode_still_gives_a_20_seed_mean_of_32899
@@ -192,7 +192,7 @@ here for the rest.
 - Oracle: the oracle earns +$2,334 to +$2,748 in every mode and accepts 4% to 10% of the plans in the mismatched modes. Its learn arms therefore barely move a rate. Their day-59 estimates stay at 1.05 to 1.31, near the prior.
 - Table: docs/results.md, "Seeds 1 to 20 at a demand bias of 0.9"
 - Evidence: test_the_demand_bias_runs_pin_their_headline
-- Links: [[DEC-50]], [[RUL-82]], [[RES-22]], [[RES-23]], [[UNK-07]], [[UNK-08]]
+- Links: [[DEC-50]], [[DEC-60]], [[RUL-82]], [[RES-22]], [[RES-23]], [[UNK-07]], [[UNK-08]]
 
 ### RES-22 [C] Seeds 1 to 20 at a demand bias of 1.1
 - Ran: the two commands of [[RES-21]] with `--demand-bias 1.1`, on 2026-10-12.
@@ -364,7 +364,7 @@ here for the rest.
 - Reacting: with the reaction on at a market elasticity of 0.5, the policy earns +$141,050 from 5,387 changes. The agent's +$72,229 is -$68,820 against it, behind in every seed.
 - Table: docs/results.md, "Seeds 1 to 20 in the true mode against the pace, the rules and the never-cut policies"
 - Evidence: test_the_rule_based_control_runs_pin_their_headline
-- Links: [[DEC-55]], [[RES-33]], [[MOD-25]]
+- Links: [[DEC-55]], [[DEC-60]], [[RES-33]], [[MOD-25]]
 
 ### RES-41 [C] The convention without the competitors' raise on seeds 1 to 20
 - Ran: `python scripts/no_comp_raise.py --seeds 1 20` on 2026-10-15. It runs the template sweep as shipped, then with the convention's competitor raise at 0.0 and its demand uplift still 35%.
@@ -373,7 +373,7 @@ here for the rest.
 - Sold out: at fixed rates the two downtown hotels sell out 79 of their 160 convention nights with the raise and 10 without it.
 - Table: docs/results.md, "Seeds 1 to 20 with the convention's competitor raise"
 - Evidence: test_the_raise_at_zero_keeps_the_uplift_and_puts_the_event_back
-- Links: [[SHK-01]], [[RUL-21]], [[RES-01]], [[RES-06]], [[MOD-29]]
+- Links: [[SHK-01]], [[RUL-21]], [[RES-01]], [[RES-06]], [[MOD-29]], [[DEC-59]]
 
 ### RES-42 [C] The default agent in a revenue manager's measures on seeds 1 to 20
 - Ran: `python scripts/measures.py --seeds 1 20` on 2026-10-15. It gives both runs' occupancy, average rate, RevPAR and sold-out share per hotel, and what the agent run gave up and saved a seed.

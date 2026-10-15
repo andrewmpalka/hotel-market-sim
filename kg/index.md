@@ -15,12 +15,12 @@ nodes and its words, len(text.split()) over the file.
 | concepts.md | 11 | 1,154 |
 | measures.md | 14 | 962 |
 | sources.md | 4 | 849 |
-| decisions.md | 58 | 8,548 |
-| results.md | 42 | 7,229 |
-| forks.md | 11 | 1,603 |
-| unknowns.md | 15 | 2,014 |
-| every node file | 346 | 36,361 |
-| index.md | | 2,975 |
+| decisions.md | 60 | 8,777 |
+| results.md | 42 | 7,233 |
+| forks.md | 13 | 1,906 |
+| unknowns.md | 15 | 2,013 |
+| every node file | 350 | 36,896 |
+| index.md | | 2,957 |
 
 ## Modules (`modules.md`)
 
@@ -243,19 +243,20 @@ nodes and its words, len(text.split()) over the file.
 - DEC-35 [C] Every number is synthetic, and the schedule's columns follow a published data dictionary
 - DEC-36 [C] The summary reports what the run produces; the rules are not tuned to force a gain
 - DEC-37 [C] Competitor noise is drawn once per competitor and stay date, so a comp median moves only on a shock
-- DEC-38 [C] The agent can learn its elasticity from the bookings; the default stays the simulator's value
+- DEC-38 [C] The agent can learn its elasticity from the bookings
 - DEC-39 [C] The cautious rule: a learning agent changes a rate only where the change beats holding across its band
-- DEC-43 [C] One minimum rule: the cautious rule tests the band alone, and the minimum applies to the plan as in every mode
-- DEC-44 [C] The request carries a display string in place of every figure, with its direction in words and each range as one phrase, and the prompt tells the model to copy the phrases whole and state only what the entry shows
+- DEC-43 [C] The cautious rule tests the band alone, and one minimum applies to the plan
+- DEC-44 [C] Every request figure is a display string, and the prompt says to copy it whole
 - DEC-45 [T] Each model request carries the hotel's past decisions and their outcomes
 - DEC-46 [T] The agent reprices when data arrives during the day
 - DEC-49 [C] The benchmark measures the reviewer in the mismatched modes
-- DEC-50 [C] A demand bias the agent never sees is the demand-level twin of a fixed elasticity
+- DEC-50 [C] A demand bias the agent never sees
 - DEC-51 [C] Competitors can follow the hotel's rate changes, as an opt-in arm
-- DEC-52 [C] The share elasticity alone made a matched raise free, so the market can answer the comp median's level
+- DEC-52 [C] The market can answer the comp median's level
 - DEC-53 [C] The air schedule's filings are a named scenario, and the churn files what a feed files
 - DEC-54 [C] A learning agent can feed the fitted demand level back into its forecast
 - DEC-55 [C] A rule-based control is the fair comparison, because frozen rates never move
+- DEC-59 [C] The README names the competitors' raise as the convention's source of gain
 
 ### Engineering
 
@@ -271,13 +272,14 @@ nodes and its words, len(text.split()) over the file.
 - DEC-33 [C] ruff formats the code at 100 columns, and the format check is part of lint
 - DEC-34 [C] The answer schema lists the request's own entry ids and options as enums
 - DEC-40 [C] The agent reads data only through four interfaces; the simulator is one implementation
-- DEC-41 [C] Everything specific to the market is a customer file, and the target is one of its settings
-- DEC-42 [C] The feeds and the agent's output are stored tables keyed by as_of_day, and the agent can run one day at a time against them
+- DEC-41 [C] Everything specific to the market is a customer file
+- DEC-42 [C] The feeds and the agent's output are stored tables the agent can run against a day at a time
 - DEC-47 [C] The oracle reviewer is a grader outside the agent's path
 - DEC-48 [C] The bench is one sweep with a reviewer per arm
 - DEC-56 [C] The cautious band's verdict is a display field, and a band-end gain under $10 reads to the dollar
 - DEC-57 [C] A read-only demo page over a file code writes
 - DEC-58 [C] The demo page fits one window, and every date on it is a calendar date
+- DEC-60 [C] Every printed mean carries its spread, and every ahead count a sign test
 
 ## Results (`results.md`)
 
@@ -337,6 +339,8 @@ nodes and its words, len(text.split()) over the file.
 - FRK-09 [O] A comp move that follows our own change as a flag cause
 - FRK-10 [O] An arrival time column
 - FRK-11 [O] A periodic re-plan beside the anomaly flags
+- FRK-12 [O] Per-hotel booking curves in the customer file
+- FRK-13 [O] The stored route refuses a later day
 
 ## Unknowns (`unknowns.md`)
 

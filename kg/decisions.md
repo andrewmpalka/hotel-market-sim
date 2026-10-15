@@ -232,7 +232,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: test_comp_median_moves_only_when_a_shock_becomes_known
 - Links: [[MOD-05]], [[DAT-06]], [[CON-04]]
 
-### DEC-38 [C] The agent can learn its elasticity from the bookings; the default stays the simulator's value
+### DEC-38 [C] The agent can learn its elasticity from the bookings
 - Decided: --elasticity picks where the agent's elasticity comes from ([[RUL-49]], [[DAT-22]]). The default, true, is the oracle value ([[RUL-56]]).
 - Modes: a fixed:X mode uses X for the whole run. A learn:X mode starts from the prior X and re-estimates every hotel every day ([[MOD-16]]). Every entry, request and log line records the elasticity, its error and its mode ([[DAT-21]]).
 - Estimator: a Poisson regression of the bookings on log(rate / median). The offset is the forecast's log baseline with the market term ([[DEC-52]]). An intercept absorbs the level, and [[RUL-50]] to [[RUL-52]] hold and clamp the slope.
@@ -252,7 +252,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Commit: abef71f
 - Evidence: test_under_the_cautious_rule_a_candidate_that_loses_at_one_end_is_held, test_the_cautious_rule_scores_each_candidate_one_standard_error_either_side, test_a_cautious_agent_records_the_band_and_what_it_rejected
 
-### DEC-43 [C] One minimum rule: the cautious rule tests the band alone, and the minimum applies to the plan as in every mode
+### DEC-43 [C] The cautious rule tests the band alone, and one minimum applies to the plan
 - Decided: a cautious candidate replaces hold when it beats hold at the estimate and at both band ends ([[CON-11]]). The minimum value at stake ([[RUL-67]]) applies to the whole plan through Entry.queued, as in every mode.
 - Detail: the rejected count now includes every candidate ahead of hold at the estimate, not only those worth $250. The default run and the plain learn runs are unchanged.
 - Replaces: the minimum per day of the week that [[DEC-39]] first added. Under it a day of the week worth less than $250 on its own held.
@@ -262,7 +262,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: test_under_the_cautious_rule_a_candidate_that_loses_at_one_end_is_held, test_a_plan_needs_at_least_the_minimum_value_to_enter_the_queue, test_a_cautious_agent_records_the_band_and_what_it_rejected
 - Links: [[DEC-39]], [[CON-11]], [[RUL-67]], [[MOD-08]], [[FRK-05]], [[RES-05]], [[RES-13]]
 
-### DEC-44 [C] The request carries a display string in place of every figure, with its direction in words and each range as one phrase, and the prompt tells the model to copy the phrases whole and state only what the entry shows
+### DEC-44 [C] Every request figure is a display string, and the prompt says to copy it whole
 - Decided: every figure in the request ([[DAT-16]], built by [[MOD-09]]) is a display string written by code ([[MOD-11]]). The raw number stays in the log line and the stored tables ([[DAT-13]], [[DAT-18]]).
 - Phrases: a signed quantity reads as a phrase with its direction in words and no sign. A range reads as one phrase, and as the single value when both ends read the same.
 - Format: a rate, a median, a floor, a ceiling or a cost reads to the dollar. An estimate reads to the nearest $10, rooms to the room, and an elasticity with up to two decimals. A band-end gain under $10 reads to the dollar ([[DEC-56]]).
@@ -296,7 +296,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: test_the_oracle_reviewer_accepts_every_queued_plan_in_true_mode, test_the_offline_bench_on_20_seeds_pins_the_benchmarks_headline
 - Links: [[UNK-01]], [[DEC-38]], [[DEC-47]], [[DEC-48]], [[MEA-12]], [[RES-16]], [[RES-17]], [[RES-18]], [[RES-19]]
 
-### DEC-50 [C] A demand bias the agent never sees is the demand-level twin of a fixed elasticity
+### DEC-50 [C] A demand bias the agent never sees
 - Decided: --demand-bias multiplies the simulator's demand, the preload included ([[RUL-82]]). simulate() takes it. The agent's modules never receive it, and tests/test_sources.py keeps their imports as they are.
 - Twin: fixed:X gives the agent a wrong price response and a right demand level ([[DEC-38]]). The bias gives it a wrong demand level and a right price response. Each is one wrong number the agent cannot see.
 - Oracle: cli.py tells the oracle reviewer the bias when it builds it, as ORACLE_ELASTICITY names the elasticity for it ([[RUL-56]]). rescored() scales the remaining demand by it, so the oracle stays the simulator's truth ([[DEC-47]]).
@@ -316,7 +316,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: test_the_reaction_reads_the_hotels_rate_three_days_back_from_the_log, test_the_simulated_rate_shops_carry_the_reaction_the_simulator_used, test_a_reacting_run_goes_to_both_runs_and_never_to_the_agent
 - Links: [[DEC-37]], [[DEC-50]], [[RUL-83]], [[RUL-84]], [[RUL-85]], [[RES-24]], [[RES-25]], [[UNK-11]], [[CON-03]]
 
-### DEC-52 [C] The share elasticity alone made a matched raise free, so the market can answer the comp median's level
+### DEC-52 [C] The market can answer the comp median's level
 - Decided: expected demand scales with (the comp median as shopped / its starting level) ** -MARKET_ELASTICITY ([[RUL-87]]). The default is 0.0, so every pinned result stands. --market-elasticity sets it on both commands.
 - Why: bookings follow the hotel's rate against the comp median alone ([[RUL-21]]). A raise the competitors follow therefore costs no rooms, and the reaction run measured the ratchet that makes ([[DEC-51]], [[RES-24]]).
 - Agent: forecast.py mirrors the term and the equality test covers it ([[RUL-88]]). The agent is told the run's value, and every plan record carries it as market_elasticity. A set value changes the request digest.
@@ -352,6 +352,14 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Never-cut: never-cut keeps the raises and never lowers, because every cut loses in this market. The README quotes the lead over it first and the lead over the cutting rules policy after it. All three act only on a flag ([[FRK-11]]).
 - Evidence: test_the_rule_raises_ahead_of_pace_and_lowers_behind_by_the_step, test_the_rules_policy_adds_the_event_and_seat_rules_and_skips_a_conflict, test_a_policy_runs_the_rule_based_control_beside_each_arm
 - Links: [[MOD-25]], [[RUL-99]], [[RES-33]], [[RES-40]], [[RES-01]], [[RES-06]], [[DEC-11]], [[DEC-13]], [[FRK-11]], [[UNK-08]]
+
+### DEC-59 [C] The README names the competitors' raise as the convention's source of gain
+- Decided: the README's first finding says that the convention's share of the gain comes mostly from the competitors' 15% raise, which the rate ratio turns into 23% more of the remaining demand ([[RES-41]]).
+- Replaces: a README that presented the convention as a demand shock and let the 96% share stand for the two shocks together ([[RES-06]]).
+- Reason: with the raise at zero the mean falls to +$19,480 a seed and the convention plans earn +$538 a seed, so the demand uplift alone pays little. A reader was told the share and not its mechanism.
+- Measured: at fixed rates the two downtown hotels sell out 79 of 160 convention nights with the raise and 10 without it ([[RES-41]]).
+- Evidence: test_the_raise_at_zero_keeps_the_uplift_and_puts_the_event_back
+- Links: [[RES-41]], [[RES-06]], [[SHK-01]], [[RUL-21]], [[MOD-29]], [[FRK-08]]
 
 ## Engineering
 
@@ -458,7 +466,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Commit: 35967c8
 - Evidence: test_the_agent_reads_only_through_the_interfaces, test_the_forecast_is_the_simulators_demand_for_the_demo_market, test_the_default_mode_still_gives_28818_on_seed_7
 
-### DEC-41 [C] Everything specific to the market is a customer file, and the target is one of its settings
+### DEC-41 [C] Everything specific to the market is a customer file
 - Decided: customers/demo.toml holds the demo market, which [[MOD-20]] reads into a Customer ([[DAT-27]]).
 - Holds: the hotels and comp sets ([[DAT-04]]), the cost share and the rate limits, and the detect thresholds and hold period. It also holds the minimum, the booking curve and the target ([[RUL-57]] to [[RUL-69]]).
 - Command: hotel-market --customer FILE names the file, and --target overrides its target. The demo file is the default wherever none is given. A revenue run keeps its own cache folder ([[DAT-17]]).
@@ -468,7 +476,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Commit: 9d74c0d
 - Evidence: test_the_demo_file_describes_the_market_in_claude_md, test_the_revenue_target_scores_candidates_on_the_rate_alone, test_the_command_takes_a_customer_file_and_a_target
 
-### DEC-42 [C] The feeds and the agent's output are stored tables keyed by as_of_day, and the agent can run one day at a time against them
+### DEC-42 [C] The feeds and the agent's output are stored tables the agent can run against a day at a time
 - Decided: sql/schema.sql defines seven tables ([[DAT-28]]), four feeds and three agent outputs, each keyed by as_of_day. The file is plain SQL, and its head lists the statements a cloud warehouse would change.
 - Stored: stored.py ([[MOD-21]]) implements the four interfaces over the tables and writes a day's rows. It deletes the day's rows first, so running a day twice leaves the tables unchanged. The simulated sources ([[MOD-19]]) are unchanged.
 - Daily run: the run-day command plays the simulator to day N with the stored rate changes and writes the day's feeds. A fresh agent resumes the stored hold and advice, decides the day from the tables alone and writes its output.
@@ -526,3 +534,11 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Layout: the charts sit side by side, the queue beside the scorecard, and the toolbar is hidden. The end-of-run result is behind a checkbox, off by default, so the page does not show the future. Both states fit the window.
 - Evidence: test_the_three_pages_fit_the_window, test_every_date_reads_as_a_calendar_date_with_its_day_number_in_brackets, test_a_held_flag_names_the_best_alternative_and_how_far_it_fell_short
 - Links: [[DEC-57]], [[MOD-26]], [[MOD-27]], [[MOD-28]], [[DAT-33]], [[RUL-67]], [[RUL-109]]
+
+### DEC-60 [C] Every printed mean carries its spread, and every ahead count a sign test
+- Decided: the sweep, arm, bench and control tables print the standard deviation and the standard error beside every mean ([[MOD-12]]). They print a two-sided sign test's p beside every count of seeds ahead. docs/results.md carries them.
+- Replaces: means and counts with no spread. Under them +$1,913 a seed at a demand bias of 0.9, ahead in 12 of 20, read as a gain.
+- Reason: a reader has to tell a result from a coin flip. 12 of 20 has p 0.50 ([[RES-21]]), 13 of 20 has p 0.26, and 17 of 20 has p 0.0026 ([[RES-40]]).
+- Measured: the default lead over the never-cut control, +$8,119 a seed, has a standard deviation of $6,620 and a standard error of $1,480 ([[RES-40]]).
+- Evidence: test_the_seeds_command_prints_each_seed_and_the_mean_and_range, test_the_bench_command_prints_its_tables
+- Links: [[MOD-12]], [[DAT-24]], [[RES-01]], [[RES-21]], [[RES-40]]

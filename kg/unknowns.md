@@ -54,8 +54,8 @@ and a RES node records the run. A claim that no test can confirm stays [U].
 - Reacting: the simulator's 1.5 fits a hotel whose competitors never move. Under the reaction the true mode is too timid. The learner's lower estimate raises more and is right to ([[RES-26]]). A reacting market needs the effective one.
 - Live: the live reviewers' declines do not follow the standard error. The rate per group is flat ([[RES-38]]). It is 0% to 4% with no reaction and 6% to 9% in the reacting arm. The declines key on the cause and the band's display.
 - Not settled: whether a real market's bookings obey one elasticity at all ([[UNK-14]]). The same one across stay dates, days out and guest segments is less likely still.
-- Measured: a constant level error lands in the intercept ([[DEC-50]]). --level feeds it back, and the factor is 0.90 by day 10 at a bias of 0.9 ([[DEC-54]], [[RES-29]]). The baseline must carry the market term ([[RES-26]]).
-- Best guess: between 1 and 2 at a real hotel, different by hotel and by distance to arrival. It is not recoverable from a run in which the hotel's own rate barely moves. The estimate needs the rate to move to learn anything.
+- Measured: a constant level error lands in the intercept, and --level feeds it back ([[DEC-50]], [[DEC-54]], [[RES-29]]). A weekday or event error lands in the slope by two to three standard errors, because it moves with the rate ratio.
+- Best guess: between 1 and 2 at a real hotel, different by hotel and by distance to arrival. The estimator learns only where the hotel has moved its own rate by several per cent across most of its bookings ([[FRK-05]]).
 - Resolves when: never within this repository.
 
 ### UNK-08 [U] Whether the measured gains say anything about a real hotel

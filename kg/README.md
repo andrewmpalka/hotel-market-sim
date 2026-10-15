@@ -79,7 +79,7 @@ A `Commit:` line names the commit a decision landed in. The checker does not tre
 A change to the code and the change to its nodes go in the same commit. If a constant moves, its RUL node moves with it. If a decision is reversed, the old DEC node becomes [H] and the new one links to it. If a run is repeated, its RES node changes with it. After adding or changing a node, run
 `python kg_check.py --write-index` to rewrite `index.md`. The index opens with a table of each file's node and word counts, and the index itself may not pass 3,000 words.
 
-`python kg_check.py` and `tests/test_kg.py` fail when the graph and the code disagree. They report:
+`python kg_check.py` and `tests/test_kg.py` fail when the graph and the code disagree on what the check covers: the constants, the links and the cited test names, as the list below says. A fact outside the list, such as a new shock or a stale sentence, is not caught. They report:
 
 - a link to a node that does not exist,
 - a source file with no MOD node,
