@@ -97,6 +97,16 @@
   numpy 2.5.4 and pandas 3.0.6 give 263387b3, and a Linux run on numpy 2.5.3
   and pandas 3.0.5 gave 8faafad0 with the same decisions. The decisions file,
   not its hash, is the cross-platform test.
+- The clock is event-driven on a configurable clock, not real time. With
+  `--ticks N` each day is cut into N ticks and the agent runs after each, but
+  the simulated feeds arrive at fixed ticks: the rate shop at tick 2, the
+  airlines' filings at tick 3, the events at tick 4 and the bookings at every
+  tick. A shop or a booking carries no timestamp in the feeds, so a tick knows
+  only that a feed has landed, not when within the tick. The comp set does not
+  react within a day: a reaction, when it is on, reads the hotel's rate three
+  days back. On this world a finer clock earns nothing, because the demand
+  moves once a day except at the shocks (docs/results.md, The clock); it would
+  earn where shops, filings or bookings move within the day.
 
 The next version reprices when data arrives during the day, adds per-weekday
 terms to the estimator, and adds cancellations and segments. Since world v2 the

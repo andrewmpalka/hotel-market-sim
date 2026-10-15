@@ -86,7 +86,12 @@ contribution-best rate on a night that will not sell out and the floor the
 revenue-best rate. In the reacting market at a market elasticity of 0.5, the
 never-cut control earns +$112,877 and the agent is -$54,602 against it,
 ahead in 0 seeds of 20, which docs/results.md explains as the ratchet
-(docs/results.md, The rule-based control).
+(docs/results.md, The rule-based control). Run on a finer clock, four ticks a
+day with `--ticks 4`, the agent earns +$16,204 a seed against +$16,164 on the
+daily clock, a paired difference of +$40 with a standard error of $108, p 1.0:
+a finer clock earns nothing in this world, because the world's demand moves
+once a day except at the shocks, and that is the expected result
+(docs/results.md, The clock).
 
 **What the model adds, and what learns.** Measured on 2026-10-15 on world v2: in
 the default run the model added nothing, because every reviewer said yes to
@@ -101,6 +106,18 @@ calls cost $85.92 at list prices. The one piece that learns from the bookings is
 the elasticity estimator, a Poisson regression with a prior, and on world v2 the
 agent that uses it keeps little of the gain unless the cautious rule is on
 (docs/reviewers.md for the reviewers, docs/results.md for the rest).
+
+## On a clock, not in real time
+
+The agent runs on a clock, not in real time. A tick is a slice of a simulated
+day: with `--ticks N` each day is cut into N ticks, the bookings land at every
+tick, the rate shop at tick 2, the airlines' filings at tick 3 and the events at
+tick 4, each at tick 1 when N is smaller than its slot, and the agent runs after
+each tick reading the feeds as of that tick. Until a feed lands, a tick sees the
+previous value. N of 1 is the daily loop unchanged: every feed lands at the one
+tick and the agent runs once a day, as every figure above was measured. Real
+time is this loop with a wall clock behind the sources: a feed arrives when it
+arrives, and the agent runs when one does.
 
 ## The limit that matters
 
@@ -118,6 +135,7 @@ docs/limits.md.
 - docs/schedule-feed.md: the air schedule feed as this repository models it.
 - kg/: a map of the repository for agents, with kg/README.md as the legend.
 
-The next version reprices as data arrives during the day, adds per-weekday terms
-to the estimator, adds cancellations and segments, and puts an event known
-before the run into the preload.
+The next version adds per-weekday terms to the estimator, adds cancellations
+and segments, and puts an event known before the run into the preload. The
+clock is an option: `--ticks N` on the main command, the bench, run-day and
+demo-data, and a run on the daily clock is unchanged.

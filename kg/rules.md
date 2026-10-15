@@ -172,7 +172,7 @@ marked [H], with one line that names the node it moved to.
 - Value: 1
 - File: src/hotel_market/world.py
 - Kind: parameter
-- Meaning: the ticks a day is cut into. A moment is (day, tick), ticks counted 1 to N. At 1 a tick is the whole day and the loop is the daily one. --ticks N sets a run's value.
+- Meaning: the ticks a day is cut into. A moment is (day, tick), ticks counted 1 to N. At 1 a tick is the whole day and the loop is the daily one. --ticks N sets a run's value ([[DEC-68]]).
 - Guard: every source method takes as_of_tick, which defaults to the day's last tick. A source made for a tick refuses a later tick of its day on both routes ([[DAT-25]]).
 - Evidence: test_a_source_made_for_a_tick_refuses_a_later_tick_of_its_day_on_both_routes
 

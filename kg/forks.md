@@ -63,7 +63,7 @@ it. None of these is in progress.
 - Reaction: a later version may make the competitors react by default ([[DEC-51]]). A matched raise would then stop being a demand gift ([[DEC-59]], [[RES-41]]).
 - Links: [[RUL-87]], [[DEC-52]], [[RES-01]], [[RES-02]], [[RES-24]], [[RES-26]], [[RES-27]], [[UNK-15]]
 
-### FRK-09 [O] A comp move that follows our own change as a flag cause
+### FRK-09 [O] A comp move that follows our change as a flag cause
 - Choice: whether a comp median move that follows our own change should count as a flag cause ([[RUL-65]]). It arrives within REACTION_LAG days on the same stay dates ([[RUL-84]]), so the detector could read it as the reaction.
 - Known: at 0.5 with the reaction on, the cautious learn arm changes 702 stay dates twice within 14 days ([[RES-26]]). Its rate changes are 784. That is the arm anyone would run, and the flag lifts the hold, so it raises again ([[DEC-51]]).
 - Needs: the hotel's own change days per stay date among detect.py's inputs, and a rule for the window. The oracle already scores the followed median ([[DEC-52]]), so the arm would measure the flag alone.

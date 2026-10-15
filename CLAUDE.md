@@ -13,11 +13,12 @@ experiment.
    given.
 2. Every run takes a seed. Two runs with the same seed and settings produce the
    same bookings and the same decisions.jsonl.
-3. Nothing may use information before the day it becomes known. Every lookup
-   takes as_of_day. A flight counts from the day the airline files it, an
-   event from the day it is announced, and a competitor's rate from the day it
-   is shopped. The sources an agent is handed hold the day's data alone, on
-   both routes, so tomorrow cannot be reached through an attribute either.
+3. Nothing may use information before the day, and the tick of it, it becomes
+   known. Every lookup takes as_of_day, and as_of_tick on a finer clock. A
+   flight counts from the day the airline files it, an event from the day it
+   is announced, and a competitor's rate from the day it is shopped. The
+   sources an agent is handed hold the day's data alone, on both routes, so
+   tomorrow cannot be reached through an attribute either.
 4. Model responses are saved under cache/, keyed by seed, day and hotel. The
    elasticity mode and the model join the key when they are not the defaults.
    A demand bias other than 1.0 or the competitor reaction puts a run's folders
@@ -49,7 +50,7 @@ with pip install -e ".[dev]" and import it as hotel_market.<module>.
 | Module | Holds |
 | --- | --- |
 | schedule.py | the air schedule as known on a day, its seats and the passengers they carry, the filings, scenarios and churn |
-| world.py | the Hotel and Competitor dataclasses, each hotel's booking curve, and the calendar |
+| world.py | the Hotel and Competitor dataclasses, each hotel's booking curve, the calendar and the clock: ticks a day and the tick each feed lands at |
 | customer.py | reads a market's customer file; demo() is customers/demo.toml, found under the package's repository or through HOTEL_MARKET_CUSTOMER |
 | sources.py | the four interfaces: Bookings, RateShops, Schedules, Events |
 | shocks.py | the convention (known day 10) and the competitor rate cut (day 30) |
@@ -77,8 +78,9 @@ demo market, sql/schema.sql defines the eight stored tables and sql/demo.sql the
 demo page's eight. scripts/live_audit.py runs and audits a live seed, and
 scripts/median_path.py prints a comp median's path next to the hotel's rate.
 scripts/no_comp_raise.py reruns the sweep with the convention's competitor
-raise at zero, and scripts/measures.py prints both runs in a revenue manager's
-measures.
+raise at zero, scripts/measures.py prints both runs in a revenue manager's
+measures, and scripts/tick_sweep.py runs seeds 1 to 20 at one tick a day and
+at four, side by side.
 scripts/demo_screenshots.py opens the demo page in a Chromium-based browser at
 1440 by 900, saves six screenshots, three pages with the end-of-run result off
 and on, and fails when a page is taller than the window. kg/ and kg_check.py are

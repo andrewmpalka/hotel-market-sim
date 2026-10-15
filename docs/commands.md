@@ -38,6 +38,14 @@ Python 3.11 or later, from the repository root:
                                                         # a comp median's path next to the hotel's rate
     python scripts/no_comp_raise.py --seeds 1 20        # the sweep with the convention's competitor raise at zero, next to the shipped run
     python scripts/measures.py --seeds 1 20             # both runs in a revenue manager's measures, and the cost share at which each hotel's gain is zero
+    hotel-market --seed 7 --template --ticks 4          # the same run on four ticks a day: the feeds land at fixed ticks and the agent runs after each
+    hotel-market run-day --seed 7 --as-of 20 --from 0 --ticks 4
+                                                        # the same through the stored tables, one snapshot per tick
+    hotel-market replay --as-of 20 --tick 3             # one tick's plans again, from the stored tables alone
+    hotel-market bench --seeds 1 3 --template --ticks 4 # the bench on four ticks a day
+    hotel-market demo-data --seed 7 --ticks 4 --out demo4.duckdb
+                                                        # the demo file on four ticks a day; the news names each feed's tick
+    python scripts/tick_sweep.py --seeds 1 20           # seeds 1 to 20 at one tick a day and at four, with the paired difference and the day-20 filing's lag
 
 With make, on a Mac or Linux machine:
 

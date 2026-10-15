@@ -224,7 +224,7 @@ here for the rest.
 - Evidence: test_the_reacting_runs_pin_their_headline
 - Links: [[DEC-51]], [[DEC-37]], [[RES-01]], [[RES-05]], [[RES-23]], [[RES-25]], [[UNK-11]]
 
-### RES-25 [C] The comp median's path on seed 7 with the reaction on
+### RES-25 [C] The comp median's path on seed 7, reaction on
 - Ran: `python scripts/median_path.py --seed 7 --react --hotel lifestyle --stays 75 75 --days 16 25` on 2026-10-15 on world v2.
 - Result: on world v2 the downtown hotels change nothing on the convention nights at seed 7. The first accepted plan is the lifestyle hotel's day-18 raise of 10% on stay date 75, in force from day 19; a second raise follows on day 20.
 - Reaction: on day 22 the median moves half of the first change, $12.00, and on day 24 half of the whole change from the start rate, $25.20, over the shop noise that moves it every day.
@@ -284,7 +284,7 @@ here for the rest.
 - Evidence: test_the_level_runs_pin_their_headline
 - Links: [[DEC-54]], [[RES-22]], [[RES-29]], [[RES-30]], [[RES-32]]
 
-### RES-32 [C] The fitted level fed back in the reacting market at 0.5
+### RES-32 [C] The fitted level fed back, reacting market at 0.5
 - Ran: `hotel-market bench --seeds 1 20 --template --react --market-elasticity 0.5 --elasticity learn:1.0`, then with `--level` and with `--level --cautious`, on 2026-10-15 on world v2. The cautious plain arm is [[RES-26]]'s.
 - Result: the level is 0.99 to 1.00 by day 59. Say-yes-to-everything earns +$304,114 a seed with it against +$302,095 without, and the cautious arm +$139,141 against +$141,469.
 - Ratchet: the plain learner changes 1959 rates and the oracle, told the reaction, accepts 96% of them. That is the ratchet at its fullest, which [[FRK-09]] holds.
@@ -339,7 +339,7 @@ here for the rest.
 - Evidence: test_the_learn_arms_pin_their_headline
 - Links: [[RES-26]], [[RES-33]], [[RES-35]], [[RES-38]], [[FRK-09]], [[DEC-51]], [[DEC-52]], [[MEA-14]], [[UNK-11]]
 
-### RES-38 [O] The decline rate by standard-error group in the learn arms
+### RES-38 [O] The decline rate by standard-error group, learn arms
 - Ran: the commands of [[RES-34]] to [[RES-37]] on 2026-10-15 on world v2. The bench prints the groups of [[RUL-102]] for every live arm that declined a plan ([[MEA-13]]).
 - Result: Opus from the prior of 1.0 declines 7 of 8 plans under 0.15, 20 of 76 from 0.15 to 0.25, 8 of 93 to 0.35 and 6 of 345 at 0.35 and over. The rate falls as the standard error rises.
 - Finding: on world v2 the standard error moves Opus's declines from the prior of 1.0: it declines most of the plans whose estimate rests on little data. On world v1 the rate was flat across the groups.
@@ -384,7 +384,7 @@ here for the rest.
 - Evidence: test_the_measures_are_the_books_measures_over_the_seeds
 - Links: [[MEA-01]], [[MEA-02]], [[MEA-03]], [[RUL-61]], [[RES-01]], [[UNK-06]], [[MOD-30]]
 
-### RES-43 [O] The clock: one tick a day against four on seeds 1 to 20
+### RES-43 [O] The clock: one tick a day against four, seeds 1 to 20
 - Ran: `python scripts/tick_sweep.py --seeds 1 20` on 2026-10-15 on world v2: each seed with the template at --ticks 1 and at --ticks 4, the same world, each against the fixed-rate run ([[MOD-31]]).
 - Result: at four ticks the agent earns +$16,204 a seed against +$16,164 at one. The paired difference is +$40 a seed (sd $483, se $108), range -$1,246 to +$1,001, the finer clock ahead in 10 of 20, p 1.0.
 - Finding: a finer clock earns nothing in this world, because the world's demand moves once a day except at the shocks, and that is the expected result. It would earn where shops, filings or bookings move within the day.

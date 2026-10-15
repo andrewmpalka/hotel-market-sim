@@ -10,16 +10,16 @@ nodes and its words, len(text.split()) over the file.
 | --- | ---: | ---: |
 | modules.md | 31 | 4,292 |
 | data.md | 33 | 4,404 |
-| rules.md | 132 | 5,762 |
+| rules.md | 132 | 5,763 |
 | shocks.md | 7 | 762 |
 | concepts.md | 11 | 1,205 |
 | measures.md | 14 | 962 |
 | sources.md | 4 | 855 |
-| decisions.md | 67 | 9,875 |
-| results.md | 43 | 7,276 |
-| forks.md | 14 | 2,039 |
-| unknowns.md | 16 | 2,180 |
-| every node file | 372 | 39,612 |
+| decisions.md | 68 | 10,118 |
+| results.md | 43 | 7,269 |
+| forks.md | 14 | 2,038 |
+| unknowns.md | 16 | 2,177 |
+| every node file | 373 | 39,845 |
 | index.md | | 2,996 |
 
 ## Modules (`modules.md`)
@@ -236,18 +236,18 @@ nodes and its words, len(text.split()) over the file.
 - DEC-65 [C] The market's price response is on by default, at 1.0
 - DEC-66 [C] Each hotel carries its own booking curve
 - DEC-67 [C] A day's bookings are drawn once and split over its ticks
-- DEC-05 [C] The booking loop plays out to day 149 with rates frozen from day 60
+- DEC-05 [C] The booking loop runs to day 149 with rates frozen from day 60
 - DEC-06 [C] The 7-day hold after an accepted rate change
 - DEC-07 [C] A pace flag needs a gap beyond 10% of rooms and 3 standard deviations
 - DEC-08 [H] The convention's peak night was fixed at stay date 46
-- DEC-09 [C] The peak night is the expected-demand peak as of the event's known day
+- DEC-09 [C] The peak night is the expected-demand peak on the event's known day
 - DEC-10 [C] A minimum stay is advice only, never simulated
 - DEC-11 [H] The rule "seats up, so raise the rate"
 - DEC-12 [C] Contribution with a room cost is the target; the start rate wins ordinary nights
-- DEC-13 [C] Every flag gets scored candidates, with hold as the default
+- DEC-13 [C] Every flag gets scored candidates; hold is the default
 - DEC-14 [C] Base occupancy is 0.85 at the airport hotel and 0.75 elsewhere
 - DEC-15 [H] Rates followed the day of the week
-- DEC-16 [C] Flat rates: starting and competitor rates do not follow the day of the week
+- DEC-16 [C] Flat rates: start and competitor rates ignore the day of the week
 - DEC-17 [C] A plan needs $250 over holding to enter the queue
 - DEC-18 [H] One candidate moved all of a flag's stay dates together
 - DEC-19 [C] The best candidate is chosen per day of the week within a flag
@@ -264,7 +264,8 @@ nodes and its words, len(text.split()) over the file.
 - DEC-43 [C] The cautious rule tests the band alone; one minimum applies to the plan
 - DEC-44 [C] Every request figure is a display string the prompt says to copy whole
 - DEC-45 [C] The tables keep each decision's request, answer and outcome
-- DEC-46 [T] The agent reprices when data arrives during the day
+- DEC-46 [C] The agent reprices when data arrives during the day
+- DEC-68 [C] The clock is an option; a tick is a slice of a day
 - DEC-49 [C] The benchmark measures the reviewer in the mismatched modes
 - DEC-50 [C] A demand bias the agent never sees
 - DEC-51 [C] Competitors can follow the hotel's rate changes, as an opt-in arm
@@ -324,25 +325,25 @@ nodes and its words, len(text.split()) over the file.
 - RES-22 [C] Seeds 1 to 20 at a demand bias of 1.1
 - RES-23 [C] The same arms at the default demand bias of 1.0
 - RES-24 [C] The competitor reaction on seeds 1 to 20
-- RES-25 [C] The comp median's path on seed 7 with the reaction on
+- RES-25 [C] The comp median's path on seed 7, reaction on
 - RES-26 [C] The market elasticity with the reaction on, seeds 1 to 20
 - RES-27 [C] The day-30 competitor cut on seed 7 by market elasticity
 - RES-28 [C] The churn on seeds 1 to 20
 - RES-29 [C] The fitted level fed back at a demand bias of 0.9
 - RES-30 [C] The fitted level fed back at the default demand bias
 - RES-31 [C] The fitted level fed back at a demand bias of 1.1
-- RES-32 [C] The fitted level fed back in the reacting market at 0.5
+- RES-32 [C] The fitted level fed back, reacting market at 0.5
 - RES-33 [C] The agent against the pace and the rules policies
 - RES-34 [C] The reviewers at learn:1.0 on seeds 1 to 20
 - RES-35 [C] The reviewers at learn:1.0 with the cautious rule
 - RES-36 [C] The reviewers at learn:2.0, with and without the cautious rule
 - RES-37 [C] The reviewers at learn:1.0 cautious in the reacting market at 0.5
-- RES-38 [O] The decline rate by standard-error group in the learn arms
+- RES-38 [O] The decline rate by standard-error group, learn arms
 - RES-39 [O] The reviewers ranked across the learned modes, and the arms' cost
 - RES-40 [C] The agent against the never-cut policy
 - RES-41 [C] The convention without the competitors' raise
 - RES-42 [C] The default agent in a revenue manager's measures
-- RES-43 [O] The clock: one tick a day against four on seeds 1 to 20
+- RES-43 [O] The clock: one tick a day against four, seeds 1 to 20
 
 ## Open forks (`forks.md`)
 
@@ -354,7 +355,7 @@ nodes and its words, len(text.split()) over the file.
 - FRK-06 [O] A read-only dashboard over the stored tables
 - FRK-07 [O] Reviewers from other providers
 - FRK-08 [O] A market response as the default
-- FRK-09 [O] A comp move that follows our own change as a flag cause
+- FRK-09 [O] A comp move that follows our change as a flag cause
 - FRK-10 [O] An arrival time column
 - FRK-11 [O] A periodic re-plan beside the anomaly flags
 - FRK-12 [H] Per-hotel booking curves in the customer file
@@ -371,7 +372,7 @@ nodes and its words, len(text.split()) over the file.
 - UNK-06 [U] The real cost to service an occupied room
 - UNK-07 [U] The real price elasticity, and what the learned estimate settles
 - UNK-08 [U] Whether the measured gains say anything about a real hotel
-- UNK-09 [C] What a live run costs and how long it takes
+- UNK-09 [C] What a live run costs and takes
 - UNK-10 [U] Whether sql/schema.sql runs on a cloud warehouse as written
 - UNK-11 [U] How competitors react to a rate change, and what it does to revenue
 - UNK-12 [U] The effect of cancellations, no-shows, groups and room types

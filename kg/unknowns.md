@@ -65,7 +65,7 @@ and a RES node records the run. A claim that no test can confirm stays [U].
 - Resolves when: never within this repository.
 - Links: [[DEC-36]], [[DEC-38]], [[DEC-50]], [[RES-21]], [[RES-22]], [[UNK-05]], [[UNK-07]]
 
-### UNK-09 [C] What a live run costs and how long it takes
+### UNK-09 [C] What a live run costs and takes
 - Was unknown: no live call had been made from this repository. The guess was about seven calls, a few cents to under a dollar, and under a minute.
 - Measured: seed 7 in the default mode makes 4 calls on world v2, on days 18, 20 and 23. The recorded run cost $0.08 at list prices in a run of 19 seconds ([[RES-09]]).
 - Formats: the four world v1 runs of the same seed, with other request formats, made 7 calls each and cost $0.12 to $0.18 ([[RES-08]]).

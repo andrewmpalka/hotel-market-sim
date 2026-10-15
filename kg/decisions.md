@@ -85,7 +85,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: test_the_fixed_rate_run_books_the_same_rooms_at_one_tick_a_day_and_at_four, test_a_rate_changed_at_a_tick_thins_or_tops_up_the_ticks_after_it, test_the_default_clock_books_byte_for_byte_what_it_booked_before_the_split
 - Links: [[MOD-06]], [[MOD-19]], [[DAT-07]], [[RUL-128]], [[DEC-22]], [[DEC-64]]
 
-### DEC-05 [C] The booking loop plays out to day 149 with rates frozen from day 60
+### DEC-05 [C] The booking loop runs to day 149 with rates frozen from day 60
 - Decided: the agent decides on days 0 to 59. The loop keeps booking to day 149 with no new decisions. The window stops at stay date 149, so every stay date from 0 to 149 ends complete.
 - Replaces: nothing built; the first plan stopped the loop at day 59.
 - Reason: the last decisions change stay dates up to 148, which would be mostly empty on day 59. The summary counts all 150 stay dates.
@@ -119,7 +119,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Commit: 53a7081
 - Links: [[SHK-01]]
 
-### DEC-09 [C] The peak night is the expected-demand peak as of the event's known day
+### DEC-09 [C] The peak night is the expected-demand peak on the event's known day
 - Decided: peak_night(hotel, event, sources) in [[MOD-18]] is the event night with the highest expected demand as of event.known_day. The earliest night wins a tie.
 - Replaces: [[DEC-08]]
 - Reason: the peak must follow the data and the as-of rule. For the convention it is Thursday 45 at both downtown hotels.
@@ -152,7 +152,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: test_each_occupied_room_costs_a_third_of_the_start_rate, test_contribution_is_revenue_minus_the_cost_of_every_room_sold, test_on_nights_that_will_not_sell_out_the_start_rate_is_already_best
 - Links: [[RUL-61]], [[RUL-21]], [[FRK-01]], [[CON-07]]
 
-### DEC-13 [C] Every flag gets scored candidates, with hold as the default
+### DEC-13 [C] Every flag gets scored candidates; hold is the default
 - Decided: every flag gets hold, raise 5%, raise 10% and lower 5% ([[RUL-43]]), each clamped to the floor and ceiling. A comp median drop adds lower halfway to the new median ([[RUL-42]]). Code scores each on the rooms still unsold.
 - Detail: when nothing beats hold the entry is recorded as a hold and stays out of the queue. The model may decline the best candidate, which also records a hold.
 - Replaces: [[DEC-11]]
@@ -177,7 +177,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Commit: bd556fb
 - Links: [[MOD-05]], [[DAT-04]], [[RES-11]]
 
-### DEC-16 [C] Flat rates: starting and competitor rates do not follow the day of the week
+### DEC-16 [C] Flat rates: start and competitor rates ignore the day of the week
 - Decided: every hotel's starting rate is its table start rate on every stay date. Competitor rates are base rate x noise with the shocks applied. Demand still follows the day of the week ([[DAT-04]]).
 - Replaces: [[DEC-15]]
 - Reason: with a fixed room cost the best rate on an ordinary night is the same every day. Flat starting rates are therefore right on those nights, and the agent's gain comes from reacting to the market.
@@ -331,12 +331,22 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: test_each_decision_carries_its_request_its_answer_and_their_digests, test_an_entry_lists_the_earlier_changes_on_its_dates_with_the_rooms_booked_since, test_the_stored_state_is_what_the_earlier_decisions_left
 - Links: [[DAT-28]], [[DAT-16]], [[DAT-17]], [[MOD-10]], [[MOD-21]], [[DEC-42]], [[FRK-09]], [[RES-37]]
 
-### DEC-46 [T] The agent reprices when data arrives during the day
-- Decided: the agent will run again within a day when a feed delivers new data.
-- Replaces: nothing built; today decide(day, sources) runs once per day ([[MOD-10]]).
-- Reason: a real feed arrives through the day, and a rate decided in the morning is stale by the afternoon.
-- Needs: a clock finer than as_of_day in the sources ([[DAT-25]]) and the stored tables ([[DAT-28]]). The hold needs a rule within a day ([[CON-10]]).
-- Links: [[MOD-10]], [[DAT-25]], [[DAT-28]], [[DEC-42]]
+### DEC-46 [C] The agent reprices when data arrives during the day
+- Decided: with --ticks N each day is cut into N ticks, the feeds land at fixed ticks of it, and the agent runs after each tick reading the sources as of that tick ([[DEC-68]], [[RUL-128]]).
+- Replaces: the daily loop as the only clock; it stays the default, and a run on it is unchanged.
+- Reason: a real feed arrives through the day, and a rate decided in the morning is stale by the afternoon. The option shows what the loop earns when it can act within the day.
+- Measured: on this world a finer clock earns nothing, +$40 a seed with a standard error of $108, because the demand moves once a day except at the shocks ([[RES-43]]).
+- Evidence: test_at_four_ticks_a_day_the_agent_runs_after_each_tick_and_each_feed_flags_at_its_tick, test_a_60_day_run_through_the_tables_at_four_ticks_gives_the_same_decisions_file
+- Links: [[MOD-10]], [[DAT-25]], [[DAT-28]], [[DEC-42]], [[DEC-67]], [[DEC-68]], [[RES-43]]
+
+### DEC-68 [C] The clock is an option; a tick is a slice of a day
+- Decided: TICKS_PER_DAY is 1 and --ticks N sets a run's clock ([[RUL-128]]). A moment is (day, tick). Every source takes as_of_tick, the day's last by default, and a source made for a tick refuses a later one.
+- Replaces: nothing built; the daily loop stays the default and every pinned figure is measured on it.
+- Reason: an event-driven agent must read a feed when it lands and act before the day ends. A configurable clock gives that without a wall clock, and N of 1 keeps the daily loop byte for byte.
+- Feeds: each simulated feed lands at a fixed tick, the shop at [[RUL-129]], the filing at [[RUL-130]], the events at [[RUL-131]], bookings at every tick ([[DEC-67]]). Real time is this loop with a wall clock behind the sources.
+- Record: with more than one tick a day, flags, plans and decisions carry as_of_tick, and each line data_arrived and decided ([[DAT-18]], [[DAT-28]]). The cache names the tick ([[DEC-23]]).
+- Evidence: test_a_source_made_for_a_tick_refuses_a_later_tick_of_its_day_on_both_routes, test_the_default_clock_books_byte_for_byte_what_it_booked_before_the_split
+- Links: [[RUL-128]], [[DEC-46]], [[DEC-67]], [[MOD-02]], [[MOD-06]], [[MOD-10]], [[MOD-19]], [[MOD-21]], [[RES-43]]
 
 ### DEC-49 [C] The benchmark measures the reviewer in the mismatched modes
 - Decided: the bench measures every reviewer at fixed:1.0 and fixed:2.0 and keeps the true mode as a check. The ranking pools the two mismatched modes ([[DEC-48]]).
