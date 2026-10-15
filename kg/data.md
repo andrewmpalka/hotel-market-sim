@@ -158,7 +158,7 @@ the plans, the model's request and answer, and what the command writes.
 - Entry line: day, hotel, stays [first, last], causes and numbers ([[DAT-13]], its ranges as named pairs). elasticity is the pricing, with the mode as the command line names it, market_elasticity ([[RUL-88]]) and level ([[DEC-54]]).
 - More: by_weekday, plan, value_at_stake, queued, action, new_rates (null when held), reason and simulated true. reason_source is "code", "template", "model" or a client's name. The line holds raw numbers, not the request's display strings.
 - By weekday: weekday, stays and the candidates with name, rates as a named pair, estimate, best and gain. Under the cautious rule a candidate's band is named by its ends, and the line adds rejected_at_an_end. A revenue target adds target.
-- Advice line: day, hotel, stays, causes, event, action, value_at_stake null, reason and simulated false.
+- Advice line: day, hotel, stays, causes, event, action, value_at_stake null, reason and simulated false. With several ticks a day every line adds as_of_tick and decided, and an entry line data_arrived, as [day, tick] pairs.
 - Read by: nothing in the package; it is the record a person reads
 - Evidence: test_decisions_jsonl_has_one_line_per_flag_and_advice, test_the_log_lists_every_entry_and_advice_in_order
 
@@ -249,7 +249,7 @@ the plans, the model's request and answer, and what the command writes.
 - Tables: eight, seven keyed by as_of_day, the day a row was known on, and outcomes by the day its plan was accepted ([[DEC-45]]). Day -1 ([[RUL-73]]) is the opening position. The head lists what a warehouse would change ([[UNK-10]]).
 - Feeds: daily_bookings (as_of_day, hotel, stay_day, rooms_taken, rooms_on_books, rate) has a row per hotel and night in the window. rate_shops (as_of_day, hotel, stay_day, competitor, rate) runs from the shop day to the schedule's end.
 - More feeds: schedule_snapshots (as_of_day, stay_day, seats) is counted the way seats_by_day counts. events (as_of_day, name, known_day, start_day, end_day, hotels, uplift, comp_rate_raise) has one row per known event per day.
-- Output: flags (as_of_day, hotel, first_stay, last_stay, causes). plans has a row per candidate with its rates and estimates by night, estimate, versus_hold, band and is_best. decisions has a row per entry and advice, with the log line.
+- Output: flags (as_of_day, as_of_tick, hotel, first_stay, last_stay, causes). plans has a row per candidate with its rates and estimates by night, versus_hold, band and is_best. decisions has a row per entry and advice, with the line.
 - More output: a queued decision adds request_digest, prompt_digest, model, request and answer (JSON). outcomes (decision_day, hotel, stay_day, rooms_sold, room_revenue, estimated, realised) has a row per accepted plan and passed night.
 - Used by: [[MOD-21]] writes them with write_snapshot, write_decisions and write_outcomes, driven by run-day in [[MOD-12]], deleting first ([[DEC-42]]). Its four sources and run readers read them back for the playback and replay.
 - Evidence: test_the_schema_is_eight_tables_each_keyed_by_its_day, test_a_60_day_run_through_the_tables_gives_the_same_decisions_file, test_the_outcomes_hold_each_accepted_plans_nights_once_they_pass

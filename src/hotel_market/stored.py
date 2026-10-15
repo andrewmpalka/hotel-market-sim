@@ -76,9 +76,10 @@ _COLUMNS = {
         "uplift",
         "comp_rate_raise",
     ),
-    "flags": ("as_of_day", "hotel", "first_stay", "last_stay", "causes"),
+    "flags": ("as_of_day", "as_of_tick", "hotel", "first_stay", "last_stay", "causes"),
     "plans": (
         "as_of_day",
+        "as_of_tick",
         "hotel",
         "first_stay",
         "last_stay",
@@ -94,6 +95,7 @@ _COLUMNS = {
     ),
     "decisions": (
         "as_of_day",
+        "as_of_tick",
         "position",
         "hotel",
         "first_stay",
@@ -493,22 +495,30 @@ def write_decisions(
     day: int,
     entries: list[Entry],
     advice: Iterable,
-    asked: Mapping[tuple[str, int], tuple[dict, dict]] | None = None,
+    asked: Mapping[tuple, tuple[dict, dict]] | None = None,
+    tick: int = 1,
 ) -> None:
-    """The day's flags, plans and decisions, replacing any stored for the day. asked maps (hotel
-    key, day) to the request the hotel's queue was asked with and the answer, as Agent.asked
-    keeps them; each queued entry's row then carries the request, the answer, the request's
-    digest and, from a cache record, the prompt's digest and the model."""
+    """The day's flags, plans and decisions, replacing any stored for the day, or for the tick of
+    it with several ticks a day. asked maps (day, hotel key), or (day, tick, hotel key), to the
+    request the hotel's queue was asked with and the answer, as Agent.asked keeps them; each
+    queued entry's row then carries the request, the answer, the request's digest and, from a
+    cache record, the prompt's digest and the model."""
     asked = asked or {}
-    flags = [(day, e.hotel, e.first_stay, e.last_stay, ",".join(e.causes)) for e in entries]
+    flags = [(day, tick, e.hotel, e.first_stay, e.last_stay, ",".join(e.causes)) for e in entries]
     decisions = [
-        _decision_row(day, position, record.to_json(), asked.get((day, record.hotel)))
+        _decision_row(
+            day,
+            tick,
+            position,
+            record.to_json(),
+            asked.get((day, tick, record.hotel), asked.get((day, record.hotel))),
+        )
         for position, record in enumerate([*entries, *advice])
     ]
     with _transaction(connection):
-        _replace_day(connection, "flags", day, flags)
-        _replace_day(connection, "plans", day, plan_rows(entries))
-        _replace_day(connection, "decisions", day, decisions)
+        _replace_day(connection, "flags", day, flags, tick=tick)
+        _replace_day(connection, "plans", day, plan_rows(entries), tick=tick)
+        _replace_day(connection, "decisions", day, decisions, tick=tick)
 
 
 def plan_rows(entries: list[Entry]) -> list[tuple]:
@@ -521,6 +531,7 @@ def plan_rows(entries: list[Entry]) -> list[tuple]:
                 rows.append(
                     (
                         entry.day,
+                        entry.tick,
                         entry.hotel,
                         entry.first_stay,
                         entry.last_stay,
@@ -539,7 +550,7 @@ def plan_rows(entries: list[Entry]) -> list[tuple]:
 
 
 def _decision_row(
-    day: int, position: int, line: dict, asked: tuple[dict, dict] | None = None
+    day: int, tick: int, position: int, line: dict, asked: tuple[dict, dict] | None = None
 ) -> tuple:
     """A decisions row from a decisions.jsonl line, for an entry or an advice. A queued entry's
     row ends with the request its hotel's queue was asked with and the answer; the other rows end
@@ -548,6 +559,7 @@ def _decision_row(
     request, answer = asked if asked is not None and line.get("queued") else (None, None)
     return (
         day,
+        tick,
         position,
         line["hotel"],
         line["stays"][0],
@@ -594,14 +606,15 @@ def write_outcomes(connection, day: int, customer: Customer | None = None) -> No
     customer = customer or demo()
     accepted = _frame(
         connection,
-        "SELECT d.as_of_day, d.hotel, p.estimates FROM decisions d JOIN plans p "
-        "ON p.as_of_day = d.as_of_day AND p.hotel = d.hotel "
+        "SELECT d.as_of_day, d.as_of_tick, d.hotel, p.estimates FROM decisions d JOIN plans p "
+        "ON p.as_of_day = d.as_of_day AND p.as_of_tick = d.as_of_tick AND p.hotel = d.hotel "
         "AND p.first_stay = d.first_stay AND p.last_stay = d.last_stay "
         "WHERE d.as_of_day <= ? AND d.simulated AND d.action <> ? AND p.is_best "
-        "AND p.candidate <> ? AND d.first_stay <= ? AND d.last_stay >= ?",
+        "AND p.candidate <> ? AND d.first_stay <= ? AND d.last_stay >= ? "
+        "ORDER BY d.as_of_day, d.as_of_tick",
         [day, HOLD, HOLD, day, day],
     )
-    rows = []
+    rows: dict[tuple[int, str], Outcome] = {}  # by (decision day, hotel): the last tick's plan
     for decided in accepted.itertuples(index=False):
         estimates = json.loads(decided.estimates)
         if str(day) not in estimates:  # another day of the week within the same flag
@@ -620,13 +633,11 @@ def write_outcomes(connection, day: int, customer: Customer | None = None) -> No
             revenue += int(booked.rooms_taken) * float(booked.rate)
             if booked.as_of_day > decided.as_of_day:
                 realised += int(booked.rooms_taken) * (float(booked.rate) - cost)
-        rows.append(
-            Outcome(
-                int(decided.as_of_day), hotel.key, day, sold, revenue, estimates[str(day)], realised
-            )
+        rows[(int(decided.as_of_day), hotel.key)] = Outcome(
+            int(decided.as_of_day), hotel.key, day, sold, revenue, estimates[str(day)], realised
         )
     with _transaction(connection):
-        _replace_day(connection, "outcomes", day, rows, key="stay_day")
+        _replace_day(connection, "outcomes", day, list(rows.values()), key="stay_day")
 
 
 @contextmanager
@@ -641,10 +652,19 @@ def _transaction(connection) -> Iterator[None]:
 
 
 def _replace_day(
-    connection, table: str, day: int, rows: list[tuple], key: str = "as_of_day"
+    connection,
+    table: str,
+    day: int,
+    rows: list[tuple],
+    key: str = "as_of_day",
+    tick: int | None = None,
 ) -> None:
-    """Delete the day's rows of a table, by the key column, and insert these instead."""
-    connection.execute(f"DELETE FROM {table} WHERE {key} = ?", [day])
+    """Delete the day's rows of a table, by the key column, or the tick's rows with a tick, and
+    insert these instead."""
+    if tick is None:
+        connection.execute(f"DELETE FROM {table} WHERE {key} = ?", [day])
+    else:
+        connection.execute(f"DELETE FROM {table} WHERE {key} = ? AND as_of_tick = ?", [day, tick])
     if not rows:
         return
     columns = _COLUMNS[table]
@@ -673,27 +693,31 @@ def stored_days(connection) -> list[int]:
 
 
 def state_before(
-    connection, day: int, customer: Customer | None = None
-) -> tuple[dict[tuple[str, int], int], set[tuple[str, str]], list[Change]]:
+    connection, day: int, customer: Customer | None = None, ticks: int = 1
+) -> tuple[dict[tuple[str, int], int | tuple[int, int]], set[tuple[str, str]], list[Change]]:
     """What the decisions before a day leave an agent. That is the stay dates under the hold, by the
-    day of their last accepted change, the (hotel, event) pairs already advised, and the changes
-    accepted so far: each with the exact rates the plans table keeps, the rate in force that day
-    from daily_bookings, and the rooms the plan expected from its estimate over the margin."""
+    day of their last accepted change, or by its (day, tick) with several ticks a day, the
+    (hotel, event) pairs already advised, and the changes accepted so far: each with the exact
+    rates the plans table keeps, the rate in force that day from daily_bookings, and the rooms
+    the plan expected from its estimate over the margin."""
     customer = customer or demo()
     frame = _frame(
         connection,
-        "SELECT as_of_day, hotel, new_rates, simulated, event FROM decisions "
-        "WHERE as_of_day < ? ORDER BY as_of_day, position",
+        "SELECT as_of_day, as_of_tick, hotel, new_rates, simulated, event FROM decisions "
+        "WHERE as_of_day < ? ORDER BY as_of_day, as_of_tick, position",
         [day],
     )
-    held: dict[tuple[str, int], int] = {}
+    held: dict[tuple[str, int], int | tuple[int, int]] = {}
     advised: set[tuple[str, str]] = set()
     for row in frame.itertuples(index=False):
         if not row.simulated:
             advised.add((row.hotel, row.event))
         elif isinstance(row.new_rates, str):  # NULL comes back as NaN, not None
             for stay_day in json.loads(row.new_rates):
-                held[(row.hotel, int(stay_day))] = int(row.as_of_day)
+                when = (
+                    int(row.as_of_day) if ticks == 1 else (int(row.as_of_day), int(row.as_of_tick))
+                )
+                held[(row.hotel, int(stay_day))] = when
     return held, advised, changes_before(connection, day, customer)
 
 
@@ -701,12 +725,12 @@ def changes_before(connection, day: int, customer: Customer) -> list[Change]:
     """The changes accepted before a day, in order, as the agent keeps them (Change)."""
     plans = _frame(
         connection,
-        "SELECT p.as_of_day, p.hotel, p.rates, p.estimates FROM plans p JOIN decisions d "
-        "ON d.as_of_day = p.as_of_day AND d.hotel = p.hotel "
-        "AND d.first_stay = p.first_stay AND d.last_stay = p.last_stay "
+        "SELECT p.as_of_day, p.as_of_tick, p.hotel, p.rates, p.estimates FROM plans p "
+        "JOIN decisions d ON d.as_of_day = p.as_of_day AND d.as_of_tick = p.as_of_tick "
+        "AND d.hotel = p.hotel AND d.first_stay = p.first_stay AND d.last_stay = p.last_stay "
         "WHERE p.as_of_day < ? AND p.is_best AND p.candidate <> ? "
         "AND d.simulated AND d.action <> ? "
-        "ORDER BY p.as_of_day, p.hotel, p.first_stay, p.weekday",
+        "ORDER BY p.as_of_day, p.as_of_tick, p.hotel, p.first_stay, p.weekday",
         [day, HOLD, HOLD],
     )
     if plans.empty:
@@ -731,7 +755,15 @@ def changes_before(connection, day: int, customer: Customer) -> list[Change]:
             old = rate_on[(int(row.as_of_day), row.hotel, int(stay_day))]
             expected = estimates[stay_day] / (float(rate) - cost)
             changes.append(
-                Change(int(row.as_of_day), row.hotel, int(stay_day), old, float(rate), expected)
+                Change(
+                    int(row.as_of_day),
+                    row.hotel,
+                    int(stay_day),
+                    old,
+                    float(rate),
+                    expected,
+                    int(row.as_of_tick),
+                )
             )
     return changes
 
@@ -742,11 +774,11 @@ def rate_changes_before(connection, day: int) -> dict[int, dict[tuple[str, int],
     frame = _frame(
         connection,
         "SELECT p.as_of_day, p.hotel, p.rates FROM plans p JOIN decisions d "
-        "ON d.as_of_day = p.as_of_day AND d.hotel = p.hotel "
+        "ON d.as_of_day = p.as_of_day AND d.as_of_tick = p.as_of_tick AND d.hotel = p.hotel "
         "AND d.first_stay = p.first_stay AND d.last_stay = p.last_stay "
         "WHERE p.as_of_day < ? AND p.is_best AND p.candidate <> ? "
         "AND d.simulated AND d.action <> ? "
-        "ORDER BY p.as_of_day, p.hotel, p.first_stay, p.weekday",
+        "ORDER BY p.as_of_day, p.as_of_tick, p.hotel, p.first_stay, p.weekday",
         [day, HOLD, HOLD],
     )
     changes: dict[int, dict[tuple[str, int], float]] = {}
@@ -779,7 +811,7 @@ def records_on(connection, day: int) -> list[dict]:
     """The day's decisions.jsonl lines, in order."""
     frame = _frame(
         connection,
-        "SELECT record FROM decisions WHERE as_of_day = ? ORDER BY position",
+        "SELECT record FROM decisions WHERE as_of_day = ? ORDER BY as_of_tick, position",
         [day],
     )
     return [json.loads(record) for record in frame["record"]]
@@ -787,7 +819,9 @@ def records_on(connection, day: int) -> list[dict]:
 
 def decisions_file(connection) -> str:
     """The whole decisions.jsonl, as the run command would have written it."""
-    frame = _frame(connection, "SELECT record FROM decisions ORDER BY as_of_day, position")
+    frame = _frame(
+        connection, "SELECT record FROM decisions ORDER BY as_of_day, as_of_tick, position"
+    )
     return "".join(record + "\n" for record in frame["record"])
 
 

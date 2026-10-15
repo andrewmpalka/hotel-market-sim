@@ -100,10 +100,11 @@ class Advice:
     event: str
     reason: str
     tick: int = 1  # the tick of the day it was given on
+    ticks: int = 1  # the ticks of that day
 
     def to_json(self) -> dict:
         """The decisions.jsonl line for this advice."""
-        return {
+        line = {
             "day": self.day,
             "hotel": self.hotel,
             "stays": [self.stay_day, self.stay_day],
@@ -114,6 +115,10 @@ class Advice:
             "reason": self.reason,
             "simulated": False,
         }
+        if self.ticks != 1:  # the daily loop's line reads as before
+            line["as_of_tick"] = self.tick
+            line["decided"] = [self.day, self.tick]
+        return line
 
 
 class Agent:
@@ -345,7 +350,15 @@ class Agent:
                 if entry.first_stay <= peak <= entry.last_stay:
                     self.advised.add((hotel.key, event.name))
                     found.append(
-                        Advice(day, hotel.key, peak, event.name, _advice_reason(peak, event), tick)
+                        Advice(
+                            day,
+                            hotel.key,
+                            peak,
+                            event.name,
+                            _advice_reason(peak, event),
+                            tick,
+                            self.ticks,
+                        )
                     )
         return found
 

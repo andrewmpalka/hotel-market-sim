@@ -296,6 +296,22 @@ def test_at_four_ticks_a_day_the_agent_runs_after_each_tick_and_each_feed_flags_
         key[1] in (1, 2, 3, 4) for key in agent.asked
     )
     assert all(e.action == e.plan for e in changed)  # the template says yes
+    # The record: each line names its tick, the moment its data arrived and the moment it was
+    # decided, as (day, tick) pairs; a feed's flag arrived at the feed's tick and a pace flag's
+    # bookings at the flag's own tick.
+    from hotel_market.plan import data_arrived
+
+    for entry in agent.entries:
+        line = entry.to_json()
+        assert line["as_of_tick"] == entry.tick and line["decided"] == [entry.day, entry.tick]
+        assert line["data_arrived"] == [entry.day, data_arrived(entry.causes, entry.tick, 4)]
+        assert line["data_arrived"][1] <= entry.tick
+    assert data_arrived((NEW_EVENT,), 4, 4) == 4 and data_arrived((SEATS_UP,), 3, 4) == 3
+    assert data_arrived((AHEAD,), 2, 4) == 2 and data_arrived((AHEAD, MEDIAN_UP), 2, 4) == 2
+    assert data_arrived((NEW_EVENT,), 1, 2) == 1  # with two ticks the events land at tick 1
+    for advice in agent.advice:
+        line = advice.to_json()
+        assert line["as_of_tick"] == advice.tick and line["decided"] == [advice.day, advice.tick]
     # The log is in moment order, and the lines sort by day then tick.
     days_and_ticks = [
         (line["day"], e.tick)
@@ -318,3 +334,6 @@ def test_with_one_tick_a_day_the_agent_keeps_its_day_keyed_hold_and_cache_names(
     assert all(len(key) == 2 for key in agent.asked)
     assert {(e.tick, e.ticks) for e in agent.entries} == {(1, 1)}
     assert all(advice.tick == 1 for advice in agent.advice)
+    # The daily loop's lines carry no tick fields, so the file reads as it always did.
+    for line in agent.log:
+        assert not {"as_of_tick", "data_arrived", "decided"} & set(line)

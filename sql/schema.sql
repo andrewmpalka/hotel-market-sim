@@ -81,14 +81,16 @@ CREATE TABLE IF NOT EXISTS events (
 );
 
 -- The agent's flags for the day: consecutive nights of a hotel with the same
--- causes make one flag.
+-- causes make one flag. The agent's three tables also carry as_of_tick, the
+-- tick of the day the row was made on, which is 1 on the daily clock.
 CREATE TABLE IF NOT EXISTS flags (
     as_of_day INTEGER NOT NULL,
+    as_of_tick INTEGER NOT NULL,       -- the tick of the day; 1 with one tick a day
     hotel VARCHAR NOT NULL,
     first_stay INTEGER NOT NULL,
     last_stay INTEGER NOT NULL,
     causes VARCHAR NOT NULL,           -- comma-separated, as detect.py names them
-    PRIMARY KEY (as_of_day, hotel, first_stay, last_stay)
+    PRIMARY KEY (as_of_day, as_of_tick, hotel, first_stay, last_stay)
 );
 
 -- Every candidate the agent scored: one row per flag, day of the week and
@@ -96,6 +98,7 @@ CREATE TABLE IF NOT EXISTS flags (
 -- rebuilt and checked.
 CREATE TABLE IF NOT EXISTS plans (
     as_of_day INTEGER NOT NULL,
+    as_of_tick INTEGER NOT NULL,
     hotel VARCHAR NOT NULL,
     first_stay INTEGER NOT NULL,
     last_stay INTEGER NOT NULL,
@@ -108,14 +111,15 @@ CREATE TABLE IF NOT EXISTS plans (
     band_low DOUBLE,                   -- cautious rule only: the estimate at the band's low elasticity
     band_high DOUBLE,                  -- and at its high one
     is_best BOOLEAN NOT NULL,          -- the candidate the plan takes for this day of the week
-    PRIMARY KEY (as_of_day, hotel, first_stay, last_stay, weekday, candidate)
+    PRIMARY KEY (as_of_day, as_of_tick, hotel, first_stay, last_stay, weekday, candidate)
 );
 
 -- One row per entry and advice of the day, in the order of the decisions
 -- file. The record column holds the file's line.
 CREATE TABLE IF NOT EXISTS decisions (
     as_of_day INTEGER NOT NULL,
-    position INTEGER NOT NULL,         -- the row's place in the day's log: entries first, then advice
+    as_of_tick INTEGER NOT NULL,
+    position INTEGER NOT NULL,         -- the row's place in the tick's log: entries first, then advice
     hotel VARCHAR NOT NULL,
     first_stay INTEGER NOT NULL,
     last_stay INTEGER NOT NULL,
@@ -137,7 +141,7 @@ CREATE TABLE IF NOT EXISTS decisions (
     model VARCHAR,                     -- the model asked, from the cache record; NULL for the template or an uncached client
     request VARCHAR,                   -- JSON: the request the hotel's queue was asked with, every figure a display string
     answer VARCHAR,                    -- JSON: the decisions answered, one per entry of the request
-    PRIMARY KEY (as_of_day, position)
+    PRIMARY KEY (as_of_day, as_of_tick, position)
 );
 
 -- The outcome of each accepted plan on each night it changed, written by

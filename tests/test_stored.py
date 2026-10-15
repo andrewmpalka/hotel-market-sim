@@ -379,3 +379,17 @@ def test_the_stored_sources_refuse_a_later_day_and_the_daily_commands_make_them_
     replay_day(10, through_tables)
     run_day(SEED, 20, through_tables)
     assert seen == [10, 20]
+
+
+def test_the_agents_tables_carry_the_tick_which_is_1_on_the_daily_clock(through_tables):
+    """flags, plans and decisions name the tick of the day each row was made on, after the day,
+    and the daily loop writes tick 1 everywhere."""
+    connection = stored.connect(through_tables, read_only=True)
+    try:
+        for table in ("flags", "plans", "decisions"):
+            columns = stored._COLUMNS[table]
+            assert columns[:2] == ("as_of_day", "as_of_tick"), table
+            ticks = connection.execute(f"SELECT DISTINCT as_of_tick FROM {table}").fetchall()
+            assert ticks == [(1,)], table
+    finally:
+        connection.close()
