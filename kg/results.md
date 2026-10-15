@@ -18,6 +18,7 @@ here for the rest.
 - Spread: the standard deviation across the seeds is $3,166 and the standard error of the mean $708 ([[DEC-60]]). Room revenue falls $27,684 a seed, with a standard deviation of $4,231.
 - Detail: the agent changes 106 rates in all. The accepted plans' estimates over holding sum to +$391,434 against +$323,281 realised. On their 1,528 nights the plans' estimates sum to +$19,861,514 against +$19,472,613 earned, 0.98 of it.
 - Table: docs/results.md, "Seeds 1 to 20 in the default mode"
+- Downtown: the lookup table "Accepted plans at the two downtown hotels by seed" in docs/results.md lists each seed's accepted plans at the two downtown hotels, with the day and the cause. Seed 7 has none.
 - Evidence: test_the_default_mode_gives_the_pinned_20_seed_mean
 - Links: [[DEC-21]], [[DEC-36]], [[DEC-38]], [[MEA-05]], [[RES-02]], [[RES-06]]
 

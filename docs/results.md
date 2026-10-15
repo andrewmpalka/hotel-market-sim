@@ -28,6 +28,37 @@ Seeds 1 to 20 in the default mode: the agent run against the fixed-rate run, sta
 | SD | 3,166 | 4,231 | |
 | SE | 708 | 946 | |
 
+Accepted plans at the two downtown hotels by seed, read from the same sweep's decisions files, run on 2026-10-15 on world v2. It is a lookup for the walkthrough, not a result: a seed with no such plan reads none, and seed 7 is one of the three. The day-10 plans are the convention's, raised on the day it is announced; the others are pace plans on a single stay date.
+
+| Seed | Day | Hotel | Stay dates | Cause | Plan |
+| ---: | ---: | --- | --- | --- | --- |
+| 1 | 10 | Downtown full-service hotel | 45 to 48 | comp median up, event announced | raise 10% on Thu |
+| 2 | 58 | Downtown convention hotel | 106 | ahead of pace | raise 5% on Tue |
+| 3 | 10 | Downtown full-service hotel | 45 to 48 | comp median up, event announced | raise 10% on Thu |
+| 4 | - | none | - | - | - |
+| 5 | 10 | Downtown convention hotel | 45 to 48 | comp median up, event announced | raise 10% on Thu |
+| 6 | 39 | Downtown full-service hotel | 45 | ahead of pace | raise 10% on Thu |
+| 7 | - | none | - | - | - |
+| 8 | 10 | Downtown convention hotel | 45 to 48 | comp median up, event announced | raise 10% on Thu |
+| 8 | 54 | Downtown full-service hotel | 99 | ahead of pace | raise 10% on Tue |
+| 9 | 10 | Downtown full-service hotel | 45 to 48 | comp median up, event announced | raise 10% on Thu |
+| 10 | 10 | Downtown full-service hotel | 45 to 48 | comp median up, event announced | raise 10% on Thu |
+| 11 | 10 | Downtown full-service hotel | 45 to 48 | comp median up, event announced | raise 5% on Thu, Sat |
+| 11 | 51 | Downtown convention hotel | 114 | ahead of pace | raise 5% on Wed |
+| 12 | 10 | Downtown full-service hotel | 45 to 48 | comp median up, event announced | raise 5% on Sat; raise 10% on Thu |
+| 13 | 10 | Downtown convention hotel | 45 to 48 | comp median up, event announced | raise 10% on Thu |
+| 14 | 10 | Downtown full-service hotel | 45 to 48 | comp median up, event announced | raise 10% on Thu |
+| 14 | 54 | Downtown convention hotel | 120 | ahead of pace | raise 10% on Tue |
+| 15 | 10 | Downtown full-service hotel | 45 to 48 | comp median up, event announced | raise 10% on Thu |
+| 16 | 10 | Downtown full-service hotel | 45 to 48 | comp median up, event announced | raise 5% on Fri; raise 10% on Thu |
+| 17 | 10 | Downtown full-service hotel | 45 to 48 | comp median up, event announced | raise 10% on Thu |
+| 17 | 42 | Downtown convention hotel | 45 | ahead of pace | raise 10% on Thu |
+| 18 | 20 | Downtown convention hotel | 85 | ahead of pace, seats up | raise 5% on Tue |
+| 19 | - | none | - | - | - |
+| 20 | 10 | Downtown convention hotel | 45 to 48 | comp median up, event announced | raise 5% on Thu |
+| 20 | 20 | Downtown full-service hotel | 72 | ahead of pace, seats up | raise 10% on Wed |
+| 20 | 36 | Downtown convention hotel | 45 | ahead of pace | raise 10% on Thu |
+
 Seed 7, days 0 to 59: what became of the flags, run on 2026-10-15 on world v2 with `hotel-market --seed 7 --template`.
 
 | Flags | Changed a rate | Held: no change beat hold | Held: worth under the minimum | Declined by the model | Minimum-stay advice |
