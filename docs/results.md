@@ -165,12 +165,15 @@ Timings of the stored tables, measured once during development on the developmen
 | Inserting a day's rows one statement at a time (replaced by one frame per day) | 2.5 seconds per 3,000 rows |
 | Reading the events table once per detect row (replaced by one read per day) | 2 seconds a day |
 
-The suite on each Python version. The run of 2026-10-12 came from a fresh virtual environment with the slow tests included and passed 235 tests on both versions. The counts below were refreshed on 2026-10-14 from the plain suite, with numpy 2.5.4, pandas 3.0.6, duckdb 1.5.6 and anthropic 1.13.0 on both. The nine slow tests are skipped, and on 3.13 the five demo-page tests too, because that environment has the dev extra alone. `make test-all` on 3.12.6, the nine slow tests included, gave 366 passed on 2026-10-14.
+The suite on each Python version. The run of 2026-10-12 came from a fresh virtual environment with the slow tests included and passed 235 tests on both versions. The counts below were refreshed on 2026-10-14 from the plain suite, with numpy 2.5.4, pandas 3.0.6, duckdb 1.5.6 and anthropic 1.13.0 on both. The nine slow tests are skipped, and so are the five demo-page tests wherever the environment has the dev extra alone, which is what `make setup` installs: the fresh-clone row was measured on 2026-10-14 by a reviewer, and the five ran once `make demo` had installed streamlit. `make test-all` on 3.12.6, the nine slow tests included, gave 366 passed on 2026-10-14.
 
 | Python | Command | Result |
 | --- | --- | --- |
 | 3.12.6 | `python -m pytest` | 357 passed, 9 skipped |
+| 3.12.6 | `make setup` then `make test` in a fresh clone, the dev extra alone | 353 passed, 14 skipped |
 | 3.13.7 | `python -m pytest` | 352 passed, 14 skipped |
+
+The live answers under cache/ are the only copy of about $86 of model calls, so they are archived as a dated tar outside the repository, with the archive's sha256 beside it: cache-2026-10-15.tar.gz under ~/backups/hotel-market-sim, sha256 TODO.
 
 The container image on each Python version, built on 2026-10-12. Docker 28.4.0 ran on an aarch64 Ubuntu VM with 4 CPUs and 4 GiB. Each image ran the suite from its copy of the repository, and the 3.12 image ran seed 7 with the template. pandas 3.0.6, duckdb 1.5.6 and anthropic 1.13.0 were installed on every version, and every dependency came as a wheel, 3.14 included. The images were not rebuilt; the native plain suite has since grown to 357 passed and 9 skipped.
 
@@ -304,7 +307,7 @@ With the reaction on, the default mode earns 3.4 times its gain without it, +$11
 
 ## The market-level price response
 
-`hotel-market bench --seeds 1 20 --template --react --market-elasticity E --elasticity true` and the same command with `--elasticity learn:1.0 --cautious`, run on 2026-10-12 at E = 0.0, 0.5 and 1.0. The option multiplies expected demand by the comp median as shopped that day over its starting level for that stay date, to the power of minus E. The starting level is the median with no shock and no reaction. The agent is told E and every plan record carries it. The oracle re-scores each plan with E and with the share of a change the competitors follow, so it is the ceiling again. The columns are those of the reaction table, and oracle gap is the oracle arm's mean change minus accept-all's.
+`hotel-market bench --seeds 1 20 --template --react --market-elasticity E --elasticity true` and the same command with `--elasticity learn:1.0 --cautious`, run on 2026-10-12 at E = 0.0, 0.5 and 1.0. The option multiplies expected demand by the comp median as shopped that day over its starting level for that stay date, to the power of minus E. The starting level is the median with no shock and no reaction. The agent is told E and every plan record carries it. The oracle re-scores each plan with E and with the share of a change the competitors follow, so it is the ceiling again over the agent's own candidates, with the reaction scored as immediate where the simulator applies it three days later. The columns are those of the reaction table, and oracle gap is the oracle arm's mean change minus accept-all's.
 
 Seeds 1 to 20 with the reaction on at a market elasticity of 0.0, 0.5 and 1.0, the template and the oracle in the true mode and the cautious learning mode, each against the fixed-rate run. The cautious rows at 0.5 and 1.0 come from a rerun after the estimator's baseline gained the market term.
 

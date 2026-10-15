@@ -10,8 +10,14 @@
   of its +$32,899, because every raise sells fewer rooms than the agent's
   estimate says. At 1.1 it earns +$112,082 a seed, because the start rates were
   set for a smaller market. The learning agent's day-59 elasticity stays at
-  1.26 to 1.49 at both biases, so the level error lands in the estimator's
-  intercept as designed. With `--level` the agent feeds that intercept back
+  1.26 to 1.49 at both biases, so a level error that is a constant factor lands
+  in the estimator's intercept as designed. A weekday or an event error lands
+  in the slope instead, by two to three standard errors, because it moves with
+  the rate ratio on the dates where the medians and the rates move. The
+  estimator learns only where the hotel has moved its own rate by several per
+  cent across most of its bookings, so in a run where the hotel barely moves
+  its rate the estimate stays near the prior. With `--level` the agent feeds
+  that intercept back
   into its forecast and learns the level by day 10, but the gain at 0.9 does
   not recover, because the opportunity shrank: the gain here comes from
   scarcity on the shock dates, and a market a tenth smaller has fewer nights
@@ -31,6 +37,17 @@
   start rate contribution-best on a night that will not sell out.
 - The $250 minimum applies to a whole plan, so a small change on one day of the
   week can ride inside a plan that clears the minimum on its other days.
+- The rate shop never moves between shocks, because each competitor's noise is
+  drawn once per stay date. A comp median therefore changes only when a shock or
+  the reaction moves it, so the median-change flag has never met ordinary shop
+  noise, and the learned elasticity comes from a ratio that moves only when the
+  hotel moves it. That is why the estimator's standard errors stay at 0.17 to
+  0.31 after about 5,300 observations.
+- One transient booking curve serves all four hotels, with no group base, so
+  "pace" here means that a shock's bookings have arrived. The hotels that
+  received the convention and the new flights run ahead of pace every day until
+  the stay date, and the pace and rules controls therefore price the shocks at
+  one remove.
 - The air schedule files two changes by default and, with `--churn`, weekly
   revisions held under the threshold by construction. A second scenario holds
   an upgauge and a frequency cut. A real feed revises in more ways than these,
@@ -45,8 +62,16 @@
   market section of docs/results.md.
 - There is one rate per hotel and stay date, with no room types, group blocks,
   cancellations or no-shows.
-- Without an API key, every plan is accepted. A template run therefore measures
-  the plans alone.
+- Without an API key, every plan is accepted, the run records the fact only as
+  the reason source of each decision, and a hotel that ran it with a missing key
+  would put every queued raise live under a reason that reads like a review.
+  With a key, a call that still fails after the client's retries stops the run
+  with a traceback, and the single-run route then writes no decisions file for
+  the days before it.
+- A change to the world, such as a fifth hotel or a second event, invalidates
+  the pinned tests, the seed-7 recording under tests/fixtures and the live
+  benchmark tables. The template sweeps rerun for nothing, a new recording of
+  seed 7 costs about $0.12, and the live tables cost about $86 to make again.
 - The benchmark ran the live models on seeds 1 to 20 in the fixed and the
   learned modes (docs/results.md). No reviewer recovered more than 28% of the
   oracle's margin in a fixed mode or 4% in a learned one. The cautious arms'

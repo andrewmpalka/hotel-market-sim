@@ -16,9 +16,15 @@ The oracle reviewer scores every plan with the simulator's own elasticity and
 declines the plan when holding scores at least as well. The oracle is the
 ceiling in expectation over the agent's own candidates; a single seed's draw can
 beat it, and at a demand bias of 0.9 it is ahead of the fixed-rate run in 13
-seeds of 20. The control arm follows the shape of
+seeds of 20, which a sign test puts at p 0.26. In the reacting market the oracle
+scores the competitors' reaction as immediate, where the simulator applies it
+three days later, so its ceiling there covers the agent's own candidates only.
+The control arm follows the shape of
 [Coinbase's post on its fraud agent](https://www.coinbase.com/blog/part-one-how-coinbase-built-evaluated-and-post-trained-a-fraud-agent).
-The oracle and the decline precision and recall are this repository's own.
+The oracle and the decline precision and recall are this repository's own. Of
+that shape the repository has the control arm and an oracle-scored reviewer, and
+it has no online or shadow evaluation, no human in the loop, no outcome labels
+from the world, no post-training and no incident path.
 
 The benchmark runs seeds 1 to 20 in three elasticity modes. Each mode has five
 reviewers: the template, which accepts every plan, the oracle, and the three
