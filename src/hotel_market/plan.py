@@ -212,8 +212,8 @@ class FlagNumbers:
     unsold_rooms: int
     remaining_demand: float
     pace_gap: float
-    seat_change: Range
-    seat_revision: Range
+    passenger_change: Range
+    passenger_revision: Range
     rate: Range
     comp_median: Range
     rate_vs_median: Range
@@ -536,8 +536,8 @@ def _flag_numbers(rows: pd.DataFrame, stay_dates: list[StayDate]) -> FlagNumbers
         unsold_rooms=sum(s.unsold for s in stay_dates),
         remaining_demand=round(sum(s.remaining_demand for s in stay_dates), 1),
         pace_gap=round(float(sum(rows["pace_gap"].tolist())), 1),
-        seat_change=lowest_highest(rows["seat_change"].tolist(), digits=4),
-        seat_revision=lowest_highest(rows["seat_revision"].tolist(), digits=4),
+        passenger_change=lowest_highest(rows["passenger_change"].tolist(), digits=4),
+        passenger_revision=lowest_highest(rows["passenger_revision"].tolist(), digits=4),
         rate=lowest_highest(rows["rate"].tolist()),
         comp_median=lowest_highest(rows["comp_median"].tolist()),
         rate_vs_median=lowest_highest(rows["rate_vs_median"].tolist(), digits=4),

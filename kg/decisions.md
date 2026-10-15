@@ -36,14 +36,22 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: test_preload_mean_is_normal_demand_x_curve_of_days_out_plus_1, test_day_0_starts_with_the_bookings_made_before_the_run
 - Links: [[MOD-06]], [[DAT-07]], [[RUL-68]], [[CON-01]]
 
-### DEC-04 [C] seat_revision is the seat trigger; seat_change is carried for the text
-- Decided: the detector flags a stay date when its arriving seats move 5% or more since the day before ([[RUL-64]]). The change against the no-shock baseline is shown but never flags.
-- Replaces: nothing built; flagging on seat_change was the first idea.
-- Reason: seat_change stays at +17% from day 20 on. Flagging on it would re-flag stay dates 50 to 149 every day. seat_revision is zero except on the two filing days.
+### DEC-04 [C] The passenger revision is the trigger; the change is carried for the text
+- Decided: the detector flags a stay date when its arriving passengers move 5% or more since the day before ([[RUL-64]], [[DEC-63]]). The change against the no-shock baseline is shown but never flags.
+- Replaces: nothing built; flagging on the change against the baseline was the first idea.
+- Reason: the change stays up from day 20 on. Flagging on it would re-flag stay dates 50 to 149 every day. The revision is zero except on the two filing days.
 - Measured: after the day-40 cut, seats on days 70 to 90 stay 240 a day above the baseline. They are 480 a day (about 10%) below the day before.
 - Commit: abef71f
-- Evidence: test_shock_causes_appear_only_on_the_days_shocks_become_known, test_known_seat_revision_matches_the_schedule
+- Evidence: test_shock_causes_appear_only_on_the_days_shocks_become_known, test_known_passenger_revision_matches_the_schedule
 - Links: [[SHK-02]], [[SHK-04]], [[DAT-02]], [[MOD-07]]
+
+### DEC-63 [C] Arriving passengers, not seats, drive demand
+- Decided: the demand rule and the agent's forecast read arriving passengers: each flight's seats at its load factor ([[RUL-125]]). A route the airline adds opens emptier and fills over a quarter ([[RUL-126]], [[RUL-127]]).
+- Replaces: the seat link, where every seat filed counted as a seat flown from the first day.
+- Reason: half of the headline gain rode on an immediate seat link. A new route's passengers arrive more slowly than its seats, and a suspended route loses only the passengers it carried.
+- Agent: the detect numbers and FlagNumbers are passenger_change and passenger_revision ([[DAT-08]], [[DAT-13]]). The request keeps the keys seat_change and seat_revision, and its display strings say passengers.
+- Evidence: test_passengers_are_seats_at_the_load_factor_and_a_new_route_ramps, test_known_passenger_revision_matches_the_schedule
+- Links: [[DEC-04]], [[DAT-02]], [[SRC-03]], [[SHK-02]], [[SHK-04]]
 
 ### DEC-05 [C] The booking loop plays out to day 149 with rates frozen from day 60
 - Decided: the agent decides on days 0 to 59. The loop keeps booking to day 149 with no new decisions. The window stops at stay date 149, so every stay date from 0 to 149 ends complete.
@@ -79,7 +87,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Commit: 53a7081
 - Links: [[SHK-01]]
 
-### DEC-09 [C] The peak night is computed from expected demand as of the day the event becomes known
+### DEC-09 [C] The peak night comes from expected demand as of the day the event is known
 - Decided: peak_night(hotel, event, sources) in [[MOD-18]] is the event night with the highest expected demand as of event.known_day. The earliest night wins a tie.
 - Replaces: [[DEC-08]]
 - Reason: the peak must follow the data and the as-of rule. For the convention it is Thursday 45 at both downtown hotels.
@@ -103,7 +111,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Commit: abef71f
 - Links: [[SHK-02]]
 
-### DEC-12 [C] Contribution with a room cost is the target, and the start rate is best on ordinary nights
+### DEC-12 [C] Contribution with a room cost is the target; the start rate is best on ordinary nights
 - Decided: each occupied room costs one third of the hotel's start rate to service ([[RUL-61]]). Contribution is room revenue minus that cost for every room sold, and the agent scores candidates on it.
 - Replaces: [[DEC-11]], and revenue as the implicit target
 - Reason: revenue rewards selling every room at any price. With ELASTICITY 1.5 the contribution-best rate on a night that will not sell out is 3 x cost. That is the start rate, so only a night that may sell out can pay for a raise.
@@ -185,7 +193,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Reason: a night expected 97% full still sells out fairly often, so a small raise there pays.
 - Measured: the 20-seed mean went from +$27,350 to +$32,899 ([[RES-12]], [[RES-01]]). The agent was ahead in 20 of 20 seeds both before and after.
 - Commit: abef71f
-- Evidence: test_expected_bookings_is_the_mean_of_a_poisson_count_that_stops_at_the_unsold_rooms, test_expected_bookings_matches_the_simulators_daily_draws, test_a_night_expected_97_percent_full_raises_where_a_cap_on_demand_would_hold
+- Evidence: test_expected_bookings_is_the_mean_of_a_poisson_count_that_stops_at_the_unsold_rooms, test_expected_bookings_matches_the_simulators_daily_draws, test_a_night_close_to_full_raises_where_a_cap_on_demand_would_hold
 - Links: [[MOD-08]], [[DAT-10]], [[CON-09]]
 
 ### DEC-22 [C] One random number per booking draw, fixed by the seed before the run
@@ -250,7 +258,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Commit: abef71f
 - Evidence: test_the_day_59_estimate_recovers_the_simulators_elasticity, test_the_default_mode_gives_the_pinned_seed_7_figure, test_each_mode_records_the_elasticity_its_plans_assume
 
-### DEC-39 [C] The cautious rule: a learning agent changes a rate only where the change beats holding across its band
+### DEC-39 [C] The cautious rule changes a rate only where it beats holding across the band
 - Decided: in learn mode, --cautious scores every candidate at three elasticities. They are the estimate and the estimate [[RUL-54]] standard error lower and higher, clamped to [[RUL-51]] and [[RUL-52]].
 - Rule: a candidate replaces hold only if it is ahead of hold at all three. The best such candidate wins; otherwise the day of the week holds ([[CON-11]], [[MOD-08]]).
 - Records: each plan record, the request and the log line store all three values and the rejected candidates ([[DAT-11]], [[DAT-16]], [[DAT-18]]). Without the option nothing changes.
@@ -336,7 +344,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: test_the_market_elasticity_scales_each_days_draw_by_the_medians_level, test_the_grader_scores_a_raise_against_the_median_the_reaction_moves, test_the_oracle_reviewer_is_told_the_market_elasticity_and_the_reaction
 - Links: [[DEC-51]], [[DEC-50]], [[RUL-87]], [[RUL-88]], [[RES-26]], [[RES-27]], [[UNK-11]], [[UNK-15]], [[FRK-08]], [[FRK-09]]
 
-### DEC-53 [C] The air schedule's filings are a named scenario, and the churn files what a feed files
+### DEC-53 [C] The filings are a named scenario, and the churn files what a feed files
 - Decided: a Scenario is a named list of filings ([[DAT-03]]). The default is AIR_SHOCKS as it was. --scenario picks another from SCENARIOS, and the upgauge scenario holds an upgauge and a frequency cut ([[SHK-05]], [[SHK-06]]).
 - Kinds: a filing adds routes, suspends one, swaps a route's equipment, sets its daily flights or shifts its departures ([[RUL-89]]). An equipment change moves the seats while the flight count stays. A time change moves no seat.
 - Churn: --churn files the seed's weekly revisions on top, each under the detect threshold ([[SHK-07]]). A detector that fires on any revision fires on them. The threshold detector does not.
@@ -373,7 +381,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 
 ## Engineering
 
-### DEC-23 [C] The cache is keyed by seed, day and hotel, and each file records a digest of its request
+### DEC-23 [C] The cache is keyed by seed, day and hotel, with a digest of the request
 - Decided: the answer to one hotel's queue on one day is saved at cache/seed<seed>/day<DDD>_<hotel key>.json. The file records the sha256 of the request's sorted-keys JSON ([[DAT-17]]), and a rerun reads the cache first.
 - Detail: a file whose digest does not match the request, or whose prompt_digest differs from the running prompt, raises StaleCache. A record with no prompt_digest is current. A replay never calls the model.
 - Model: a model other than MODEL ([[RUL-46]]) adds -<model> to the folder, as a mode does. Each new record names its model. The default model in the default mode keeps cache/seed<seed>/, so [[DAT-29]] replays unchanged.
@@ -486,7 +494,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Commit: 9d74c0d
 - Evidence: test_the_demo_file_describes_the_market_in_claude_md, test_the_revenue_target_scores_candidates_on_the_rate_alone, test_the_command_takes_a_customer_file_and_a_target
 
-### DEC-42 [C] The feeds and the agent's output are stored tables the agent can run against a day at a time
+### DEC-42 [C] Stored tables the agent can run against a day at a time
 - Decided: sql/schema.sql defines eight tables ([[DAT-28]]): four feeds and three agent outputs keyed by as_of_day, and the outcomes keyed by the decision's day. Its head lists the statements a cloud warehouse would change.
 - Stored: stored.py ([[MOD-21]]) implements the four interfaces over the tables and writes a day's rows. It deletes the day's rows first, so running a day twice leaves the tables unchanged. The simulated sources ([[MOD-19]]) are unchanged.
 - Daily run: the run-day command plays the simulator to day N with the stored rate changes and writes the day's feeds. A fresh agent resumes the stored hold and advice, decides the day from the tables alone and writes its output.
@@ -516,7 +524,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: test_a_sweep_with_reviewers_keeps_each_arms_entries_calls_and_counts, test_the_bench_command_prints_its_tables, test_a_duplicate_call_record_is_counted_once
 - Links: [[MOD-12]], [[MOD-23]], [[DAT-19]], [[DAT-24]], [[DAT-32]], [[DEC-47]]
 
-### DEC-56 [C] The cautious band's verdict is a display field, and a band-end gain under $10 reads to the dollar
+### DEC-56 [C] The band verdict is a display field; a small band-end gain reads to the dollar
 - Decided: each candidate but hold in a cautious request carries band_verdict ([[DAT-16]], [[MOD-11]]). An example is "beats holding at both ends of the band". A gain over hold at an end of the band under $10 reads to the dollar.
 - Replaces: the ends read to the nearest $10 as every estimate does ([[DEC-44]]). A gain of $3 the rule had passed therefore read "the same as holding". The model inferred the rule's result from the rounded gains.
 - Reason: on seed 7, day 29, Opus, Sonnet and Haiku each declined the same airport raise ([[RES-35]]). Each read "the same as holding" at the high end as a failed rule. That was the natural reading of what code wrote.

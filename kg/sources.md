@@ -28,12 +28,12 @@ was written without access to any feed.
 - Evidence: test_the_simulated_sources_answer_as_of_the_day, test_the_stored_sources_answer_as_the_simulated_ones_do, test_comp_median_moves_every_day_and_beyond_the_threshold_only_on_a_shock
 
 ### SRC-03 [C] Air schedules
-- Stands in: SimulatedSchedules in [[MOD-19]]. It gives the seats as filed by a day, from the synthetic schedule [[MOD-01]] builds for that day ([[DAT-01]]). The schedule carries the two air shocks filed on days 20 and 40.
+- Stands in: SimulatedSchedules in [[MOD-19]]. It gives the seats as filed by a day and the passengers at each flight's load factor ([[DEC-63]]), from the schedule [[MOD-01]] builds for that day ([[DAT-01]], [[SHK-02]], [[SHK-04]]).
 - Real feed (assumption): a schedule service would supply periodic snapshots of filed schedules, one row per flight and date. Each row would carry seats by cabin, codeshare markings and service type. Revisions would arrive on no fixed day.
-- Stored: StoredSchedules in [[MOD-21]] reads schedule_snapshots, the seats arriving each day as filed by a day. The interface computes the seat change and the seat revision from them ([[DAT-25]]).
-- To read one: a real snapshot would be counted into that table the way seats_by_day does. That means dropping codeshares and type U rows and grouping by city, the traps a real file holds.
+- Stored: StoredSchedules in [[MOD-21]] reads schedule_snapshots, the seats and passengers arriving each day as filed by a day. The interface computes the passenger change and revision from them ([[DAT-25]]).
+- To read one: a real snapshot would be counted into that table the way seats_by_day and passengers_by_day do. That means dropping codeshares and type U rows and grouping by city, the traps a real file holds.
 - Warehouse: a warehouse would keep the flight-level snapshot as well and make the table a view over it. The seat-to-demand link ([[UNK-05]]) is the part a real market would not confirm.
-- Evidence: test_the_simulated_sources_answer_as_of_the_day, test_the_stored_sources_answer_as_the_simulated_ones_do, test_known_seat_revision_matches_the_schedule
+- Evidence: test_the_simulated_sources_answer_as_of_the_day, test_the_stored_sources_answer_as_the_simulated_ones_do, test_known_passenger_revision_matches_the_schedule
 
 ### SRC-04 [C] Events
 - Stands in: SimulatedEvents in [[MOD-19]]: the events [[MOD-03]] holds, as announced by a day ([[DAT-05]]). The competitor rate cut is not an event; the agent sees it only through the rate shop.

@@ -158,7 +158,7 @@ def test_the_replay_command_prints_day_20s_queue(first, monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "Day 20 | Airport hotel | stay dates 50 to 109" in out
     assert (
-        "Raise 5% on Tue; raise 10% on Mon, Wed, Thu, Fri, Sun: "
+        "Raise 5% on Tue, Fri; raise 10% on Mon, Wed, Thu, Sun: "
         "$140 becomes $147 to $154 on 52 stay dates"
     ) in out
     assert "Value at stake" in out
@@ -400,7 +400,7 @@ def test_the_seeds_command_prints_one_row_per_arm_and_a_learn_arms_estimates(mon
 def test_the_default_mode_gives_the_pinned_seed_7_figure(first):
     _, fixed, books, _ = first
     change = sum(books.contribution(h) - fixed.contribution(h) for h in DEMO.hotels)
-    assert change == pytest.approx(17154, abs=1)
+    assert change == pytest.approx(14734, abs=1)
 
 
 @pytest.mark.slow

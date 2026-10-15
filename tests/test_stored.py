@@ -95,11 +95,12 @@ def test_the_stored_sources_answer_as_the_simulated_ones_do(in_memory, through_t
                 )
                 assert sources.shops.first_median(hotel) == simulated.shops.first_median(hotel)
         assert (sources.schedules.seats(day) == simulated.schedules.seats(day)).all()
-        assert dict(sources.schedules.seat_change(day)) == dict(
-            simulated.schedules.seat_change(day)
+        assert (sources.schedules.passengers(day) == simulated.schedules.passengers(day)).all()
+        assert dict(sources.schedules.passenger_change(day)) == dict(
+            simulated.schedules.passenger_change(day)
         )
-        assert dict(sources.schedules.seat_revision(day)) == dict(
-            simulated.schedules.seat_revision(day)
+        assert dict(sources.schedules.passenger_revision(day)) == dict(
+            simulated.schedules.passenger_revision(day)
         )
         assert sources.events.known(day) == simulated.events.known(day)
     connection.close()

@@ -7,8 +7,8 @@ which is also the order in which they depend on each other.
 
 ### MOD-01 [C] schedule.py
 - File: src/hotel_market/schedule.py
-- Owns: the synthetic air schedule as known on a day (build_schedule) and the seats arriving each day (seats_by_day). It also gives the seat change against the no-shock schedule and against the day before.
-- Holds: both air shocks ([[SHK-02]], [[SHK-04]]), the scenarios and the churn ([[DEC-53]]). It also holds the three counting traps: codeshare rows, the type U bus and the second airport. Its column names do not change.
+- Owns: the synthetic air schedule as known on a day (build_schedule), the seats arriving each day (seats_by_day) and the passengers they carry at each flight's load factor (passengers_by_day, [[DEC-63]]), with the change in each.
+- Holds: both air shocks ([[SHK-02]], [[SHK-04]]), the scenarios and the churn ([[DEC-53]]), and the load factors ([[RUL-125]] to [[RUL-127]]). It also holds the three counting traps: codeshare rows, the type U bus and the second airport.
 - Carriers: where the operating carrier differs from the marketing carrier, a regional flies the route under capacity purchase. IS_WETLEASE is False on every row, because a wet lease is a separate arrangement ([[DEC-35]]).
 - Reads: nothing in the package
 - Writes: [[DAT-01]], [[DAT-02]], [[DAT-03]]
@@ -36,8 +36,8 @@ which is also the order in which they depend on each other.
 
 ### MOD-04 [C] demand.py
 - File: src/hotel_market/demand.py
-- Owns: the simulator's demand per hotel and stay date as known on a day. The formula is rooms x base occupancy x weekday factor x seats x events. Normal demand leaves out seats and events.
-- Holds: the per-filing cache of seat changes (last_filing, known_seat_change), keyed by the run's scenario ([[DEC-53]]). The agent never reads this module. Its own demand model is [[MOD-18]], which matches it by construction.
+- Owns: the simulator's demand per hotel and stay date as known on a day. The formula is rooms x base occupancy x weekday factor x passengers x events. Normal demand leaves out passengers and events.
+- Holds: the per-filing cache of passenger changes (last_filing, known_passenger_change), keyed by the run's scenario ([[DEC-53]]). The agent never reads this module. Its own demand model is [[MOD-18]], which matches it by construction.
 - Bias: DEMAND_BIAS multiplies both demands for the simulator alone ([[RUL-82]], [[DEC-50]]). MARKET_ELASTICITY scales expected demand by the median's level, and the agent is told it ([[RUL-87]], [[DEC-52]]).
 - Reads: [[MOD-01]], [[MOD-02]], [[MOD-03]], [[MOD-20]]
 - Writes: nothing stored; the functions are pure functions of what is known on a day
@@ -163,7 +163,7 @@ which is also the order in which they depend on each other.
 - File: src/hotel_market/sources.py
 - Owns: the boundary between the agent and its data: the four interfaces ([[DAT-25]]) for bookings, rate shops, schedules and events, the Event type ([[DAT-05]]), BookingHistory ([[DAT-26]]), the Sources bundle and the as-of guard Limited.
 - Rule: every method takes the day it is asked on and returns only what was known then. The module holds no data and no truth ([[DEC-40]]).
-- Seats: the schedule interface asks an implementation only for the seats arriving each day as filed. It computes the seat change and the seat revision itself (seat_fraction), so every implementation counts the same way ([[DEC-42]]).
+- Seats: the schedule interface asks an implementation for the seats and passengers arriving each day as filed. It computes the passenger change and revision itself (seat_fraction), so every implementation counts alike ([[DEC-42]]).
 - Reads: [[MOD-02]] for the Hotel type
 - Writes: nothing
 - Tests: tests/test_sources.py

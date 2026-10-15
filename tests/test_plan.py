@@ -58,8 +58,8 @@ def _entry(*gains):
         unsold_rooms=0,
         remaining_demand=0.0,
         pace_gap=0.0,
-        seat_change=Range(0.0, 0.0),
-        seat_revision=Range(0.0, 0.0),
+        passenger_change=Range(0.0, 0.0),
+        passenger_revision=Range(0.0, 0.0),
         rate=Range(140.0, 140.0),
         comp_median=Range(140.0, 140.0),
         rate_vs_median=Range(0.0, 0.0),
@@ -214,25 +214,30 @@ def test_a_raise_wins_where_the_night_would_often_sell_out_at_todays_rate(day10)
 
 
 def test_after_the_new_flights_the_airport_raises_every_night_close_to_full(books_through):
-    # As of day 20, Mondays, Thursdays and Sundays are expected 101% full,
-    # Wednesdays and Fridays 97%, Tuesdays 90% and Saturdays 85%.
+    # As of day 20 the new flights have just opened at their lowest load factor. The airport's
+    # busiest nights, Mondays, Wednesdays, Thursdays and Sundays, raise 10%; Tuesdays and Fridays
+    # sit a little further from full and raise 5%; Saturday, the quietest night, holds.
     entry, _ = _airport_entry(20, books_through(20))
     best = {g.weekday: g.best.name for g in entry.weekdays}
-    assert [best[d] for d in (0, 3, 6)] == ["raise 10%"] * 3  # demand would overfill the hotel
-    assert [best[d] for d in (2, 4)] == ["raise 10%"] * 2  # 97% full still sells out fairly often
-    assert best[5] == HOLD  # the quietest night
+    assert [best[d] for d in (0, 2, 3, 6)] == ["raise 10%"] * 4
+    assert [best[d] for d in (1, 4)] == ["raise 5%"] * 2
+    assert best[5] == HOLD
     assert all(g.best.name.startswith("raise") for g in entry.changed_weekdays)
     assert entry.value_at_stake == pytest.approx(sum(g.gain for g in entry.changed_weekdays))
     assert set(entry.new_rates) == {s for g in entry.changed_weekdays for s in g.stays}
 
 
-def test_a_night_expected_97_percent_full_raises_where_a_cap_on_demand_would_hold(books_through):
-    airport = DEMO.hotel("airport")
-    entry, table = _airport_entry(20, books_through(20))
+def test_a_night_close_to_full_raises_where_a_cap_on_demand_would_hold(books_through):
+    # The lifestyle hotel's Fridays as of day 20, with the new flights just filed, are expected
+    # about 96% full.
+    lifestyle = DEMO.hotel("lifestyle")
+    table = detect_numbers(20, simulated_sources(books_through(20)))
+    [flag] = [f for f in flags(20, table) if f.hotel == "lifestyle" and f.first_stay == 50]
+    entry = entry_for(20, flag, table)
     [friday] = [g for g in entry.weekdays if g.weekday == 4]
-    rows = table.query("hotel == 'airport'").set_index("stay_day")
-    full = sum(expected_demand(airport, s, 20) for s in friday.stays) / (
-        airport.rooms * len(friday.stays)
+    rows = table.query("hotel == 'lifestyle'").set_index("stay_day")
+    full = sum(expected_demand(lifestyle, s, 20) for s in friday.stays) / (
+        lifestyle.rooms * len(friday.stays)
     )
     assert 0.95 < full < 1.00
 
@@ -240,12 +245,12 @@ def test_a_night_expected_97_percent_full_raises_where_a_cap_on_demand_would_hol
         """The estimate the exact one replaced: expected demand capped at the unsold rooms."""
         return sum(
             min(
-                expected_demand(airport, s, 20)
-                * (1 - airport.curve(s - 20))
+                expected_demand(lifestyle, s, 20)
+                * (1 - lifestyle.curve(s - 20))
                 * (r / rows.loc[s, "comp_median"]) ** -1.5,
-                airport.rooms - rows.loc[s, "rooms"],
+                lifestyle.rooms - rows.loc[s, "rooms"],
             )
-            * (r - airport.room_cost)
+            * (r - lifestyle.room_cost)
             for s, r in candidate.rates.items()
         )
 

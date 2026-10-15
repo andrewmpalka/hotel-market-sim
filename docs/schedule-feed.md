@@ -17,7 +17,12 @@ The simulator uses a small part of the table. It groups rows by arrival city, be
 code covers both of the city's airports. Of those rows it keeps the ones whose service type is
 scheduled passenger service and drops the ones flagged as codeshares. It adds the three cabins
 into one seat count and sums that count by operating date. Those daily totals are the arriving
-seats the demand rule and the agent's detector read. The marketing and operating carriers tell
+seats. The seats become arriving passengers at a load factor: a flight that flew before the run
+fills 80% of its seats, and a flight the airline adds opens at 60% on its first operating day
+and fills to 85% over 90 days, linear between, so a filing's passengers arrive more slowly than
+its seats. A suspended flight keeps its load factor when it resumes. The daily passengers are
+what the demand rule and the agent's detector read, and the stored snapshot keeps the seats
+beside them. The marketing and operating carriers tell
 the reader who sells and who flies, and on an operating row a differing pair is a regional
 airline flying under capacity purchase. The wet-lease flag is false on every row, because a wet
 lease is a separate arrangement that no route here uses.
@@ -25,12 +30,13 @@ lease is a separate arrangement that no route here uses.
 A filed flight has an "as of" day. The airline files a change on a simulation day, and from that
 day the schedule includes it. A hotel knows nothing of a flight before the filing, so every
 schedule lookup takes the day it is made on and returns the table as it was known then. The
-function build_schedule takes that day, and seats_by_day counts the table it returns. The
-detector reads two numbers from those counts. The seat change compares the known schedule with
-the schedule before any filing. The seat revision is the same comparison against the schedule
-known the day before, and that is the number that flags, because a filing moves it once on the
-day it arrives and then leaves it at zero. The seat change stays raised for as long as the
-flights stay, and a detector that flagged on it would flag the same dates every day.
+function build_schedule takes that day, and seats_by_day and passengers_by_day count the table
+it returns. The detector reads two numbers from the passengers. The passenger change compares
+the known schedule with the schedule before any filing. The passenger revision is the same
+comparison against the schedule known the day before, and that is the number that flags,
+because a filing moves it once on the day it arrives and then leaves it at zero. The passenger
+change stays raised for as long as the flights stay, and a detector that flagged on it would
+flag the same dates every day.
 
 There are several ways to miscount the seats in a feed like this one, and each has a test that
 fails when the code makes the mistake. A codeshare row repeats the seats of the operating
@@ -52,10 +58,11 @@ test_a_regional_operating_carrier_is_not_a_wet_lease pins that.
 A real feed also revises every week, and most revisions change nothing a hotel should act on,
 which is what the churn stands for. With it on, the airline files an equipment swap of two to
 three weeks and a departure-time change for a fortnight each week, drawn from the seed, and each
-stays under the five per cent threshold the detector uses, because a day moves at most 96 seats
-against a threshold of 212. The churn stays under the threshold by construction, so the absence
-of seat flags proves nothing. The finding is that a filing as such never reaches the detector,
-which keys on the day-over-day seat revision. The test
+stays under the five per cent threshold the detector uses, because a day moves at most 96 seats,
+77 passengers at the mature load factor, against a threshold of 212 seats. The churn stays
+under the threshold by construction, so the absence of seat flags proves nothing. The finding
+is that a filing as such never reaches the detector, which keys on the day-over-day passenger
+revision. The test
 test_the_churn_files_weekly_revisions_below_the_threshold holds the revisions under the
 threshold, and test_a_detector_that_fires_on_any_revision_is_caught_by_the_churn pins the
 finding by holding the flags with a seat cause to the same two days with the churn as without

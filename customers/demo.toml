@@ -15,7 +15,7 @@ cost_share = 0.3333333333333333  # the cost to service an occupied room, as a sh
 [detect]
 pace_share = 0.10       # a pace gap counts when it is beyond this share of the hotel's rooms
 pace_noise_sd = 3       # ... and beyond this many standard deviations of booking noise
-seat_threshold = 0.05   # a seat revision of this much either way raises a flag
+seat_threshold = 0.05   # a revision in arriving passengers of this much either way raises a flag
 median_threshold = 0.05 # a comp median that moved this much since yesterday raises a flag
 hold_days = 7           # an action accepted on day d holds its stay dates on days d+1 to d+hold_days
 

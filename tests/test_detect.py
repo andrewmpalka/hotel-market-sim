@@ -21,7 +21,7 @@ from hotel_market.detect import (
     flags,
     shock_known,
 )
-from hotel_market.schedule import seat_revision
+from hotel_market.schedule import passenger_revision
 from hotel_market.shops import comp_median
 from hotel_market.simulated import SimulatedSchedules, simulated_sources, watch
 from hotel_market.world import SIM_DAYS
@@ -72,8 +72,9 @@ def test_each_shock_flags_on_the_day_it_becomes_known(run):
 
 
 def test_shock_causes_appear_only_on_the_days_shocks_become_known(run):
-    # seat_change stays up from day 20 on, but only seat_revision raises flags. A comp-median
-    # cause can come from the shop noise on any day, so only the shocks' days are pinned.
+    # The passenger change stays up from day 20 on, but only the revision raises flags. A
+    # comp-median cause can come from the shop noise on any day, so only the shocks' days are
+    # pinned.
     _, found, _ = run
     causes = (NEW_EVENT, MEDIAN_UP, MEDIAN_DOWN, SEATS_UP, SEATS_CUT)
     days = {cause: {f.day for f in found if cause in f.causes} for cause in causes}
@@ -87,8 +88,8 @@ def test_detect_runs_after_each_of_days_0_to_59(run):
 
 
 @pytest.mark.parametrize("day", [19, 20, 21, 39, 40, 41])
-def test_known_seat_revision_matches_the_schedule(day):
-    assert dict(SimulatedSchedules().seat_revision(day)) == seat_revision(day).to_dict()
+def test_known_passenger_revision_matches_the_schedule(day):
+    assert dict(SimulatedSchedules().passenger_revision(day)) == passenger_revision(day).to_dict()
 
 
 def test_numbers_follow_the_definitions():
@@ -205,7 +206,7 @@ def test_a_detector_that_fires_on_any_revision_is_caught_by_the_churn():
     # seat flag: the threshold holds them out, as it is meant to.
     assert seat_days(with_churn_flags) == seat_days(plain_flags) == [20, 40]
     revisions = SimulatedSchedules(with_churn(DEFAULT_SCENARIO, 7))
-    moved = [day for day in range(7, 57, 7) if any(revisions.seat_revision(day).values())]
+    moved = [day for day in range(7, 57, 7) if any(revisions.passenger_revision(day).values())]
     assert moved
 
 

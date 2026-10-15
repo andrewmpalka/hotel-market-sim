@@ -201,8 +201,8 @@ def test_plain_learn_mode_gives_the_same_results_as_before(tmp_path):
     agent = Agent(SEED, tmp_path, elasticity=ElasticityMode.parse("learn:1.0"))
     books = simulate(SEED, deciding(agent))
     change = sum(books.contribution(h) - fixed.contribution(h) for h in DEMO.hotels)
-    assert change == pytest.approx(3802.97, abs=0.01)
-    assert sum(1 for e in agent.entries if e.action != HOLD) == 31 and len(agent.entries) == 94
+    assert change == pytest.approx(3549.24, abs=0.01)
+    assert sum(1 for e in agent.entries if e.action != HOLD) == 31 and len(agent.entries) == 95
 
 
 def test_a_cautious_agent_records_the_band_and_what_it_rejected(tmp_path):

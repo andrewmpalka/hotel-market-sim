@@ -64,7 +64,7 @@ OPENING_DAY = -1  # the position before the first day: the opening rooms, shop a
 _COLUMNS = {
     "daily_bookings": ("as_of_day", "hotel", "stay_day", "rooms_taken", "rooms_on_books", "rate"),
     "rate_shops": ("as_of_day", "hotel", "stay_day", "competitor", "rate"),
-    "schedule_snapshots": ("as_of_day", "stay_day", "seats"),
+    "schedule_snapshots": ("as_of_day", "stay_day", "seats", "passengers"),
     "events": (
         "as_of_day",
         "name",
@@ -313,27 +313,36 @@ def _median(values: np.ndarray) -> np.ndarray:
 
 
 class StoredSchedules(Limited, Schedules):
-    """schedule_snapshots: the seats arriving each day, as filed by a day."""
+    """schedule_snapshots: the seats and passengers arriving each day, as filed by a day."""
 
     def __init__(self, connection, as_of_day: int | None = None):
         self.connection = connection
         self.as_of_day = as_of_day
-        self._seats: dict[int, np.ndarray] = {}
+        self._snapshots: dict[int, tuple[np.ndarray, np.ndarray]] = {}
 
-    def seats(self, as_of_day: int) -> np.ndarray:
+    def _snapshot(self, as_of_day: int) -> tuple[np.ndarray, np.ndarray]:
+        """(seats, passengers) by stay day as filed by the day, read once."""
         self._known(as_of_day)
-        if as_of_day not in self._seats:
+        if as_of_day not in self._snapshots:
             frame = _frame(
                 self.connection,
-                "SELECT stay_day, seats FROM schedule_snapshots WHERE as_of_day = ?",
+                "SELECT stay_day, seats, passengers FROM schedule_snapshots WHERE as_of_day = ?",
                 [as_of_day],
             )
             if frame.empty:
                 raise LookupError(f"the tables hold no schedule snapshot for day {as_of_day}")
-            seats = np.zeros(HORIZON_DAYS, dtype=np.int64)
-            seats[frame["stay_day"].to_numpy()] = frame["seats"].to_numpy()
-            self._seats[as_of_day] = seats
-        return self._seats[as_of_day]
+            stays = frame["stay_day"].to_numpy()
+            seats, passengers = np.zeros(HORIZON_DAYS, dtype=np.int64), np.zeros(HORIZON_DAYS)
+            seats[stays] = frame["seats"].to_numpy()
+            passengers[stays] = frame["passengers"].to_numpy()
+            self._snapshots[as_of_day] = (seats, passengers)
+        return self._snapshots[as_of_day]
+
+    def seats(self, as_of_day: int) -> np.ndarray:
+        return self._snapshot(as_of_day)[0]
+
+    def passengers(self, as_of_day: int) -> np.ndarray:
+        return self._snapshot(as_of_day)[1]
 
 
 class StoredEvents(Limited, Events):
@@ -414,8 +423,8 @@ def write_snapshot(connection, day: int, feed: Sources, customer: Customer | Non
         for s in range(max(day, 0), HORIZON_DAYS)
         for competitor, rate in feed.shops.competitor_rates(day, h, s).items()
     ]
-    seats = feed.schedules.seats(day)
-    snapshot = [(day, s, int(seats[s])) for s in range(HORIZON_DAYS)]
+    seats, passengers = feed.schedules.seats(day), feed.schedules.passengers(day)
+    snapshot = [(day, s, int(seats[s]), float(passengers[s])) for s in range(HORIZON_DAYS)]
     events = [
         (
             day,

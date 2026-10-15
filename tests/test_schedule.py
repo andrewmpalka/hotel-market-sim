@@ -12,10 +12,13 @@ from hotel_market.schedule import (
     DEFAULT_SCENARIO,
     HORIZON_DAYS,
     KINDS,
+    LOAD_FACTOR,
     MARKET_CITY,
     MARKET_COUNTRY,
     MARKET_STATE,
     MARKET_STATION,
+    RAMP_DAYS,
+    RAMP_LOAD_FACTORS,
     SCENARIOS,
     SIM_START,
     UPGAUGE_SCENARIO,
@@ -23,6 +26,9 @@ from hotel_market.schedule import (
     Shock,
     build_schedule,
     churn,
+    passenger_change,
+    passenger_revision,
+    passengers_by_day,
     seat_change,
     seat_revision,
     seats_by_day,
@@ -70,6 +76,37 @@ def test_tuesdays_and_saturdays_have_3326_seats(baseline):
 
 def test_seat_change_as_of_day_21_is_plus_17_percent_for_day_55():
     assert round(seat_change(21).loc[55], 2) == 0.17
+
+
+def test_passengers_are_seats_at_the_load_factor_and_a_new_route_ramps():
+    # A flight that flew before the run fills 80% of its seats, so a normal day's 4,244 seats
+    # carry 3,395.2 passengers. The day-20 filing's 720 seats open at 60% on day 50, their first
+    # operating day, and fill to 85% by day 140, linear between, so day 55 gains five days of
+    # the ramp and day 140 the full 85%.
+    assert (LOAD_FACTOR, RAMP_LOAD_FACTORS, RAMP_DAYS) == (0.80, (0.60, 0.85), 90)
+    before, after = build_schedule(19), build_schedule(21)
+    base = passengers_by_day(before)
+    assert base[_days(reduced=False)].unique().tolist() == pytest.approx([4244 * 0.80])
+    assert base[_days(reduced=True)].unique().tolist() == pytest.approx([3326 * 0.80])
+    known = passengers_by_day(after)
+    opening, full = RAMP_LOAD_FACTORS
+    for day, since in [(50, 0), (55, 5), (140, 90), (149, 99)]:
+        load = opening + (full - opening) * min(since, RAMP_DAYS) / RAMP_DAYS
+        assert known[day] - base[day] == pytest.approx(720 * load)
+    assert known[49] == base[49]
+    assert passenger_change(21)[55] == pytest.approx((known[55] - base[55]) / base[55])
+    assert (
+        round(passenger_change(21).loc[55], 2) == 0.13 and round(seat_change(21).loc[55], 2) == 0.17
+    )
+    # A suspended route keeps its load factor when it resumes: the DFW flights carry 80% of
+    # their 480 seats on day 69 and again on day 91, and nothing on days 70 to 90.
+    dfw = build_schedule(41)
+    dfw = dfw[dfw["DEPARTURE_STATION_CODE_IATA"] == "DFW"]
+    carried = passengers_by_day(dfw)
+    assert carried[69] == carried[91] == pytest.approx(480 * 0.80) and carried[80] == 0
+    assert passenger_revision(40)[80] == pytest.approx(
+        -480 * 0.80 / passengers_by_day(build_schedule(39))[80]
+    )
 
 
 def test_summing_by_arrival_station_misses_the_second_airport(rows, baseline):

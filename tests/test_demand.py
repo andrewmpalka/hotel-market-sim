@@ -7,10 +7,16 @@ from hotel_market.demand import (
     DEMAND_BIAS,
     MARKET_ELASTICITY,
     expected_demand,
-    known_seat_change,
+    known_passenger_change,
     normal_demand,
 )
-from hotel_market.schedule import UPGAUGE_SCENARIO, seat_change
+from hotel_market.schedule import (
+    LOAD_FACTOR,
+    RAMP_DAYS,
+    RAMP_LOAD_FACTORS,
+    UPGAUGE_SCENARIO,
+    passenger_change,
+)
 from hotel_market.shocks import event_uplift
 from hotel_market.world import stay_window, weekday
 
@@ -42,9 +48,9 @@ def test_normal_demand_is_rooms_x_base_occupancy_x_day_of_week_factor():
 
 @pytest.mark.parametrize("as_of_day", [0, 9, 10, 19, 20, 21, 39, 40, 41, 59])
 def test_expected_demand_follows_the_formula(as_of_day):
-    """Regression test: it combines normal demand, the seat change and the event uplift the way
-    demand.py combines them, so it pins the formula rather than checking it against anything."""
-    change = seat_change(as_of_day)
+    """Regression test: it combines normal demand, the passenger change and the event uplift the
+    way demand.py combines them, so it pins the formula rather than checking it against anything."""
+    change = passenger_change(as_of_day)
     for hotel in DEMO.hotels:
         for stay_day in stay_window(as_of_day):
             formula = (
@@ -68,35 +74,45 @@ def test_convention_raises_downtown_demand_35_percent_from_day_10():
         assert ratio == pytest.approx(1.35 if hotel.name.startswith("Downtown") else 1.0)
 
 
+def _ramped(seats: int, since: int) -> float:
+    """The passengers a new route's seats carry this many days into its ramp."""
+    opening, full = RAMP_LOAD_FACTORS
+    return seats * (opening + (full - opening) * min(since, RAMP_DAYS) / RAMP_DAYS)
+
+
 def test_new_flights_raise_demand_from_day_20():
-    # Day 55 is a Sunday: the 720 new seats are 17% on top of 4,244.
+    # Day 55 is a Sunday, five days into the new routes' ramp: their 720 seats carry
+    # 720 x (0.60 + 0.25 x 5 / 90) passengers on top of a normal day's 4,244 x 0.80.
+    change = _ramped(720, 5) / (4244 * LOAD_FACTOR)
     for hotel in DEMO.hotels:
         assert expected_demand(hotel, 55, as_of_day=19) == normal_demand(hotel, 55)
         ratio = expected_demand(hotel, 55, as_of_day=20) / normal_demand(hotel, 55)
-        assert ratio == pytest.approx(1 + hotel.air_share * 720 / 4244)
-    # The airport hotel moves most: 0.80 x 17% = 13.6%.
+        assert ratio == pytest.approx(1 + hotel.air_share * change)
+    # The airport hotel moves most: 0.80 x 13.0% = 10.4%.
     airport = DEMO.hotel("airport")
     assert expected_demand(airport, 55, as_of_day=20) / normal_demand(airport, 55) == pytest.approx(
-        1.136, abs=1e-3
+        1.104, abs=1e-3
     )
 
 
 def test_route_cut_lowers_demand_from_day_40():
-    # Day 80 is a Thursday: 720 seats added and 480 cut leave seats 240 above 4,244.
+    # Day 80 is a Thursday, 30 days into the new routes' ramp: their 720 seats at the ramp load
+    # factor, less the 480 cut at the mature one, leave passengers above a normal day's.
+    change = (_ramped(720, 30) - 480 * LOAD_FACTOR) / (4244 * LOAD_FACTOR)
     for hotel in DEMO.hotels:
         assert expected_demand(hotel, 80, as_of_day=40) < expected_demand(hotel, 80, as_of_day=39)
         ratio = expected_demand(hotel, 80, as_of_day=40) / normal_demand(hotel, 80)
-        assert ratio == pytest.approx(1 + hotel.air_share * 240 / 4244)
+        assert ratio == pytest.approx(1 + hotel.air_share * change)
 
 
 @pytest.mark.parametrize("as_of_day", [-1, 19, 20, 21, 39, 40, 41])
-def test_known_seat_change_matches_the_schedule(as_of_day):
-    assert dict(known_seat_change(as_of_day)) == seat_change(as_of_day).to_dict()
+def test_known_passenger_change_matches_the_schedule(as_of_day):
+    assert dict(known_passenger_change(as_of_day)) == passenger_change(as_of_day).to_dict()
 
 
-def test_known_seat_change_is_read_only():
+def test_known_passenger_change_is_read_only():
     with pytest.raises(TypeError):
-        known_seat_change(20)[55] = 0.0
+        known_passenger_change(20)[55] = 0.0
 
 
 def test_the_demand_bias_multiplies_both_demands_and_is_1_by_default():
@@ -127,10 +143,12 @@ def test_the_market_elasticity_scales_demand_with_the_medians_level():
     assert expected_demand(hotel, 46, 10, 0.9, 1.15, 1.0) == pytest.approx(0.9 * plain / 1.15)
 
 
-def test_a_scenario_changes_the_seats_the_demand_reads():
+def test_a_scenario_changes_the_passengers_the_demand_reads():
+    # An equipment change on a route that flew before the run keeps its load factor, so the
+    # passenger change is the seat change.
     convention = DEMO.hotel("convention")
-    assert known_seat_change(15, UPGAUGE_SCENARIO)[52] == pytest.approx(270 / 4244)
-    assert known_seat_change(15)[52] == 0  # the default has filed nothing by day 15
+    assert known_passenger_change(15, UPGAUGE_SCENARIO)[52] == pytest.approx(270 / 4244)
+    assert known_passenger_change(15)[52] == 0  # the default has filed nothing by day 15
     ratio = 1 + convention.air_share * 270 / 4244
     assert expected_demand(convention, 52, 15, scenario=UPGAUGE_SCENARIO) == pytest.approx(
         expected_demand(convention, 52, 15) * ratio

@@ -132,8 +132,8 @@ def test_the_page_shows_the_full_service_hotel_on_day_10(demo_file, monkeypatch)
         "Contribution difference by stay date, once every stay date is complete",
     ]
     assert [metric.label for metric in page.metric] == labels * 4
-    assert page.metric[9].value == "$3,668,425" and page.metric[9].delta == "-$728"
-    assert page.metric[19].value == "$14,550,227" and page.metric[19].delta == "+$17,154"
+    assert page.metric[9].value == "$3,657,912" and page.metric[9].delta == "-$728"
+    assert page.metric[19].value == "$14,499,108" and page.metric[19].delta == "+$14,734"
     assert len(page.get("vega_lite_chart")) == 3
 
 

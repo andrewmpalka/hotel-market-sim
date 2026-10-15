@@ -9,7 +9,10 @@ has no affiliation with Cirium.
 
 The rows hold three traps that give a wrong seat count if the code ignores them: codeshare rows that
 repeat another carrier's seats, a bus link sold under a flight number with service type U, and a
-second airport, QMS, that shares the city code QMC. seats_by_day handles all three.
+second airport, QMS, that shares the city code QMC. seats_by_day handles all three. The seats
+become arriving passengers at a load factor (passengers_by_day): a flight that flew before the
+run fills LOAD_FACTOR of its seats, and a flight the airline adds opens emptier and fills over
+RAMP_DAYS. The demand rule and the agent read the passengers.
 
 The table has one row per flight per operating date. A schedule also has an "as of" day. A hotel
 knows about a flight only after the airline has filed it. build_schedule(as_of_day) returns the
@@ -50,6 +53,14 @@ SECOND_STATION = "QMS"  # made-up second airport in the same city
 MARKET_CITY = "QMC"  # made-up city code (a city code can cover several airports)
 MARKET_COUNTRY = "US"
 MARKET_STATE = "CO"
+
+# A flight that flew before the run fills this share of its seats, a mature route's usual load.
+LOAD_FACTOR = 0.80
+# A flight the airline adds opens with unsold seats and fills as the market learns of it: from the
+# first load factor on its first operating day to the second after RAMP_DAYS, linear between. The
+# second sits above a mature route's, because an airline adds a route where it expects demand.
+RAMP_LOAD_FACTORS = (0.60, 0.85)
+RAMP_DAYS = 90
 
 # equipment code -> (first, business, economy) seats
 EQUIPMENT = {
@@ -389,44 +400,89 @@ def build_schedule(
     return df.reset_index(drop=True)
 
 
-def seats_by_day(schedule: pd.DataFrame, city: str = MARKET_CITY) -> pd.Series:
-    """Arriving seats per simulation day.
-
-    Codeshare rows repeat seats that an operating row already counts, so they
-    are dropped. Only scheduled passenger service is kept. Arrivals are
-    grouped by city, so both of the city's airports count.
-    """
-    s = schedule[
+def _arrivals(schedule: pd.DataFrame, city: str) -> pd.DataFrame:
+    """The rows that carry seats into the city: codeshare rows repeat seats that an operating row
+    already counts, so they are dropped. Only scheduled passenger service is kept. Arrivals are
+    grouped by city, so both of the city's airports count."""
+    return schedule[
         (schedule["ARRIVAL_CITY_CODE_IATA"] == city)
         & (~schedule["IS_CODESHARE"])
         & (schedule["SERVICE_TYPE_IATA"] == "J")
     ]
-    seats = s["FIRST_CLASS_SEATS"] + s["BUSINESS_CLASS_SEATS"] + s["ECONOMY_CLASS_SEATS"]
-    sim_day = s["OPERATING_DATE_LOCAL"].map(lambda d: (d - SIM_START).days)
-    out = seats.groupby(sim_day).sum()
-    return out.reindex(range(HORIZON_DAYS), fill_value=0).rename("seats")
+
+
+def _seats(rows: pd.DataFrame) -> pd.Series:
+    return rows["FIRST_CLASS_SEATS"] + rows["BUSINESS_CLASS_SEATS"] + rows["ECONOMY_CLASS_SEATS"]
+
+
+def _by_day(rows: pd.DataFrame, values: pd.Series, name: str, fill) -> pd.Series:
+    sim_day = rows["OPERATING_DATE_LOCAL"].map(lambda d: (d - SIM_START).days)
+    out = values.groupby(sim_day).sum()
+    return out.reindex(range(HORIZON_DAYS), fill_value=fill).rename(name)
+
+
+def seats_by_day(schedule: pd.DataFrame, city: str = MARKET_CITY) -> pd.Series:
+    """Arriving seats per simulation day, from the rows _arrivals keeps."""
+    rows = _arrivals(schedule, city)
+    return _by_day(rows, _seats(rows), "seats", 0)
+
+
+def passengers_by_day(schedule: pd.DataFrame, city: str = MARKET_CITY) -> pd.Series:
+    """Arriving passengers per simulation day: each flight's seats at its load factor. A flight
+    whose first effective date is day 0 flew before the run and fills LOAD_FACTOR of its seats. A
+    flight the airline added opens at the first ramp load factor on its first operating day and
+    reaches the second RAMP_DAYS later, linear between, so a filing's passengers arrive more
+    slowly than its seats. A suspended flight keeps its load factor when it resumes, because its
+    first effective date is the one that counts."""
+    rows = _arrivals(schedule, city)
+    flight = (
+        rows["MARKETING_CARRIER_IATA"]
+        + " "
+        + rows["FLIGHT_NUMBER"].astype(str)
+        + " "
+        + rows["DEPARTURE_STATION_CODE_IATA"]
+    )
+    opened = pd.to_datetime(rows.groupby(flight)["EFFECTIVE_DATE"].transform("min"))
+    since = (pd.to_datetime(rows["OPERATING_DATE_LOCAL"]) - opened).dt.days.to_numpy()
+    first, full = RAMP_LOAD_FACTORS
+    ramp = first + (full - first) * np.minimum(since, RAMP_DAYS) / RAMP_DAYS
+    load = np.where(opened > pd.Timestamp(SIM_START), ramp, LOAD_FACTOR)
+    return _by_day(rows, _seats(rows) * load, "passengers", 0.0)
 
 
 def seat_change(as_of_day: int, scenario: Scenario = DEFAULT_SCENARIO) -> pd.Series:
-    """Fractional change in arriving seats against the schedule with no shocks.
-
-    0.18 means seats are 18% above baseline for that day. This is the number
-    the demand rule and the agent's flagging code both read.
-    """
+    """Fractional change in arriving seats against the schedule with no shocks. 0.18 means seats
+    are 18% above baseline for that day."""
     baseline = seats_by_day(build_schedule(as_of_day=-1, scenario=scenario))
     known = seats_by_day(build_schedule(as_of_day=as_of_day, scenario=scenario))
     return ((known - baseline) / baseline).rename("seat_change")
 
 
 def seat_revision(as_of_day: int, scenario: Scenario = DEFAULT_SCENARIO) -> pd.Series:
-    """Fractional change in arriving seats against the schedule known one day earlier.
-
-    This catches a change on the day it is filed. The day-40 cut needs it. Seats on days 70 to 90
-    stay above the original baseline even after the cut. The day-20 flights are still there.
-    """
+    """Fractional change in arriving seats against the schedule known one day earlier."""
     before = seats_by_day(build_schedule(as_of_day=as_of_day - 1, scenario=scenario))
     after = seats_by_day(build_schedule(as_of_day=as_of_day, scenario=scenario))
     return ((after - before) / before).rename("seat_revision")
+
+
+def passenger_change(as_of_day: int, scenario: Scenario = DEFAULT_SCENARIO) -> pd.Series:
+    """Fractional change in arriving passengers against the schedule with no shocks. This is the
+    number the demand rule and the agent's forecast both read."""
+    baseline = passengers_by_day(build_schedule(as_of_day=-1, scenario=scenario))
+    known = passengers_by_day(build_schedule(as_of_day=as_of_day, scenario=scenario))
+    return ((known - baseline) / baseline).rename("passenger_change")
+
+
+def passenger_revision(as_of_day: int, scenario: Scenario = DEFAULT_SCENARIO) -> pd.Series:
+    """Fractional change in arriving passengers against the schedule known one day earlier.
+
+    This catches a change on the day it is filed. The day-40 cut needs it: passengers on days 70
+    to 90 stay above the original baseline even after the cut, because the day-20 flights are
+    still there.
+    """
+    before = passengers_by_day(build_schedule(as_of_day=as_of_day - 1, scenario=scenario))
+    after = passengers_by_day(build_schedule(as_of_day=as_of_day, scenario=scenario))
+    return ((after - before) / before).rename("passenger_revision")
 
 
 if __name__ == "__main__":
@@ -436,6 +492,6 @@ if __name__ == "__main__":
     print(f"rows written: {len(full)}")
     print("baseline seats, first week (Mon to Sun):", base.iloc[:7].tolist())
     for day in (19, 21, 41):
-        change = seat_change(day)
+        change = passenger_change(day)
         print(f"as of day {day}: day 55 {change.loc[55]:+.1%}, day 80 {change.loc[80]:+.1%}")
     print(f"revision filed on day 40, for day 80: {seat_revision(40).loc[80]:+.1%}")

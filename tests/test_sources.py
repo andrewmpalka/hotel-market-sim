@@ -9,6 +9,7 @@ import pytest
 import hotel_market
 from hotel_market.bookings import simulate
 from hotel_market.customer import demo
+from hotel_market.schedule import LOAD_FACTOR, RAMP_DAYS, RAMP_LOAD_FACTORS
 from hotel_market.simulated import deciding, simulated_sources
 
 DEMO = demo()
@@ -74,12 +75,19 @@ def test_the_simulated_sources_answer_as_of_the_day():
         history.opening == books.preload
     ).all()
     assert sources.shops.median_history(20).shape[0] == 20
-    # Day 55 gains the 720 new seats on a normal day's 4,244 once the day-20 filing is known.
+    # Day 55 gains the 720 new seats on a normal day's 4,244 once the day-20 filing is known. The
+    # passengers they carry ramp from day 50, so on day 55 the new flights are five days in.
     assert sources.schedules.seats(19)[55] == 4244 and sources.schedules.seats(20)[55] == 4964
-    assert sources.schedules.seat_change(19)[55] == 0
-    assert sources.schedules.seat_change(20)[55] == pytest.approx(720 / 4244)
-    assert sources.schedules.seat_revision(19)[55] == 0
-    assert sources.schedules.seat_revision(20)[55] == pytest.approx(720 / 4244)
+    assert sources.schedules.passengers(19)[55] == pytest.approx(4244 * LOAD_FACTOR)
+    opening, full = RAMP_LOAD_FACTORS
+    added = 720 * (opening + (full - opening) * 5 / RAMP_DAYS)
+    assert sources.schedules.passengers(20)[55] == pytest.approx(4244 * LOAD_FACTOR + added)
+    assert sources.schedules.passenger_change(19)[55] == 0
+    assert sources.schedules.passenger_change(20)[55] == pytest.approx(added / (4244 * LOAD_FACTOR))
+    assert sources.schedules.passenger_revision(19)[55] == 0
+    assert sources.schedules.passenger_revision(20)[55] == pytest.approx(
+        added / (4244 * LOAD_FACTOR)
+    )
     assert [e.name for e in sources.events.known(9)] == []
     assert [e.name for e in sources.events.known(10)] == ["Convention"]
     hotel = DEMO.hotels[0]

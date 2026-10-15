@@ -739,8 +739,8 @@ def format_entry(entry: Entry, customer: Customer | None = None) -> str:
         [
             f"Day {entry.day} | {hotel.name} | {stay_range(entry.first_stay, entry.last_stay)}",
             f"  What changed    {', '.join(entry.causes)}",
-            f"  Seats           {percent_range(numbers.seat_revision)} against yesterday's "
-            f"schedule, {percent_range(numbers.seat_change)} against the original",
+            f"  Passengers      {percent_range(numbers.passenger_revision)} against yesterday's "
+            f"schedule, {percent_range(numbers.passenger_change)} against the original",
             f"  Bookings        {numbers.rooms_on_books:,} rooms on the books, "
             f"{numbers.unsold_rooms:,} unsold, {pace_text(numbers.pace_gap)}",
             f"  Competitors     comp median {money_range(numbers.comp_median)}, our rate "

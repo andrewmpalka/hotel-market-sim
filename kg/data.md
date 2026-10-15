@@ -14,13 +14,13 @@ the plans, the model's request and answer, and what the command writes.
 - Read by: [[MOD-01]] only; the rest of the package reads [[DAT-02]]
 - Evidence: test_summing_by_arrival_station_misses_the_second_airport, test_summing_with_type_u_rows_counts_the_bus
 
-### DAT-02 [C] Seats by day, seat change and seat revision
+### DAT-02 [C] Seats and passengers by day, with their change and revision
 - File: src/hotel_market/schedule.py
-- Made by: seats_by_day(schedule), a Series of arriving seats per simulation day 0 to 149.
-- Changes: seat_change(as_of_day) is the fractional change against the schedule with no shocks. seat_revision(as_of_day) is the change against the schedule known one day earlier. Both take the run's scenario ([[DEC-53]]).
-- Values: 4,244 seats on a normal day and 3,326 on Tuesdays and Saturdays before any shock. seat_change(21) is +17% for day 55.
-- Read by: [[MOD-04]] (seat_change, cached once per filing day), [[MOD-07]] (seat_revision, zero except on filing days)
-- Evidence: test_normal_day_has_4244_seats, test_tuesdays_and_saturdays_have_3326_seats, test_known_seat_revision_matches_the_schedule
+- Made by: seats_by_day(schedule) and passengers_by_day(schedule), Series per simulation day 0 to 149: the seats arriving, and the seats at each flight's load factor ([[DEC-63]]).
+- Changes: passenger_change(as_of_day) is the fractional change against the schedule with no shocks, passenger_revision(as_of_day) against the schedule known one day earlier. seat_change and seat_revision do the same for seats.
+- Values: 4,244 seats on a normal day and 3,326 on Tuesdays and Saturdays before any shock, 3,395 and 2,661 passengers. seat_change(21) is +17% for day 55, passenger_change(21) +13%, as the new flights ramp.
+- Read by: [[MOD-04]] (passenger_change, cached once per filing day), [[MOD-07]] (passenger_revision, zero except on filing days)
+- Evidence: test_normal_day_has_4244_seats, test_tuesdays_and_saturdays_have_3326_seats, test_known_passenger_revision_matches_the_schedule
 
 ### DAT-03 [C] Route and Shock
 - File: src/hotel_market/schedule.py
@@ -69,7 +69,7 @@ the plans, the model's request and answer, and what the command writes.
 ### DAT-08 [C] The detect table
 - File: src/hotel_market/detect.py
 - Made by: detect_numbers(day, sources), one row per hotel and stay date in the day's window, from the four sources ([[DAT-25]]).
-- Columns: day, hotel, stay_day, days_out, rooms, pace_gap, pace_threshold, expected_demand, seat_change, seat_revision, rate, comp_median, rate_vs_median, median_change, new_event, shock_known and causes.
+- Columns: day, hotel, stay_day, days_out, rooms, pace_gap, pace_threshold, expected_demand, passenger_change, passenger_revision, rate, comp_median, rate_vs_median, median_change, new_event, shock_known and causes.
 - Forecast: expected_demand is the forecast as of the day, which is all the planner needs.
 - Read by: [[MOD-07]] (flags), [[MOD-08]] (the flag's rows feed the candidates and the numbers)
 - Evidence: test_numbers_follow_the_definitions, test_pace_threshold_is_the_larger_of_10_percent_of_rooms_and_3_sd
@@ -109,7 +109,7 @@ the plans, the model's request and answer, and what the command writes.
 ### DAT-13 [C] FlagNumbers and Range
 - File: src/hotel_market/plan.py
 - Fields: FlagNumbers holds the detect numbers over a flag's stay dates, rounded.
-- Names: days_out, rooms_on_books, unsold_rooms, remaining_demand, pace_gap, seat_change, seat_revision, rate, comp_median, rate_vs_median, median_change and new_event.
+- Names: days_out, rooms_on_books, unsold_rooms, remaining_demand, pace_gap, passenger_change, passenger_revision, rate, comp_median, rate_vs_median, median_change, new_event. The request keeps the v1 keys seat_change and seat_revision.
 - Range: the six numbers that vary across the stay dates, and days_out, are each a Range(lowest, highest), frozen. It iterates as its two ends for the wording helpers, and lowest_highest() makes one.
 - Written as: the named pair {"lowest": x, "highest": y} in the log line and the stored tables. The model request carries it as one phrase ([[DAT-16]], [[DEC-44]]).
 - Band: band_json() writes a candidate's two band estimates as {"at_low_elasticity", "at_high_elasticity"}, named by the end of the band. The low elasticity can give the higher estimate.
@@ -220,7 +220,7 @@ the plans, the model's request and answer, and what the command writes.
 - File: src/hotel_market/sources.py
 - Bookings: on_books(as_of_day) by [hotel row, stay day] after that day's bookings, and rates(as_of_day), each hotel's rate in force that day. history(as_of_day) is a [[DAT-26]].
 - RateShops: competitor_rates(shop_day, hotel, stay_day), median(...), the median of those rates, and median_history(as_of_day) by [shop day, hotel row, stay day]. first_median(hotel) is the base-rate median on both routes ([[DEC-62]]).
-- Schedules: seats(as_of_day), the arriving seats by stay day as filed by the day. From them the interface computes seat_change(as_of_day) against the first schedule known and seat_revision(as_of_day) against the day before.
+- Schedules: seats(as_of_day) and passengers(as_of_day) by stay day as filed by the day. The interface computes passenger_change against the first schedule known and passenger_revision against the day before ([[DEC-63]]).
 - Events: known(as_of_day). Sources(bookings, shops, schedules, events) bundles one of each. Every method returns only what was known on the day it is asked on, and a source made for a day refuses a later one ([[RUL-03]], [[DEC-61]]).
 - Written by: [[MOD-19]], the simulator's implementation, and [[MOD-21]], the one over the stored tables ([[DAT-28]])
 - Read by: [[MOD-07]], [[MOD-18]], [[MOD-16]], [[MOD-10]]; nothing on the agent's side reads anything else ([[DEC-40]])

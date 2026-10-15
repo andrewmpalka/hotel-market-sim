@@ -157,7 +157,7 @@ def test_the_scorecard_counts_the_nights_already_stayed(demo_file):
 
 def test_the_outcome_is_the_result_once_every_stay_date_is_complete(demo_file):
     # Both runs book on to day 149, so the outcome is the README's seed-7 table: nothing for the
-    # convention hotel, which changed no rate, and +17,154 for all four, over stay dates 0 to 149.
+    # convention hotel, which changed no rate, and +14,734 for all four, over stay dates 0 to 149.
     outcome = _rows(
         demo_file,
         "SELECT hotel, title, nights, delta, delta_text FROM outcome "
@@ -165,13 +165,13 @@ def test_the_outcome_is_the_result_once_every_stay_date_is_complete(demo_file):
     )
     by_hotel = {row[0]: row for row in outcome}
     assert by_hotel["convention"][3] == 0
-    assert by_hotel[ALL][3] == pytest.approx(17154, abs=1)
+    assert by_hotel[ALL][3] == pytest.approx(14734, abs=1)
     assert by_hotel[ALL][1:3] == ("All four hotels", "Mon 4 Jan [0] to Wed 2 Jun [149]")
-    assert by_hotel[ALL][4] == "+$17,154" and by_hotel["convention"][4] == "0"
+    assert by_hotel[ALL][4] == "+$14,734" and by_hotel["convention"][4] == "0"
     revenue = _rows(
         demo_file, f"SELECT delta_text FROM outcome WHERE hotel = '{ALL}' AND position = 3"
     )
-    assert revenue == [("-$32,646",)]
+    assert revenue == [("-$32,499",)]
     # The gains by stay date add up to the outcome, and the convention dates carry the hotel's.
     sums = _rows(demo_file, "SELECT hotel, sum(difference) FROM gains GROUP BY hotel")
     for hotel, total in sums:
@@ -269,12 +269,12 @@ def test_the_news_names_the_convention_the_filings_and_the_comp_set_cut(demo_fil
     assert filings == [
         (
             20,
-            "The airlines filed a schedule change: arriving seats are up 17.0% to 21.6% "
+            "The airlines filed a schedule change: arriving passengers are up 12.8% to 23.0% "
             "for Tue 23 Feb [50] to Wed 2 Jun [149].",
         ),
         (
             40,
-            "The airlines filed a schedule change: arriving seats are down 7.9% to 9.7% "
+            "The airlines filed a schedule change: arriving passengers are down 8.1% to 9.9% "
             "for Mon 15 Mar [70] to Sun 4 Apr [90].",
         ),
     ]

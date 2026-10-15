@@ -77,8 +77,8 @@ def _entry(day, first, gain, action=None, plan_rate=133.0, hotel="airport"):
         unsold_rooms=0,
         remaining_demand=0.0,
         pace_gap=0.0,
-        seat_change=Range(0.0, 0.0),
-        seat_revision=Range(0.0, 0.0),
+        passenger_change=Range(0.0, 0.0),
+        passenger_revision=Range(0.0, 0.0),
         rate=Range(140.0, 140.0),
         comp_median=Range(140.0, 140.0),
         rate_vs_median=Range(0.0, 0.0),
@@ -317,7 +317,7 @@ def test_the_oracle_reviewer_accepts_every_queued_plan_in_true_mode(tmp_path):
     assert all(e.reason.endswith("so we take the plan.") for e in queued)
     # It decides what the template decides, so the run ends where the template run ends.
     change = sum(books.contribution(h) - simulate(SEED).contribution(h) for h in DEMO.hotels)
-    assert change == pytest.approx(17154, abs=1)
+    assert change == pytest.approx(14734, abs=1)
 
 
 @pytest.fixture(scope="module")

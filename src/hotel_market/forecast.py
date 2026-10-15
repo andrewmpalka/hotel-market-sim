@@ -55,7 +55,7 @@ def expected_demand(
     market elasticity, the comp median's level against its start scales it."""
     demand = (
         normal_demand(hotel, stay_day)
-        * (1 + hotel.air_share * sources.schedules.seat_change(as_of_day)[stay_day])
+        * (1 + hotel.air_share * sources.schedules.passenger_change(as_of_day)[stay_day])
         * (1 + event_uplift(hotel, stay_day, as_of_day, sources))
     )
     if market_elasticity:

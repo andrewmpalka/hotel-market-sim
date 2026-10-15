@@ -126,8 +126,8 @@ def _baselines(
     baselines = np.zeros((as_of_day, HORIZON_DAYS))
     for day in range(as_of_day):
         stays = np.array(stay_window(day))
-        seats = sources.schedules.seat_change(day)
-        seat_factor = 1 + hotel.air_share * np.array([seats[s] for s in stays])
+        passengers = sources.schedules.passenger_change(day)
+        seat_factor = 1 + hotel.air_share * np.array([passengers[s] for s in stays])
         uplift = 1 + np.array([event_uplift(hotel, s, day, sources) for s in stays])
         rise = curve(stays - day) - curve(stays - day + 1)
         baselines[day, stays] = normal[stays] * seat_factor * uplift * rise

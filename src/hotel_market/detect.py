@@ -4,15 +4,15 @@ What changed after each day's bookings, for every hotel and stay date in the win
 detect numbers and a flag where a number crosses its threshold.
 
     pace gap        rooms on the books - normal_demand x curve(days out)
-    seat_change     arriving seats against the no-shock schedule (reason text only)
-    seat_revision   arriving seats against yesterday's schedule
+    passenger_change    arriving passengers against the no-shock schedule (reason text only)
+    passenger_revision  arriving passengers against yesterday's schedule
     rate vs median  the hotel's rate against its comp median
     median change   the comp median against yesterday's shop
     new event       an event that became known today and covers the date
 
 A stay date is flagged in four cases: a pace gap beyond a share of the hotel's rooms and some
-standard deviations of booking noise, a seat_revision beyond its threshold either way, a comp median
-that moved beyond its threshold since yesterday, and an event that became known today.
+standard deviations of booking noise, a passenger_revision beyond its threshold either way, a comp
+median that moved beyond its threshold since yesterday, and an event that became known today.
 
 On a stay date under the hold, a pace gap alone raises no flag. The thresholds and the hold
 period are the customer's settings (customer.py). For the demo market they are 10% of rooms, 3
@@ -67,8 +67,8 @@ def detect_numbers(
     forecast by today; it scales the pace baseline and the expected demand alike."""
     customer = customer or demo()
     levels = levels or {}
-    seats = sources.schedules.seat_change(day)
-    revision = sources.schedules.seat_revision(day)
+    passengers = sources.schedules.passenger_change(day)
+    revision = sources.schedules.passenger_revision(day)
     announced = [e for e in sources.events.known(day) if e.known_day == day]
     on_books = sources.bookings.on_books(day)
     rates = sources.bookings.rates(day)
@@ -91,8 +91,8 @@ def detect_numbers(
                 ),
                 "expected_demand": level
                 * expected_demand(hotel, stay_day, day, sources, market_elasticity),
-                "seat_change": seats[stay_day],
-                "seat_revision": revision[stay_day],
+                "passenger_change": passengers[stay_day],
+                "passenger_revision": revision[stay_day],
                 "rate": float(rates[i, stay_day]),
                 "comp_median": median,
                 "rate_vs_median": rates[i, stay_day] / median - 1,
@@ -115,9 +115,9 @@ def _causes(row: dict, customer: Customer) -> tuple[str, ...]:
         found.append(AHEAD)
     if row["pace_gap"] < -row["pace_threshold"]:
         found.append(BEHIND)
-    if row["seat_revision"] >= customer.seat_threshold:
+    if row["passenger_revision"] >= customer.seat_threshold:
         found.append(SEATS_UP)
-    if row["seat_revision"] <= -customer.seat_threshold:
+    if row["passenger_revision"] <= -customer.seat_threshold:
         found.append(SEATS_CUT)
     if row["median_change"] >= customer.median_threshold:
         found.append(MEDIAN_UP)
@@ -167,13 +167,13 @@ def shock_known(
     hotel: Hotel, stay_day: int, as_of_day: int, sources: Sources, median_threshold: float
 ) -> bool:
     """Whether a shock known by as_of_day moves demand or competitor rates for this hotel and stay
-    date. That is true when the seats have changed, a known event covers the date or today's comp
-    median sits the median threshold or more away from its starting level, which the shop noise
-    alone never reaches.
+    date. That is true when the passengers have changed, a known event covers the date or today's
+    comp median sits the median threshold or more away from its starting level, which the shop
+    noise alone never reaches.
     """
     median = sources.shops.median(as_of_day, hotel, stay_day)
     return (
-        sources.schedules.seat_change(as_of_day)[stay_day] != 0
+        sources.schedules.passenger_change(as_of_day)[stay_day] != 0
         or any(e.covers(hotel.key, stay_day) for e in sources.events.known(as_of_day))
         or abs(median / sources.shops.first_median(hotel) - 1) >= median_threshold
     )

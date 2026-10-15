@@ -254,12 +254,12 @@ def _news_rows(day: int, hotel: Hotel, feed: Sources, table, customer: Customer)
                     f"{percent_change(event.comp_rate_raise)}.",
                 )
             )
-    revision = feed.schedules.seat_revision(day)
+    revision = feed.schedules.passenger_revision(day)
     for first, last in _runs(s for s in range(HORIZON_DAYS) if revision[s] != 0):
         texts.append(
             (
                 "schedule",
-                f"The airlines filed a schedule change: arriving seats are "
+                f"The airlines filed a schedule change: arriving passengers are "
                 f"{percent_change_range(revision[s] for s in range(first, last + 1))} for "
                 f"{stay_span(first, last)}.",
             )

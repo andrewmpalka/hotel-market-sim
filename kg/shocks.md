@@ -17,7 +17,8 @@ whose File and Known on day match it, so a new shock needs a node.
 ### SHK-02 [C] The new flights
 - Known on day: 20, when the airline files them
 - Stay dates: 50 to 149
-- Effect: four new daily flights, two each from MCO and BNA on 180-seat equipment, add 720 seats a day. That is +17% on a normal day's 4,244, and demand rises by each hotel's air share times that ([[MOD-04]]).
+- Effect: four new daily flights, two each from MCO and BNA on 180-seat equipment, add 720 seats a day. That is +17% on a normal day's 4,244.
+- Passengers: they open at a 60% load factor and fill to 85% over 90 days ([[DEC-63]]), so arriving passengers rise about 13% at first. Demand rises by each hotel's air share times that ([[MOD-04]]).
 - File: src/hotel_market/schedule.py
 - Flags: [[RUL-33]] on day 20 at every hotel for stay dates 50 to 109, the end of that day's window
 - Evidence: test_seat_change_as_of_day_21_is_plus_17_percent_for_day_55, test_new_flights_raise_demand_from_day_20, test_each_shock_flags_on_the_day_it_becomes_known
@@ -33,7 +34,7 @@ whose File and Known on day match it, so a new shock needs a node.
 ### SHK-04 [C] The route suspension
 - Known on day: 40, when the airline files it
 - Stay dates: 70 to 90
-- Effect: the DFW route, three daily flights of 160 seats, stops. That is 480 seats a day fewer, about 10% below the day before. Seats stay 240 a day above the original baseline.
+- Effect: the DFW route, three daily flights of 160 seats, stops. That is 480 seats and 384 passengers a day fewer ([[DEC-63]]), about 10% below the day before. Seats stay 240 a day above the original baseline.
 - Trigger: the trigger is the revision against yesterday ([[DEC-04]]). The cut therefore still raises a flag, although seats stay above the baseline.
 - File: src/hotel_market/schedule.py
 - Flags: [[RUL-34]] on day 40 at every hotel for stay dates 70 to 90. In the seed-7 run every take-back plan was worth less than [[RUL-67]] and was held ([[RES-02]]).

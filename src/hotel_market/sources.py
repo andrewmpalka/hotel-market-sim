@@ -89,8 +89,9 @@ class RateShops(ABC):
 
 
 class Schedules(ABC):
-    """The air schedule feed. It gives the seats arriving each day, as filed by a day. It also gives
-    the two changes the agent reads them as.
+    """The air schedule feed. It gives the seats arriving each day, as filed by a day, and the
+    passengers they carry at each flight's load factor. It also gives the two changes in the
+    passengers that the agent reads.
     """
 
     @abstractmethod
@@ -98,18 +99,24 @@ class Schedules(ABC):
         """Arriving seats by stay day, from the schedule as filed by as_of_day. Day -1 is
         the first schedule known, before any filing in the run."""
 
-    def seat_change(self, as_of_day: int) -> Mapping[int, float]:
-        """By stay day: the fractional change in arriving seats, as filed by as_of_day,
-        against the first schedule known."""
-        return seat_fraction(self.seats(as_of_day), self.seats(-1))
+    @abstractmethod
+    def passengers(self, as_of_day: int) -> np.ndarray:
+        """Arriving passengers by stay day, from the schedule as filed by as_of_day: the seats at
+        each flight's load factor (schedule.passengers_by_day). Day -1 is the first schedule
+        known."""
 
-    def seat_revision(self, as_of_day: int) -> Mapping[int, float]:
+    def passenger_change(self, as_of_day: int) -> Mapping[int, float]:
+        """By stay day: the fractional change in arriving passengers, as filed by as_of_day,
+        against the first schedule known."""
+        return seat_fraction(self.passengers(as_of_day), self.passengers(-1))
+
+    def passenger_revision(self, as_of_day: int) -> Mapping[int, float]:
         """By stay day: the fractional change against the schedule known the day before."""
-        return seat_fraction(self.seats(as_of_day), self.seats(as_of_day - 1))
+        return seat_fraction(self.passengers(as_of_day), self.passengers(as_of_day - 1))
 
 
 def seat_fraction(after: np.ndarray, before: np.ndarray) -> Mapping[int, float]:
-    """(after - before) / before by stay day, as a read-only mapping."""
+    """(after - before) / before by stay day, as a read-only mapping, for seats or passengers."""
     return MappingProxyType(dict(enumerate(((after - before) / before).tolist())))
 
 

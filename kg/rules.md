@@ -133,6 +133,27 @@ marked [H], with one line that names the node it moved to.
 
 ## world.py
 
+
+### RUL-125 [C] LOAD_FACTOR
+- Value: 0.8
+- File: src/hotel_market/schedule.py
+- Kind: parameter
+- Meaning: the share of its seats a flight that flew before the run fills, a mature route's usual load ([[DEC-63]]). passengers_by_day applies it.
+- Evidence: test_passengers_are_seats_at_the_load_factor_and_a_new_route_ramps
+
+### RUL-126 [C] RAMP_LOAD_FACTORS
+- Value: (0.6, 0.85)
+- File: src/hotel_market/schedule.py
+- Kind: parameter
+- Meaning: a flight the airline adds opens at the first load factor on its first operating day and reaches the second after [[RUL-127]], linear between ([[DEC-63]]). The second sits above a mature route's.
+- Evidence: test_passengers_are_seats_at_the_load_factor_and_a_new_route_ramps
+
+### RUL-127 [C] RAMP_DAYS
+- Value: 90
+- File: src/hotel_market/schedule.py
+- Kind: parameter
+- Meaning: the days a new flight takes to reach the second load factor of [[RUL-126]], a quarter ([[DEC-63]]).
+- Evidence: test_passengers_are_seats_at_the_load_factor_and_a_new_route_ramps
 ### RUL-12 [C] SIM_DAYS
 - Value: 60
 - File: src/hotel_market/world.py
@@ -277,14 +298,14 @@ marked [H], with one line that names the node it moved to.
 - Value: "seats up"
 - File: src/hotel_market/detect.py
 - Kind: label
-- Meaning: the cause when the seat revision is at least [[RUL-64]]. The label reaches the model request.
+- Meaning: the cause when the passenger revision is at least [[RUL-64]]. The label reaches the model request.
 - Evidence: test_each_shock_flags_on_the_day_it_becomes_known, test_the_recorded_live_run_replays_without_a_key_and_gives_28818
 
 ### RUL-34 [C] SEATS_CUT
 - Value: "seats cut"
 - File: src/hotel_market/detect.py
 - Kind: label
-- Meaning: the cause when the seat revision is at most minus [[RUL-64]].
+- Meaning: the cause when the passenger revision is at most minus [[RUL-64]].
 - Evidence: test_each_shock_flags_on_the_day_it_becomes_known
 
 ### RUL-35 [C] MEDIAN_UP
@@ -692,7 +713,7 @@ hotels themselves are data ([[DAT-04]]).
 - File: customers/demo.toml
 - Key: detect.seat_threshold
 - Kind: parameter
-- Meaning: a seat revision of this much either way raises a flag ([[DEC-04]]).
+- Meaning: a revision in arriving passengers of this much either way raises a flag ([[DEC-04]]).
 - Evidence: test_each_shock_flags_on_the_day_it_becomes_known
 
 ### RUL-65 [C] median_threshold

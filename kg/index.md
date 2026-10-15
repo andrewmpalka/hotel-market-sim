@@ -8,19 +8,19 @@ nodes and its words, len(text.split()) over the file.
 
 | File | Nodes | Words |
 | --- | ---: | ---: |
-| modules.md | 30 | 4,081 |
-| data.md | 33 | 4,300 |
-| rules.md | 124 | 5,314 |
-| shocks.md | 7 | 734 |
+| modules.md | 30 | 4,080 |
+| data.md | 33 | 4,328 |
+| rules.md | 127 | 5,442 |
+| shocks.md | 7 | 762 |
 | concepts.md | 11 | 1,197 |
 | measures.md | 14 | 962 |
-| sources.md | 4 | 856 |
-| decisions.md | 62 | 9,204 |
+| sources.md | 4 | 855 |
+| decisions.md | 63 | 9,323 |
 | results.md | 42 | 7,233 |
 | forks.md | 13 | 1,924 |
-| unknowns.md | 15 | 2,013 |
-| every node file | 355 | 37,818 |
-| index.md | | 2,979 |
+| unknowns.md | 15 | 2,016 |
+| every node file | 359 | 38,122 |
+| index.md | | 2,984 |
 
 ## Modules (`modules.md`)
 
@@ -58,7 +58,7 @@ nodes and its words, len(text.split()) over the file.
 ## Data (`data.md`)
 
 - DAT-01 [C] The schedule table
-- DAT-02 [C] Seats by day, seat change and seat revision
+- DAT-02 [C] Seats and passengers by day, with their change and revision
 - DAT-03 [C] Route and Shock
 - DAT-04 [C] Hotel, Competitor and the customer's hotels
 - DAT-05 [C] Event and RateCut
@@ -103,6 +103,9 @@ nodes and its words, len(text.split()) over the file.
 - RUL-91 [C] CHURN_WEEKS — src/hotel_market/schedule.py
 - RUL-92 [C] CHURN_SHIFTS — src/hotel_market/schedule.py
 - RUL-95 [C] CHURN_BLOCK — src/hotel_market/schedule.py
+- RUL-125 [C] LOAD_FACTOR — src/hotel_market/schedule.py
+- RUL-126 [C] RAMP_LOAD_FACTORS — src/hotel_market/schedule.py
+- RUL-127 [C] RAMP_DAYS — src/hotel_market/schedule.py
 - RUL-12 [C] SIM_DAYS — src/hotel_market/world.py
 - RUL-13 [C] LOOKAHEAD_DAYS — src/hotel_market/world.py
 - RUL-14 [H] FLOOR_SHARE — kg/rules.md
@@ -221,15 +224,16 @@ nodes and its words, len(text.split()) over the file.
 - DEC-01 [C] Code computes every number; the model only chooses and writes
 - DEC-02 [C] Nothing is used before the day it becomes known
 - DEC-03 [C] The day-0 preload: bookings made before the run starts
-- DEC-04 [C] seat_revision is the seat trigger; seat_change is carried for the text
+- DEC-04 [C] The passenger revision is the trigger; the change is carried for the text
+- DEC-63 [C] Arriving passengers, not seats, drive demand
 - DEC-05 [C] The booking loop plays out to day 149 with rates frozen from day 60
 - DEC-06 [C] The 7-day hold after an accepted rate change
 - DEC-07 [C] A pace flag needs a gap beyond both 10% of rooms and 3 standard deviations
 - DEC-08 [H] The convention's peak night was fixed at stay date 46
-- DEC-09 [C] The peak night is computed from expected demand as of the day the event becomes known
+- DEC-09 [C] The peak night comes from expected demand as of the day the event is known
 - DEC-10 [C] A minimum stay is advice only, never simulated
 - DEC-11 [H] The rule "seats up, so raise the rate"
-- DEC-12 [C] Contribution with a room cost is the target, and the start rate is best on ordinary nights
+- DEC-12 [C] Contribution with a room cost is the target; the start rate is best on ordinary nights
 - DEC-13 [C] Every flag gets scored candidates, with hold as the default
 - DEC-14 [C] The airport hotel's base occupancy is 0.85; the other three are 0.75
 - DEC-15 [H] Rates followed the day of the week
@@ -246,7 +250,7 @@ nodes and its words, len(text.split()) over the file.
 - DEC-37 [H] Competitor noise drawn once per competitor and stay date
 - DEC-62 [C] The shop noise is drawn afresh every shop day
 - DEC-38 [C] The agent can learn its elasticity from the bookings
-- DEC-39 [C] The cautious rule: a learning agent changes a rate only where the change beats holding across its band
+- DEC-39 [C] The cautious rule changes a rate only where it beats holding across the band
 - DEC-43 [C] The cautious rule tests the band alone, and one minimum applies to the plan
 - DEC-44 [C] Every request figure is a display string, and the prompt says to copy it whole
 - DEC-45 [C] The tables keep each decision's request, answer and outcome
@@ -255,14 +259,14 @@ nodes and its words, len(text.split()) over the file.
 - DEC-50 [C] A demand bias the agent never sees
 - DEC-51 [C] Competitors can follow the hotel's rate changes, as an opt-in arm
 - DEC-52 [C] The market can answer the comp median's level
-- DEC-53 [C] The air schedule's filings are a named scenario, and the churn files what a feed files
+- DEC-53 [C] The filings are a named scenario, and the churn files what a feed files
 - DEC-54 [C] A learning agent can feed the fitted demand level back into its forecast
 - DEC-55 [C] A rule-based control is the fair comparison, because frozen rates never move
 - DEC-59 [C] The README names the competitors' raise as the convention's source of gain
 
 ### Engineering
 
-- DEC-23 [C] The cache is keyed by seed, day and hotel, and each file records a digest of its request
+- DEC-23 [C] The cache is keyed by seed, day and hotel, with a digest of the request
 - DEC-24 [H] Template answers were cached like the model's
 - DEC-25 [C] Only the model's answers are cached; the template is a function of the request
 - DEC-27 [H] The modules lived flat at the repository root
@@ -275,10 +279,10 @@ nodes and its words, len(text.split()) over the file.
 - DEC-34 [C] The answer schema lists the request's own entry ids and options as enums
 - DEC-40 [C] The agent reads data only through four interfaces; the simulator is one implementation
 - DEC-41 [C] Everything specific to the market is a customer file
-- DEC-42 [C] The feeds and the agent's output are stored tables the agent can run against a day at a time
+- DEC-42 [C] Stored tables the agent can run against a day at a time
 - DEC-47 [C] The oracle reviewer is a grader outside the agent's path
 - DEC-48 [C] The bench is one sweep with a reviewer per arm
-- DEC-56 [C] The cautious band's verdict is a display field, and a band-end gain under $10 reads to the dollar
+- DEC-56 [C] The band verdict is a display field; a small band-end gain reads to the dollar
 - DEC-57 [C] A read-only demo page over a file code writes
 - DEC-58 [C] The demo page fits one window, and every date on it is a calendar date
 - DEC-60 [C] Every printed mean carries its spread, and every ahead count a sign test
@@ -351,7 +355,7 @@ nodes and its words, len(text.split()) over the file.
 - UNK-02 [C] Whether the enum schema behaves as expected against the live API
 - UNK-03 [H] Whether the container image builds and its tests pass
 - UNK-04 [H] Whether the suite passes on Python 3.12 and 3.13
-- UNK-05 [U] How a change in arriving seats turns into hotel demand in a real market
+- UNK-05 [U] How a change in arriving passengers turns into hotel demand in a real market
 - UNK-06 [U] The real cost to service an occupied room
 - UNK-07 [U] The real price elasticity, and what the learned estimate does and does not settle
 - UNK-08 [U] Whether the measured gains say anything about a real hotel
@@ -360,5 +364,5 @@ nodes and its words, len(text.split()) over the file.
 - UNK-11 [U] How competitors react to a rate change, and what that does to the revenue-target result
 - UNK-12 [U] The effect of cancellations, no-shows, groups and room types
 - UNK-13 [U] Whether a 5% cut is enough: the largest cut on the menu is 5%
-- UNK-14 [U] The bias in an elasticity estimate when a real hotel changes its rate in response to demand
+- UNK-14 [U] The bias in an elasticity estimate when a hotel prices to demand
 - UNK-15 [U] The real market-level price elasticity

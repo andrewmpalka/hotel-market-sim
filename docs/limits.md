@@ -28,7 +28,8 @@
 - By default the agent is handed the simulator's elasticity of 1.5;
   `--elasticity fixed:X` and `learn:X` take it away.
 - Demand moves by the hotel's share of guests arriving by air times the change
-  in arriving seats; that link is a modelling choice.
+  in arriving passengers, the seats at each flight's load factor; that link and
+  the load factors are modelling choices.
 - The minimum-stay recommendation is advice only. The simulator has no length
   of stay, and the advice is not in any estimate or result.
 - The estimates assume the simulator's Poisson booking noise; real bookings

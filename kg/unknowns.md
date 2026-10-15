@@ -36,8 +36,8 @@ and a RES node records the run. A claim that no test can confirm stays [U].
 - Result: the full suite passed on Python 3.12.6 and on 3.13.7 on 2026-10-12, the slow 20-seed check included.
 - Links: [[DEC-30]], [[RES-15]]
 
-### UNK-05 [U] How a change in arriving seats turns into hotel demand in a real market
-- Unknown: the simulator makes demand rise by the hotel's air share times the fractional seat change, which is a modelling choice.
+### UNK-05 [U] How a change in arriving passengers turns into hotel demand in a real market
+- Unknown: the simulator makes demand rise by the hotel's air share times the fractional change in arriving passengers, which is a modelling choice; the load factors are another ([[DEC-63]]).
 - Best guess: the real link is weaker than one for one and lagged. It differs by hotel more than the air shares alone say.
 - Resolves when: never within this repository; it holds no real data ([[DEC-35]]).
 - Links: [[MOD-04]], [[SHK-02]]
@@ -99,7 +99,7 @@ and a RES node records the run. A claim that no test can confirm stays [U].
 - Resolves when: a run with a 10% cut on the menu is compared with the default on seeds 1 to 20.
 - Links: [[RUL-43]], [[RUL-42]], [[DEC-13]], [[RES-07]]
 
-### UNK-14 [U] The bias in an elasticity estimate when a real hotel changes its rate in response to demand
+### UNK-14 [U] The bias in an elasticity estimate when a hotel prices to demand
 - Unknown: the estimator ([[MOD-16]]) reads the rate as given. A real hotel raises its rate when demand is strong. High rates then come with high bookings, and the slope reads too flat.
 - Best guess: the bias pulls a real estimate toward zero. The simulator does not show it, because its agent changes rates only on flags.
 - Resolves when: never within this repository; a real estimate would need an instrument or a controlled test ([[FRK-05]]).

@@ -420,8 +420,9 @@ def _numbers_request(numbers: FlagNumbers) -> dict:
         "unsold_rooms": rooms(numbers.unsold_rooms),
         "remaining_demand": rooms(numbers.remaining_demand),
         "pace_gap": pace_text(numbers.pace_gap),
-        "seat_change": percent_change_range(numbers.seat_change),
-        "seat_revision": percent_change_range(numbers.seat_revision),
+        # The keys keep their names from world v1; the figures are arriving passengers.
+        "seat_change": percent_change_range(numbers.passenger_change),
+        "seat_revision": percent_change_range(numbers.passenger_revision),
         "rate": money_range(numbers.rate),
         "comp_median": money_range(numbers.comp_median),
         "rate_vs_median": against_median_range(numbers.rate_vs_median),
@@ -627,12 +628,14 @@ def _elasticity_text(elasticity: dict) -> str:
 
 
 def _what_changed(causes: list[str], numbers: dict) -> str:
-    """The causes as clauses with their phrases. An example is "seats are up 17.0% to 21.6% against
-    yesterday's schedule and a convention was announced"."""
+    """The causes as clauses with their phrases. An example is "arriving passengers are up 12.8% to
+    23.0% against yesterday's schedule and a convention was announced"."""
     clauses = []
     for cause in causes:
         if cause in (SEATS_UP, SEATS_CUT):
-            clauses.append(f"seats are {numbers['seat_revision']} against yesterday's schedule")
+            clauses.append(
+                f"arriving passengers are {numbers['seat_revision']} against yesterday's schedule"
+            )
         elif cause in (MEDIAN_UP, MEDIAN_DOWN):
             clauses.append(f"the comp median is {numbers['median_change']} since yesterday")
         elif cause == NEW_EVENT:

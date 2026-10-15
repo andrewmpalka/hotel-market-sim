@@ -54,12 +54,15 @@ CREATE TABLE IF NOT EXISTS rate_shops (
 
 -- The schedule as filed by the day, counted to arriving seats per day the way
 -- seats_by_day counts them: scheduled passenger flights only, codeshares
--- dropped, both of the city's airports. A warehouse fed by a schedule service
+-- dropped, both of the city's airports. The passengers are the seats at each
+-- flight's load factor, as passengers_by_day counts them, and they are what
+-- the demand rule and the agent read. A warehouse fed by a schedule service
 -- would keep the flight-level snapshot as well and make this a view over it.
 CREATE TABLE IF NOT EXISTS schedule_snapshots (
     as_of_day INTEGER NOT NULL,        -- the day the schedule was read
     stay_day INTEGER NOT NULL,         -- the day the seats arrive
     seats INTEGER NOT NULL,
+    passengers DOUBLE NOT NULL,        -- the seats at each flight's load factor
     PRIMARY KEY (as_of_day, stay_day)
 );
 

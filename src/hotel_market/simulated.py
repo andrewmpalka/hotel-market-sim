@@ -33,6 +33,7 @@ from hotel_market.schedule import (
     HORIZON_DAYS,
     Scenario,
     build_schedule,
+    passengers_by_day,
     seats_by_day,
 )
 from hotel_market.shocks import events_as_of
@@ -123,24 +124,33 @@ class SimulatedRateShops(Limited, RateShops):
 
 class SimulatedSchedules(Limited, Schedules):
     """The schedule as filed by each filing day through the day under the run's scenario, counted
-    to arriving seats once per filing. It holds those counts and not the scenario, so a filing
-    still to come is not in it."""
+    to arriving seats and passengers once per filing. It holds those counts and not the scenario,
+    so a filing still to come is not in it."""
 
     def __init__(self, scenario: Scenario = DEFAULT_SCENARIO, as_of_day: int | None = None):
         self.as_of_day = as_of_day
         last = HORIZON_DAYS - 1 if as_of_day is None else as_of_day
-        self._filed = {day: _seats(day, scenario) for day in (-1, *scenario.filing_days(last))}
+        self._filed = {day: _counts(day, scenario) for day in (-1, *scenario.filing_days(last))}
 
-    def seats(self, as_of_day: int) -> np.ndarray:
+    def _filing(self, as_of_day: int) -> tuple[np.ndarray, np.ndarray]:
         self._known(as_of_day)
         return self._filed[max(day for day in self._filed if day <= as_of_day)]
 
+    def seats(self, as_of_day: int) -> np.ndarray:
+        return self._filing(as_of_day)[0]
+
+    def passengers(self, as_of_day: int) -> np.ndarray:
+        return self._filing(as_of_day)[1]
+
 
 @lru_cache(maxsize=None)
-def _seats(filing_day: int, scenario: Scenario) -> np.ndarray:
-    seats = seats_by_day(build_schedule(as_of_day=filing_day, scenario=scenario)).to_numpy()
-    seats.flags.writeable = False
-    return seats
+def _counts(filing_day: int, scenario: Scenario) -> tuple[np.ndarray, np.ndarray]:
+    """(seats, passengers) by stay day under the schedule as filed by a day, read-only."""
+    schedule = build_schedule(as_of_day=filing_day, scenario=scenario)
+    seats = seats_by_day(schedule).to_numpy()
+    passengers = passengers_by_day(schedule).to_numpy()
+    seats.flags.writeable = passengers.flags.writeable = False
+    return seats, passengers
 
 
 class SimulatedEvents(Limited, Events):
