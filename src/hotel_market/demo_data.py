@@ -419,9 +419,12 @@ def _gain_rows(agent: Books, fixed: Books, customer: Customer) -> list[tuple]:
 
 def _title(scope: str, customer: Customer) -> str:
     """The hotel's name, or "All four hotels"."""
-    if scope != ALL:
-        return customer.hotel(scope).name
-    count = len(customer.hotels)
+    return customer.hotel(scope).name if scope != ALL else all_hotels(len(customer.hotels))
+
+
+def all_hotels(count: int) -> str:
+    """The title of a row for all the hotels together, "All four hotels"; ten or more read as
+    a number."""
     word = NUMBER_WORDS[count] if count < len(NUMBER_WORDS) else str(count)
     return f"All {word} hotels"
 

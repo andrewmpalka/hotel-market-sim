@@ -33,8 +33,10 @@ from hotel_market.cli import (
     SEAT_CAUSES,
     SHOCK_PLAN_CAUSES,
     ArmResult,
+    Comparison,
     SeedResult,
     _calls,
+    _comparison_table,
     _gain_on,
     changed_stays,
     format_entry,
@@ -175,6 +177,9 @@ def test_the_summary_reports_revenue_and_contribution_for_both_runs(first):
         ):
             assert f"{value:,.0f}" in line
     assert "All four hotels" in text and "held" in text
+    # The total row's title counts the hotels of the market, so another market reads right.
+    rows = [Comparison(f"hotel {i}", 1.0, 1.0, 1.0, 1.0) for i in range(5)]
+    assert _comparison_table("t", rows)[-1].startswith("All five hotels")
 
 
 def test_decisions_jsonl_has_one_line_per_flag_and_advice(first):

@@ -118,13 +118,13 @@ which is also the order in which they depend on each other.
 - Sweep: sweep() runs one arm per seed, mode ([[DAT-24]]) and reviewer ([[DAT-32]]). bench runs the template, the oracle and each --model in every --elasticity mode. It prints a table per mode, a ranking and the groups of [[MEA-13]].
 - Daily: run_days() plays the simulator to a day with the stored changes and writes the feeds. A fresh agent then runs on the tables ([[MOD-21]]). replay_day() rebuilds a day's plans from the tables and checks them ([[DEC-42]]).
 - Holds: REPORT_DAYS ([[RUL-53]]), SHOCK_PLAN_CAUSES ([[RUL-55]]), DAILY_COMMANDS ([[RUL-74]]), BENCH_MODES ([[RUL-81]]) and DEFAULT_DB, the daily commands' table file. --customer and --target name the market and its target ([[DEC-41]]).
-- Reads: [[MOD-01]], [[MOD-02]], [[MOD-06]], [[MOD-08]], [[MOD-09]], [[MOD-10]], [[MOD-11]], [[MOD-16]], [[MOD-19]], [[MOD-20]], [[MOD-21]], [[MOD-23]]
+- Reads: [[MOD-01]], [[MOD-02]], [[MOD-06]], [[MOD-08]], [[MOD-09]], [[MOD-10]], [[MOD-11]], [[MOD-16]], [[MOD-19]], [[MOD-20]], [[MOD-21]], [[MOD-23]], [[MOD-26]] (the hotel count's words)
 - Tests: tests/test_cli.py
 - Evidence: test_two_runs_with_the_same_seed_write_identical_decisions_files, test_the_summary_compares_both_runs_on_the_changed_pairs, test_the_daily_commands_run_a_day_and_replay_it, test_the_bench_command_prints_its_tables
 
 ### MOD-13 [C] __init__.py
 - File: src/hotel_market/__init__.py
-- Owns: the package docstring, and nothing else.
+- Owns: the package docstring, which names no hotel count, and nothing else.
 - Reads: nothing
 - Writes: nothing
 - Tests: tests/test_package.py

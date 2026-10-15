@@ -107,6 +107,7 @@ from hotel_market.bench import (
 from hotel_market.bookings import Books, simulate
 from hotel_market.customer import TARGETS, Customer, demo, demo_path, load
 from hotel_market.demand import DEMAND_BIAS, MARKET_ELASTICITY
+from hotel_market.demo_data import all_hotels
 from hotel_market.detect import MEDIAN_DOWN, MEDIAN_UP, NEW_EVENT, PACE, SEATS_CUT, SEATS_UP
 from hotel_market.estimate import Estimate, level_factor
 from hotel_market.model import MODELS, ClaudeClient, Client
@@ -759,7 +760,7 @@ def _action_text(entry: Entry, hotel: Hotel) -> str:
 
 @dataclass(frozen=True)
 class Comparison:
-    """Room revenue and contribution for both runs, for one hotel or for all four."""
+    """Room revenue and contribution for both runs, for one hotel or for all of them."""
 
     name: str
     fixed_revenue: float
@@ -846,8 +847,9 @@ def _comparison_table(title: str, rows: list[Comparison]) -> list[str]:
 
 
 def _total(rows: list[Comparison]) -> Comparison:
+    """The hotels' rows summed, titled by their count."""
     return Comparison(
-        "All four hotels",
+        all_hotels(len(rows)),
         sum(row.fixed_revenue for row in rows),
         sum(row.agent_revenue for row in rows),
         sum(row.fixed_contribution for row in rows),
@@ -948,7 +950,7 @@ def main(argv: list[str] | None = None) -> None:
         _bench_main(argv[1:])
         return
     if argv[:1] == ["demo-data"]:
-        from hotel_market import demo_data  # here, because demo_data imports run_days
+        from hotel_market import demo_data
 
         demo_data.main(argv[1:])
         return

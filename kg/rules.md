@@ -780,7 +780,7 @@ hotels themselves are data ([[DAT-04]]).
 - Value: ("no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine")
 - File: src/hotel_market/demo_data.py
 - Kind: label
-- Meaning: the words for the hotel count in the title of the rows for all hotels together, "All four hotels". Ten or more hotels read as a number.
+- Meaning: the words for the hotel count in the title of the rows for all hotels together, "All four hotels", on the page and in the command's summary. Ten or more hotels read as a number.
 - Evidence: test_the_scorecard_counts_the_nights_already_stayed
 
 ### RUL-112 [C] HOTEL_PARAMETER
