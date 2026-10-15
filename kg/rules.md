@@ -510,6 +510,13 @@ marked [H], with one line that names the node it moved to.
 - Meaning: the two commands that run the agent against the stored tables ([[DEC-42]]). main() hands an argument list that starts with one of them to their own parser.
 - Evidence: test_the_daily_commands_run_a_day_and_replay_it
 
+### RUL-122 [C] NO_KEY_LINE
+- Value: "No API key: the template accepts every plan"
+- File: src/hotel_market/cli.py
+- Kind: label
+- Meaning: the first line a single run prints when it did not ask for the template and found no key. The summary then names the template as the source of the declines.
+- Evidence: test_a_run_with_no_key_says_so_and_names_the_template
+
 ### RUL-81 [C] BENCH_MODES
 - Value: ("fixed:1.0", "fixed:2.0", "true")
 - File: src/hotel_market/cli.py

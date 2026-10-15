@@ -28,6 +28,7 @@ from hotel_market.bookings import simulate
 from hotel_market.cli import (
     BENCH_MODES,
     MEDIAN_CAUSES,
+    NO_KEY_LINE,
     REPEAT_WINDOW,
     REPORT_DAYS,
     SEAT_CAUSES,
@@ -164,6 +165,20 @@ def test_the_replay_command_prints_day_20s_queue(first, monkeypatch, capsys):
     assert "Elasticity      1.5, the simulator's own value" in out
 
 
+def test_a_run_with_no_key_says_so_and_names_the_template(monkeypatch, capsys, tmp_path):
+    """Without a key the template accepts every plan. A run that did not ask for the template
+    prints one line saying so, and every summary names who answered the queue."""
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.chdir(tmp_path)  # decisions.jsonl lands here
+    main(["--seed", str(SEED)])
+    out = capsys.readouterr().out
+    assert out.startswith(NO_KEY_LINE + "\n")
+    assert "0 declined by the template)." in out and "declined by the model" not in out
+    main(["--seed", str(SEED), "--template"])
+    out = capsys.readouterr().out
+    assert NO_KEY_LINE not in out and "0 declined by the template)." in out
+
+
 def test_the_summary_reports_revenue_and_contribution_for_both_runs(first):
     _, fixed, books, agent = first
     text = summary(SEED, fixed, books, agent)
@@ -177,6 +192,7 @@ def test_the_summary_reports_revenue_and_contribution_for_both_runs(first):
         ):
             assert f"{value:,.0f}" in line
     assert "All four hotels" in text and "held" in text
+    assert "0 declined by the model)." in text  # the fake model answered the queue
     # The total row's title counts the hotels of the market, so another market reads right.
     rows = [Comparison(f"hotel {i}", 1.0, 1.0, 1.0, 1.0) for i in range(5)]
     assert _comparison_table("t", rows)[-1].startswith("All five hotels")

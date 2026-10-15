@@ -62,12 +62,13 @@
   market section of docs/results.md.
 - There is one rate per hotel and stay date, with no room types, group blocks,
   cancellations or no-shows.
-- Without an API key, every plan is accepted, the run records the fact only as
-  the reason source of each decision, and a hotel that ran it with a missing key
-  would put every queued raise live under a reason that reads like a review.
-  With a key, a call that still fails after the client's retries stops the run
-  with a traceback, and the single-run route then writes no decisions file for
-  the days before it.
+- Without an API key, every plan is accepted. A single run that did not ask for
+  the template says so in its first line and names the template in its summary,
+  and each decision records the reason source, but a hotel that ran it with a
+  missing key would still put every queued raise live under a reason that reads
+  like a review. With a key, a call that still fails after the client's retries
+  stops the run with a traceback, and the single-run route then writes no
+  decisions file for the days before it.
 - A change to the world, such as a fifth hotel or a second event, invalidates
   the pinned tests, the seed-7 recording under tests/fixtures and the live
   benchmark tables. The template sweeps rerun for nothing, a new recording of

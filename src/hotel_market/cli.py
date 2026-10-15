@@ -47,9 +47,10 @@ follows over only the hotel and stay-date pairs where the agent changed a rate.
                                                on the pace flags, next to its gain against
                                                frozen rates
 
-With ANTHROPIC_API_KEY set, the agent asks Claude. Otherwise a template writes the reasons. The
-option --elasticity is true, fixed:X or learn:X. The default is true, where the agent prices with
-the simulator's own value.
+With ANTHROPIC_API_KEY set, the agent asks Claude. Otherwise a template writes the reasons, and a
+single run that did not ask for the template says so in its first line and names the template in
+its summary. The option --elasticity is true, fixed:X or learn:X. The default is true, where the
+agent prices with the simulator's own value.
 
 The options --cautious and --level apply to every learn arm of the command. The option
 --customer names the market's file, customers/demo.toml by default. --target overrides its target,
@@ -131,6 +132,9 @@ BENCH_MODES = ("fixed:1.0", "fixed:2.0", "true")
 REPEAT_WINDOW = 14
 MEDIAN_CAUSES = frozenset({MEDIAN_UP, MEDIAN_DOWN})
 SEAT_CAUSES = frozenset({SEATS_UP, SEATS_CUT})  # the flags a filing raises
+# Printed first by a single run that asked for the model and found no key, so that the template's
+# answers are never mistaken for a review.
+NO_KEY_LINE = "No API key: the template accepts every plan"
 
 # ---- the three things the command can do ----------------------------------
 
@@ -858,7 +862,8 @@ def _total(rows: list[Comparison]) -> Comparison:
 
 
 def _flag_counts(agent: Agent) -> str:
-    """How the flags ended: a rate change, or a hold for one of three reasons."""
+    """How the flags ended: a rate change, or a hold for one of three reasons. The declines name
+    who answered the queue, the template or the model, so a template run reads as one."""
     entries = agent.entries
     changed = sum(1 for e in entries if e.action != HOLD)
     declined = sum(1 for e in entries if e.queued and e.action == HOLD)
@@ -867,9 +872,17 @@ def _flag_counts(agent: Agent) -> str:
     return (
         f"Days 0 to 59: {len(entries)} flags. {changed} changed a rate; "
         f"{unbeaten + under_minimum + declined} held ({unbeaten} where no change beat hold, "
-        f"{under_minimum} worth under the minimum, {declined} declined by the model). "
-        f"{len(agent.advice)} minimum-stay advice, not simulated."
+        f"{under_minimum} worth under the minimum, {declined} declined by the "
+        f"{_reason_source(agent)}). {len(agent.advice)} minimum-stay advice, not simulated."
     )
+
+
+def _reason_source(agent: Agent) -> str:
+    """Who answered the queued plans: the template, the model, or a client by its name."""
+    sources = {e.reason_source for e in agent.entries if e.queued}
+    if len(sources) == 1:
+        return sources.pop()
+    return "template" if agent.client is None else getattr(agent.client, "name", "model")
 
 
 def _bias_text(books: Books) -> str:
@@ -969,6 +982,8 @@ def main(argv: list[str] | None = None) -> None:
         client = _client(args.template)
         _print_replay(args.seed, args.replay, client, args.modes[0], customer, *world)
     else:
+        if not args.template and not os.environ.get("ANTHROPIC_API_KEY"):
+            print(NO_KEY_LINE)
         _print_run(args.seed, _client(args.template), args.modes[0], customer, *world, args.policy)
 
 
