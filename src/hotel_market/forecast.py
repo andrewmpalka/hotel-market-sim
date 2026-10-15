@@ -16,7 +16,7 @@ demand.py.
 The market's price response mirrors demand.py's term: expected demand times (the comp median as
 shopped / its starting level) ** -market elasticity. ORACLE_MARKET_ELASTICITY is the run's value,
 handed to the agent as ORACLE_ELASTICITY hands it the share elasticity (plan.py). The command sets
-it, and every plan record carries it. At the default of 0.0 the term is 1.
+it, and every plan record carries it. The default is the customer file's 1.0.
 """
 
 from __future__ import annotations
@@ -24,9 +24,10 @@ from __future__ import annotations
 from hotel_market.sources import Event, Sources
 from hotel_market.world import Hotel, weekday
 
-# The market elasticity the agent prices with: the simulator's value, handed to it. The command
-# sets the run's value, and the oracle reviewer is told the same one.
-ORACLE_MARKET_ELASTICITY = 0.0
+# The market elasticity the agent prices with: the simulator's value, handed to it, 1.0 by
+# default as the customer file records. The command sets the run's value, and the oracle
+# reviewer is told the same one.
+ORACLE_MARKET_ELASTICITY = 1.0
 
 
 def weekday_factor(hotel: Hotel, stay_day: int) -> float:

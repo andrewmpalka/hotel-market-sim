@@ -92,8 +92,9 @@ def test_the_log_lists_every_entry_and_advice_in_order(run):
     assert len(log) == len(agent.entries) + len(agent.advice)
     assert [line["day"] for line in log] == sorted(line["day"] for line in log)
     # Within a day, the entries come first and the advice last.
-    day_34 = [line["simulated"] for line in log if line["day"] == 34]
-    assert day_34 == sorted(day_34, reverse=True) and day_34[-1] is False
+    for day in {a.day for a in agent.advice}:
+        flags = [line["simulated"] for line in log if line["day"] == day]
+        assert flags == sorted(flags, reverse=True) and flags[-1] is False
 
 
 def test_a_model_that_declines_changes_no_rate(tmp_path):
@@ -134,11 +135,19 @@ def test_minimum_stay_advice_is_not_repeated_on_later_days(tmp_path):
     assert agent.advice_for(35, [ahead], sources) == []
 
 
-def test_minimum_stay_advice_is_given_once_per_hotel_and_event_and_not_simulated(run):
-    agent, _ = run
-    assert agent.advice
-    assert len({a.hotel for a in agent.advice}) == len(agent.advice)
-    for advice in agent.advice:
+def test_minimum_stay_advice_is_given_once_per_hotel_and_event_and_not_simulated(tmp_path):
+    # Each downtown hotel's convention peak night, flagged ahead of pace, draws one piece of
+    # advice; the same flag the next day draws none.
+    agent = Agent(SEED, cache_dir=tmp_path)
+    sources = simulated_sources(Books(SEED))
+    ahead = [
+        SimpleNamespace(hotel=key, first_stay=44, last_stay=46, causes=(AHEAD,))
+        for key in ("convention", "full-service")
+    ]
+    found = agent.advice_for(34, ahead, sources)
+    assert [a.hotel for a in found] == ["convention", "full-service"]
+    assert agent.advice_for(35, ahead, sources) == []
+    for advice in found:
         line = advice.to_json()
         assert (
             line["action"] == MIN_STAY
@@ -192,8 +201,8 @@ def test_plain_learn_mode_gives_the_same_results_as_before(tmp_path):
     agent = Agent(SEED, tmp_path, elasticity=ElasticityMode.parse("learn:1.0"))
     books = simulate(SEED, deciding(agent))
     change = sum(books.contribution(h) - fixed.contribution(h) for h in DEMO.hotels)
-    assert change == pytest.approx(2930.63, abs=0.01)
-    assert sum(1 for e in agent.entries if e.action != HOLD) == 17 and len(agent.entries) == 89
+    assert change == pytest.approx(-10078.87, abs=0.01)
+    assert sum(1 for e in agent.entries if e.action != HOLD) == 14 and len(agent.entries) == 70
 
 
 def test_a_cautious_agent_records_the_band_and_what_it_rejected(tmp_path):

@@ -27,11 +27,11 @@ def test_the_raise_at_zero_keeps_the_uplift_and_puts_the_event_back(script, tmp_
     assert shocks.EVENTS[0] == shipped  # put back after each sweep
     # As shipped, seed 7 is the README's run; without the raise the convention nights no longer
     # sell out at fixed rates, and the convention plans earn less on their stay dates.
-    assert rows[0]["mean"] == pytest.approx(28818, abs=1) and rows[0]["ahead"] == 1
+    assert rows[0]["mean"] == pytest.approx(19012, abs=1) and rows[0]["ahead"] == 1
     assert rows[1]["mean"] < rows[0]["mean"]
     assert rows[0]["sellouts"] > rows[1]["sellouts"] == 0 and rows[0]["nights"] == 8
     assert rows[0]["gain"] > rows[1]["gain"] and rows[0]["plans"] >= rows[1]["plans"]
     text = script.table(rows)
     assert text.startswith("| Competitors' raise | Mean change a seed | Range | Ahead |")
-    assert "| 15% | +$28,818 | +$28,818 to +$28,818 | 1 of 1 | 2 |" in text
+    assert "| 15% | +$19,012 | +$19,012 to +$19,012 | 1 of 1 | 2 |" in text
     assert "| 0% |" in text and text.count("\n") == 3

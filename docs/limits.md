@@ -52,14 +52,15 @@
   revisions held under the threshold by construction. A second scenario holds
   an upgauge and a frequency cut. A real feed revises in more ways than these,
   and its rows carry an arrival time (docs/schedule-feed.md).
-- By default competitors never react and the market has no price response of
-  its own, so `--react` makes each competitor move half of a hotel's change
-  three days after it takes effect, and `--market-elasticity E` makes the
-  market's demand fall with the comp median's level to the power of E, with
-  the agent told E. With the reaction on, the default run earns +$111,272 a
+- By default competitors never react, so `--react` makes each competitor move
+  half of a hotel's change three days after it takes effect. The market's own
+  price response is the customer file's 1.0 since world v2, chosen because a
+  market-wide rate rise should lose demand in proportion, and
+  `--market-elasticity E` sets another value for a run, with the agent told E.
+  On world v1, where the default was 0.0, the reacting run earned +$111,272 a
   seed at an E of 0.0, +$72,229 at 0.5 and +$43,584 at 1.0, against +$32,899
-  with neither. What those figures show, and the loop they expose, is in the
-  market section of docs/results.md.
+  with neither; what those figures showed, and the loop they exposed, is in
+  the market section of docs/results.md.
 - There is one rate per hotel and stay date, with no room types, group blocks,
   cancellations or no-shows.
 - Without an API key, every plan is accepted. A single run that did not ask for

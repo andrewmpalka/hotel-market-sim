@@ -22,7 +22,7 @@ from hotel_market.detect import (
     shock_known,
 )
 from hotel_market.schedule import seat_revision
-from hotel_market.shops import comp_median
+from hotel_market.shops import comp_median, starting_median
 from hotel_market.simulated import SimulatedSchedules, simulated_sources, watch
 from hotel_market.world import SIM_DAYS
 
@@ -105,7 +105,10 @@ def test_numbers_follow_the_definitions():
             on_pace = demand.normal_demand(hotel, stay_day) * DEMO.curve(stay_day - 30)
             median = comp_median(30, hotel, stay_day, seed=SEED)
             assert row["rooms"] == books.rooms[i, stay_day]
-            assert row["expected_demand"] == demand.expected_demand(hotel, stay_day, 30)
+            ratio = median / starting_median(hotel, stay_day, seed=SEED)
+            assert row["expected_demand"] == pytest.approx(
+                demand.expected_demand(hotel, stay_day, 30, 1.0, ratio, DEMO.market_elasticity)
+            )
             assert row["pace_gap"] == pytest.approx(books.rooms[i, stay_day] - on_pace)
             assert row["pace_threshold"] == pytest.approx(
                 max(0.10 * hotel.rooms, 3 * math.sqrt(on_pace))

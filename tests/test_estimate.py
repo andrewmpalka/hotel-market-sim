@@ -96,7 +96,7 @@ def test_the_day_59_estimate_recovers_the_elasticity_under_a_market_response(ans
         assert found.observations > 5000
         assert abs(found.elasticity - bookings.ELASTICITY) <= TOLERANCE_SE * found.standard_error
         error_with_term += abs(found.elasticity - bookings.ELASTICITY) / found.standard_error
-        plain = estimate_elasticity(sources, hotel, 59, PRIOR)
+        plain = estimate_elasticity(sources, hotel, 59, PRIOR, market_elasticity=0.0)
         error_without += abs(plain.elasticity - bookings.ELASTICITY) / plain.standard_error
     assert error_without > 2 * error_with_term
 
@@ -110,13 +110,13 @@ def test_the_baseline_is_the_forecast_with_the_market_term_times_the_curves_rise
         rise = DEMO.curve(stay - day) - DEMO.curve(stay - day + 1)
         forecast = expected_demand(hotel, stay, day, sources, 1.0) * rise
         assert np.exp(data.log_baseline[k]) == pytest.approx(forecast)
-    # At a market elasticity of 0 the baseline is the plain forecast, as before.
-    plain = observations(sources, hotel, 59)
+    # At a market elasticity of 0 the baseline is the plain forecast.
+    plain = observations(sources, hotel, 59, market_elasticity=0.0)
     k = 5
     day, stay = int(plain.booking_days[k]), int(plain.stay_days[k])
     rise = DEMO.curve(stay - day) - DEMO.curve(stay - day + 1)
     assert np.exp(plain.log_baseline[k]) == pytest.approx(
-        expected_demand(hotel, stay, day, sources) * rise
+        expected_demand(hotel, stay, day, sources, 0.0) * rise
     )
 
 

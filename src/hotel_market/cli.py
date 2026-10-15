@@ -39,7 +39,8 @@ follows over only the hotel and stay-date pairs where the agent changed a rate.
                                                with a lag; the bench takes it too
     hotel-market --seeds 1 20 --react --market-elasticity 0.5
                                                the market's demand answers the comp
-                                               median's level; the agent is told the value
+                                               median's level at 0.5 in place of the
+                                               customer file's 1.0; the agent is told it
     hotel-market --seeds 1 20 --scenario upgauge --churn
                                                another set of air-schedule filings, with
                                                weekly revisions below the threshold on top
@@ -59,8 +60,9 @@ runs. The agent never receives it, and a biased run keeps its cache in a folder 
 bench tells its oracle the bias, so the oracle stays the simulator's truth. The option --react
 turns the competitors' reaction on in both runs (shops.py), and a reacting run keeps its cache in
 a folder of its own too. The option --market-elasticity sets the market's response to the comp
-median's level in both runs (demand.py). The agent is told it, every plan record carries it, and
-the oracle re-scores with it and with the reaction's share, so it stays the ceiling. The option
+median's level in both runs (demand.py) in place of the customer file's value. The agent is told
+it, every plan record carries it, and the oracle re-scores with it and with the reaction's share,
+so it stays the ceiling. The option
 --scenario picks the air schedule's filings (schedule.py), and --churn adds the seed's weekly
 revisions below the detect threshold. Both keep their cache in folders of their own.
 
@@ -149,7 +151,7 @@ def run(
     customer: Customer | None = None,
     demand_bias: float = DEMAND_BIAS,
     react: bool = False,
-    market_elasticity: float = MARKET_ELASTICITY,
+    market_elasticity: float | None = None,
     scenario: Scenario = DEFAULT_SCENARIO,
     churn: bool = False,
 ) -> tuple[Books, Books, Agent]:
@@ -182,7 +184,7 @@ def replay(
     customer: Customer | None = None,
     demand_bias: float = DEMAND_BIAS,
     react: bool = False,
-    market_elasticity: float = MARKET_ELASTICITY,
+    market_elasticity: float | None = None,
     scenario: Scenario = DEFAULT_SCENARIO,
     churn: bool = False,
 ) -> tuple[list[Entry], list[Advice]]:
@@ -223,7 +225,7 @@ def run_days(
     observe: Callable[[int, Books, Agent], None] | None = None,
     demand_bias: float = DEMAND_BIAS,
     react: bool = False,
-    market_elasticity: float = MARKET_ELASTICITY,
+    market_elasticity: float | None = None,
     scenario: Scenario = DEFAULT_SCENARIO,
     churn: bool = False,
 ) -> tuple[list[Entry], list[Advice]]:
@@ -294,7 +296,7 @@ def replay_day(
     db: Path = DEFAULT_DB,
     mode: ElasticityMode = TRUE_MODE,
     customer: Customer | None = None,
-    market_elasticity: float = MARKET_ELASTICITY,
+    market_elasticity: float | None = None,
 ) -> tuple[list[Entry], list[Advice], list[str]]:
     """A day's entries and advice rebuilt from the stored tables alone, with the actions the stored
     decisions record. The third value is how the rebuilt plans differ from the stored ones, empty
@@ -482,7 +484,7 @@ def sweep(
     reviewers: Sequence[Reviewer] = (TEMPLATE,),
     demand_bias: float = DEMAND_BIAS,
     react: bool = False,
-    market_elasticity: float = MARKET_ELASTICITY,
+    market_elasticity: float | None = None,
     scenario: Scenario = DEFAULT_SCENARIO,
     churn: bool = False,
     policy: str | None = None,
@@ -573,7 +575,7 @@ def _calls(agent: Agent) -> list[dict]:
 def _world(
     demand_bias: float,
     react: bool,
-    market_elasticity: float,
+    market_elasticity: float | None,
     scenario: Scenario,
     churn: bool,
 ) -> dict:
@@ -609,15 +611,15 @@ def cache_root(
     cache_dir: Path,
     demand_bias: float,
     react: bool = False,
-    market_elasticity: float = MARKET_ELASTICITY,
+    market_elasticity: float | None = None,
     scenario: Scenario = DEFAULT_SCENARIO,
     churn: bool = False,
 ) -> Path:
     """Where a run's arm folders go. A demand bias other than the default, the reaction, another
     scenario or the churn changes every request. Such runs therefore get a folder of their own
     under the cache. The agent's own folder name never carries them, because the agent never sees
-    them. A market elasticity other than the default adds a folder of its own, nested under
-    those."""
+    them. A market elasticity other than the default, which None also means, adds a folder of its
+    own, nested under those."""
     parts = []
     if demand_bias != DEMAND_BIAS:
         parts.append(f"demand-bias-{demand_bias:g}")
@@ -628,7 +630,7 @@ def cache_root(
     if churn:
         parts.append("churn")
     root = Path(cache_dir) / "-".join(parts) if parts else Path(cache_dir)
-    if market_elasticity != MARKET_ELASTICITY:
+    if market_elasticity not in (None, MARKET_ELASTICITY):
         root = root / f"market-{market_elasticity:g}"
     return root
 
@@ -1111,10 +1113,10 @@ def _add_world_options(parser: argparse.ArgumentParser, policy: bool = True) -> 
         "--market-elasticity",
         dest="market_elasticity",
         type=_nonnegative,
-        default=MARKET_ELASTICITY,
+        default=None,
         metavar="E",
-        help=f"the market's demand scales with (comp median / its starting level) ** -E, and "
-        f"the agent is told E (default: {MARKET_ELASTICITY:g}, no market-level response)",
+        help="the market's demand scales with (comp median / its starting level) ** -E, and "
+        "the agent is told E (default: the customer file's value, 1.0 for the demo market)",
     )
     parser.add_argument(
         "--scenario",
@@ -1316,7 +1318,7 @@ def _print_run(
     customer: Customer,
     demand_bias: float = DEMAND_BIAS,
     react: bool = False,
-    market_elasticity: float = MARKET_ELASTICITY,
+    market_elasticity: float | None = None,
     scenario: Scenario = DEFAULT_SCENARIO,
     churn: bool = False,
     policy: str | None = None,
@@ -1362,7 +1364,7 @@ def _print_replay(
     customer: Customer,
     demand_bias: float = DEMAND_BIAS,
     react: bool = False,
-    market_elasticity: float = MARKET_ELASTICITY,
+    market_elasticity: float | None = None,
     scenario: Scenario = DEFAULT_SCENARIO,
     churn: bool = False,
 ) -> None:
@@ -1381,13 +1383,14 @@ def _print_sweep(
     customer: Customer,
     demand_bias: float = DEMAND_BIAS,
     react: bool = False,
-    market_elasticity: float = MARKET_ELASTICITY,
+    market_elasticity: float | None = None,
     scenario: Scenario = DEFAULT_SCENARIO,
     churn: bool = False,
     policy: str | None = None,
 ) -> None:
     world = _world(demand_bias, react, market_elasticity, scenario, churn)
     arms = sweep(first, last, modes=modes, customer=customer, policy=policy, **world)
+    market = customer.market_elasticity if market_elasticity is None else market_elasticity
     print(
         f"Seeds {first} to {last}: the agent run against the fixed-rate run, stay dates 0 to 149, "
         f"template reasons, candidates scored on {customer.target}"
@@ -1403,7 +1406,7 @@ def _print_sweep(
     print("\n".join(_revision_table(arms)))
     if react:
         print()
-        print("\n".join(_reaction_table(arms, market_elasticity=market_elasticity)))
+        print("\n".join(_reaction_table(arms, market_elasticity=market)))
     if policy:
         print()
         print("\n".join(_control_table(arms, policy)))
@@ -1419,7 +1422,7 @@ def _print_sweep(
 def _world_suffix(
     demand_bias: float,
     react: bool = False,
-    market_elasticity: float = MARKET_ELASTICITY,
+    market_elasticity: float | None = None,
     scenario: Scenario = DEFAULT_SCENARIO,
     churn: bool = False,
 ) -> str:
@@ -1431,7 +1434,7 @@ def _world_suffix(
         text += f", the simulator's demand multiplied by {demand_bias:g} unseen by the agent"
     if react:
         text += ", competitors reacting to the hotels' rate changes"
-    if market_elasticity != MARKET_ELASTICITY:
+    if market_elasticity not in (None, MARKET_ELASTICITY):
         text += f", the market answering the comp median at an elasticity of {market_elasticity:g}"
     if scenario.name != DEFAULT_SCENARIO.name:
         text += f", the {scenario.name} schedule scenario"
@@ -1693,7 +1696,7 @@ def _print_bench(
     customer: Customer,
     demand_bias: float = DEMAND_BIAS,
     react: bool = False,
-    market_elasticity: float = MARKET_ELASTICITY,
+    market_elasticity: float | None = None,
     scenario: Scenario = DEFAULT_SCENARIO,
     churn: bool = False,
     policy: str | None = None,
@@ -1702,6 +1705,7 @@ def _print_bench(
     arms = sweep(
         first, last, modes=modes, customer=customer, reviewers=reviewers, policy=policy, **settings
     )
+    market = customer.market_elasticity if market_elasticity is None else market_elasticity
     world = _world_suffix(demand_bias, react, market_elasticity, scenario, churn)
     print(
         f"Seeds {first} to {last}: each reviewer against the fixed-rate run, stay dates 0 to 149, "
@@ -1724,7 +1728,7 @@ def _print_bench(
                     print("\n".join(_standard_error_table(arm)))
     if react:
         print()
-        print("\n".join(_reaction_table(arms, named=True, market_elasticity=market_elasticity)))
+        print("\n".join(_reaction_table(arms, named=True, market_elasticity=market)))
     if churn or scenario.name != DEFAULT_SCENARIO.name:
         print()
         print("\n".join(_revision_table(arms, named=True)))

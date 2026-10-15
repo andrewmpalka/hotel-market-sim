@@ -386,7 +386,7 @@ def _pricing_request(pricing: Pricing) -> dict:
         request["cautious"] = True
         request["band"] = span(pricing.band, number)
     if pricing.market_elasticity:
-        # Only when set, so the default request and its digest stay as they were.
+        # Left out at 0.0, where the market's level moves nothing.
         request["market_elasticity"] = number(pricing.market_elasticity)
     if pricing.level != 1.0:
         request["level"] = number(pricing.level)  # the factor the forecast was scaled by

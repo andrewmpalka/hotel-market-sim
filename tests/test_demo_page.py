@@ -17,10 +17,16 @@ FIGURE_FUNCTIONS = {
     "pct_change", "add", "sub", "mul", "div", "truediv", "agg", "aggregate", "prod", "quantile",
 }  # fmt: skip
 ALLOWED_IMPORTS = {"os", "pathlib", "altair", "duckdb", "streamlit"}
-CONVENTION_DAY_10 = (  # the plan line, then the model's recorded reason, its dollar signs escaped
-    "**Accepted:** raise 5% on Fri; raise 10% on Thu, Sat for Thu 18 Feb [45] to Sun 21 Feb "
-    "[48], \\$8,050 more than holding. A convention has been announced for stay dates 45 to 48 "
-    "and the competitor median is up 15.0%, leaving our \\$220 rate 10.7% to 14.6% below the median"
+CONVENTION_DAY_10 = (  # the plan line, then the template's reason, its dollar signs escaped
+    "**Accepted:** raise 10% on Thu for Thu 18 Feb [45] to Sun 21 Feb [48], \\$1,630 more than "
+    "holding. The comp median is up 15.0% since yesterday and a convention was announced on stay "
+    "dates 45 to 48. We recommend the plan, raise 10% on Thu; Fri, Sat, Sun hold, which is "
+    "estimated to earn \\$1,630 more than holding in contribution on the 1,190 rooms still unsold."
+)
+SIDEBAR = (  # the run table's words until the recording covers world v2
+    "Seed 7 of the simulated market. The reasons are the model's where the recorded live run "
+    "covers the request and the template's for the 5 it does not. The page reads a file code "
+    "wrote and computes nothing."
 )
 
 
@@ -106,8 +112,7 @@ def test_the_page_shows_the_convention_hotel_on_day_10(demo_file, monkeypatch):
     assert not page.sidebar.checkbox[0].value and len(page.get("vega_lite_chart")) == 2
     # The sidebar reads the seed and the reasons' source from the file, and defines contribution.
     assert [caption.value for caption in page.sidebar.caption] == [
-        "Seed 7 of the simulated market. The reasons are the model's, from the recorded live "
-        "run. The page reads a file code wrote and computes nothing.",
+        SIDEBAR,
         "Contribution is room revenue minus the cost of servicing every room sold.",
     ]
     # The checkbox adds the complete result for both scopes and the contribution line.
@@ -123,8 +128,8 @@ def test_the_page_shows_the_convention_hotel_on_day_10(demo_file, monkeypatch):
         "Contribution difference by stay date, once every stay date is complete",
     ]
     assert [metric.label for metric in page.metric] == labels * 4
-    assert page.metric[9].value == "$6,917,488" and page.metric[9].delta == "+$3,915"
-    assert page.metric[19].value == "$14,728,311" and page.metric[19].delta == "+$28,818"
+    assert page.metric[9].value == "$6,896,509" and page.metric[9].delta == "-$638"
+    assert page.metric[19].value == "$14,697,392" and page.metric[19].delta == "+$19,012"
     assert len(page.get("vega_lite_chart")) == 3
 
 
@@ -144,7 +149,7 @@ def test_the_query_string_opens_a_hotel_and_a_day_and_the_held_flags_are_open(
         "Wed 10 Feb [37] to Fri 12 Feb [39], comp median down. The best alternative, raise 5% "
         "on Wed, Fri; lower halfway to the new median on Thu, is \\$20 less than holding."
     ) in held
-    assert "Sun 21 Feb [48], ahead of pace. The best alternative, raise 5% on Sun, is" in held
+    assert "Fri 19 Feb [46], ahead of pace. The best alternative, raise 5% on Fri, is" in held
     # A day with no night stayed, and a query string the file does not know.
     page = _page(testing, monkeypatch, demo_file, "airport", 0)
     assert page.main.caption[0].value == "Airport hotel: nights already stayed, none yet"
@@ -171,7 +176,7 @@ def test_a_reason_with_two_dollar_amounts_shows_both_as_written(demo_file, monke
         connection.close()
     page = _page(testing, monkeypatch, file, "convention", 10)
     text = _text(page)
-    assert "\\$8,050 more than holding. A \\$120 raise earns \\$1,000 more than holding." in text
+    assert "\\$1,630 more than holding. A \\$120 raise earns \\$1,000 more than holding." in text
     assert "$120 raise earns $1,000" not in text
     assert (
         "See \\[the plan\\](http://example.com), \\~\\~hold\\~\\~ and \\<http://example.com\\>."

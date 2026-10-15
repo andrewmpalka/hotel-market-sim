@@ -59,12 +59,14 @@ def test_the_median_follows_the_hotels_change_after_the_lag(median_path, capsys)
     out = capsys.readouterr().out
     assert "Seed 7, Downtown convention hotel, template run, competitors moving 50%" in out
     assert "stay 45" in out and "Day 10: raise" in out and "Rooms sold by day 17" in out
-    assert "market elasticity 0" in out
+    assert "market elasticity 1" in out  # the customer file's value
 
 
 def test_a_market_elasticity_softens_a_competitor_cut_for_the_hotel(median_path):
     stays, days = range(37, 40), range(29, 40)
-    rows, _, plain, _ = median_path.median_path(7, "full-service", stays, days)
+    rows, _, plain, _ = median_path.median_path(
+        7, "full-service", stays, days, market_elasticity=0.0
+    )
     _, _, answered, answered_fixed = median_path.median_path(
         7, "full-service", stays, days, market_elasticity=0.5
     )

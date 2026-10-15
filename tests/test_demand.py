@@ -114,10 +114,13 @@ def test_the_demand_bias_multiplies_both_demands_and_is_1_by_default():
 
 
 def test_the_market_elasticity_scales_demand_with_the_medians_level():
-    assert MARKET_ELASTICITY == 0.0
+    # The default is 1.0, the customer file's value: a market-wide rise loses demand in
+    # proportion. At 0.0 the level would move nothing.
+    assert MARKET_ELASTICITY == 1.0 == DEMO.market_elasticity
     hotel = DEMO.hotel("convention")
-    plain = expected_demand(hotel, 46, 10)
-    assert expected_demand(hotel, 46, 10, median_ratio=1.15) == plain  # at 0.0 the level is nothing
+    plain = expected_demand(hotel, 46, 10, market_elasticity=0.0)
+    assert expected_demand(hotel, 46, 10, median_ratio=1.15, market_elasticity=0.0) == plain
+    assert expected_demand(hotel, 46, 10, median_ratio=1.15) == pytest.approx(plain / 1.15)
     assert expected_demand(
         hotel, 46, 10, median_ratio=1.15, market_elasticity=0.5
     ) == pytest.approx(plain * 1.15**-0.5)

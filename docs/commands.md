@@ -29,7 +29,7 @@ Python 3.11 or later, from the repository root:
                                                         # the simulator's demand times 0.9, which the agent never sees
     hotel-market bench --seeds 1 20 --template --react  # competitors follow the hotels' rate changes, three days later
     hotel-market bench --seeds 1 20 --template --react --market-elasticity 0.5
-                                                        # the market's demand answers the comp median's level; the agent is told the value
+                                                        # the market's price response at 0.5 in place of the customer file's 1.0; the agent is told the run's value
     hotel-market --seeds 1 20 --churn                   # the airline files weekly revisions below the threshold
     hotel-market --seeds 1 20 --scenario upgauge        # another set of air-schedule filings
     python scripts/median_path.py --seed 7 --react --hotel convention --stays 45 48 --days 9 15

@@ -22,6 +22,14 @@ hold_days = 7           # an action accepted on day d holds its stay dates on da
 [agent]
 min_value_at_stake = 250  # a plan worth less than this over holding is held, not queued
 
+# The market's own price response: expected demand scales with (the comp median
+# as shopped / its starting level) to the power of minus this. 1.0 is the choice
+# because a market-wide rate rise should lose demand in proportion, and not for
+# any result it gives. The --market-elasticity option overrides it for a run,
+# and the agent is told the run's value.
+[market]
+elasticity = 1.0
+
 # The booking curve: the share of final bookings normally on the books, by
 # days before arrival, linear in between.
 [booking_curve]

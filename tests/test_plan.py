@@ -26,6 +26,7 @@ from hotel_market.plan import (
     expected_bookings,
     rescored,
 )
+from hotel_market.shops import starting_median
 from hotel_market.simulated import simulated_sources
 from hotel_market.world import weekday
 
@@ -163,7 +164,9 @@ def test_estimate_is_expected_contribution_on_the_unsold_rooms(day10):
         hotel = DEMO.hotel(key)
         [group] = entry_for(10, Flag(10, key, stay_day, stay_day, (AHEAD,)), table).weekdays
         row = table.query("hotel == @key and stay_day == @stay_day").iloc[0]
-        remaining = expected_demand(hotel, stay_day, 10) * (1 - DEMO.curve(stay_day - 10))
+        ratio = row["comp_median"] / starting_median(hotel, stay_day, seed=7)
+        demand = expected_demand(hotel, stay_day, 10, 1.0, ratio, DEMO.market_elasticity)
+        remaining = demand * (1 - DEMO.curve(stay_day - 10))
         unsold = hotel.rooms - row["rooms"]
         for c in group.candidates:
             rate = c.rates[stay_day]
@@ -375,7 +378,7 @@ def test_rescoring_with_a_demand_bias_scales_the_remaining_demand(day10):
     assert lower
 
 
-def test_the_plan_record_carries_the_market_elasticity_and_only_a_set_value_reaches_the_request(
+def test_the_plan_record_carries_the_market_elasticity_and_a_zero_one_stays_out_of_the_request(
     day10,
 ):
     _, table = day10
@@ -383,17 +386,20 @@ def test_the_plan_record_carries_the_market_elasticity_and_only_a_set_value_reac
     flag = Flag(10, "airport", 40, 46, (AHEAD,))
     plain = entry_for(10, flag, table, Pricing(1.5, "true"))
     told = entry_for(10, flag, table, Pricing(1.5, "true", market_elasticity=0.5))
-    assert ORACLE_MARKET_ELASTICITY == 0.0
-    assert plain.to_json()["elasticity"]["market_elasticity"] == 0.0
+    zero = entry_for(10, flag, table, Pricing(1.5, "true", market_elasticity=0.0))
+    assert ORACLE_MARKET_ELASTICITY == 1.0
+    assert plain.to_json()["elasticity"]["market_elasticity"] == 1.0
     assert told.to_json()["elasticity"]["market_elasticity"] == 0.5
     # The agent scores every candidate against the median as shopped, so the candidates are the
     # same; the level's effect is already in the remaining demand the detect numbers carry.
     for a, b in zip(plain.weekdays, told.weekdays):
         assert [c.estimate for c in a.candidates] == [c.estimate for c in b.candidates]
-    # The request names the value only when it is set, so the default digest stays as it was.
+    # The request names the value, the default included; at 0.0, where the level moves
+    # nothing, it stays out.
     before, after = request_for(10, airport, [plain]), request_for(10, airport, [told])
-    assert "market_elasticity" not in before["elasticity"]
+    assert before["elasticity"]["market_elasticity"] == "1"
     assert after["elasticity"]["market_elasticity"] == "0.5"
+    assert "market_elasticity" not in request_for(10, airport, [zero])["elasticity"]
     assert request_digest(before) != request_digest(after)
 
 

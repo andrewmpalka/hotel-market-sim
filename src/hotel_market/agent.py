@@ -30,7 +30,7 @@ from pathlib import Path
 from hotel_market.customer import Customer, demo
 from hotel_market.detect import AHEAD, detect_numbers, flags
 from hotel_market.estimate import Estimate, estimate_elasticity, level_factor
-from hotel_market.forecast import ORACLE_MARKET_ELASTICITY, peak_night
+from hotel_market.forecast import peak_night
 from hotel_market.model import MODEL, Client, ask, request_for
 from hotel_market.plan import (
     HOLD,
@@ -117,7 +117,8 @@ class Agent:
     `model` names the model the client asks. It is the client's own name when the client has one,
     else model.MODEL. It goes into the cache folder when it is not the default, and into every cache
     record. `market_elasticity` is the run's market price response, handed to the agent as the
-    share elasticity is in the default mode. Every plan record carries it.
+    share elasticity is in the default mode, the customer file's when the run sets none. Every
+    plan record carries it.
     """
 
     def __init__(
@@ -129,11 +130,14 @@ class Agent:
         elasticity: ElasticityMode = TRUE_MODE,
         customer: Customer | None = None,
         model: str | None = None,
-        market_elasticity: float = ORACLE_MARKET_ELASTICITY,
+        market_elasticity: float | None = None,
     ):
         self.customer = customer or demo()
         self.model = model or getattr(client, "model", None) or MODEL
-        self.market_elasticity = market_elasticity
+        # The run's market price response, the customer file's unless the run set another.
+        self.market_elasticity = (
+            self.customer.market_elasticity if market_elasticity is None else market_elasticity
+        )
         # Another mode, target or model gives other answers, so they live in their own folder.
         folder = f"seed{seed}" if elasticity == TRUE_MODE else f"seed{seed}-{elasticity}"
         if not self.customer.scores_contribution():

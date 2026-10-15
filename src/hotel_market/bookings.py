@@ -20,9 +20,9 @@ rate as it stood REACTION_LAG days earlier, read from the daily log (shops.py). 
 move REACTION_SHARE of it. The reaction is off by default, and a fixed-rate run never changes a
 rate, so the fixed-rate run is the same with it on.
 
-With a market elasticity (--market-elasticity), each day's expected demand is scaled by (the
-comp median shopped that day / its starting level) ** -market_elasticity (demand.py). The
-default of 0.0 leaves every draw as it was.
+Each day's expected demand is scaled by (the comp median shopped that day / its starting
+level) ** -market_elasticity (demand.py), at the customer file's market elasticity unless a run
+sets another with --market-elasticity.
 
 Every draw has its own random number, fixed by the seed before the run starts. The function
 poisson_draw turns it into a Poisson count. A change to one rate changes only that stay date's
@@ -45,7 +45,7 @@ from collections.abc import Callable, Sequence
 import numpy as np
 
 from hotel_market.customer import Customer, demo
-from hotel_market.demand import DEMAND_BIAS, MARKET_ELASTICITY, expected_demand, normal_demand
+from hotel_market.demand import DEMAND_BIAS, expected_demand, normal_demand
 from hotel_market.schedule import DEFAULT_SCENARIO, HORIZON_DAYS, Scenario, with_churn
 from hotel_market.shops import REACTION_LAG, comp_median, starting_median
 from hotel_market.world import SIM_DAYS, Hotel, stay_window
@@ -103,7 +103,7 @@ class Books:
         customer: Customer | None = None,
         demand_bias: float = DEMAND_BIAS,
         react: bool = False,
-        market_elasticity: float = MARKET_ELASTICITY,
+        market_elasticity: float | None = None,
         scenario: Scenario = DEFAULT_SCENARIO,
         churn: bool = False,
     ):
@@ -111,7 +111,10 @@ class Books:
         self.customer = customer or demo()
         self.demand_bias = demand_bias  # multiplies the preload and every day's expected demand
         self.react = react  # whether competitors react to the hotels' rate changes
-        self.market_elasticity = market_elasticity  # the market's response to the median's level
+        # The market's response to the median's level: the customer file's unless the run set one.
+        self.market_elasticity = (
+            self.customer.market_elasticity if market_elasticity is None else market_elasticity
+        )
         self.churn = churn  # whether the airline also files the seed's weekly revisions
         self.scenario = with_churn(scenario, seed) if churn else scenario  # the air schedule's
         self._starting: dict[tuple[int, int], float] = {}  # (hotel row, stay day) -> median
@@ -255,7 +258,7 @@ def simulate(
     customer: Customer | None = None,
     demand_bias: float = DEMAND_BIAS,
     react: bool = False,
-    market_elasticity: float = MARKET_ELASTICITY,
+    market_elasticity: float | None = None,
     scenario: Scenario = DEFAULT_SCENARIO,
     churn: bool = False,
 ) -> Books:
@@ -265,8 +268,9 @@ def simulate(
     customer, the market is the demo market. The demand bias multiplies the
     simulator's demand, and nothing the agent reads carries it. With react, the
     competitors follow the hotels' rate changes (shops.py). The market elasticity
-    is the market's response to the comp median's level (demand.py). The scenario
-    is the air schedule's filings, and churn adds the seed's weekly revisions.
+    is the market's response to the comp median's level (demand.py), the
+    customer file's unless given. The scenario is the air schedule's filings,
+    and churn adds the seed's weekly revisions.
     """
     books = Books(seed, customer, demand_bias, react, market_elasticity, scenario, churn)
     for day in range(last_day + 1):

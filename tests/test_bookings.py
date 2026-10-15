@@ -272,8 +272,10 @@ def test_the_reaction_reads_the_hotels_rate_three_days_back_from_the_log():
 
 def test_the_market_elasticity_scales_each_days_draw_by_the_medians_level():
     convention = DEMO.hotel("convention")
-    plain, market = Books(SEED), Books(SEED, market_elasticity=0.5)
-    assert plain.market_elasticity == MARKET_ELASTICITY == 0.0 and market.market_elasticity == 0.5
+    plain, market = Books(SEED, market_elasticity=0.0), Books(SEED, market_elasticity=0.5)
+    # The customer file's value is the default, and it is the module's default too.
+    assert Books(SEED).market_elasticity == DEMO.market_elasticity == MARKET_ELASTICITY == 1.0
+    assert plain.market_elasticity == 0.0 and market.market_elasticity == 0.5
     assert market.starting_median(convention, 46) == starting_median(convention, 46, seed=SEED)
     # Before the convention is known the median is at its start, so nothing changes. On day 10
     # the competitors raise 15%, and the market's demand falls by 1.15 ** -0.5.
@@ -286,5 +288,8 @@ def test_the_market_elasticity_scales_each_days_draw_by_the_medians_level():
         plain.expected_new_bookings(convention, 46, 10) * ratio**-0.5
     )
     assert np.array_equal(
+        simulate(SEED, last_day=30, market_elasticity=1.0).rooms, simulate(SEED, last_day=30).rooms
+    )
+    assert not np.array_equal(
         simulate(SEED, last_day=30, market_elasticity=0.0).rooms, simulate(SEED, last_day=30).rooms
     )

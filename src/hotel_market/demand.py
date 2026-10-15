@@ -18,8 +18,9 @@ forecast is wrong by that factor. The error is in the demand level alone.
 MARKET_ELASTICITY is the market's own price response. Expected demand is multiplied by (the comp
 median as shopped that day / the median's starting level for that stay date) ** -MARKET_ELASTICITY.
 The starting level is the median with no shock and no reaction (shops.starting_median). The
-default of 0.0 keeps every pinned result, and the command sets it with --market-elasticity. The
-agent is told the run's value (forecast.py), as it is told the share elasticity.
+default is 1.0, a market-wide rate rise losing demand in proportion, which the customer file
+records and the command's --market-elasticity overrides. The agent is told the run's value
+(forecast.py), as it is told the share elasticity.
 
 Run `python -m hotel_market.demand` to print normal demand as occupancy by day of week.
 """
@@ -37,8 +38,10 @@ from hotel_market.world import Hotel, weekday
 # A factor on the simulator's demand that the agent never sees; --demand-bias sets it per run.
 DEMAND_BIAS = 1.0
 # The market's price response: demand scales with (comp median / its starting level) ** -this.
-# At 0.0 only the hotel's rate against the median moves bookings, so a matched raise is free.
-MARKET_ELASTICITY = 0.0
+# 1.0 because a market-wide rate rise should lose demand in proportion; the demo customer file
+# records the same value, and a run's --market-elasticity overrides it. At 0.0 only the hotel's
+# rate against the median would move bookings, so a matched raise would be free.
+MARKET_ELASTICITY = 1.0
 
 
 def dow_factor(hotel: Hotel, stay_day: int) -> float:

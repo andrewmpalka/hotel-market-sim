@@ -3,8 +3,8 @@
 Everything specific to one market, read from a customer file such as customers/demo.toml. The
 file holds the hotels with their rooms, starting rates, demand pattern and comp sets. It also
 holds the cost share and rate limits. The detect thresholds, the hold period and the minimum
-value at stake follow. The booking curve and the target the agent scores candidates on,
-"contribution" or "revenue", complete it.
+value at stake follow. The booking curve, the market's price response and the target the agent
+scores candidates on, "contribution" or "revenue", complete it.
 
 Both sides read it: the simulator to make the market, the agent to know its hotels and settings. The
 constants of the simulator itself, the calendar, the elasticity, the noise, the schedule and the
@@ -47,6 +47,7 @@ class Customer:
     min_value_at_stake: float
     curve_days_out: tuple[float, ...]
     curve_share: tuple[float, ...]
+    market_elasticity: float  # the market's own price response, which a run may override
 
     def hotel(self, key: str) -> Hotel:
         for hotel in self.hotels:
@@ -66,11 +67,12 @@ def load(path: Path | str) -> Customer:
     """A customer from its TOML file."""
     with open(path, "rb") as handle:
         data = tomllib.load(handle)
-    limits, detect, agent, curve = (
+    limits, detect, agent, curve, market = (
         data["limits"],
         data["detect"],
         data["agent"],
         data["booking_curve"],
+        data["market"],
     )
     if data["target"] not in TARGETS:
         raise ValueError(f"{path}: target must be one of {TARGETS}, not {data['target']!r}")
@@ -98,15 +100,20 @@ def load(path: Path | str) -> Customer:
         min_value_at_stake=agent["min_value_at_stake"],
         curve_days_out=tuple(curve["days_out"]),
         curve_share=tuple(curve["share"]),
+        market_elasticity=market["elasticity"],
     )
 
 
 def _validate(path: Path | str, data: dict) -> None:
     """The checks a market file must pass. Each error names the field and, for a hotel, the hotel.
-    The shares lie between 0 and 1, the floor sits below the ceiling, the booking curve's days
-    out ascend with one share each, and every hotel has seven weekday factors, positive rooms
-    and a positive start rate."""
+    The market elasticity is zero or more, the shares lie between 0 and 1, the floor sits below
+    the ceiling, the booking curve's days out ascend with one share each, and every hotel has
+    seven weekday factors, positive rooms and a positive start rate."""
     limits, detect, curve = data["limits"], data["detect"], data["booking_curve"]
+    if not data["market"]["elasticity"] >= 0:
+        raise ValueError(
+            f"{path}: market.elasticity must be zero or more, not {data['market']['elasticity']!r}"
+        )
     for field in ("floor_share", "cost_share"):
         _share(path, limits, field)
     _share(path, detect, "pace_share")

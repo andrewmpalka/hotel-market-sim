@@ -60,17 +60,18 @@ def oracle_values(
     entry: Entry,
     customer: Customer | None = None,
     demand_bias: float = 1.0,
-    market_elasticity: float = 0.0,
+    market_elasticity: float | None = None,
     reaction_share: float = 0.0,
 ) -> tuple[float, float]:
     """(hold, plan): the worth of holding and of the plan at ORACLE_ELASTICITY, summed over the
     weekdays the plan changes. The plan's own estimate may come from another elasticity. This scores
     the same candidates with the simulator's value. The demand bias, the market elasticity and the
-    reaction share are the simulator's too: the command tells the oracle what the run does."""
+    reaction share are the simulator's too: the command tells the oracle what the run does. The
+    market elasticity is the one the plan was priced with unless the oracle is told another."""
     customer = customer or demo()
     hotel = customer.hotel(entry.hotel)
     cost = hotel.room_cost if customer.scores_contribution() else 0.0
-    world = (demand_bias, market_elasticity, reaction_share)
+    world = (demand_bias, market_of(entry, market_elasticity), reaction_share)
     hold = plan = 0.0
     for group in entry.changed_weekdays:
         hold += rescored(group, group.hold, ORACLE_ELASTICITY, cost, *world)
@@ -78,11 +79,17 @@ def oracle_values(
     return hold, plan
 
 
+def market_of(entry: Entry, market_elasticity: float | None) -> float:
+    """The market elasticity the oracle scores an entry at: the one it is told, else the one the
+    plan was priced with, which is the run's."""
+    return entry.pricing.market_elasticity if market_elasticity is None else market_elasticity
+
+
 def oracle_declines(
     entry: Entry,
     customer: Customer | None = None,
     demand_bias: float = 1.0,
-    market_elasticity: float = 0.0,
+    market_elasticity: float | None = None,
     reaction_share: float = 0.0,
 ) -> bool:
     """Whether the oracle declines the entry's plan. It does when hold scores at least as well
@@ -95,7 +102,7 @@ def oracle_labels(
     entries: Iterable[Entry],
     customer: Customer | None = None,
     demand_bias: float = 1.0,
-    market_elasticity: float = 0.0,
+    market_elasticity: float | None = None,
     reaction_share: float = 0.0,
 ) -> set[Key]:
     """The queued entries of a run whose plan the oracle declines."""
@@ -116,7 +123,7 @@ class OracleReviewer:
         self,
         agent: Agent,
         demand_bias: float = 1.0,
-        market_elasticity: float = 0.0,
+        market_elasticity: float | None = None,
         reaction_share: float = 0.0,
     ):
         self.agent = agent
@@ -133,9 +140,11 @@ class OracleReviewer:
         decisions = []
         world = (self.demand_bias, self.market_elasticity, self.reaction_share)
         for asked in request["entries"]:
-            hold, plan = oracle_values(today[asked["id"]], customer, *world)
+            entry = today[asked["id"]]
+            hold, plan = oracle_values(entry, customer, *world)
             choice = HOLD if hold >= plan else asked["plan"]
-            reason = _oracle_reason(hold, plan, choice, *world)
+            told = (self.demand_bias, market_of(entry, self.market_elasticity), self.reaction_share)
+            reason = _oracle_reason(hold, plan, choice, *told)
             decisions.append({"id": asked["id"], "choice": choice, "reason": reason})
         return json.dumps({"decisions": decisions})
 
@@ -145,7 +154,7 @@ def _oracle_reason(
     plan: float,
     choice: str,
     demand_bias: float = 1.0,
-    market_elasticity: float = 0.0,
+    market_elasticity: float | None = None,
     reaction_share: float = 0.0,
 ) -> str:
     verdict = "we hold" if choice == HOLD else "we take the plan"
@@ -224,12 +233,13 @@ ORACLE = Reviewer("oracle", make=OracleReviewer)
 
 
 def oracle(
-    demand_bias: float = 1.0, market_elasticity: float = 0.0, reaction_share: float = 0.0
+    demand_bias: float = 1.0, market_elasticity: float | None = None, reaction_share: float = 0.0
 ) -> Reviewer:
     """The oracle reviewer told the simulator's demand bias, market elasticity and reaction share.
-    At the defaults it is ORACLE. The command builds it, the way ORACLE_ELASTICITY names the
-    simulator's elasticity for it."""
-    if (demand_bias, market_elasticity, reaction_share) == (1.0, 0.0, 0.0):
+    At the defaults it is ORACLE, which scores at the market elasticity each plan was priced
+    with. The command builds it, the way ORACLE_ELASTICITY names the simulator's elasticity for
+    it."""
+    if (demand_bias, market_elasticity, reaction_share) == (1.0, None, 0.0):
         return ORACLE
     return Reviewer(
         "oracle",
@@ -422,7 +432,7 @@ class DeclineCounts:
         entries: Iterable[Entry],
         customer: Customer | None = None,
         demand_bias: float = 1.0,
-        market_elasticity: float = 0.0,
+        market_elasticity: float | None = None,
         reaction_share: float = 0.0,
     ) -> DeclineCounts:
         queued = reviewed(entries)

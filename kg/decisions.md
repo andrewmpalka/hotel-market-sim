@@ -240,7 +240,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Reason: with the agent's elasticity equal to the simulator's, the agent was never wrong about price response. The question was what being wrong costs and how much learning wins back ([[FRK-02]], [[UNK-07]]).
 - Measured: a wrong value costs about three quarters of the gain ([[RES-03]]). Learning wins back about a quarter of the loss ([[RES-04]], [[RES-10]]).
 - Commit: abef71f
-- Evidence: test_the_day_59_estimate_recovers_the_simulators_elasticity, test_the_default_mode_still_gives_28818_on_seed_7, test_each_mode_records_the_elasticity_its_plans_assume
+- Evidence: test_the_day_59_estimate_recovers_the_simulators_elasticity, test_the_default_mode_still_gives_19012_on_seed_7, test_each_mode_records_the_elasticity_its_plans_assume
 
 ### DEC-39 [C] The cautious rule: a learning agent changes a rate only where the change beats holding across its band
 - Decided: in learn mode, --cautious scores every candidate at three elasticities. They are the estimate and the estimate [[RUL-54]] standard error lower and higher, clamped to [[RUL-51]] and [[RUL-52]].
@@ -466,7 +466,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Reason: a repository that can be pointed at a hotel's own data needs one place where the data comes in. With the line drawn, what the agent may know is the list of methods in sources.py.
 - Measured: the default run is unchanged ([[RES-02]]). Seed 7's decisions file is byte for byte the one before the boundary, and the estimator's inputs are bitwise identical.
 - Commit: 35967c8
-- Evidence: test_the_agent_reads_only_through_the_interfaces, test_the_forecast_is_the_simulators_demand_for_the_demo_market, test_the_default_mode_still_gives_28818_on_seed_7
+- Evidence: test_the_agent_reads_only_through_the_interfaces, test_the_forecast_is_the_simulators_demand_for_the_demo_market, test_the_default_mode_still_gives_19012_on_seed_7
 
 ### DEC-41 [C] Everything specific to the market is a customer file
 - Decided: customers/demo.toml holds the demo market, which [[MOD-20]] reads into a Customer ([[DAT-27]]).

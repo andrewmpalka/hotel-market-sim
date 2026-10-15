@@ -317,7 +317,7 @@ def test_the_oracle_reviewer_accepts_every_queued_plan_in_true_mode(tmp_path):
     assert all(e.reason.endswith("so we take the plan.") for e in queued)
     # It decides what the template decides, so the run ends where the template run ends.
     change = sum(books.contribution(h) - simulate(SEED).contribution(h) for h in DEMO.hotels)
-    assert change == pytest.approx(28818, abs=1)
+    assert change == pytest.approx(19012, abs=1)
 
 
 @pytest.fixture(scope="module")
@@ -362,7 +362,9 @@ def test_the_oracle_reviewer_is_told_the_demand_bias(fixed_mode_run, tmp_path):
     agent.client = client
     simulate(SEED, deciding(agent), last_day=10, demand_bias=0.9)
     reasons = [e.reason for e in agent.entries if e.queued]
-    assert reasons and all("of 1.5 and demand bias of 0.9, holding" in r for r in reasons)
+    assert reasons and all(
+        "of 1.5 and demand bias of 0.9, a market elasticity of 1, holding" in r for r in reasons
+    )
 
 
 def test_an_oracle_run_writes_nothing_to_the_cache(oracle_fixed_run):
@@ -429,7 +431,9 @@ def test_a_scripted_client_declines_chosen_plans_and_is_read_back(fixed_mode_run
 def test_the_oracle_reviewer_is_told_the_market_elasticity_and_the_reaction(
     fixed_mode_run, tmp_path
 ):
-    assert oracle(1.0, 0.0, 0.0) is ORACLE and oracle(1.0, 0.5, 0.0) is not ORACLE
+    # Told nothing, the oracle scores at the market elasticity each plan was priced with.
+    assert oracle(1.0, None, 0.0) is ORACLE and oracle(1.0, 0.5, 0.0) is not ORACLE
+    assert oracle(1.0, 0.0, 0.0) is not ORACLE
     agent = Agent(SEED, tmp_path, elasticity=ElasticityMode("fixed", 1.0))
     client = oracle(1.0, 0.5, 0.5).client_for(agent)
     assert (client.demand_bias, client.market_elasticity, client.reaction_share) == (1.0, 0.5, 0.5)

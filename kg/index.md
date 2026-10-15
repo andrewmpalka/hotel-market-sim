@@ -10,7 +10,7 @@ nodes and its words, len(text.split()) over the file.
 | --- | ---: | ---: |
 | modules.md | 30 | 4,050 |
 | data.md | 33 | 4,293 |
-| rules.md | 123 | 5,158 |
+| rules.md | 124 | 5,207 |
 | shocks.md | 7 | 734 |
 | concepts.md | 11 | 1,154 |
 | measures.md | 14 | 962 |
@@ -19,8 +19,8 @@ nodes and its words, len(text.split()) over the file.
 | results.md | 42 | 7,233 |
 | forks.md | 13 | 1,921 |
 | unknowns.md | 15 | 2,013 |
-| every node file | 353 | 37,418 |
-| index.md | | 2,971 |
+| every node file | 354 | 37,467 |
+| index.md | | 2,977 |
 
 ## Modules (`modules.md`)
 
@@ -141,6 +141,7 @@ nodes and its words, len(text.split()) over the file.
 - RUL-97 [C] LEVEL_MIN — src/hotel_market/estimate.py
 - RUL-98 [C] LEVEL_MAX — src/hotel_market/estimate.py
 - RUL-53 [C] REPORT_DAYS — src/hotel_market/cli.py
+- RUL-124 [C] market.elasticity — customers/demo.toml
 - RUL-81 [C] BENCH_MODES — src/hotel_market/cli.py
 - RUL-85 [C] REPEAT_WINDOW — src/hotel_market/cli.py
 - RUL-80 [C] PRICES — src/hotel_market/bench.py

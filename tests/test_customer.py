@@ -10,7 +10,9 @@ from hotel_market.agent import Agent
 from hotel_market.bookings import Books, simulate
 from hotel_market.cli import main
 from hotel_market.customer import CUSTOMER_VARIABLE, DEMO_FILE, demo, demo_path, load
+from hotel_market.demand import MARKET_ELASTICITY
 from hotel_market.detect import detect_numbers, flags
+from hotel_market.forecast import ORACLE_MARKET_ELASTICITY
 from hotel_market.model import request_for
 from hotel_market.plan import entry_for
 from hotel_market.simulated import simulated_sources
@@ -38,6 +40,7 @@ def test_the_demo_file_describes_the_market_in_claude_md():
         (1.0, 0.7, 0.4, 0.2, 0.0),
     )
     assert DEMO.curve(45) == pytest.approx(0.3)
+    assert DEMO.market_elasticity == 1.0 == MARKET_ELASTICITY == ORACLE_MARKET_ELASTICITY
     assert load(ROOT / DEMO_FILE) == DEMO
 
 
@@ -83,6 +86,7 @@ def test_the_booking_curves_days_out_must_ascend(tmp_path):
 
 def test_a_share_must_lie_between_0_and_1(tmp_path):
     _refused(tmp_path, "cost_share = 0.3333333333333333", "cost_share = 1.5", "cost_share")
+    _refused(tmp_path, "elasticity = 1.0", "elasticity = -1.0", "market.elasticity")
     _refused(tmp_path, "air_share = 0.60", "air_share = 1.6", "hotel 'convention': air_share")
 
 

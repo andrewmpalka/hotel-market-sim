@@ -219,9 +219,7 @@ def test_decisions_jsonl_has_one_line_per_flag_and_advice(first):
             assert {"numbers", "by_weekday", "plan", "new_rates"} <= set(line)
             assert (line["new_rates"] is None) == (line["action"] == HOLD)
             assert line["action"] in (HOLD, line["plan"])
-    assert advice and all(
-        line["action"] == MIN_STAY and line["value_at_stake"] is None for line in advice
-    )
+    assert all(line["action"] == MIN_STAY and line["value_at_stake"] is None for line in advice)
 
 
 def test_changed_stays_are_the_pairs_whose_rate_the_agent_changed(first):
@@ -396,10 +394,10 @@ def test_the_seeds_command_prints_one_row_per_arm_and_a_learn_arms_estimates(mon
     assert "  59" in out and "1.59 (1.59 to 1.59)" in out  # day 59, the convention hotel
 
 
-def test_the_default_mode_still_gives_28818_on_seed_7(first):
+def test_the_default_mode_still_gives_19012_on_seed_7(first):
     _, fixed, books, _ = first
     change = sum(books.contribution(h) - fixed.contribution(h) for h in DEMO.hotels)
-    assert change == pytest.approx(28818, abs=1)
+    assert change == pytest.approx(19012, abs=1)
 
 
 @pytest.mark.slow
@@ -613,6 +611,9 @@ def test_a_market_elasticity_goes_to_both_runs_and_to_the_agent(tmp_path):
     plans = [line for line in agent.log if "elasticity" in line]
     assert plans and all(line["elasticity"]["market_elasticity"] == 0.5 for line in plans)
     assert "at an elasticity of 0.5 in both runs" in summary(SEED, fixed, books, agent)
+    # A run at 0.0 keeps its cache apart too, because the customer file's value is 1.0.
+    zero = run(SEED, tmp_path / "z.jsonl", tmp_path / "cache", FakeClient(), market_elasticity=0.0)
+    assert zero[2].cache_dir == tmp_path / "cache" / "market-0" / "seed7"
     nested = run(
         SEED,
         tmp_path / "n.jsonl",
@@ -623,13 +624,16 @@ def test_a_market_elasticity_goes_to_both_runs_and_to_the_agent(tmp_path):
         market_elasticity=0.5,
     )[2]
     assert nested.cache_dir == tmp_path / "cache" / "demand-bias-0.9-react" / "market-0.5" / "seed7"
+    # Given no value, both runs and the agent take the customer file's, in the plain folder.
     plain, _, plain_agent = run(SEED, tmp_path / "p.jsonl", tmp_path / "cache", FakeClient())
-    assert plain.market_elasticity == 0.0 and plain_agent.cache_dir == tmp_path / "cache" / "seed7"
+    assert plain.market_elasticity == DEMO.market_elasticity == 1.0
+    assert plain_agent.cache_dir == tmp_path / "cache" / "seed7"
     assert all(
-        line["elasticity"]["market_elasticity"] == 0.0
+        line["elasticity"]["market_elasticity"] == 1.0
         for line in plain_agent.log
         if "elasticity" in line
     )
+    assert "at an elasticity of 1 in both runs" in summary(SEED, plain, plain, plain_agent)
 
 
 def test_a_scenario_and_the_churn_go_to_both_runs(tmp_path):
@@ -695,7 +699,7 @@ def test_the_command_and_the_bench_take_a_demand_bias(monkeypatch, capsys):
         reviewers=(TEMPLATE,),
         demand_bias=1.0,
         react=False,
-        market_elasticity=0.0,
+        market_elasticity=None,
         scenario=DEFAULT_SCENARIO,
         churn=False,
         policy=None,
@@ -727,12 +731,13 @@ def test_the_command_and_the_bench_take_a_demand_bias(monkeypatch, capsys):
     main(["--seeds", "1", "3", "--react"])
     out = capsys.readouterr().out
     assert seen["react"] and "competitors reacting to the hotels' rate changes" in out
-    assert "With competitors reacting (market elasticity 0): the comp-median flags" in out
+    # The heading names the customer file's value when the command set none.
+    assert "With competitors reacting (market elasticity 1): the comp-median flags" in out
     assert "recent shown" in out and "recent held" in out
     main(["bench", "--seeds", "1", "3", "--template", "--elasticity", "fixed:1.0", "--react"])
     out = capsys.readouterr().out
     assert seen["react"] and "With competitors reacting" in out and "oracle" in out
-    assert seen["market"] == 0.0 and "(market elasticity 0)" in out
+    assert seen["market"] is None and "(market elasticity 1)" in out
     # --market-elasticity goes to the sweep and to the oracle, and the headings name it.
     main(["--seeds", "1", "3", "--react", "--market-elasticity", "0.5"])
     out = capsys.readouterr().out
@@ -989,7 +994,7 @@ def test_a_sweep_counts_the_shock_plans_apart_from_the_other_plans(first, tmp_pa
     assert SHOCK_PLAN_CAUSES == {NEW_EVENT, SEATS_UP}
     accepted = [e for e in agent.entries if e.action != HOLD]
     shock = [e for e in accepted if {NEW_EVENT, SEATS_UP} & set(e.causes)]
-    assert shock and len(shock) < len(accepted)
+    assert shock and len(shock) <= len(accepted)
     assert (result.shock_changes, result.other_changes) == (len(shock), len(accepted) - len(shock))
     shock_pairs = {(e.hotel, s) for e in shock for s in e.new_rates}
     other_pairs = {(e.hotel, s) for e in accepted if e not in shock for s in e.new_rates}

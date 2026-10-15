@@ -22,7 +22,8 @@ experiment.
    elasticity mode and the model join the key when they are not the defaults.
    A demand bias other than 1.0 or the competitor reaction puts a run's folders
    under cache/demand-bias-F/, cache/react/ or cache/demand-bias-F-react/, and
-   a market elasticity other than 0 adds cache/market-E/ under those. A rerun
+   a market elasticity other than the customer file's adds cache/market-E/
+   under those. A rerun
    reads the cache first. Without an API key, model.py writes a template
    reason, so the tests run offline. The template's answers are never cached.
 5. The stack is Python 3.11+, numpy, pandas, duckdb, pytest, ruff and the

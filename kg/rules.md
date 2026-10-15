@@ -181,10 +181,10 @@ marked [H], with one line that names the node it moved to.
 - Evidence: test_the_forecast_is_the_simulators_demand_for_the_demo_market, test_the_demand_bias_multiplies_both_demands_and_is_1_by_default
 
 ### RUL-87 [C] MARKET_ELASTICITY
-- Value: 0.0
+- Value: 1.0
 - File: src/hotel_market/demand.py
 - Kind: parameter
-- Meaning: the market's price response. Expected demand scales with (the comp median as shopped / its starting level) ** -this ([[DEC-52]]). At 0.0 only the rate against the median moves bookings, so a matched raise is free.
+- Meaning: the market's price response by default. Expected demand scales with (the comp median as shopped / its starting level) ** -this ([[DEC-52]]). 1.0: a market-wide rate rise loses demand in proportion ([[RUL-124]]).
 - Evidence: test_the_market_elasticity_scales_demand_with_the_medians_level, test_the_market_elasticity_scales_each_days_draw_by_the_medians_level
 
 ## shops.py
@@ -201,7 +201,7 @@ marked [H], with one line that names the node it moved to.
 - File: src/hotel_market/shops.py
 - Kind: parameter
 - Meaning: the random stream for the rate-shop noise, kept apart from the booking stream [[RUL-22]]. Another stream draws other noise and other results.
-- Evidence: test_rates_depend_only_on_the_seed, test_the_default_mode_still_gives_28818_on_seed_7
+- Evidence: test_rates_depend_only_on_the_seed, test_the_default_mode_still_gives_19012_on_seed_7
 
 ### RUL-83 [C] REACTION_SHARE
 - Value: 0.5
@@ -231,16 +231,16 @@ marked [H], with one line that names the node it moved to.
 - File: src/hotel_market/bookings.py
 - Kind: parameter
 - Meaning: the random stream for every booking draw of a run. Another stream draws other bookings and other results.
-- Evidence: test_same_seed_gives_the_same_books_and_another_seed_does_not, test_the_default_mode_still_gives_28818_on_seed_7
+- Evidence: test_same_seed_gives_the_same_books_and_another_seed_does_not, test_the_default_mode_still_gives_19012_on_seed_7
 
 ## forecast.py
 
 ### RUL-88 [C] ORACLE_MARKET_ELASTICITY
-- Value: 0.0
+- Value: 1.0
 - File: src/hotel_market/forecast.py
 - Kind: parameter
 - Meaning: the market elasticity the agent prices with ([[DEC-52]]). It is the simulator's value handed to it, as [[RUL-56]] hands it the share elasticity. The command sets the run's value, and every plan record carries it.
-- Evidence: test_the_agents_market_elasticity_starts_at_0_and_lowers_demand_where_the_median_rose, test_the_plan_record_carries_the_market_elasticity_and_only_a_set_value_reaches_the_request
+- Evidence: test_the_agents_market_elasticity_starts_at_1_and_lowers_demand_where_the_median_rose, test_the_plan_record_carries_the_market_elasticity_and_a_zero_one_stays_out_of_the_request
 
 ## detect.py
 
@@ -326,7 +326,7 @@ marked [H], with one line that names the node it moved to.
 - Kind: parameter
 - Meaning: the elasticity the default mode prices with. It is the simulator's own value ([[RUL-21]]), handed to the agent as an oracle ([[DEC-40]]). A real hotel does not have one.
 - Modes: the other modes replace it with a fixed value or a learned one ([[DEC-38]], [[RUL-49]]).
-- Evidence: test_elasticity_modes_parse_and_print, test_the_default_mode_still_gives_28818_on_seed_7
+- Evidence: test_elasticity_modes_parse_and_print, test_the_default_mode_still_gives_19012_on_seed_7
 
 ### RUL-40 [H] MIN_VALUE_AT_STAKE
 - Moved to: [[RUL-67]]
@@ -509,6 +509,14 @@ marked [H], with one line that names the node it moved to.
 - Kind: label
 - Meaning: the two commands that run the agent against the stored tables ([[DEC-42]]). main() hands an argument list that starts with one of them to their own parser.
 - Evidence: test_the_daily_commands_run_a_day_and_replay_it
+
+### RUL-124 [C] market.elasticity
+- Value: 1.0
+- File: customers/demo.toml
+- Key: market.elasticity
+- Kind: parameter
+- Meaning: the market's own price response for the demo market, the value the simulator and the agent take unless a run sets --market-elasticity ([[RUL-87]], [[RUL-88]]). The comment in the file states the reason.
+- Evidence: test_the_demo_file_describes_the_market_in_claude_md
 
 ### RUL-122 [C] NO_KEY_LINE
 - Value: "No API key: the template accepts every plan"
