@@ -76,12 +76,11 @@
   benchmark tables. The template sweeps rerun for nothing, a new recording of
   seed 7 costs about $0.08, and the live tables cost about $86 to make again.
 - The benchmark ran the live models on seeds 1 to 20 in the fixed and the
-  learned modes on world v1 (commit b178e7b) and is not yet rerun on world v2
-  (docs/results.md). No reviewer recovered more than 28% of the oracle's
-  margin in a fixed mode or 4% in a learned one. The cautious arms'
-  declines came from a rounding in the request, and the fixed request removed
-  them. In the reacting market Opus held 43 of 556 second raises for reasons
-  that never name the earlier raise.
+  learned modes on 2026-10-15 on world v2 (docs/results.md). Only Opus
+  recovered any of the oracle's margin, 34% in a fixed mode and 10% in a
+  learned one; Sonnet and Haiku tie with accepting every plan. In the reacting
+  market Opus held 27 of the 583 plans on dates changed within 14 days, and the
+  oracle held none.
 - The container image was built on Python 3.11, 3.12 and 3.14 and passed the
   suite on each. A seed-7 run inside it matches the native run (docs/results.md).
 

@@ -86,17 +86,19 @@ never-cut control earns +$112,877 and the agent is -$54,602 against it,
 ahead in 0 seeds of 20, which docs/results.md explains as the ratchet
 (docs/results.md, The rule-based control).
 
-**What the model adds, and what learns.** Measured on world v1 (commit
-b178e7b) and not yet rerun on world v2: in the default run the model added
-nothing, because every reviewer accepted every plan, and as a reviewer in a
-mode where the agent's elasticity was wrong, Opus recovered 28% of what a
-perfect reviewer could at a fixed elasticity of 1.0 and 4% in a learned mode,
-while Sonnet and Haiku declined nothing. A benchmark on world v2, the same
-commands over seeds 1 to 20 with the three models, costs about $90 at list
-prices and is the next run. The one piece that learns from the bookings is the
-elasticity estimator, a Poisson regression with a prior, and on world v2 the
-agent that uses it keeps little of the gain unless the cautious rule is on
-(docs/reviewers.md for the reviewers, docs/results.md for the rest).
+**What the model adds, and what learns.** Measured on 2026-10-15 on world v2:
+in the default run the model added nothing, because every reviewer accepted
+every plan, and as a reviewer in a mode where the agent's elasticity was wrong,
+Opus recovered 34% of what a perfect reviewer could at a fixed elasticity of
+1.0 and 10% in a learned mode, by declining 230 and 41 plans that the oracle
+also declined, while Sonnet declined 8 and 4 and Haiku none and 2, so those two
+tie with accepting every plan. In those modes accepting every plan earns
+-$6,265 and +$804 a seed against the oracle's +$13,107 and +$13,199, so the
+reviewer matters more on world v2 than it did on world v1. The benchmark's
+7,743 calls cost $85.92 at list prices. The one piece that learns from the
+bookings is the elasticity estimator, a Poisson regression with a prior, and on
+world v2 the agent that uses it keeps little of the gain unless the cautious
+rule is on (docs/reviewers.md for the reviewers, docs/results.md for the rest).
 
 ## The limit that matters
 

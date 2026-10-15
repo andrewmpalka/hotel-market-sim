@@ -15,11 +15,11 @@ nodes and its words, len(text.split()) over the file.
 | concepts.md | 11 | 1,197 |
 | measures.md | 14 | 962 |
 | sources.md | 4 | 855 |
-| decisions.md | 66 | 9,720 |
-| results.md | 42 | 7,275 |
+| decisions.md | 66 | 9,723 |
+| results.md | 42 | 7,014 |
 | forks.md | 13 | 1,918 |
-| unknowns.md | 16 | 2,191 |
-| every node file | 363 | 38,831 |
+| unknowns.md | 16 | 2,193 |
+| every node file | 363 | 38,575 |
 | index.md | | 2,983 |
 
 ## Modules (`modules.md`)
@@ -369,4 +369,4 @@ nodes and its words, len(text.split()) over the file.
 - UNK-13 [U] Whether a 5% cut is enough: the largest cut on the menu is 5%
 - UNK-14 [U] The bias in an elasticity estimate when a hotel prices to demand
 - UNK-15 [U] The real market-level price elasticity
-- UNK-16 [U] What the reviewers do on world v2
+- UNK-16 [O] What the reviewers do on world v2

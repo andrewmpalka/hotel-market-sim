@@ -333,7 +333,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Decided: the bench measures every reviewer at fixed:1.0 and fixed:2.0 and keeps the true mode as a check. The ranking pools the two mismatched modes ([[DEC-48]]).
 - Replaces: nothing built; the live model had been measured in the true mode only ([[UNK-01]]).
 - Reason: in the true mode every plan is scored at the simulator's elasticity, so accepting every plan is right. The oracle accepts all ([[DEC-47]]). Only where the code's elasticity is wrong can a decline be right ([[DEC-38]]).
-- Measured: at fixed:1.0 Opus recovers 0.28 of the oracle's gain over accept-all, and Sonnet and Haiku recover none ([[RES-16]], [[RES-19]]).
+- Measured: at fixed:1.0 on world v2 Opus recovers 0.34 of the oracle's gain over accept-all, and Sonnet and Haiku recover none ([[RES-16]], [[RES-19]]).
 - Commit: 5935444
 - Evidence: test_the_oracle_reviewer_accepts_every_queued_plan_in_true_mode, test_the_offline_bench_on_20_seeds_pins_the_benchmarks_headline
 - Links: [[UNK-01]], [[DEC-38]], [[DEC-47]], [[DEC-48]], [[MEA-12]], [[RES-16]], [[RES-17]], [[RES-18]], [[RES-19]]

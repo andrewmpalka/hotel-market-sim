@@ -10,8 +10,8 @@ and a RES node records the run. A claim that no test can confirm stays [U].
 - Before: four live runs of seed 7 on world v1 accepted all 28 plans ([[RES-08]]), and the world v2 run of 2026-10-15 accepted all 6 ([[RES-09]]). The decisions and the contribution change were the template's each time.
 - Reasons: the reasons differed by request format. The fourth format, with each range as one phrase, copied every phrase whole ([[DEC-44]]). The world v2 run restated three gains and paraphrased an earlier change.
 - Kept: the figures here come from the recorded world v2 run of seed 7, kept as [[DAT-29]]. The world v1 runs are quoted from the sessions that made them.
-- Measured: on seeds 1 to 20, Opus declines 47 plans at fixed:1.0 and 1 at fixed:2.0 ([[RES-16]], [[RES-17]]). Sonnet and Haiku decline none in 120 arms, and none declines in the true mode ([[RES-18]]).
-- Learn: Opus declines 16 plans in the four arms with no reaction and 49 reacting ([[RES-34]] to [[RES-37]]). Haiku declines 7 and Sonnet none. [[DEC-56]] removed every learn:1.0 cautious decline.
+- Measured: on seeds 1 to 20 of world v2, Opus declines 230 plans at fixed:1.0 and 40 at fixed:2.0 ([[RES-16]], [[RES-17]]). Sonnet declines 8 and 5, Haiku none, and none declines in the true mode ([[RES-18]]).
+- Learn: Opus declines 58 plans in the four arms with no reaction and 28 reacting ([[RES-34]] to [[RES-37]]). Haiku declines 4 and Sonnet 4. Opus's rate falls as the standard error rises ([[RES-38]]).
 - Evidence: test_the_recorded_live_run_of_seed_7_passes_the_audit, test_the_recorded_live_run_replays_without_a_key_and_gives_19796
 - Links: [[MOD-09]], [[MOD-22]], [[DAT-29]], [[DEC-36]], [[DEC-44]], [[FRK-04]], [[RES-08]], [[RES-16]], [[RES-17]], [[RES-18]], [[RES-34]], [[RES-35]], [[RES-36]], [[RES-37]]
 
@@ -112,9 +112,10 @@ and a RES node records the run. A claim that no test can confirm stays [U].
 - Resolves when: never within this repository; it needs market-level demand against market-level rates, with the shocks held apart.
 - Links: [[RUL-87]], [[DEC-52]], [[RES-26]], [[UNK-07]], [[UNK-11]], [[FRK-08]]
 
-### UNK-16 [U] What the reviewers do on world v2
-- Unknown: the reviewer benchmark ([[RES-16]] to [[RES-19]], [[RES-34]] to [[RES-39]]) and the live run of seed 7 ([[RES-08]]) were measured on world v1 (commit b178e7b). On world v2 what the models decline is not known.
-- Cost: the same commands on seeds 1 to 20 with the three models, the fixed and the learn modes, cost about $90 at list prices ([[RUL-80]]); the live run of seed 7 about $0.15.
-- Best guess: the models still accept nearly every plan in the true mode, where every plan pays, and decline a few raises in the mismatched modes, as on world v1.
-- Resolves when: `make live-audit SEED=7` re-records the fixture and `hotel-market bench --seeds 1 20` runs on world v2 under a cost gate of $120.
+### UNK-16 [O] What the reviewers do on world v2
+- Unknown: whether the world v1 benchmark's findings held on world v2: what the models decline, and what the live run of seed 7 does. Resolved on 2026-10-15 by the reruns below.
+- Cost: the benchmark's 7,743 calls cost $85.92 at list prices against the $90 expected, under the $120 gate; the live run of seed 7 $0.08.
+- Measured: on world v2 the template earns -$6,265 a seed at fixed:1.0 and the oracle +$13,107; Opus earns +$305 with 230 plans declined, Sonnet -$6,184 with 8 and Haiku -$6,265 with 0 ([[RES-16]]).
+- Learn: at learn:1.0 the template earns +$804 and the oracle +$13,199; Opus declines 41, Sonnet 4 and Haiku 2 ([[RES-34]]). The live run of seed 7 accepted all 6 plans ([[RES-09]]).
 - Links: [[RES-08]], [[RES-16]], [[RES-34]], [[DAT-29]], [[RUL-80]], [[FRK-12]]
+

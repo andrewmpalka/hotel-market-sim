@@ -138,41 +138,41 @@ here for the rest.
 
 ### RES-15 [O] The suite on each Python version
 - Ran: `python -m pytest --slow` from a fresh virtual environment on Python 3.12.6 and 3.13.7 on 2026-10-12. On 2026-10-15, on world v2, `python -m pytest` on both and `make test-all` on 3.12.6, with numpy 2.5.4 and pandas 3.0.6.
-- Result: the full suite gave 383 passed and 2 xfailed on 3.12.6, the plain one 374 passed with 9 skipped. The plain suite on 3.13.7 gave 369 passed with 14 skipped, without the demo extra. The 2 xfails wait for the seed-7 re-record.
+- Result: the full suite gave 386 passed on 3.12.6, the plain one 377 passed with 9 skipped. The plain suite on 3.13.7 gave 372 passed with 14 skipped, without the demo extra, after the seed-7 re-record.
 - Detail: the package was also installed and run against numpy 1.26 and pandas 2.2, the lower bounds in pyproject.toml. A seed-7 run then reproduced decisions.jsonl byte for byte ([[DEC-28]]).
 - Table: docs/results.md, "The suite on each Python version"
 - Links: [[UNK-04]], [[DEC-28]], [[DEC-30]]
 
 
 ### RES-16 [C] The reviewers at fixed:1.0 on seeds 1 to 20
-- Ran: `hotel-market bench --seeds 1 20` on 2026-10-12 on world v1 (commit b178e7b), not rerun on world v2. Each seed: the fixed-rate run, then the template, the oracle and the three models in each mode, from the caches.
-- Detail: the live calls were made first, in parallel chunks of seeds. Seeds 1 to 3 ran as one process per model, then seeds 4 to 20 in seven chunks. Each arm's cache folder holds its calls.jsonl.
-- Result: the template earns +$8,438 a seed and the oracle +$30,588 while accepting 15% of the plans. Opus earns +$14,584, ahead in 17 of 20, with a recovered share of 0.28. Sonnet and Haiku accept every plan and tie with the template.
-- Declines: Opus declines 47 plans with precision 1.00 and count recall 0.14. Its dollar-weighted recall is 0.25, so the one in seven it caught were the costlier ones. 36 are the day-40 raise on stay dates 70 to 90 after the seat cut.
-- Gap: the oracle's +$30,588 at fixed:1.0 stands next to the true mode's +$32,899 ([[RES-01]]). The $22,150 a seed between the template and the oracle is the value a reviewer can recover. Opus's regret is $16,004 a seed.
+- Ran: `hotel-market bench --seeds 1 20` on 2026-10-15 on world v2. Each seed: the fixed-rate run, then the template, the oracle and the three models in each mode. The tables were printed from the caches with no call.
+- Detail: the live calls ran first, one process per command: seeds 1 to 3, then seeds 4 to 20 in six ranges of up to three seeds, sixteen processes at a time. Each arm's cache folder holds its calls.jsonl.
+- Result: the template earns -$6,265 a seed and the oracle +$13,107 while accepting 11% of the plans. Opus earns +$305, ahead in 8 of 20, a recovered share of 0.34. Sonnet earns -$6,184 and Haiku -$6,265.
+- Declines: Opus declines 230 plans with precision 1.00 and recall 0.31; its dollar-weighted recall is 0.33. Sonnet declines 8 plans with precision 1.00 and recall 0.01. Haiku declines none.
+- Gap: the oracle's +$13,107 at fixed:1.0 stands next to the true mode's +$16,164 ([[RES-01]]). The $19,372 a seed between the template and the oracle is the value a reviewer can recover. Opus's regret is $12,802 a seed.
 - Table: docs/results.md, "Seeds 1 to 20 at a fixed elasticity of 1.0"
 - Evidence: test_the_offline_bench_on_20_seeds_pins_the_benchmarks_headline
 - Links: [[DEC-47]], [[DEC-48]], [[DEC-49]], [[MEA-12]], [[RES-01]], [[RES-03]], [[RES-19]], [[UNK-01]]
 
 ### RES-17 [C] The reviewers at fixed:2.0 on seeds 1 to 20
-- Ran: the same command as [[RES-16]], the fixed:2.0 arms. It is measured on world v1 (commit b178e7b) and not rerun on world v2.
-- Result: the template earns +$9,551 a seed and the oracle +$23,058 while accepting 29% of the plans. Opus earns +$9,557 with one decline, which the oracle shares, so its recall is 0.00. Sonnet and Haiku tie with the template.
-- Declines: Opus's one decline holds a 5% cut worth $340 on a date ahead of pace, on seed 4, day 53. The oracle declines 71% of the plans in this mode, most of them cuts.
+- Ran: the same command as [[RES-16]], the fixed:2.0 arms, on 2026-10-15 on world v2.
+- Result: the template earns -$2,687 a seed and the oracle +$6,006 while accepting 13% of the plans. Opus earns -$2,442, a recovered share of 0.03. Sonnet earns -$2,681 and Haiku -$2,687.
+- Declines: Opus declines 40 plans with precision 0.93 and recall 0.08. Sonnet declines 5 plans with precision 1.00 and recall 0.01. Haiku declines none. The oracle declines 87% of the plans in this mode.
 - Table: docs/results.md, "Seeds 1 to 20 at a fixed elasticity of 2.0"
 - Evidence: test_the_offline_bench_on_20_seeds_pins_the_benchmarks_headline
 - Links: [[RES-16]], [[RES-03]], [[DEC-47]], [[DEC-49]], [[UNK-01]]
 
 ### RES-18 [O] The reviewers in the true mode on seeds 1 to 20
-- Ran: the same command as [[RES-16]], the true-mode arms. It is measured on world v1 (commit b178e7b) and not rerun on world v2.
-- Result: every reviewer earns +$32,899 a seed, ahead in 20 of 20, the figure of [[RES-01]]. No model declines a plan, so the mode cannot separate them ([[DEC-47]]).
-- Calls: 174 calls a model. Opus costs $2.83, Sonnet $1.31 and Haiku $0.11 at list prices, with median latencies of 4.3, 2.5 and 4.2 s. Sonnet's one request with invalid answers counts twice, a failed run and its rerun ([[UNK-02]]).
+- Ran: the same command as [[RES-16]], the true-mode arms, on 2026-10-15 on world v2.
+- Result: every reviewer earns +$16,164 a seed, ahead in 20 of 20, the figure of [[RES-01]]. No model declines a plan, so the mode cannot separate them ([[DEC-47]]).
+- Calls: 93 calls a model. Opus costs $1.68, Sonnet $0.85 and Haiku $0.07 at list prices, with median latencies of 3.4, 2.7 and 4.3 s. Invalid answers: 0.
 - Table: docs/results.md, "Seeds 1 to 20 in the true mode"
 - Links: [[RES-01]], [[RES-16]], [[DEC-47]], [[UNK-01]], [[UNK-02]], [[UNK-09]]
 
 ### RES-19 [O] The reviewers ranked across the mismatched modes
-- Ran: the same command as [[RES-16]]; the ranking pools the fixed:1.0 and fixed:2.0 arms, 40 per reviewer. It is measured on world v1 (commit b178e7b) and not rerun on world v2.
-- Result: the oracle earns +$26,823 a seed. Opus earns +$12,071, a recovered share of 0.17, with precision 1.00 and recall 0.08. The template, Sonnet and Haiku earn +$8,994, since the two models accept every plan.
-- Cost: over the two modes Opus makes 936 calls for $16.60, Sonnet 940 for $6.99 and Haiku 940 for $0.58. The whole benchmark's 3,338 calls cost $28.42 at list prices ([[RUL-80]]).
+- Ran: the same command as [[RES-16]]; the ranking pools the fixed:1.0 and fixed:2.0 arms, 40 per reviewer, on 2026-10-15 on world v2.
+- Result: the oracle earns +$9,557 a seed. Opus earns -$1,068, a recovered share of 0.24, with precision 0.99 and recall 0.23. The template earns -$4,476, Sonnet -$4,432 and Haiku -$4,476.
+- Cost: over the two modes Opus makes 1,313 calls for $24.33, Sonnet 1,205 for $9.48 and Haiku 1,201 for $0.78. The fixed benchmark's 4,006 calls cost $37.19 at list prices ([[RUL-80]]).
 - Table: docs/results.md, "The reviewers ranked across the mismatched modes"
 - Links: [[RES-16]], [[RES-17]], [[DEC-48]], [[MEA-12]], [[UNK-09]]
 
@@ -302,58 +302,56 @@ here for the rest.
 - Links: [[DEC-55]], [[DEC-11]], [[MOD-25]], [[RES-01]], [[RES-21]], [[RES-22]], [[RES-26]], [[FRK-11]]
 
 ### RES-34 [C] The reviewers at learn:1.0 on seeds 1 to 20
-- Ran: `hotel-market bench --seeds 1 20 --elasticity learn:1.0 --elasticity learn:2.0 --model claude-opus-5-5 --model claude-haiku-5-5` on 2026-10-12, world v1 (commit b178e7b), not rerun on world v2. Sonnet ran at learn:1.0 alone.
-- Detail: the live calls ran first. Seeds 1 to 3 ran as one process per command, then seeds 4 to 20 in ten chunks. The projection from seeds 1 to 3 priced the set at $42.31, under the $60 gate ([[RES-39]]).
-- Result: the template earns +$14,141 a seed and the oracle +$30,828 while accepting 21% of the plans. Opus earns +$14,869, a recovered share of 0.04. Sonnet and Haiku accept every plan and tie with the template.
-- Declines: Opus declines 7 plans with precision 1.00 and recall 0.04. Six are the day-40 raise on stay dates 70 to 90 after the seat cut ([[RES-16]]). The seventh rests on an estimate from no observation.
-- Estimates: the day-59 estimates are 1.36 to 1.45 by hotel under every reviewer, within 0.01 of the template's ([[RES-04]]).
+- Ran: `hotel-market bench --seeds 1 20 --elasticity learn:1.0 --elasticity learn:2.0 --model claude-opus-5-5 --model claude-haiku-5-5` on 2026-10-15 on world v2. Sonnet ran at learn:1.0 alone, in its own command.
+- Detail: the live calls ran with the fixed arms', one process per command and seed range. The projection from seeds 1 to 3 priced the learn set at $43.85; it came to $48.73 ([[RES-39]]).
+- Result: the template earns +$804 a seed and the oracle +$13,199 while accepting 17% of the plans. Opus earns +$2,049, a recovered share of 0.10. Sonnet earns +$803 and Haiku +$783.
+- Declines: Opus declines 41 plans with precision 1.00 and recall 0.11. Sonnet declines 4 plans with precision 1.00 and recall 0.01. Haiku declines 2 plans with precision 1.00 and recall 0.01.
+- Estimates: the day-59 estimates are 1.42 to 1.49 by hotel under the template and 1.28 to 1.43 under the oracle ([[RES-04]]).
 - Table: docs/results.md, "Seeds 1 to 20 at a learned elasticity from a prior of 1.0, each reviewer"
 - Evidence: test_the_learn_arms_pin_their_headline
 - Links: [[RES-04]], [[RES-16]], [[RES-35]], [[RES-38]], [[RES-39]], [[DEC-47]], [[MEA-12]], [[UNK-01]]
 
 ### RES-35 [C] The reviewers at learn:1.0 with the cautious rule
-- Ran: the commands of [[RES-34]] with `--cautious`, on world v1 (commit b178e7b), not rerun on world v2. The three models reran on seeds 1 to 20 after [[DEC-56]]; the table holds the rerun. The template and oracle rows did not change.
-- Result: the template earns +$25,076 a seed and the oracle +$31,042 while accepting 34% of the plans. Opus, Sonnet and Haiku accept every plan and tie with the template. The day-59 estimates are 1.28 to 1.43 by hotel ([[RES-05]]).
-- Before: with the first display Opus declined 5 plans, Haiku 10 and Sonnet 2. The oracle agreed with 4, 8 and 1. On seed 7, day 29, all three declined the same airport raise.
-- Reading: the request rounded a gain to the nearest $10 ([[MOD-11]]). A gain under $5 at an end of the band therefore read "the same as holding". The rule had passed it ([[DEC-39]]), and the models read a failed rule.
-- Fix: the request now writes a band-end gain under $10 to the dollar and states the rule's verdict ([[DEC-56]]). The rerun declined nothing. Its 852 calls cost $10.48.
+- Ran: the commands of [[RES-34]] with `--cautious`, on 2026-10-15 on world v2, with the display [[DEC-56]] fixed before the run.
+- Result: the template earns +$12,527 a seed and the oracle +$14,854 while accepting 32% of the plans. Opus earns +$12,561, Sonnet +$12,527 and Haiku +$12,269. The day-59 estimates are 1.36 to 1.46 under the template ([[RES-05]]).
+- Declines: Opus declines 5 plans with precision 1.00 and recall 0.03. Sonnet declines none. Haiku declines 1 plan with precision 0.00 and recall 0.00.
+- History: on world v1 the first display rounded a band-end gain under $5 to "the same as holding", and the three models declined such plans as a failed rule. [[DEC-56]] writes the gain to the dollar and states the rule's verdict.
 - Table: docs/results.md, "Seeds 1 to 20 at a learned elasticity from a prior of 1.0 with the cautious rule, each reviewer"
 - Evidence: test_the_learn_arms_pin_their_headline
 - Links: [[RES-05]], [[RES-34]], [[RES-36]], [[RES-38]], [[CON-11]], [[DEC-39]], [[DEC-56]], [[MOD-08]], [[MOD-11]], [[UNK-01]]
 
 ### RES-36 [C] The reviewers at learn:2.0, with and without the cautious rule
-- Ran: the commands of [[RES-34]] and [[RES-35]], the learn:2.0 arms. Opus and Haiku ran them; Sonnet did not. It is measured on world v1 (commit b178e7b) and not rerun on world v2.
-- Plain: the template earns +$16,258 a seed and the oracle +$24,794 while accepting 50% of the plans. Opus earns +$16,524 with 4 declines, each the day-40 cut of 5% on dates 70 to 90. The oracle shares each. Haiku accepts all.
-- Cautious: the template earns +$17,634 and the oracle +$18,599 while accepting 52%. Opus earns +$17,644 with 5 declines and Haiku +$17,601 with 7. The declines are cuts read as "the same as holding" at the low end, before [[DEC-56]].
-- Estimates: the day-59 estimates are 1.55 to 1.68 by hotel without the rule and 1.59 to 1.84 with it. Every reviewer shares them.
+- Ran: the commands of [[RES-34]] and [[RES-35]], the learn:2.0 arms, on 2026-10-15 on world v2. Opus and Haiku ran them; Sonnet did not.
+- Plain: the template earns +$2,416 a seed and the oracle +$7,190 while accepting 28%. Opus earns +$2,812 with 12 plans declined and Haiku +$2,457 with 1.
+- Cautious: the template earns +$2,018 and the oracle +$4,132 while accepting 31%. Opus earns +$2,018 with 0 plans declined and Haiku +$2,018 with 0.
+- Estimates: the day-59 estimates are 1.52 to 1.75 by hotel without the rule and 1.55 to 1.91 with it, under the template.
 - Table: docs/results.md, "Seeds 1 to 20 at a learned elasticity from a prior of 2.0"
 - Evidence: test_the_learn_arms_pin_their_headline
 - Links: [[RES-04]], [[RES-05]], [[RES-17]], [[RES-34]], [[RES-35]], [[RES-38]], [[UNK-01]]
 
 ### RES-37 [C] The reviewers at learn:1.0 cautious in the reacting market at 0.5
-- Ran: `hotel-market bench --seeds 1 20 --elasticity learn:1.0 --cautious --react --market-elasticity 0.5 --model claude-opus-5-5` on 2026-10-12, world v1 (commit b178e7b), not rerun on world v2. The template and the oracle ran beside Opus.
-- Result: the template earns +$198,089 a seed ([[RES-26]]) and the oracle +$198,488 while accepting 99% of the plans. Opus earns +$192,265, $5,824 a seed under accepting all, with 49 declines the oracle never shares.
-- Recent: Opus is shown 556 plans on stay dates the hotel changed within 14 days and holds 43 ([[MEA-14]]). It holds 6 of the 230 others. The oracle holds 1 of the 556. Opus's dates changed twice fall from 702 to 675.
-- Reasons: 40 of the 49 reasons cite the band's "the same as holding" at the high end, the display [[DEC-56]] replaced. None names the hotel's earlier raise, which the request does not carry ([[DAT-16]], [[DEC-45]]).
-- Finding: Opus does not decline the second raise as such. The 43 holds are the before measurement for the fix of [[FRK-09]]. The simulator pays the second raise, so the oracle accepts it ([[DEC-52]]).
+- Ran: `hotel-market bench --seeds 1 20 --elasticity learn:1.0 --cautious --react --market-elasticity 0.5 --model claude-opus-5-5` on 2026-10-15 on world v2. The template and the oracle ran beside Opus.
+- Result: the template earns +$141,469 a seed ([[RES-26]]) and the oracle +$141,469 while accepting 100% of the plans. Opus earns +$139,231 with 28 plans declined, $2,238 a seed under accepting all.
+- Recent: Opus is shown 583 plans on stay dates the hotel changed within 14 days and holds 27 ([[MEA-14]]). The oracle holds 0 of 582. Opus's dates changed twice are 602 against the template's 609.
+- Request: since world v2 the request lists the hotel's earlier changes on the stay dates, each with the rooms booked since against the rooms expected ([[DEC-45]]), which [[FRK-09]] asked for.
 - Table: docs/results.md, "Seeds 1 to 20 at a learned elasticity from a prior of 1.0 with the cautious rule, the reaction"
 - Evidence: test_the_learn_arms_pin_their_headline
 - Links: [[RES-26]], [[RES-33]], [[RES-35]], [[RES-38]], [[FRK-09]], [[DEC-51]], [[DEC-52]], [[MEA-14]], [[UNK-11]]
 
 ### RES-38 [O] The decline rate by standard-error group in the learn arms
-- Ran: the commands of [[RES-34]] to [[RES-37]]. The bench prints the groups of [[RUL-102]] for every live arm that declined a plan ([[MEA-13]]). It is measured on world v1 (commit b178e7b) and not rerun on world v2.
-- Result: the rate is flat across the groups. From the prior of 1.0, Opus declines 3% of the plans under 0.35 and 1% at 0.35 and over. Before [[DEC-56]] the cautious arms declined 0% to 4% in every group.
-- Reacting: the reacting arm declines 9% from 0.15 to 0.25 and 6% in each group above. It declines 0 of the 5 plans under 0.15.
-- Finding: the standard error did not drive the declines. They key on the plan's cause and on the band's rounded display ([[RES-35]]). The one estimate from no observation, with a standard error of 0.5, was declined.
+- Ran: the commands of [[RES-34]] to [[RES-37]] on 2026-10-15 on world v2. The bench prints the groups of [[RUL-102]] for every live arm that declined a plan ([[MEA-13]]).
+- Result: Opus from the prior of 1.0 declines 7 of 8 plans under 0.15, 20 of 76 from 0.15 to 0.25, 8 of 93 to 0.35 and 6 of 345 at 0.35 and over. The rate falls as the standard error rises.
+- Finding: on world v2 the standard error moves Opus's declines from the prior of 1.0: it declines most of the plans whose estimate rests on little data. On world v1 the rate was flat across the groups.
+- Others: Opus from 2.0 declines 8 of 80 from 0.15 to 0.25 and 4 of 264 at 0.35 and over; reacting, 6 of 35, 13 of 174 and 9 of 617. Sonnet and Haiku decline 0 to 2 plans a group.
 - Table: docs/results.md, "The decline rate by the standard error of the plan's elasticity"
 - Links: [[RUL-102]], [[MEA-13]], [[RES-34]], [[RES-35]], [[RES-36]], [[RES-37]], [[UNK-07]]
 
 ### RES-39 [O] The reviewers ranked across the learned modes, and the learn arms' cost
-- Ran: the commands of [[RES-34]] and [[RES-35]]. Each ranking pools the two priors, 40 seeds per reviewer. Sonnet ran from the prior of 1.0 only, so it is not ranked. It is measured on world v1 (commit b178e7b) and not rerun on world v2.
-- Plain: the oracle earns +$27,811 a seed accepting 31% of the plans. Opus earns +$15,696 with a recovered share of 0.04, precision 1.00 and recall 0.03. The template and Haiku earn +$15,199.
-- Cautious: before [[DEC-56]], the oracle earns +$24,821 accepting 41%. Opus earns +$21,360, the template +$21,355 and Haiku +$21,337. Opus's precision is 0.80 and its recall 0.04.
-- Cost: the five commands make 3,553 calls for $46.76 at list prices ([[RUL-80]]). Opus's five arms cost $39.84, Sonnet's two $5.95 and Haiku's four $0.94. The projection was $42.31. The rerun of [[RES-35]] adds 852 calls for $10.48.
-- Invalid: six records hold a bad attempt, all on seed 1's first two-entry request. The API refused the first schema's array bound, and Sonnet then left an entry out ([[UNK-02]]). The rerun answered each.
+- Ran: the commands of [[RES-34]] and [[RES-35]] on 2026-10-15 on world v2. Each ranking pools the two priors, 40 seeds per reviewer. Sonnet ran from the prior of 1.0 only, so it is not ranked.
+- Plain: the oracle earns +$10,194 a seed accepting 21% of the plans. Opus earns +$2,431 with a recovered share of 0.10, precision 0.98 and recall 0.09. The template earns +$1,610 and Haiku +$1,620.
+- Cautious: the oracle earns +$9,493 accepting 32%. Opus earns +$7,289, the template +$7,273 and Haiku +$7,143. Opus's precision is 1.00 and its recall 0.02.
+- Cost: the five commands make 3,737 calls for $48.73 at list prices ([[RUL-80]]). The projection from seeds 1 to 3 was $43.85. With the fixed arms the benchmark's 7,743 calls cost $85.92.
+- Invalid: 0 records hold a bad attempt. The API refused the first schema's array bound on world v1 ([[UNK-02]]); the schema is now an object with one required decision per entry.
 - Table: docs/results.md, "The reviewers ranked across the learned modes", "The learn arms' cost"
 - Links: [[RES-19]], [[RES-34]], [[RES-35]], [[RES-36]], [[RES-37]], [[DEC-34]], [[DEC-48]], [[MEA-12]], [[UNK-02]]
 
