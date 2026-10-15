@@ -35,8 +35,8 @@ SCHEMA = {"type": "object", "properties": {}}  # any schema will do for the clie
 
 
 class FakeClient:
-    """Stands in for the model. It accepts each plan, or gives one choice. With several choices, it
-    gives one per call in turn and repeats the last one."""
+    """Stands in for the model. It says yes to each plan, or gives one choice. With several
+    choices, it gives one per call in turn and repeats the last one."""
 
     model = "fake"
 

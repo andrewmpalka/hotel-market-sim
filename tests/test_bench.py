@@ -112,8 +112,8 @@ def test_the_recovered_share_is_the_gain_over_the_template_as_a_share_of_the_ora
     # seeds and mode: it recovered 39% of what a reviewer could.
     assert recovered_share(11989.0, 34117.0, 20510.0) == pytest.approx(8521 / 22128)
     assert recovered_share(11989.0, 34117.0, 34117.0) == 1.0  # the oracle itself
-    assert recovered_share(11989.0, 34117.0, 11989.0) == 0.0  # accept-all
-    assert recovered_share(100.0, 300.0, 50.0) == pytest.approx(-0.25)  # worse than accept-all
+    assert recovered_share(11989.0, 34117.0, 11989.0) == 0.0  # the template's own share
+    assert recovered_share(100.0, 300.0, 50.0) == pytest.approx(-0.25)  # worse than the template
     assert math.isnan(recovered_share(35648.0, 35648.0, 35648.0))  # the true mode: no room
 
 

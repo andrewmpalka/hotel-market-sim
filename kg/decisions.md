@@ -533,7 +533,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Client: it stands in as the client the agent asks ([[MOD-09]]) and reads the day's entries from agent.today. Its decisions then drive a run of their own. It also labels the entries of any other run after the fact.
 - Boundary: it imports from plan.py and agent.py, and nothing in the agent's path imports it. tests/test_sources.py checks its imports with the agent's modules. Its answers are never cached and record source oracle ([[DEC-25]]).
 - Reason: the oracle uses the simulator's elasticity, which the agent may not see. A grader outside the agent's path cannot leak it. It is the ceiling for a reviewer: it cannot pick a better candidate, and a seed's draw can beat it.
-- Measured: in the default mode the oracle accepts every queued plan. That mode therefore cannot separate reviewers, and the mismatched modes can ([[RES-03]]).
+- Measured: in the default mode the oracle says yes to every queued plan. That mode therefore cannot separate reviewers, and the mismatched modes can ([[RES-03]]).
 - Commit: 03506d4
 - Evidence: test_the_oracle_reviewer_accepts_every_queued_plan_in_true_mode, test_the_oracle_declines_where_hold_scores_at_least_as_well, test_the_agent_reads_only_through_the_interfaces
 - Links: [[MOD-23]], [[DEC-01]], [[DEC-02]], [[DEC-40]], [[MEA-06]]

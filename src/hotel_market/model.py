@@ -7,11 +7,11 @@ writes and nothing more.
 
 The model's answers are cached under cache/seed<seed>/, one file per day and hotel, keyed by a
 digest of the request. Each record also carries a digest of the system prompt, so an edited prompt
-stops a rerun instead of returning the old answers. A rerun reads them first. With no client, a
-template accepts each plan and
-writes a reason from the entry's numbers. The template is a function of the request, so it is
-never cached. Nothing here needs an API key. Each record names the model asked, and an agent
-given another model keeps its answers in their own folder (agent.py).
+stops a rerun instead of returning the old answers. A rerun reads them first. With no client, the
+template answers. It is a stand-in that answers in the model's place when there is no key; it
+says yes to every plan and writes a reason from the entry's figures. The template is a function
+of the request, so it is never cached. Nothing here needs an API key. Each record names the
+model asked, and an agent given another model keeps its answers in their own folder (agent.py).
 
 A replay only reads the cache. A Measured client wraps any client, records every call to a
 calls.jsonl and asks again after an SDK error or an invalid answer.
@@ -604,7 +604,8 @@ def _check(decisions: list[dict], request: dict) -> None:
 
 
 def template_decisions(request: dict) -> list[dict]:
-    """The template's answer: accept each plan, with a reason built from the entry's numbers."""
+    """The template's answer. The template is a stand-in that answers in the model's place when
+    there is no key; it says yes to every plan and writes a reason from the entry's figures."""
     return [
         {
             "id": entry["id"],

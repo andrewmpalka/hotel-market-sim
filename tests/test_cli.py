@@ -65,7 +65,7 @@ SEED = 7
 
 
 class FakeClient:
-    """Stands in for the model: accepts each plan and says so."""
+    """Stands in for the model: it says yes to each plan and says so."""
 
     def complete(self, system, prompt, schema):
         entries = json.loads(prompt)["entries"]
@@ -166,7 +166,7 @@ def test_the_replay_command_prints_day_20s_queue(first, monkeypatch, capsys):
 
 
 def test_a_run_with_no_key_says_so_and_names_the_template(monkeypatch, capsys, tmp_path):
-    """Without a key the template accepts every plan. A run that did not ask for the template
+    """Without a key the template says yes to every plan. A run that did not ask for the template
     prints one line saying so, and every summary names who answered the queue."""
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.chdir(tmp_path)  # decisions.jsonl lands here
@@ -280,7 +280,7 @@ def test_the_sweep_gives_each_seeds_change_over_the_fixed_run(first, tmp_path):
     assert result.estimated == pytest.approx(
         sum(e.value_at_stake for e in agent.entries if e.action != HOLD)
     )
-    # The template accepts every plan, as the fake model does, so the runs match.
+    # The template says yes to every plan, as the fake model does, so the runs match.
     assert result.contribution_change == pytest.approx(
         sum(books.contribution(h) - fixed.contribution(h) for h in DEMO.hotels)
     )

@@ -174,9 +174,9 @@ def _oracle_reason(
 class ScriptedClient:
     """A client for tests and offline runs. It answers a request from `answers`, a dict of request
     digest to decisions, when the digest is there. Otherwise it declines the entries whose Key is in
-    `declines` and accepts every other plan, with a scripted reason. It plays a model. Its answers
-    are cached and record the source "model". The record's model field, "scripted", tells them from
-    a real model's."""
+    `declines` and says yes to every other plan, with a scripted reason. It plays a model. Its
+    answers are cached and record the source "model". The record's model field, "scripted", tells
+    them from a real model's."""
 
     def __init__(
         self,
@@ -332,10 +332,10 @@ def recovered_share(template_change: float, oracle_change: float, change: float)
     """Recovered share = (the arm's mean realised change - the template's) / (the oracle's - the
     template's). Both are on the same seeds and mode.
 
-    It is the share of the value a reviewer could recover over accept-all that this one did. The
-    oracle's share is 1 and accept-all's is 0. A reviewer that lost money against accept-all is
-    below 0. It is nan when the oracle and the template tie, as in the true mode, because there is
-    then nothing to recover.
+    It is the share of the value a reviewer could recover over the template, which says yes to
+    every plan, that this one did. The oracle's share is 1 and the template's is 0. A reviewer that
+    lost money against the template is below 0. It is nan when the oracle and the template tie, as
+    in the true mode, because there is then nothing to recover.
     """
     room = oracle_change - template_change
     if room == 0:
