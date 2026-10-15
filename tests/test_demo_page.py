@@ -2,6 +2,7 @@
 arithmetic on a figure; every figure it shows is a row code wrote."""
 
 import ast
+import json
 import shutil
 from pathlib import Path
 
@@ -9,7 +10,8 @@ import pytest
 
 from hotel_market import stored
 
-PAGE = Path(__file__).resolve().parents[1] / "src" / "hotel_market" / "demo_page.py"
+ROOT = Path(__file__).resolve().parents[1]
+PAGE = ROOT / "src" / "hotel_market" / "demo_page.py"
 ARITHMETIC = (ast.Add, ast.Sub, ast.Mult, ast.Div, ast.FloorDiv, ast.Mod, ast.Pow, ast.MatMult)
 # Builtins and frame methods that make a figure from figures.
 FIGURE_FUNCTIONS = {
@@ -17,17 +19,16 @@ FIGURE_FUNCTIONS = {
     "pct_change", "add", "sub", "mul", "div", "truediv", "agg", "aggregate", "prod", "quantile",
 }  # fmt: skip
 ALLOWED_IMPORTS = {"os", "pathlib", "altair", "duckdb", "streamlit"}
-AIRPORT_DAY_20 = (  # the plan line, then the template's reason, its dollar signs escaped
+AIRPORT_DAY_20 = (  # the plan line, then the recorded run's reason, its dollar signs escaped
     "**Accepted:** raise 5% on Tue, Fri; raise 10% on Mon, Wed, Thu, Sun for Tue 23 Feb [50] to "
-    "Fri 23 Apr [109], \\$10,140 more than holding. Arriving passengers are up 12.8% to 20.4% "
-    "against yesterday's schedule on stay dates 50 to 109. We recommend the plan, raise 5% on "
-    "Tue, Fri; raise 10% on Mon, Wed, Thu, Sun; Sat hold, which is estimated to earn \\$10,140 "
-    "more than holding in contribution on the 8,430 rooms still unsold."
+    "Fri 23 Apr [109], \\$10,140 more than holding. "
+    + json.loads((ROOT / "tests" / "fixtures" / "live_seed7" / "day020_airport.json").read_text())[
+        "decisions"
+    ][0]["reason"].replace("$", "\\$")
 )
-SIDEBAR = (  # the run table's words until the recording covers world v2
-    "Seed 7 of the simulated market. The reasons are the model's where the recorded live run "
-    "covers the request and the template's for the 4 it does not. The page reads a file code "
-    "wrote and computes nothing."
+SIDEBAR = (  # the run table's words: the recorded live run covers every request of seed 7
+    "Seed 7 of the simulated market. The reasons are the model's, from the recorded live run. "
+    "The page reads a file code wrote and computes nothing."
 )
 
 

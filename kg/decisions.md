@@ -224,7 +224,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Replaces: nothing built; a shared random stream was the alternative.
 - Reason: a rate change on one stay date leaves every other draw as it was. The fixed-rate and agent runs therefore differ only where the agent acted, and the changed-pairs comparison is exact.
 - Streams: since world v2 each hotel draws from its own stream, keyed by its key ([[DEC-64]]).
-- Measured: on seed 7 the 93 hotel-nights the agent changed carry the whole +$28,818 ([[RES-02]]). The other 507 book identically in both runs.
+- Measured: on seed 7 of world v2 the 70 hotel-nights the agent changed carry the whole +$19,796 ([[RES-02]]). The other 530 book identically in both runs.
 - Commit: 054edd6
 - Evidence: test_a_rate_change_applies_from_the_next_day_and_touches_no_other_stay_date, test_every_other_pair_books_the_same_in_both_runs, test_a_bigger_mean_never_draws_fewer_rooms_on_the_same_luck
 - Links: [[MOD-06]], [[DAT-07]], [[RUL-02]], [[RUL-22]]
@@ -555,7 +555,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Digest: the cautious requests change, so their digests and caches change ([[DEC-23]]). The recorded seed-7 run ([[DAT-29]]) is the default mode, which has no band, and is unaffected.
 - Prompt: the system prompt ([[RUL-47]]) tells the model to copy the verdict as written.
 - Measured: the three learn:1.0 cautious arms reran on seeds 1 to 20 and declined nothing. Each ties with the template at +$25,076 a seed ([[RES-35]]). The 852 calls cost $10.48.
-- Evidence: test_a_band_end_gain_under_ten_dollars_reads_to_the_dollar, test_the_band_verdict_states_the_cautious_rules_result, test_the_three_values_reach_the_model_request, test_the_recorded_live_run_replays_without_a_key_and_gives_28818
+- Evidence: test_a_band_end_gain_under_ten_dollars_reads_to_the_dollar, test_the_band_verdict_states_the_cautious_rules_result, test_the_three_values_reach_the_model_request, test_the_recorded_live_run_replays_without_a_key_and_gives_19796
 - Links: [[DEC-44]], [[DEC-39]], [[DEC-23]], [[DAT-16]], [[DAT-29]], [[MOD-09]], [[MOD-11]], [[RUL-47]], [[RES-35]], [[UNK-01]]
 
 ### DEC-57 [C] A read-only demo page over a file code writes

@@ -7,8 +7,8 @@ One seed with the live model, measured and audited.
     python scripts/live_audit.py --seed 7 --audit-only --elasticity fixed:1.0
                                                        # audit a bench arm's cache (bench.py)
     python scripts/live_audit.py --seed 7 --record-fixture
-                                                       # run live, audit, then copy the cache
-                                                       # records and calls.jsonl into
+                                                       # audit the cache a live run left, then
+                                                       # copy its records and calls.jsonl into
                                                        # tests/fixtures/live_seed7
 
 The run is the hotel-market command's run for the seed in the given mode. The default mode
@@ -282,8 +282,8 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument(
         "--record-fixture",
         action="store_true",
-        help="after the run and the audit, copy the cache records and calls.jsonl into "
-        "tests/fixtures/live_seed7, replacing the recorded run the tests replay",
+        help="audit the cache a live run left, as --audit-only does, then copy its records and "
+        "calls.jsonl into tests/fixtures/live_seed7, replacing the recorded run the tests replay",
     )
     parser.add_argument(
         "--market-elasticity",
@@ -294,6 +294,8 @@ def main(argv: list[str] | None = None) -> None:
         help="the arm's market elasticity, which names its cache folder",
     )
     args = parser.parse_args(argv)
+    if args.record_fixture:  # a second live run would delete the first run's calls.jsonl
+        args.audit_only = True
     if args.cautious:
         args.elasticity = replace(args.elasticity, cautious=True)
     # The arm's folder, as the command and the agent name it; a bench arm keeps its calls.jsonl

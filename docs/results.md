@@ -117,34 +117,30 @@ Seeds 1 to 20 with the simulator's elasticity and the template, each target agai
 | contribution | +$16,164 | $3,166 | $708 | -$27,684 | 20 of 20 | <0.001 | 106 | +$391,434 | +$323,281 |
 | revenue | -$8,214 | $4,500 | $1,006 | +$179,333 | 0 of 20 | <0.001 | 805 | +$3,608,913 | +$3,586,668 |
 
-### Measured on world v1 (commit b178e7b)
-
-The two tables below are the live runs of world v1 and are not rerun until a live run re-records seed 7 on world v2 (`make live-audit SEED=7`, then `python scripts/live_audit.py --seed 7 --record-fixture`).
-
-Four live runs of seed 7 in the default mode with claude-opus-5-5, one per request format. Each made seven calls and accepted every plan. Only the last is recorded, under tests/fixtures/live_seed7/. Cost is at list prices of $4 and $20 per million tokens.
+Four live runs of seed 7 on world v1 (commit b178e7b) in the default mode with claude-opus-5-5, one per request format. Each made seven calls and accepted every plan. The last was the recorded run under tests/fixtures/live_seed7/ until the world v2 run below replaced it. Cost is at list prices of $4 and $20 per million tokens.
 
 | Request format | Input tokens | Cost | Kept |
 | --- | ---: | ---: | --- |
 | Bare numbers | 20,329 | $0.12 | no |
 | A signed display string next to each raw value | 37,107 | $0.18 | no |
 | Display strings alone, each range as a named pair | 24,219 | $0.14 | no |
-| Display strings alone, each range as one phrase | 21,148 | $0.12 | yes |
+| Display strings alone, each range as one phrase | 21,148 | $0.12 | until world v2 |
 
-The recorded live run of seed 7.
+The recorded live run of seed 7, made on 2026-10-15 on world v2 with `make live-audit SEED=7` and recorded with `python scripts/live_audit.py --seed 7 --record-fixture`. The model chose the template's option on every entry, so the contribution change is the template run's. The audit lists five figures in the reasons that it cannot match to a request phrase. Three are per-day gains that the request holds as "$2,780 more than holding" and the reason wrote as "$2,780 on Monday". Two are the day and the rooms of an earlier change: the request's line "day 18: raised 10% to $264 on Sat 75; since then 2 rooms booked against 1 expected" came back as "Since our day 18 raise to $264, 2 rooms have booked against 1 expected", although the prompt says to cite these lines as written.
 
 | Measure | Value |
 | --- | ---: |
-| Model calls | 7, on days 10, 20, 27 and 34 |
-| Plans accepted | 7 of 7 |
-| Input tokens | 21,148 (1,744 to 3,923 a call) |
-| Output tokens | 1,713 (124 to 524 a call) |
-| Time in the model | 32 s (2.9 to 7.4 s a call, median 3.5 s) |
-| Whole run, both simulations | 37 s |
-| Cost at list prices | $0.12 |
+| Model calls | 4, on days 18, 20 and 23 |
+| Plans accepted | 6 of 6 |
+| Input tokens | 15,469 (1,936 to 7,474 a call) |
+| Output tokens | 1,034 (131 to 493 a call) |
+| Time in the model | 18 s (3.0 to 5.7 s a call, median 4.5 s) |
+| Whole run, both simulations | 19 s |
+| Cost at list prices | $0.08 |
 | Prompt cache read or written | none |
-| Contribution change | +$28,818, the template run's |
-
-### Measured on world v2
+| Contribution change | +$19,796, the template run's |
+| Figures the audit cannot match to a request phrase | 5 |
+| Sentences without a request figure | 4 |
 
 Seed 7 with fixed rates: occupancy by hotel over stay dates 0 to 59 and over 140 to 149, measured on 2026-10-15 on world v2. The last column is the emptiest of those last ten nights.
 

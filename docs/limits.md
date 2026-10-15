@@ -74,7 +74,7 @@
 - A change to the world, such as a fifth hotel or a second event, invalidates
   the pinned tests, the seed-7 recording under tests/fixtures and the live
   benchmark tables. The template sweeps rerun for nothing, a new recording of
-  seed 7 costs about $0.12, and the live tables cost about $86 to make again.
+  seed 7 costs about $0.08, and the live tables cost about $86 to make again.
 - The benchmark ran the live models on seeds 1 to 20 in the fixed and the
   learned modes on world v1 (commit b178e7b) and is not yet rerun on world v2
   (docs/results.md). No reviewer recovered more than 28% of the oracle's

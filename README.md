@@ -21,9 +21,8 @@ plan, so those figures measure the plans and not the model.
     make demo SEED=7    # demo.duckdb from the recorded run, then the demo page
 
 make demo needs the network once, to install streamlit, and needs no API key.
-The recorded run covers the shipped market at seed 7 on world v1, and the
-template answers wherever it does not, which on world v2 is every request until
-`make live-audit SEED=7` records it again. Every other command is in
+The recorded run covers the shipped market at seed 7 on world v2, and the
+template answers wherever it does not. Every other command is in
 docs/commands.md.
 
 ## Results

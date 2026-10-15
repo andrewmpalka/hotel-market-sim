@@ -285,7 +285,7 @@ marked [H], with one line that names the node it moved to.
 - File: src/hotel_market/detect.py
 - Kind: label
 - Meaning: the cause when the pace gap is above the threshold. The label reaches the model request, so the recorded live run replays only with this text.
-- Evidence: test_pace_causes_follow_the_gap_against_the_threshold, test_the_recorded_live_run_replays_without_a_key_and_gives_28818
+- Evidence: test_pace_causes_follow_the_gap_against_the_threshold, test_the_recorded_live_run_replays_without_a_key_and_gives_19796
 
 ### RUL-32 [C] BEHIND
 - Value: "behind pace"
@@ -299,7 +299,7 @@ marked [H], with one line that names the node it moved to.
 - File: src/hotel_market/detect.py
 - Kind: label
 - Meaning: the cause when the passenger revision is at least [[RUL-64]]. The label reaches the model request.
-- Evidence: test_each_shock_flags_on_the_day_it_becomes_known, test_the_recorded_live_run_replays_without_a_key_and_gives_28818
+- Evidence: test_each_shock_flags_on_the_day_it_becomes_known, test_the_recorded_live_run_replays_without_a_key_and_gives_19796
 
 ### RUL-34 [C] SEATS_CUT
 - Value: "seats cut"
@@ -313,7 +313,7 @@ marked [H], with one line that names the node it moved to.
 - File: src/hotel_market/detect.py
 - Kind: label
 - Meaning: the cause when the comp median rose by at least [[RUL-65]] since yesterday. The label reaches the model request.
-- Evidence: test_each_shock_flags_on_the_day_it_becomes_known, test_the_recorded_live_run_replays_without_a_key_and_gives_28818
+- Evidence: test_each_shock_flags_on_the_day_it_becomes_known, test_the_recorded_live_run_replays_without_a_key_and_gives_19796
 
 ### RUL-36 [C] MEDIAN_DOWN
 - Value: "comp median down"
@@ -327,7 +327,7 @@ marked [H], with one line that names the node it moved to.
 - File: src/hotel_market/detect.py
 - Kind: label
 - Meaning: the cause on the day an event becomes known, on the stay dates it covers. The label reaches the model request.
-- Evidence: test_each_shock_flags_on_the_day_it_becomes_known, test_the_recorded_live_run_replays_without_a_key_and_gives_28818
+- Evidence: test_each_shock_flags_on_the_day_it_becomes_known, test_the_recorded_live_run_replays_without_a_key_and_gives_19796
 
 ### RUL-38 [C] PACE
 - Value: {"ahead of pace", "behind pace"}
@@ -357,7 +357,7 @@ marked [H], with one line that names the node it moved to.
 - File: src/hotel_market/plan.py
 - Kind: label
 - Meaning: the name of the candidate that keeps the current rate, and of the action when nothing changes. It is one of the two options in every request.
-- Evidence: test_each_day_of_the_week_gets_hold_raise_5_raise_10_and_lower_5_clamped_to_the_limits, test_the_recorded_live_run_replays_without_a_key_and_gives_28818
+- Evidence: test_each_day_of_the_week_gets_hold_raise_5_raise_10_and_lower_5_clamped_to_the_limits, test_the_recorded_live_run_replays_without_a_key_and_gives_19796
 
 ### RUL-42 [C] HALFWAY
 - Value: "lower halfway to the new median"

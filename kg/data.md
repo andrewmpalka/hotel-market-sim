@@ -256,13 +256,13 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-29 [C] The recorded live run
 - File: tests/fixtures/live_seed7/
-- Fields: the seven cache records ([[DAT-17]]) of one live run of seed 7 in the default mode with claude-opus-5-5. The files day010_convention.json to day034_convention.json each hold the request, its digest and the model's decisions.
-- Calls: calls.jsonl, one line per call, as [[MOD-22]] wrote it before [[DAT-30]]. A line holds the tokens, seconds, stop reason, answering model and request id. It lacks the fields [[DAT-30]] added later.
-- Origin: copied from the run's cache/seed7/ and calls.jsonl on the day of the run. It was the fourth live run of the seed, made after each range became one phrase ([[DEC-44]], [[RES-08]]).
+- Fields: the four cache records ([[DAT-17]]) of one live run of seed 7 on world v2 in the default mode with claude-opus-5-5. The files day018_lifestyle.json to day023_airport.json hold the request, its digest, the model and its decisions.
+- Calls: calls.jsonl, one line per call, as [[MOD-22]] writes it with the fields [[DAT-30]] added. A line holds the tokens, seconds, stop reason, answering model, request id, day, hotel and retries.
+- Origin: copied from the run's cache/seed7/ and calls.jsonl by `python scripts/live_audit.py --seed 7 --record-fixture` on 2026-10-15, the day of the run, after the world v2 changes ([[DEC-66]]).
 - Stale: a change to the request makes the fixture stale, and the replay test then says to record a run again.
-- Written by: scripts/live_audit.py's live run, then copied by hand
-- Read by: tests/test_live_audit.py. The audit on it finds no declined plan, no figure outside its request and no sentence without a request figure. With it as the cache, seed 7 replays without a key and ends at +$28,818 ([[RES-09]]).
-- Evidence: test_the_recorded_live_run_of_seed_7_passes_the_audit, test_the_recorded_live_run_replays_without_a_key_and_gives_28818
+- Written by: scripts/live_audit.py's live run, then its --record-fixture option, which replays the run from its cache and copies the records
+- Read by: tests/test_live_audit.py. The audit on it finds no declined plan, 5 figures outside a request phrase and 4 sentences without one. With it as the cache, seed 7 replays without a key and ends at +$19,796 ([[RES-09]]).
+- Evidence: test_the_recorded_live_run_of_seed_7_passes_the_audit, test_the_recorded_live_run_replays_without_a_key_and_gives_19796
 
 ### DAT-30 [C] The call record
 - File: src/hotel_market/model.py

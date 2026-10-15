@@ -72,20 +72,21 @@ here for the rest.
 - Links: [[DEC-41]], [[RUL-58]], [[FRK-01]], [[CON-07]], [[MEA-04]], [[RES-01]]
 
 ### RES-08 [C] Four live runs of seed 7, one per request format
-- Ran: `python scripts/live_audit.py --seed 7` four times with claude-opus-5-5, the request format changing between the runs ([[DEC-44]]). It is measured on world v1 (commit b178e7b) and not rerun on world v2.
+- Ran: `python scripts/live_audit.py --seed 7` four times with claude-opus-5-5, the request format changing between the runs ([[DEC-44]]). It is measured on world v1 (commit b178e7b); the world v2 run is [[RES-09]].
 - Result: each run makes the same 7 calls as the template run. The model accepts all 7 plans every time, 28 of 28, so contribution ends at +$28,818 each time.
 - Tokens: the input was 20,329 tokens with bare numbers and 37,107 with a raw value beside each display string. It was 24,219 with display strings and named-pair ranges, and 21,148 with each range as one phrase.
 - Reasons: the first run wrote figures its own way and added claims the entry does not make. The second put direction words on signs, and the third joined range ends with its own words. The fourth copied every phrase whole.
-- Kept: only the fourth run is recorded, as [[DAT-29]]; the first three are quoted from the session that made them.
+- Kept: the fourth run was recorded as [[DAT-29]] until the world v2 run replaced it on 2026-10-15; all four are now quoted from the sessions that made them.
 - Table: docs/results.md, "Four live runs of seed 7"
-- Evidence: test_the_recorded_live_run_of_seed_7_passes_the_audit, test_the_recorded_live_run_replays_without_a_key_and_gives_28818
+- Evidence: test_the_recorded_live_run_of_seed_7_passes_the_audit, test_the_recorded_live_run_replays_without_a_key_and_gives_19796
 - Links: [[DEC-44]], [[UNK-01]], [[UNK-02]], [[MOD-22]], [[RES-09]]
 
 ### RES-09 [C] The recorded live run of seed 7, measured
-- Ran: the fourth live run of [[RES-08]]; its cache and its calls.jsonl are kept as [[DAT-29]]. It is measured on world v1 (commit b178e7b) and not rerun on world v2.
-- Result: the 7 calls used 21,148 input tokens (1,744 to 3,923 a call) and 1,713 output tokens (124 to 524). They cost $0.12 at list prices of $4 and $20 per million tokens.
-- Time: the model took 32 s in all, 2.9 to 7.4 s a call with a median of 3.5 s. The whole run with both simulations took 37 s, and no prompt cache was read or written.
+- Ran: `make live-audit SEED=7` on 2026-10-15 on world v2 with claude-opus-5-5; its cache and its calls.jsonl are kept as [[DAT-29]]. The model chose the template's option on every entry.
+- Result: the 4 calls used 15,469 input tokens (1,936 to 7,474 a call) and 1,034 output tokens (131 to 493). They cost $0.08 at list prices of $4 and $20 per million tokens.
+- Time: the model took 18 s in all, 3.0 to 5.7 s a call with a median of 4.5 s. The whole run with both simulations took 19 s, and no prompt cache was read or written.
 - Calls: every call ended with the stop reason end_turn. None was refused and none fell back to another model. Every answer parsed and named the entry's id and an allowed choice.
+- Audit: 6 plans accepted, none declined. 5 figures match no request phrase: three per-day gains restated as "$2,780 on Monday" and an earlier change paraphrased. 4 sentences hold no request figure.
 - Table: docs/results.md, "The recorded live run of seed 7"
 - Evidence: test_the_recorded_live_run_of_seed_7_passes_the_audit
 - Links: [[UNK-09]], [[UNK-02]], [[DAT-29]], [[MOD-22]], [[RUL-46]]

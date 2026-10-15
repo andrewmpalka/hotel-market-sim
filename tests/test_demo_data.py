@@ -58,7 +58,6 @@ def test_the_file_holds_the_stored_tables_for_every_day_and_the_pages_tables(dem
     assert counts["gains"] == 5 * HORIZON_DAYS
 
 
-@pytest.mark.xfail(reason="world v2; re-record with make live-audit SEED=7", strict=True)
 def test_the_reasons_come_from_the_recorded_live_run(demo_file):
     # The queued plans carry the model's reasons from tests/fixtures/live_seed7; the held flags
     # carry code's. The recorded run accepted every plan.
@@ -68,7 +67,7 @@ def test_the_reasons_come_from_the_recorded_live_run(demo_file):
         for decision in json.loads(path.read_text())["decisions"]
     }
     queued = _rows(demo_file, "SELECT reason, reason_source, outcome FROM queue WHERE queued")
-    assert len(queued) == 7 and len(recorded) == 7
+    assert len(queued) == 6 and len(recorded) == 6
     assert {reason for reason, _, _ in queued} == recorded
     assert {source for _, source, _ in queued} == {"model"}
     assert {outcome for _, _, outcome in queued} == {"accepted"}
@@ -79,7 +78,7 @@ def test_the_reasons_come_from_the_recorded_live_run(demo_file):
     # The file says where its reasons came from, for the page's sidebar.
     assert _rows(demo_file, "SELECT seed, reason_source FROM run") == [
         (7, "the model's, from the recorded live run")
-    ]  # until the recording covers world v2 this row names the template as well
+    ]
 
 
 def test_every_date_reads_as_a_calendar_date_with_its_day_number_in_brackets(demo_file):

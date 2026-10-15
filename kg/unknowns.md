@@ -7,18 +7,18 @@ and a RES node records the run. A claim that no test can confirm stays [U].
 
 ### UNK-01 [C] How the live model decides, compared with the template
 - Was unknown: no run had asked the model. Every number in the README's Results section came from the template, which accepts every plan.
-- Before: four live runs of seed 7 in the default mode with claude-opus-5-5 accepted all 28 plans ([[RES-08]]). The decisions and the contribution change were therefore the template's each time.
-- Reasons: the reasons differed by request format. The fourth format, with each range as one phrase, copied every phrase whole ([[DEC-44]]).
-- Kept: the figures here come from one recorded run of seed 7, the fourth, kept as [[DAT-29]]. The first three runs are quoted from the session that made them.
+- Before: four live runs of seed 7 on world v1 accepted all 28 plans ([[RES-08]]), and the world v2 run of 2026-10-15 accepted all 6 ([[RES-09]]). The decisions and the contribution change were the template's each time.
+- Reasons: the reasons differed by request format. The fourth format, with each range as one phrase, copied every phrase whole ([[DEC-44]]). The world v2 run restated three gains and paraphrased an earlier change.
+- Kept: the figures here come from the recorded world v2 run of seed 7, kept as [[DAT-29]]. The world v1 runs are quoted from the sessions that made them.
 - Measured: on seeds 1 to 20, Opus declines 47 plans at fixed:1.0 and 1 at fixed:2.0 ([[RES-16]], [[RES-17]]). Sonnet and Haiku decline none in 120 arms, and none declines in the true mode ([[RES-18]]).
 - Learn: Opus declines 16 plans in the four arms with no reaction and 49 reacting ([[RES-34]] to [[RES-37]]). Haiku declines 7 and Sonnet none. [[DEC-56]] removed every learn:1.0 cautious decline.
-- Evidence: test_the_recorded_live_run_of_seed_7_passes_the_audit, test_the_recorded_live_run_replays_without_a_key_and_gives_28818
+- Evidence: test_the_recorded_live_run_of_seed_7_passes_the_audit, test_the_recorded_live_run_replays_without_a_key_and_gives_19796
 - Links: [[MOD-09]], [[MOD-22]], [[DAT-29]], [[DEC-36]], [[DEC-44]], [[FRK-04]], [[RES-08]], [[RES-16]], [[RES-17]], [[RES-18]], [[RES-34]], [[RES-35]], [[RES-36]], [[RES-37]]
 
 ### UNK-02 [C] Whether the enum schema behaves as expected against the live API
 - Was unknown: the per-request schema ([[DEC-34]]) had been tested with a fake client only.
-- Measured: in the recorded live run of seed 7 ([[DAT-29]]), all 7 answers parsed as JSON and chose an allowed option. The check of the answer therefore never raised ([[RES-09]]).
-- Calls: every call ended with the stop reason end_turn, none was refused and none fell back to another model. The three earlier runs of the same seed, not kept, did the same over 21 calls.
+- Measured: in the recorded live run of seed 7 ([[DAT-29]]), all 4 answers parsed as JSON and chose an allowed option. The check of the answer therefore never raised ([[RES-09]]).
+- Calls: every call ended with the stop reason end_turn, none was refused and none fell back to another model. The four world v1 runs of the same seed, not kept, did the same over 28 calls.
 - Invalid: Sonnet gave the first invalid answer seen live, on seed 1 at fixed:1.0, day 40. It left an entry out; a retry fixed it. It did so in six requests, one of them twice, in a failed run and its rerun. Opus and Haiku never did.
 - Schema: the decisions are an object with one required property per entry id ([[DEC-34]]). The API refused an array bound of 2 with a 400 on 2026-10-12, and allows a required property. An omission is now unrepresentable.
 - Evidence: test_the_recorded_live_run_of_seed_7_passes_the_audit, test_the_schema_limits_ids_and_choices_to_the_requests_options, test_claude_client_sends_the_request_and_handles_a_refusal
@@ -67,8 +67,8 @@ and a RES node records the run. A claim that no test can confirm stays [U].
 
 ### UNK-09 [C] What a live run costs and how long it takes
 - Was unknown: no live call had been made from this repository. The guess was about seven calls, a few cents to under a dollar, and under a minute.
-- Measured: seed 7 in the default mode makes 7 calls, on days 10, 20, 27 and 34. The recorded run cost $0.12 at list prices in a run of 37 seconds ([[RES-09]]).
-- Formats: the three earlier runs of the same seed, with other request formats, cost $0.12 to $0.18 ([[RES-08]]).
+- Measured: seed 7 in the default mode makes 4 calls on world v2, on days 18, 20 and 23. The recorded run cost $0.08 at list prices in a run of 19 seconds ([[RES-09]]).
+- Formats: the four world v1 runs of the same seed, with other request formats, made 7 calls each and cost $0.12 to $0.18 ([[RES-08]]).
 - Scope: a declined plan would change later flags and so the number of calls. A learn-mode run adds nothing to the calls, only to the estimates.
 - Bench: per seed, Opus costs $0.41 at fixed:1.0, $0.42 at fixed:2.0 and $0.14 in the true mode. Sonnet costs $0.17, $0.17 and $0.07 a seed, Haiku a cent or two. An arm is a mode and a reviewer over all the seeds ([[RES-19]]).
 - Evidence: test_the_recorded_live_run_of_seed_7_passes_the_audit, test_claude_client_sends_the_request_and_handles_a_refusal

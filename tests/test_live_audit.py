@@ -190,37 +190,38 @@ class NoCalls:
 
 
 def test_the_recorded_live_run_of_seed_7_passes_the_audit(capsys):
-    """One live run of seed 7 with claude-opus-5-5 is kept as a fixture. It holds the seven requests
-    and answers and the measurements of the calls. The audit on them finds no declined plan, no
-    figure outside its request and no sentence without a request figure. This is the evidence
-    that UNK-01, UNK-02 and UNK-09 in kg/ rest on."""
+    """One live run of seed 7 with claude-opus-5-5 is kept as a fixture. It holds the four requests
+    and answers and the measurements of the calls. The audit on them finds no declined plan. It
+    lists five figures it cannot match to a request phrase, three per-day gains the request holds
+    as "more than holding" phrases and the day and the rooms of an earlier change the reason
+    paraphrased, and four sentences without a request figure. This is the evidence that UNK-01,
+    UNK-02 and UNK-09 in kg/ rest on."""
     audit.audit(FIXTURE)
     out = capsys.readouterr().out
-    assert "7 model calls, 7 entries decided, 0 declined." in out
-    assert "0 figures in reasons do not appear in their request." in out
-    assert "0 sentences hold no figure from the request." in out
+    assert "4 model calls, 6 entries decided, 0 declined." in out
+    assert "5 figures in reasons do not appear in their request." in out
+    assert "day020_lifestyle.json entry 75-75: 18" in out
+    assert "4 sentences hold no figure from the request." in out
     calls = [json.loads(line) for line in (FIXTURE / "calls.jsonl").read_text().splitlines()]
-    assert len(calls) == 7
+    assert len(calls) == 4
     assert {c["stop_reason"] for c in calls} == {"end_turn"}
     assert {c["model"] for c in calls} == {"claude-opus-5-5"}
     assert not any(c["fallback"] for c in calls)
 
 
-@pytest.mark.xfail(reason="world v2; re-record with make live-audit SEED=7", strict=True)
-def test_the_recorded_live_run_replays_without_a_key_and_gives_28818(tmp_path):
+def test_the_recorded_live_run_replays_without_a_key_and_gives_19796(tmp_path):
     """With the fixture as the cache, the run of seed 7 reads every answer from it. It never calls
     the model, and it ends where the live run ended. A change to the request makes the fixture
     stale. This test then says to record a live run again."""
     shutil.copytree(FIXTURE, tmp_path / "cache" / "seed7", ignore=shutil.ignore_patterns("*.jsonl"))
     fixed, books, agent = run(7, tmp_path / "decisions.jsonl", tmp_path / "cache", NoCalls())
     change = sum(books.contribution(h) - fixed.contribution(h) for h in demo().hotels)
-    assert change == pytest.approx(28818, abs=1)
-    # The default model in the default mode resolves to cache/seed7, and the fixture's
-    # records, written before the record named its model, read back as they are.
+    assert change == pytest.approx(19796, abs=1)
+    # The default model in the default mode resolves to cache/seed7, and each record names it.
     assert agent.model == MODEL and agent.cache_dir == tmp_path / "cache" / "seed7"
-    assert all("model" not in json.loads(p.read_text()) for p in FIXTURE.glob("day*_*.json"))
+    assert all(json.loads(p.read_text())["model"] == MODEL for p in FIXTURE.glob("day*_*.json"))
     decided = [e for e in agent.entries if e.queued]
-    assert len(decided) == 7 and all(e.reason_source == "model" for e in decided)
+    assert len(decided) == 6 and all(e.reason_source == "model" for e in decided)
     assert all(e.action != HOLD for e in decided)
     recorded = {
         (r["request"]["day"], r["request"]["hotel"]["name"], d["id"]): d["reason"]
@@ -259,3 +260,39 @@ def test_record_fixture_copies_the_cache_records_and_the_calls_into_the_fixture(
     assert audit.FIXTURE.name == "live_seed7" and audit.FIXTURE.parent.name == "fixtures"
     with pytest.raises(SystemExit, match="no cache records"):
         audit.record_fixture(tmp_path / "empty", calls, target)
+
+
+def test_record_fixture_replays_the_run_from_its_cache_and_keeps_its_calls(
+    tmp_path, monkeypatch, capsys, day10
+):
+    # A second live run would delete the first run's calls.jsonl, so --record-fixture audits
+    # the cache the way --audit-only does and copies what the live run left.
+    _, table = day10
+    hotel = demo().hotel("convention")
+    entries = [entry_for(10, f, table) for f in flags(10, table) if f.hotel == "convention"]
+    request = request_for(10, hotel, entries)
+    cache = tmp_path / "cache" / "seed7"
+    cache.mkdir(parents=True)
+    record = {"request_digest": "x", "request": request, "source": "model"}
+    record["decisions"] = template_decisions(request)
+    (cache / "day010_convention.json").write_text(json.dumps(record))
+    call = {
+        "input_tokens": 1000,
+        "output_tokens": 500,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "seconds": 4.0,
+        "stop_reason": "end_turn",
+        "model": "claude-opus-5-5",
+        "fallback": False,
+    }
+    (tmp_path / "calls.jsonl").write_text(json.dumps(call) + "\n")
+    monkeypatch.setattr(audit, "FIXTURE", tmp_path / "fixture")
+    monkeypatch.setattr(audit, "live_run", lambda *a, **k: pytest.fail("the model ran again"))
+    audit.main(["--seed", "7", "--record-fixture", "--out", str(tmp_path)])
+    assert "1 model calls, 1 entries decided, 0 declined." in capsys.readouterr().out
+    assert sorted(p.name for p in (tmp_path / "fixture").iterdir()) == [
+        "calls.jsonl",
+        "day010_convention.json",
+    ]
+    assert (tmp_path / "calls.jsonl").exists()
