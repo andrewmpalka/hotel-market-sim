@@ -39,9 +39,15 @@ def normal_demand(hotel: Hotel, stay_day: int) -> float:
     return hotel.rooms * hotel.base_occupancy * weekday_factor(hotel, stay_day)
 
 
-def event_uplift(hotel: Hotel, stay_day: int, as_of_day: int, sources: Sources) -> float:
+def event_uplift(
+    hotel: Hotel, stay_day: int, as_of_day: int, sources: Sources, as_of_tick: int | None = None
+) -> float:
     """The demand uplift of the known events that cover the date; they add up."""
-    return sum(e.uplift for e in sources.events.known(as_of_day) if e.covers(hotel.key, stay_day))
+    return sum(
+        e.uplift
+        for e in sources.events.known(as_of_day, as_of_tick)
+        if e.covers(hotel.key, stay_day)
+    )
 
 
 def expected_demand(
@@ -50,16 +56,22 @@ def expected_demand(
     as_of_day: int,
     sources: Sources,
     market_elasticity: float = ORACLE_MARKET_ELASTICITY,
+    as_of_tick: int | None = None,
 ) -> float:
-    """Rooms a hotel expects to sell for a stay date, from what the feeds say on as_of_day. With a
-    market elasticity, the comp median's level against its start scales it."""
+    """Rooms a hotel expects to sell for a stay date, from what the feeds say on as_of_day, by
+    the tick. With a market elasticity, the comp median's level against its start scales it."""
     demand = (
         normal_demand(hotel, stay_day)
-        * (1 + hotel.air_share * sources.schedules.passenger_change(as_of_day)[stay_day])
-        * (1 + event_uplift(hotel, stay_day, as_of_day, sources))
+        * (
+            1
+            + hotel.air_share * sources.schedules.passenger_change(as_of_day, as_of_tick)[stay_day]
+        )
+        * (1 + event_uplift(hotel, stay_day, as_of_day, sources, as_of_tick))
     )
     if market_elasticity:
-        ratio = sources.shops.median(as_of_day, hotel, stay_day) / sources.shops.first_median(hotel)
+        ratio = sources.shops.median(
+            as_of_day, hotel, stay_day, as_of_tick
+        ) / sources.shops.first_median(hotel)
         demand *= ratio**-market_elasticity
     return demand
 
@@ -69,13 +81,15 @@ def peak_night(
     event: Event,
     sources: Sources,
     market_elasticity: float = ORACLE_MARKET_ELASTICITY,
+    as_of_tick: int | None = None,
 ) -> int:
-    """The event night with the highest expected demand at a hotel, as of the day
-    the event becomes known. Ties go to the earliest night."""
+    """The event night with the highest expected demand at a hotel, as of the day the event
+    becomes known, at the tick it is asked on when that is the same day. Ties go to the earliest
+    night."""
     nights = range(event.start_day, event.end_day + 1)
     return max(
         nights,
         key=lambda night: expected_demand(
-            hotel, night, event.known_day, sources, market_elasticity
+            hotel, night, event.known_day, sources, market_elasticity, as_of_tick
         ),
     )

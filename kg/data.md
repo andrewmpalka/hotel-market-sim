@@ -76,7 +76,7 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-09 [C] Flag
 - File: src/hotel_market/detect.py
-- Fields: Flag(day, hotel, first_stay, last_stay, causes), frozen. Consecutive stay dates of a hotel with the same causes make one flag. A pace cause alone is dropped on a stay date under the hold.
+- Fields: Flag(day, hotel, first_stay, last_stay, causes, tick, ticks), frozen. Consecutive stay dates of a hotel with the same causes make one flag. A pace cause alone is dropped under the hold ([[RUL-128]]).
 - Written by: [[MOD-07]]
 - Read by: [[MOD-08]], [[MOD-10]]
 - Evidence: test_consecutive_stay_dates_with_the_same_causes_merge_into_one_flag
@@ -118,7 +118,7 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-14 [C] Entry
 - File: src/hotel_market/plan.py
-- Fields: Entry(day, hotel, first_stay, last_stay, causes, numbers, weekdays, action, reason, reason_source, pricing, minimum, target, earlier_changes), one per flag.
+- Fields: Entry(day, hotel, first_stay, last_stay, causes, numbers, weekdays, action, reason, reason_source, pricing, minimum, target, earlier_changes, tick, ticks), one per flag.
 - History: earlier_changes lists the EarlierChange records for its stay dates as of today, set by [[MOD-10]] from the Change records it keeps; the request shows each as one string ([[DEC-45]]).
 - Derived: id "first-last", changed_weekdays, plan (the changes in words) and value_at_stake, summed over the days that change. queued means value at stake >= the minimum [[RUL-67]]; new_rates, current_rates and rejected_at_an_end follow.
 - JSON: to_json() adds target only when it is not contribution, so that a line for the demo market reads as before. pricing ([[DAT-21]]) is the elasticity every estimate assumed, and target ([[RUL-58]]) is what the estimates counted.

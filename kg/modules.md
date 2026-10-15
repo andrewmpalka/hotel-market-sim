@@ -66,6 +66,7 @@ which is also the order in which they depend on each other.
 
 ### MOD-07 [C] detect.py
 - File: src/hotel_market/detect.py
+- Ticks: with several ticks a day the numbers are read as of (day, tick), "since yesterday" means since the previous tick, the pace baseline is the curve at the fractional day, and the hold is hold_days of ticks ([[RUL-128]]).
 - Owns: the detect numbers for every hotel and stay date after a day's bookings ([[DAT-08]]). It assigns each stay date its causes and merges consecutive stay dates with the same causes into flags ([[DAT-09]]).
 - Holds: the hold on pace flags ([[DEC-06]]) and the cause labels ([[RUL-31]] to [[RUL-38]]). The thresholds and the hold period come from the customer ([[RUL-62]] to [[RUL-66]]).
 - Reads: [[MOD-02]], [[MOD-17]] (the sources), [[MOD-18]] (the forecast), [[MOD-20]]; never the simulator ([[DEC-40]])

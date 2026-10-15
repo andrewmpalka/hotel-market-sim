@@ -61,7 +61,7 @@ the modules, constants and decisions that implement it.
 - Evidence: test_rooms_never_exceed_the_hotel, test_expected_bookings_is_the_mean_of_a_poisson_count_that_stops_at_the_unsold_rooms, test_a_raise_wins_only_where_the_night_has_a_real_chance_of_selling_out
 
 ### CON-10 [C] Hold period
-- Definition: an accepted rate change on day d holds the changed stay dates on days d+1 to d+7 ([[RUL-66]]). A new shock that covers them lifts the hold ([[DEC-06]]). A pace gap alone raises no flag under it.
+- Definition: an accepted rate change on day d holds the changed stay dates on days d+1 to d+7 ([[RUL-66]]), or for 7 days of ticks with several ticks a day. A new shock lifts the hold ([[DEC-06]]); a pace gap alone raises no flag under it.
 - Implemented by: Agent.held in [[MOD-10]], and flags() in [[MOD-07]], which drops pace-only causes on held stay dates.
 - Evidence: test_the_hold_silences_pace_flags_for_7_days_but_not_shock_flags, test_accepted_rates_apply_and_hold_those_stay_dates_for_7_days
 

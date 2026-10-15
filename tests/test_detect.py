@@ -229,3 +229,59 @@ def test_a_level_scales_one_hotels_pace_baseline_and_expected_demand(day10):
     )
     for column in ("expected_demand", "pace_gap", "pace_threshold"):
         assert (scaled.loc[others, column].to_numpy() == plain.loc[others, column].to_numpy()).all()
+
+
+def test_with_several_ticks_the_hold_is_measured_in_ticks_and_the_baseline_at_the_fractional_day():
+    """A change accepted at (day, tick) holds the stay date for hold_days of ticks: at four ticks
+    a day, 28 ticks. A hold recorded as a day alone counts from that day's last tick. The pace
+    baseline at a tick is the curve at the fractional days out."""
+    from hotel_market.detect import days_in, moment_index
+
+    assert DEMO.hold_days == 7
+    table = _table([(AHEAD,), (AHEAD, SEATS_UP)])  # stay dates 10 and 11
+    held = {("airport", 10): (13, 2), ("airport", 11): (13, 2)}  # accepted at tick 2 of day 13
+    # Tick 2 of day 20 is the 28th tick of the hold: only the flag with a shock behind it stays.
+    assert flags(20, table, held, tick=2, ticks=4) == [
+        Flag(20, "airport", 11, 11, (AHEAD, SEATS_UP), 2, 4)
+    ]
+    # Tick 3 of day 20 is past the hold, so the pace flag is back.
+    assert flags(20, table, held, tick=3, ticks=4) == [
+        Flag(20, "airport", 10, 10, (AHEAD,), 3, 4),
+        Flag(20, "airport", 11, 11, (AHEAD, SEATS_UP), 3, 4),
+    ]
+    # A hold recorded by its day alone was accepted at that day's last tick.
+    by_day = {("airport", 10): 13}
+    assert flags(20, table, by_day, tick=4, ticks=4)[0].first_stay == 11
+    assert flags(21, table, by_day, tick=1, ticks=4)[0].first_stay == 10
+    assert moment_index(20, 2, 4) - moment_index(13, 2, 4) == 28 == DEMO.hold_days * 4
+    assert moment_index(13, 1, 1) == 13  # with one tick a day the index is the day
+    # The baseline: after tick 2 of 4, half the day's bookings are in.
+    assert days_in(45, 10, 2, 4) == 45 - 10 + 0.5
+    assert days_in(45, 10, 4, 4) == days_in(45, 10) == 35.0
+
+
+def test_detect_numbers_at_a_tick_read_the_sources_as_of_that_tick():
+    """At four ticks a day, the numbers at tick 2 of day 10 see the comp set's raise, which lands
+    at tick 2, but not the convention, which lands at tick 4; the pace baseline is the curve at
+    the fractional day."""
+    from hotel_market.bookings import simulate
+    from hotel_market.detect import days_in
+    from hotel_market.forecast import normal_demand
+    from hotel_market.simulated import simulated_sources
+
+    books = simulate(7, last_day=10, ticks=4)
+    hotel = DEMO.hotel("convention")
+    at_1 = detect_numbers(10, simulated_sources(books, 10, 1), tick=1)
+    at_2 = detect_numbers(10, simulated_sources(books, 10, 2), tick=2)
+    at_4 = detect_numbers(10, simulated_sources(books, 10, 4), tick=4)
+
+    def row(table, stay):
+        return table[(table["hotel"] == hotel.key) & (table["stay_day"] == stay)].iloc[0]
+
+    assert MEDIAN_UP not in row(at_1, 46)["causes"] and MEDIAN_UP in row(at_2, 46)["causes"]
+    assert row(at_2, 46)["new_event"] is None and row(at_4, 46)["new_event"] == "Convention"
+    assert MEDIAN_UP not in row(at_4, 46)["causes"]  # the median did not move since tick 3
+    on_books = simulated_sources(books, 10, 2).bookings.on_books(10, 2)[hotel.row, 46]
+    expected_gap = on_books - normal_demand(hotel, 46) * hotel.curve(days_in(46, 10, 2, 4))
+    assert row(at_2, 46)["pace_gap"] == pytest.approx(expected_gap)
+    assert set(at_2["tick"]) == {2}

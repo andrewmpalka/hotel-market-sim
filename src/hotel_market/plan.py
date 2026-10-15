@@ -44,7 +44,7 @@ import numpy as np
 import pandas as pd
 
 from hotel_market.customer import Customer, demo
-from hotel_market.detect import MEDIAN_DOWN, Flag
+from hotel_market.detect import MEDIAN_DOWN, Flag, days_in
 from hotel_market.estimate import ELASTICITY_MAX, ELASTICITY_MIN
 from hotel_market.forecast import ORACLE_MARKET_ELASTICITY
 from hotel_market.world import Hotel, weekday
@@ -236,6 +236,7 @@ class Change:
     old_rate: float
     new_rate: float
     expected_rooms: float
+    tick: int = 1  # the tick of the day it was accepted at; 1 with one tick a day
 
 
 @dataclass(frozen=True)
@@ -273,6 +274,8 @@ class Entry:
     minimum: float = 0.0  # the customer's minimum value at stake for the queue
     target: str = "contribution"  # what the estimates count: contribution or revenue
     earlier_changes: list[EarlierChange] = field(default_factory=list)  # as of today; not logged
+    tick: int = 1  # the tick of the day the flag rose and the entry was decided on
+    ticks: int = 1  # the ticks of that day; 1 is the daily loop
 
     @property
     def id(self) -> str:
@@ -407,7 +410,7 @@ def entry_for(
     hotel = customer.hotel(flag.hotel)
     cost = hotel.room_cost if customer.scores_contribution() else 0.0
     rows = _flag_rows(flag, table)
-    stay_dates = _stay_dates(day, hotel, rows)
+    stay_dates = _stay_dates(day, hotel, rows, flag.tick, flag.ticks)
     weekdays = []
     for wd in sorted({weekday(s.stay_day) for s in stay_dates}):
         in_group = [s for s in stay_dates if weekday(s.stay_day) == wd]
@@ -426,6 +429,8 @@ def entry_for(
         pricing=pricing,
         minimum=customer.min_value_at_stake,
         target=customer.target,
+        tick=flag.tick,
+        ticks=flag.ticks,
     )
 
 
@@ -435,11 +440,15 @@ def _flag_rows(flag: Flag, table: pd.DataFrame) -> pd.DataFrame:
     return hotel_rows[hotel_rows["stay_day"].between(flag.first_stay, flag.last_stay)]
 
 
-def _stay_dates(day: int, hotel: Hotel, rows: pd.DataFrame) -> list[StayDate]:
+def _stay_dates(
+    day: int, hotel: Hotel, rows: pd.DataFrame, tick: int = 1, ticks: int = 1
+) -> list[StayDate]:
+    """What the estimate needs about each stay date, with the demand still to come after the
+    moment: the curve's rise from the fractional days out to the night."""
     stay_dates = []
     for row in rows.itertuples():
         stay_day = int(row.stay_day)
-        still_to_come = 1 - float(hotel.curve(stay_day - day))
+        still_to_come = 1 - float(hotel.curve(days_in(stay_day, day, tick, ticks)))
         stay_dates.append(
             StayDate(
                 stay_day=stay_day,

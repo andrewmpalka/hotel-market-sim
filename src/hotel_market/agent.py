@@ -5,6 +5,10 @@ for every flag. It queues the plans worth the minimum and asks the model, or the
 each hotel's queue. It returns the accepted rate changes, and the simulator applies them from the
 next day and then holds the changed stay dates for 7 days.
 
+With several ticks a day (--ticks) it runs after each tick, reads the sources as of (day, tick),
+and the accepted rates apply from the next tick. The hold is then 7 days' worth of ticks, and the
+cache names each tick's request. With one tick a day nothing changes.
+
 It also gives the one piece of advice it does not simulate, a two-night minimum stay on an event's
 peak night when that night is ahead of pace, once per hotel and event.
 
@@ -28,7 +32,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 
 from hotel_market.customer import Customer, demo
-from hotel_market.detect import AHEAD, detect_numbers, flags
+from hotel_market.detect import AHEAD, days_in, detect_numbers, flags
 from hotel_market.estimate import Estimate, estimate_elasticity, level_factor
 from hotel_market.forecast import peak_night
 from hotel_market.model import MODEL, Client, ask, request_for
@@ -95,6 +99,7 @@ class Advice:
     stay_day: int
     event: str
     reason: str
+    tick: int = 1  # the tick of the day it was given on
 
     def to_json(self) -> dict:
         """The decisions.jsonl line for this advice."""
@@ -167,52 +172,62 @@ class Agent:
         ] = []  # the day's entries while they are decided; a client may read them
         self.advice: list[Advice] = []
         # (day, hotel key) -> the request the hotel's queue was asked with and the answer, for the
-        # stored decisions (stored.write_decisions)
-        self.asked: dict[tuple[int, str], tuple[dict, dict]] = {}
+        # stored decisions (stored.write_decisions); with several ticks a day the key is
+        # (day, tick, hotel key)
+        self.asked: dict[tuple, tuple[dict, dict]] = {}
 
-    def decide(self, day: int, sources: Sources) -> dict[tuple[str, int], float]:
-        """Decide the day's flags and return the rate changes to apply from tomorrow."""
-        today = self.plans_for(day, sources)
+    def decide(
+        self, day: int, sources: Sources, tick: int | None = None
+    ) -> dict[tuple[str, int], float]:
+        """Decide the day's flags, as of the tick, and return the rate changes to apply from
+        tomorrow, or from the next tick."""
+        tick = self.ticks if tick is None else tick
+        today = self.plans_for(day, sources, tick)
         self.today = today
         for hotel in self.customer.hotels:
-            self._decide(day, hotel, [entry for entry in today if entry.hotel == hotel.key])
+            self._decide(day, hotel, [entry for entry in today if entry.hotel == hotel.key], tick)
         self.entries.extend(today)
-        self.advice.extend(self.advice_for(day, today, sources))
-        return self._rate_changes(day, today)
+        self.advice.extend(self.advice_for(day, today, sources, tick))
+        return self._rate_changes(day, today, tick)
 
-    def plans_for(self, day: int, sources: Sources) -> list[Entry]:
-        """Every flag's entry for the day, with its plan, before anything is asked."""
+    def plans_for(self, day: int, sources: Sources, tick: int | None = None) -> list[Entry]:
+        """Every flag's entry for the day, as of the tick, with its plan, before anything is
+        asked."""
         customer = self.customer
+        tick = self.ticks if tick is None else tick
         pricing = {hotel.key: self._pricing(day, hotel, sources) for hotel in customer.hotels}
         levels = {key: p.level for key, p in pricing.items()}
-        table = detect_numbers(day, sources, customer, self.market_elasticity, levels)
+        table = detect_numbers(day, sources, customer, self.market_elasticity, levels, tick)
         entries = [
             entry_for(day, flag, table, pricing[flag.hotel], customer)
-            for flag in flags(day, table, self.held, customer)
+            for flag in flags(day, table, self.held, customer, tick, self.ticks)
         ]
-        on_books = {day: sources.bookings.on_books(day)}
+        on_books = {(day, tick): sources.bookings.on_books(day, tick)}
         for entry in entries:
-            entry.earlier_changes = self._earlier_changes(day, entry, sources, on_books)
+            entry.earlier_changes = self._earlier_changes(day, entry, sources, on_books, tick)
         return entries
 
     def _earlier_changes(
-        self, day: int, entry: Entry, sources: Sources, on_books: dict
+        self, day: int, entry: Entry, sources: Sources, on_books: dict, tick: int
     ) -> list[EarlierChange]:
-        """The changes accepted on the entry's stay dates before today, each with the rooms booked
-        since its day against the rooms its plan expected by now. The plan expected its rooms over
-        the booking curve's rise from its day to the night, so the share due by today is the rise
-        so far over that whole rise."""
+        """The changes accepted on the entry's stay dates before now, each with the rooms booked
+        since its moment against the rooms its plan expected by now. The plan expected its rooms
+        over the booking curve's rise from its moment to the night, so the share due by now is
+        the rise so far over that whole rise."""
         hotel = self.customer.hotel(entry.hotel)
+        ticks = self.ticks
         found = []
         for stay_day in range(entry.first_stay, entry.last_stay + 1):
             for change in self.changes.get((hotel.key, stay_day), []):
-                if change.day not in on_books:
-                    on_books[change.day] = sources.bookings.on_books(change.day)
+                when = (change.day, change.tick)
+                if when not in on_books:
+                    on_books[when] = sources.bookings.on_books(*when)
                 booked = (
-                    on_books[day][hotel.row, stay_day] - on_books[change.day][hotel.row, stay_day]
+                    on_books[(day, tick)][hotel.row, stay_day] - on_books[when][hotel.row, stay_day]
                 )
-                whole = 1 - hotel.curve(stay_day - change.day)
-                so_far = hotel.curve(stay_day - day) - hotel.curve(stay_day - change.day)
+                at_change = hotel.curve(days_in(stay_day, change.day, change.tick, ticks))
+                whole = 1 - at_change
+                so_far = hotel.curve(days_in(stay_day, day, tick, ticks)) - at_change
                 share = so_far / whole if whole > 0 else 1.0
                 found.append(
                     EarlierChange(
@@ -267,14 +282,17 @@ class Agent:
             return Pricing(mode.value, "fixed", market_elasticity=market)
         return replace(TRUE_PRICING, market_elasticity=market)
 
-    def _decide(self, day: int, hotel: Hotel, entries: list[Entry]) -> None:
-        """Ask about the hotel's queued entries, and give every entry its action and reason."""
+    def _decide(self, day: int, hotel: Hotel, entries: list[Entry], tick: int = 1) -> None:
+        """Ask about the hotel's queued entries, and give every entry its action and reason. With
+        several ticks a day the cache record names the tick, so a day's ticks keep apart."""
         queued = [entry for entry in entries if entry.queued]
         if queued:
-            path = self.cache_dir / f"day{day:03d}_{hotel.key}.json"
+            moment = f"day{day:03d}" if self.ticks == 1 else f"day{day:03d}-t{tick}"
+            path = self.cache_dir / f"{moment}_{hotel.key}.json"
             request = request_for(day, hotel, queued)
             answer = ask(request, path, self.client, self.replay, model=self.model)
-            self.asked[(day, hotel.key)] = (request, answer)
+            key = (day, hotel.key) if self.ticks == 1 else (day, tick, hotel.key)
+            self.asked[key] = (request, answer)
             decisions = {decision["id"]: decision for decision in answer["decisions"]}
             for entry in queued:
                 entry.action = decisions[entry.id]["choice"]
@@ -284,9 +302,12 @@ class Agent:
             if not entry.queued:
                 entry.reason = _held_reason(entry)
 
-    def _rate_changes(self, day: int, entries: list[Entry]) -> dict[tuple[str, int], float]:
-        """The accepted plans' rates by (hotel key, stay day); those dates go under the hold, and
-        each change is kept with the rooms its plan expected, for later requests."""
+    def _rate_changes(
+        self, day: int, entries: list[Entry], tick: int = 1
+    ) -> dict[tuple[str, int], float]:
+        """The accepted plans' rates by (hotel key, stay day); those dates go under the hold, by
+        the day, or by (day, tick) with several ticks a day, and each change is kept with the
+        rooms its plan expected, for later requests."""
         changes = {}
         for entry in entries:
             if entry.action == HOLD:
@@ -297,35 +318,40 @@ class Agent:
             for group in entry.changed_weekdays:
                 for stay_day, rate in group.best.rates.items():
                     changes[(entry.hotel, stay_day)] = rate
-                    self.held[(entry.hotel, stay_day)] = day
+                    self.held[(entry.hotel, stay_day)] = day if self.ticks == 1 else (day, tick)
                     expected = group.best.estimates[stay_day] / (rate - cost)
                     old = group.hold.rates[stay_day]
                     self.changes.setdefault((entry.hotel, stay_day), []).append(
-                        Change(day, entry.hotel, stay_day, old, rate, expected)
+                        Change(day, entry.hotel, stay_day, old, rate, expected, tick)
                     )
         return changes
 
-    def advice_for(self, day: int, entries: list[Entry], sources: Sources) -> list[Advice]:
+    def advice_for(
+        self, day: int, entries: list[Entry], sources: Sources, tick: int | None = None
+    ) -> list[Advice]:
         """Advice for each event whose peak night is ahead of pace, once per hotel and event."""
+        tick = self.ticks if tick is None else tick
         found = []
         for entry in entries:
             if AHEAD not in entry.causes:
                 continue
             hotel = self.customer.hotel(entry.hotel)
-            for event in sources.events.known(day):
+            for event in sources.events.known(day, tick):
                 if hotel.key not in event.hotels or (hotel.key, event.name) in self.advised:
                     continue
-                peak = peak_night(hotel, event, sources, self.market_elasticity)
+                # An event announced today is read at this tick; an earlier one after its day.
+                as_of = tick if event.known_day == day else None
+                peak = peak_night(hotel, event, sources, self.market_elasticity, as_of)
                 if entry.first_stay <= peak <= entry.last_stay:
                     self.advised.add((hotel.key, event.name))
                     found.append(
-                        Advice(day, hotel.key, peak, event.name, _advice_reason(peak, event))
+                        Advice(day, hotel.key, peak, event.name, _advice_reason(peak, event), tick)
                     )
         return found
 
 
-def _log_order(record: Entry | Advice) -> tuple[int, bool]:
-    return record.day, isinstance(record, Advice)
+def _log_order(record: Entry | Advice) -> tuple[int, int, bool]:
+    return record.day, record.tick, isinstance(record, Advice)
 
 
 def _held_reason(entry: Entry) -> str:

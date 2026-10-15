@@ -248,7 +248,9 @@ def deciding(decider: Agent | PacePolicy) -> Decide:
     reads the sources as of that tick, and returns the changes for the next tick."""
 
     def decide(day: int, books: Books, tick: int | None = None) -> dict[tuple[str, int], float]:
-        return decider.decide(day, simulated_sources(books, day, tick))
+        if tick is None:
+            return decider.decide(day, simulated_sources(books, day))
+        return decider.decide(day, simulated_sources(books, day, tick), tick)
 
     return decide
 

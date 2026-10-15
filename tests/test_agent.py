@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from hotel_market.agent import MIN_STAY, Agent, ElasticityMode
+from hotel_market.agent import MIN_STAY, Advice, Agent, ElasticityMode
 from hotel_market.bookings import Books, simulate
 from hotel_market.customer import demo
 from hotel_market.detect import AHEAD, PACE
@@ -246,3 +246,75 @@ def test_a_level_agent_scales_its_forecast_by_the_fitted_demand_level(tmp_path):
     plain = Agent(SEED, tmp_path / "plain", elasticity=ElasticityMode("learn", 1.0))
     simulate(SEED, deciding(plain), last_day=20, demand_bias=0.9)
     assert plain.entries and all(e.pricing.level == 1.0 for e in plain.entries)
+
+
+def test_at_four_ticks_a_day_the_agent_runs_after_each_tick_and_each_feed_flags_at_its_tick(
+    tmp_path,
+):
+    """With --ticks 4 the agent decides after every tick. A feed's flag rises at the tick the feed
+    lands: the convention at tick 4 of day 10, the comp set's raise at tick 2, the day-20 filing
+    at tick 3, and pace flags at every tick. The hold and each change are kept by (day, tick),
+    the cache names the tick, and the accepted rates apply from the next tick."""
+    from hotel_market.detect import MEDIAN_UP, NEW_EVENT, SEATS_UP
+
+    agent = Agent(SEED, tmp_path / "cache", ticks=4)
+    books = simulate(SEED, deciding(agent), ticks=4)
+    assert agent.ticks == 4 and agent.cache_dir == tmp_path / "cache" / f"seed{SEED}-ticks4"
+    assert {e.ticks for e in agent.entries} == {4} and {e.tick for e in agent.entries} == {
+        1,
+        2,
+        3,
+        4,
+    }
+    moments = {}
+    for entry in agent.entries:
+        for cause in entry.causes:
+            moments.setdefault(cause, set()).add((entry.day, entry.tick))
+    assert moments[NEW_EVENT] == {(10, 4)}
+    assert moments[SEATS_UP] == {(20, 3)}
+    assert {tick for _, tick in moments[MEDIAN_UP]} == {2}
+    assert {tick for _, tick in moments[AHEAD]} == {1, 2, 3, 4}
+    changed = [e for e in agent.entries if e.action != HOLD]
+    assert changed and all(
+        isinstance(agent.held[(e.hotel, s)], tuple) for e in changed for s in e.new_rates
+    )
+    for entry in changed:
+        for stay_day in entry.new_rates:
+            changes = agent.changes[(entry.hotel, stay_day)]
+            assert any((c.day, c.tick) == (entry.day, entry.tick) for c in changes)
+            assert agent.held[(entry.hotel, stay_day)] == max((c.day, c.tick) for c in changes)
+            # The new rate is in force from the next tick of the same day, or the next day.
+            row = DEMO.hotel(entry.hotel).row
+            if entry.tick < 4:
+                assert books.tick_rates[entry.day, entry.tick, row, stay_day] == pytest.approx(
+                    entry.new_rates[stay_day]
+                )
+            assert books.tick_rates[entry.day, entry.tick - 1, row, stay_day] != pytest.approx(
+                entry.new_rates[stay_day]
+            )
+    assert all(len(key) == 3 for key in agent.asked) and all(
+        key[1] in (1, 2, 3, 4) for key in agent.asked
+    )
+    assert all(e.action == e.plan for e in changed)  # the template says yes
+    # The log is in moment order, and the lines sort by day then tick.
+    days_and_ticks = [
+        (line["day"], e.tick)
+        for line, e in zip(
+            agent.log,
+            sorted(
+                agent.entries + agent.advice, key=lambda r: (r.day, r.tick, isinstance(r, Advice))
+            ),
+        )
+    ]
+    assert days_and_ticks == sorted(days_and_ticks)
+
+
+def test_with_one_tick_a_day_the_agent_keeps_its_day_keyed_hold_and_cache_names(run, tmp_path):
+    """The default clock is the daily loop: the hold is keyed by the day, the cache record by
+    the day and hotel, and every entry and advice is at tick 1 of 1."""
+    agent, _ = run
+    assert agent.ticks == 1
+    assert all(isinstance(day, int) for day in agent.held.values())
+    assert all(len(key) == 2 for key in agent.asked)
+    assert {(e.tick, e.ticks) for e in agent.entries} == {(1, 1)}
+    assert all(advice.tick == 1 for advice in agent.advice)
