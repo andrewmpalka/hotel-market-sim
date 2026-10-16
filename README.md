@@ -29,6 +29,10 @@ The recorded run covers the shipped market at seed 7 on world v2, and the
 template answers wherever it does not. Every other command is in
 docs/commands.md.
 
+![The demo page: the airport hotel on day 20](docs/images/day20.png)
+
+*The airport hotel on day 20, the day the new flights were filed: the news, the stay dates ahead, the plan the agent queued, and the scorecard; the reason under the plan is the model's, recorded in the live run.*
+
 ## Results
 
 Seeds 1 to 20, the agent run against the fixed-rate run over stay dates 0 to
