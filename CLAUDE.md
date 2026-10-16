@@ -88,8 +88,9 @@ scripts/demo_screenshots.py opens the demo page in a Chromium-based browser at
 and on, and fails when a page is taller than the window. kg/ and kg_check.py are
 the knowledge graph and its checker. Makefile and Dockerfile wrap the setup.
 docs/results.md holds the experiment tables, docs/commands.md every command,
-docs/reviewers.md the model as a reviewer, docs/limits.md the known limits, and
-docs/schedule-feed.md the air schedule feed as modelled.
+docs/reviewers.md the model as a reviewer, docs/limits.md the known limits,
+docs/schedule-feed.md the air schedule feed as modelled, and docs/prd.md the
+product requirements as written before the build.
 
 ## Commands
 

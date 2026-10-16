@@ -211,6 +211,8 @@ docs/limits.md.
 - docs/limits.md: the known limits, and the next version.
 - docs/commands.md: every command, make target and Docker line.
 - docs/schedule-feed.md: the air schedule feed as this repository models it.
+- docs/prd.md: the product requirements, written before the build and kept as
+  they were, with the versions that followed.
 - kg/: a map of the repository for agents, with kg/README.md as the legend.
 
 The next version adds per-weekday terms to the estimator, adds cancellations
