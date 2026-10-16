@@ -141,6 +141,7 @@ here for the rest.
 - Ran: `python -m pytest --slow` from a fresh virtual environment on Python 3.12.6 and 3.13.7 on 2026-10-12. On 2026-10-15, on world v2, `python -m pytest` on both and `make test-all` on 3.12.6, with numpy 2.5.4 and pandas 3.0.6.
 - Result: the full suite gave 386 passed on 3.12.6, the plain one 377 passed with 9 skipped. The plain suite on 3.13.7 gave 372 passed with 14 skipped, without the demo extra, after the seed-7 re-record.
 - Detail: the package was also installed and run against numpy 1.26 and pandas 2.2, the lower bounds in pyproject.toml. A seed-7 run then reproduced decisions.jsonl byte for byte ([[DEC-28]]).
+- Refreshed: on 2026-10-16, before the freeze, the plain suite on 3.12.6 gave 402 passed with 10 skipped, the ten slow tests, with the demo extra and a browser present; make test-all gave 412 passed.
 - Table: docs/results.md, "The suite on each Python version"
 - Links: [[UNK-04]], [[DEC-28]], [[DEC-30]]
 

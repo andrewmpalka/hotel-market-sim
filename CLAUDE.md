@@ -98,8 +98,8 @@ product requirements as written before the build.
 ## Commands
 
     make setup                 # .venv with the package, pytest and ruff
-    make test                  # the tests; the nine slow tests are skipped
-    make test-all              # every test; nine slow tests, about twenty minutes
+    make test                  # the tests; the ten slow tests are skipped
+    make test-all              # every test; ten slow tests, about twenty minutes
     make lint                  # ruff check, and ruff format as a check
     make run SEED=7            # both runs with the template reasons
     make live SEED=7           # the model writes the reasons (ANTHROPIC_API_KEY, here or in .env)

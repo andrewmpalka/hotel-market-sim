@@ -5,12 +5,13 @@ Every command of the repository is here, with its one-line comment. The README k
 Python 3.11 or later, from the repository root:
 
     pip install -e ".[dev]"                  # the package, its dependencies, pytest and ruff
-    python -m pytest                         # the tests, offline; the nine slow tests are skipped
-    python -m pytest --slow                  # every test; nine slow tests, about twenty minutes
+    python -m pytest                         # the tests, offline; the ten slow tests are skipped
+    python -m pytest --slow                  # every test; ten slow tests, about twenty minutes
     ruff check . && ruff format --check .    # the linter and the formatter, as a check
     python kg_check.py                       # the knowledge graph against the code
 
     hotel-market --seed 7 --template         # both runs, decisions.jsonl, the daily queues, the summary
+    shasum -a 256 decisions.jsonl | cut -c1-8   # the seed-7 checksum the results quote: the first eight hex digits of the file's sha256, after the line above in an empty directory with no key
     hotel-market --seed 7                    # the same, the model writing the reasons (needs ANTHROPIC_API_KEY)
     hotel-market --seed 7 --replay 20        # day 20's queue again, without a model call
     hotel-market --seeds 1 20                # seeds 1 to 20: mean and range of the contribution change
@@ -54,7 +55,7 @@ With make, on a Mac or Linux machine:
 
     make setup                 # create .venv and install the package, pytest and ruff into it
     make test                  # the tests; make lint runs ruff
-    make test-all              # every test; nine slow tests, about twenty minutes
+    make test-all              # every test; ten slow tests, about twenty minutes
     make run SEED=7            # the template run; make live SEED=7 uses the model
     make bench FIRST=1 LAST=3  # the reviewers benchmarked; make bench BENCH=--template runs it offline
     make day SEED=7 DAY=20     # a day through the stored tables; make day-replay DAY=20 replays it

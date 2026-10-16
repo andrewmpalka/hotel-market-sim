@@ -1,8 +1,8 @@
 # Sets the project up on a Mac or Linux machine (or WSL) and runs it.
 #
 #   make setup          create .venv and install the package, pytest and ruff into it
-#   make test           run the tests (the nine slow tests skipped)
-#   make test-all       run every test (nine slow tests, about twenty minutes)
+#   make test           run the tests (the ten slow tests skipped)
+#   make test-all       run every test (ten slow tests, about twenty minutes)
 #   make run SEED=7     run the simulation with the template reasons
 #   make bench FIRST=1 LAST=3   benchmark the reviewers; make bench BENCH=--template runs it offline
 #   make day SEED=7 DAY=20   run day 20 through the stored tables; make day-replay DAY=20 replays it
@@ -61,10 +61,10 @@ $(STAMP): pyproject.toml | $(BIN)/python
 	$(BIN)/python -m pip install -e ".[dev]"
 	@touch $@
 
-test: $(STAMP) ## Run the tests (they run offline; the nine slow tests are skipped)
+test: $(STAMP) ## Run the tests (they run offline; the ten slow tests are skipped)
 	$(BIN)/python -m pytest
 
-test-all: $(STAMP) ## Run every test: nine slow tests, about twenty minutes
+test-all: $(STAMP) ## Run every test: ten slow tests, about twenty minutes
 	$(BIN)/python -m pytest --slow
 
 lint: $(STAMP) ## Run ruff: the checks, and the formatter as a check

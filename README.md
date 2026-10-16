@@ -21,7 +21,7 @@ every plan and writes a reason from the entry's own figures.
 ## Run it
 
     make setup          # .venv with the package, pytest and ruff
-    make test           # the tests; make test-all adds the nine slow ones
+    make test           # the tests; make test-all adds the ten slow ones
     make demo SEED=7    # demo.duckdb from the recorded run, then the demo page
 
 make demo needs the network once, to install streamlit, and needs no API key.

@@ -10,7 +10,7 @@
   of its +$16,164, because every raise sells fewer rooms than the agent's
   estimate says. At 1.1 it earns +$66,687 a seed, because the start rates were
   set for a smaller market. The learning agent's day-59 elasticity stays at 1.40
-  to 1.51 at both biases, so a level error that is a constant factor lands in
+  to 1.51 at 0.9 and 1.43 to 1.50 at 1.1, so a level error that is a constant factor lands in
   the estimator's intercept as designed. A weekday or an event error lands in
   the slope instead, by two to three standard errors, because it moves with the
   rate ratio on the dates where the medians and the rates move. The estimator
@@ -88,15 +88,18 @@
 - The audit's phrase matcher does not recognise a request figure quoted in a
   different phrase, so a reason that writes "$2,780 on Monday" for the request's
   "$2,780 more than holding" is listed as unmatched; the figure is in the
-  request, and the seed-7 recording has two such lines.
+  request, and the seed-7 recording has two such reasons, holding five such figures
+  between them.
 - On world v2 the convention is mostly on the books before day 0 because of the
   convention hotel's early booking curve, while its uplift applies only to
   demand after day 0, so an event announced on day 10 adds little; the next
   version puts an event known before the run into the preload.
-- The seed-7 checksum is a byte-for-byte test on one platform: this machine's
-  numpy 2.5.4 and pandas 3.0.6 give 263387b3, and a Linux run on numpy 2.5.3
-  and pandas 3.0.5 gave 8faafad0 with the same decisions. The decisions file,
-  not its hash, is the cross-platform test.
+- The seed-7 checksum, the first eight hex digits of the sha256 of
+  decisions.jsonl after `hotel-market --seed 7 --template`, is a byte-for-byte
+  test on one platform: this machine's numpy 2.5.4 and pandas 3.0.6 give
+  263387b3, and a Linux run on numpy 2.5.3 and pandas 3.0.5 gave 8faafad0 with
+  the same decisions. The decisions file, not its hash, is the cross-platform
+  test.
 - The clock is event-driven on a configurable clock, not real time. With
   `--ticks N` each day is cut into N ticks and the agent runs after each, but
   the simulated feeds arrive at fixed ticks: the rate shop at tick 2, the
@@ -109,6 +112,16 @@
   earn where shops, filings or bookings move within the day. On a finer
   clock the outcomes table still credits a decision with the rooms sold on
   later days, not with the later ticks of its own day.
+- The request's seat_change and seat_revision fields have carried
+  arriving-passenger figures since world v2 under their world v1 names, so a
+  recorded reason may say seats where the page's news line says passengers;
+  the names are request fields and stay.
+- The cache keys a market by the name field of its customer file, so two files
+  that share a name share cache/<name>/, and a keyed run of the second stops
+  with StaleCache until one of them is renamed.
+- The hosted workflow installs the dev extra alone on a runner with no browser,
+  so the five demo-page tests and the two screenshot tests skip there and run
+  only where make demo has installed streamlit and a Chromium is present.
 
 The next version adds per-weekday terms to the estimator, adds cancellations
 and segments, and puts an event known before the run into the preload. Since world v2 the

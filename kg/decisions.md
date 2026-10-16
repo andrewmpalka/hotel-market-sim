@@ -493,7 +493,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 ### DEC-70 [C] A hosted workflow runs the three checks on every push to main
 - Decided: .github/workflows/test.yml runs on a push or a pull request to main, on Python 3.12 and ubuntu-latest. It installs the package with pip and runs make lint, make test and python kg_check.py.
 - Detail: the workflow carries no API key and fetches nothing beyond pip, so the tests run offline as they do locally. It fetches the whole history, because kg_check.py looks each Commit line up in it.
-- Slow tests: the nine slow tests stay out of the workflow, as plain pytest skips them. pytest --slow (make test-all) still runs them locally.
+- Slow tests: the ten slow tests stay out of the workflow, as plain pytest skips them. pytest --slow (make test-all) still runs them locally.
 - Replaces: [[DEC-30]]; the first workflow, [[DEC-29]], was dropped after a queued run on a private repository.
 - Reason: the three checks are the same on a runner and on a laptop, and a badge on the README shows that they pass.
 - Evidence: test_the_workflow_runs_the_checks_on_push_to_main

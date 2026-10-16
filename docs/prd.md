@@ -164,4 +164,6 @@ and not a measure.
   per-hotel curves, a rate shop that moves, a seat link with a load factor),
   past decisions and outcomes in the record, repricing on a configurable
   clock (docs/results.md, The clock), and a second market run with one flag
-  and no change to the agent (docs/results.md, The second market).
+  and no change to the agent (docs/results.md, The second market), then a
+  last adversarial read by the same three reader profiles on 16 October 2026,
+  before the repository was frozen.
