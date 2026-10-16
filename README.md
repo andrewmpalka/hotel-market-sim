@@ -119,6 +119,54 @@ tick and the agent runs once a day, as every figure above was measured. Real
 time is this loop with a wall clock behind the sources: a feed arrives when it
 arrives, and the agent runs when one does.
 
+## What the world taught me
+
+**The ratchet.** When I let the competitors follow the hotel's changes, the
+rule that raises on every flag and never cuts beat the agent, and not by a
+little: in the reacting market at a market elasticity of 0.5 it earns +$112,877
+a seed over frozen rates, and the agent finishes $54,602 behind it, ahead in no
+seed of 20. The mechanism is plain once you follow one stay date through. The
+hotel raises, the competitors move half of the way three days later, the comp
+median jumps, the detector reads the jump as news and lifts the hold, so the
+agent raises again. The never-cut rule rides that loop on every flag without
+stopping to estimate anything, which is why it climbs further than an agent
+that scores each step. A revenue manager would recognise the pattern at once,
+because it is what a comp set does when everyone shops everyone else and
+nobody wants to be the one who cut. The gain looks real inside the simulator
+because the market's demand only falls by the power of 0.5 there, and nothing
+here says how much of it a real market would give back. The figures are in
+[the rule-based control table](docs/results.md#the-rule-based-control).
+
+**The convention.** The convention is announced on day 10 for stay dates 45 to
+48, which is 35 days out, and at a convention hotel an announcement that late
+changes very little, because the group block and most of the transient rooms
+are already on the books. On world v2 the two downtown hotels hold a quarter
+and a tenth of their rooms 90 days out, so the convention plans earn +$614 a
+seed on their stay dates with the competitors' 15% raise and +$100 without it,
+and taking the raise away moves the 20-seed mean only from +$16,164 to
++$15,611. What that told me is that the money in a convention sits in the
+group block and in the minimum stay, and the agent only advises on the second
+and never touches the first. The next version puts an event that is known
+before the run into the day-0 preload, so the books on day 0 carry it the way
+a real hotel's would. The figures are in
+[the convention table](docs/results.md#the-convention-without-the-competitors-raise).
+
+**The clock.** I built a finer clock expecting it to earn something, and on
+this world it earned nothing: at four ticks a day the agent makes +$16,204 a
+seed against +$16,164 on the daily clock, a paired difference of +$40 with a
+standard error of $108, ahead in 10 seeds of 20. The reason is in the feeds and
+not in the agent. The rate shop, the filings and the events each land once a
+day, and the bookings are one draw a day split over the ticks, so a tick that
+runs before the data lands sees yesterday's numbers and has nothing new to
+decide. A finer clock would earn where a shop, a filing or a booking stream
+moves within the day, which is what a live feed does and this one does not
+([the clock table](docs/results.md#the-clock-one-tick-a-day-against-four)).
+So the loop keeps three cadences: the day, on which the feeds land and the
+figures are measured, the tick, at which the agent reads the feeds and a rate
+takes effect, and the read-back of outcomes into the next request, which
+carries what happened on a changed date back to the model as the rooms booked
+since against the rooms expected.
+
 ## The limit that matters
 
 The forecast is right by construction. With the simulator's demand scaled by
