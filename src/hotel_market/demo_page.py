@@ -16,7 +16,8 @@ stay dates, the plan's last line shows them under "Since the last change", as th
 them. A sidebar checkbox, off by default, adds the end-of-run result: the tiles
 once every stay date is complete and the contribution difference by stay date. The query string
 can turn it on (&end=1). Everything fits a 1440 by 900 window in both states, which
-scripts/demo_screenshots.py checks. Streamlit is an optional extra: pip install -e ".[demo]".
+scripts/demo_screenshots.py checks; the queue's text is set a size smaller than the page's, so a
+day with three accepted plans still fits. Streamlit is an optional extra: pip install -e ".[demo]".
 """
 
 import os
@@ -61,6 +62,7 @@ h3 {padding-top: 0 !important; padding-bottom: 0.25rem !important;}
 [data-testid="stCaptionContainer"] {margin-bottom: 0 !important;}
 [data-testid="stCaptionContainer"] p {font-size: 1rem; margin-bottom: 0; line-height: 1.25;}
 [data-testid="stExpander"] details summary {padding: 0.25rem 0.5rem;}
+.st-key-queue p {font-size: 0.9rem; line-height: 1.3;}
 </style>"""
 
 MARKDOWN_MARKS = ("\\", "$", "*", "_", "`")  # what the page escapes so a text shows as written
@@ -307,7 +309,7 @@ def main() -> None:
     plans = queue.loc[queue["queued"]]
     held = queue.loc[~queue["queued"]]
     left, right = st.columns([4, 7])
-    with left:
+    with left.container(key="queue"):  # the key names the queue for STYLE's smaller text
         st.markdown("**Today's queue**")
         if plans.empty:
             st.markdown("No plan was queued today.")

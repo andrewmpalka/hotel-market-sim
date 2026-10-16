@@ -882,14 +882,14 @@ hotels themselves are data ([[DAT-04]]).
 - File: src/hotel_market/demo_page.py
 - Kind: parameter
 - Meaning: the plot areas in pixels: each stay-date chart, and the scorecard's small line. The legend and the axis add to them. They keep the page in 900 pixels ([[DEC-58]]).
-- Evidence: test_the_three_pages_fit_the_window
+- Evidence: test_every_checked_page_fits_the_window_and_six_are_saved
 
 ### RUL-116 [C] COLORS
 - Value: {"blue": "#2a78d6", "orange": "#eb6834", "aqua": "#1baf7a", "red": "#e34948"}
 - File: src/hotel_market/demo_page.py
 - Kind: label
 - Meaning: the lines' colours and the red of the flagged bands. Blue is our rate and the hotel, orange the comp set median and the pace curve, aqua the planned rate, the rooms on the books and all hotels together.
-- Evidence: test_the_three_pages_fit_the_window
+- Evidence: test_every_checked_page_fits_the_window_and_six_are_saved
 
 ### RUL-117 [C] MARKDOWN_MARKS
 - Value: ("\\", "$", "*", "_", "`")
@@ -924,11 +924,11 @@ hotels themselves are data ([[DAT-04]]).
 - File: src/hotel_market/demo_page.py
 - Kind: parameter
 - Meaning: the font size in points of the tick labels on every axis of the page's charts ([[DEC-58]]).
-- Evidence: test_the_three_pages_fit_the_window
+- Evidence: test_every_checked_page_fits_the_window_and_six_are_saved
 
 ### RUL-121 [C] TILE_SIZES
 - Value: {"compact": (0.75, 1.1), "large": (0.9, 1.5)}
 - File: src/hotel_market/demo_page.py
 - Kind: parameter
 - Meaning: a tile's label and value font sizes in rem. The large size shows the nights already stayed alone, and the compact size fits the end-of-run result under them ([[DEC-58]]).
-- Evidence: test_the_three_pages_fit_the_window
+- Evidence: test_every_checked_page_fits_the_window_and_six_are_saved

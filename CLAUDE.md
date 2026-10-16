@@ -86,8 +86,9 @@ measures, scripts/tick_sweep.py runs seeds 1 to 20 at one tick a day and at
 four, side by side, and scripts/tick_lag.py prints the day-20 filing's five
 facts at each clock.
 scripts/demo_screenshots.py opens the demo page in a Chromium-based browser at
-1440 by 900, saves six screenshots, three pages with the end-of-run result off
-and on, and fails when a page is taller than the window. kg/ and kg_check.py are
+1440 by 900, measures every hotel on seven days with the end-of-run result off
+and on, saves six of the pages as screenshots, and fails when a page is taller
+than the window. kg/ and kg_check.py are
 the knowledge graph and its checker. Makefile and Dockerfile wrap the setup.
 docs/results.md holds the experiment tables, docs/commands.md every command,
 docs/reviewers.md the model as a reviewer, docs/limits.md the known limits,
@@ -106,7 +107,7 @@ product requirements as written before the build.
     make bench FIRST=1 LAST=3  # the reviewers benchmarked (ANTHROPIC_API_KEY); BENCH=--template runs it offline
     make day SEED=7 DAY=20     # one day through the stored tables; make day-replay DAY=20 replays it
     make demo SEED=7           # demo.duckdb from the recorded run, then the demo page (installs streamlit)
-    make screenshots           # the demo page at 1440 by 900: six screenshots under screenshots/, a failure if one is taller
+    make screenshots           # the demo page at 1440 by 900: every hotel on seven days measured, six screenshots under screenshots/, a failure if a page is taller
     make image                 # the Docker image; make docker-test and docker-run SEED=7 use it
     python kg_check.py         # the graph against the code; --write-index rewrites kg/index.md
 

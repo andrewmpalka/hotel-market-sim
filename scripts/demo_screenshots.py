@@ -1,20 +1,21 @@
 """demo_screenshots.py
 
-Opens the demo page in a Chromium-based browser at 1440 by 900, saves a screenshot of three
-pages, each with the end-of-run result off and on, and fails when a page's content is taller
-than the window.
+Opens the demo page in a Chromium-based browser at 1440 by 900, measures every hotel's page on
+days 10, 18, 20, 23, 30, 34 and 40, each first as the page opens and then with the sidebar
+checkbox on (&end=1), saves a screenshot of six of those pages, and fails when any page's content
+is taller than the window.
 
     python scripts/demo_screenshots.py                       # demo.duckdb, screenshots/
     python scripts/demo_screenshots.py --file FILE --out DIR
 
-The pages are the convention hotel on day 10, the airport hotel on day 20 and the full-service
-hotel on day 30, first as the page opens and then with the sidebar checkbox on (&end=1). The
-script starts the page's Streamlit server on a free port, drives the browser headless over the
-DevTools pipe, and needs no package beyond the standard library and Streamlit. The browser is the
-first found of: the path in HOTEL_MARKET_BROWSER, a Chromium under /Applications or in
-Playwright's cache, Google Chrome, or a chromium or chrome on the PATH. The content height is the
-bottom edge of the page's main block, the title to the scorecard, which must fit in the window
-with nothing cut off.
+The pages saved are the convention hotel on day 10, the airport hotel on day 20 and the
+full-service hotel on day 30, in both states; nothing else is written beside them but the
+server's log. The script starts the page's Streamlit server on a free port, drives the browser
+headless over the DevTools pipe, and needs no package beyond the standard library and Streamlit.
+The browser is the first found of: the path in HOTEL_MARKET_BROWSER, a Chromium under
+/Applications or in Playwright's cache, Google Chrome, or a chromium or chrome on the PATH. The
+content height is the bottom edge of the page's main block, the title to the scorecard, which
+must fit in the window with nothing cut off. The last line names the tallest page.
 """
 
 from __future__ import annotations
@@ -31,12 +32,15 @@ import subprocess
 import sys
 import tempfile
 import time
+from itertools import product
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PAGE = ROOT / "src" / "hotel_market" / "demo_page.py"
 WIDTH, HEIGHT = 1440, 900
-PAGES = (("convention", 10), ("airport", 20), ("full-service", 30))  # (hotel key, day)
+HOTELS = ("convention", "full-service", "lifestyle", "airport")  # the demo market's hotel keys
+DAYS = (10, 18, 20, 23, 30, 34, 40)  # every hotel's page is measured on these days
+PAGES = (("convention", 10), ("airport", 20), ("full-service", 30))  # (hotel key, day): saved
 STATES = (("off", ""), ("on", "&end=1"))  # the end-of-run result: its name, and its query string
 BROWSER_VARIABLE = "HOTEL_MARKET_BROWSER"
 BROWSERS = (
@@ -254,9 +258,10 @@ def tail(log: Path, size: int = 4000) -> str:
 
 def shoot(
     file: Path, out: Path, browser_path: str, timeout: float = RENDER_TIMEOUT
-) -> list[tuple[str, int, str, dict, Path]]:
-    """Each page's measurements and screenshot path, with the end-of-run result off and on. A
-    page that does not render in the timeout stops the run, after the server's log is printed."""
+) -> list[tuple[str, int, str, dict, Path | None]]:
+    """Each checked page's measurements, with the end-of-run result off and on, and its screenshot
+    path when it is one of PAGES. A page that does not render in the timeout stops the run, after
+    the server's log is printed."""
     out.mkdir(parents=True, exist_ok=True)
     port = free_port()
     log = out / SERVER_LOG
@@ -265,17 +270,18 @@ def shoot(
     results = []
     try:
         browser = Browser(browser_path)
-        for hotel, day in PAGES:
-            for state, query in STATES:
-                url = f"http://127.0.0.1:{port}/?hotel={hotel}&day={day}{query}"
-                try:
-                    measured = browser.open(url, timeout)
-                except TimeoutError:
-                    print(f"{url} did not render. The server's log, {log}, says:\n{tail(log)}")
-                    raise
+        for hotel, day, (state, query) in product(HOTELS, DAYS, STATES):
+            url = f"http://127.0.0.1:{port}/?hotel={hotel}&day={day}{query}"
+            try:
+                measured = browser.open(url, timeout)
+            except TimeoutError:
+                print(f"{url} did not render. The server's log, {log}, says:\n{tail(log)}")
+                raise
+            path = None
+            if (hotel, day) in PAGES:
                 path = out / f"{hotel}-day{day}{'-end' if query else ''}.png"
                 browser.screenshot(path)
-                results.append((hotel, day, state, measured, path))
+            results.append((hotel, day, state, measured, path))
     finally:
         if browser is not None:
             browser.close()
@@ -302,15 +308,16 @@ def main(argv: list[str] | None = None) -> int:
         print(f"No Chromium-based browser found; set {BROWSER_VARIABLE} to one.")
         return 2
     print(f"Browser: {browser_path}")
-    failed = False
-    for hotel, day, state, measured, path in shoot(args.file, args.out, browser_path):
+    results = shoot(args.file, args.out, browser_path)
+    for hotel, day, state, measured, path in results:
         verdict = "too tall" if too_tall(measured) else "fits"
-        failed = failed or too_tall(measured)
         print(
             f"{hotel} day {day}, end-of-run result {state}: content {measured['content']} px "
-            f"of {measured['window']} ({verdict}), {path}"
+            f"of {measured['window']} ({verdict}){f', {path}' if path else ''}"
         )
-    return 1 if failed else 0
+    hotel, day, state, measured, _ = max(results, key=lambda result: result[3]["content"])
+    print(f"Tallest: {hotel} day {day}, end-of-run result {state}, {measured['content']} px")
+    return 1 if any(too_tall(measured) for *_, measured, _ in results) else 0
 
 
 if __name__ == "__main__":

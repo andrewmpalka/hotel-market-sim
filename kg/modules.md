@@ -261,7 +261,7 @@ which is also the order in which they depend on each other.
 - File: src/hotel_market/demo_page.py
 - Owns: the read-only demo page ([[DEC-57]], [[DEC-58]]), a Streamlit app over [[DAT-33]]. The sidebar picks a hotel and a day, a checkbox shows the end-of-run result, and a caption reads the file's seed and reason source.
 - Charts: our rate, the comp set median and an accepted plan's rate as a dashed aqua line, then the rooms on the books against the pace curve, side by side. The planned rate joins the legend only on a day with an accepted plan.
-- Queue: each queued plan with its reason and, where the stored request listed earlier changes on its dates, that line last under "Since the last change"; then the held flags open with their best alternative. plain() escapes the marks.
+- Queue: each queued plan with its reason and, where the stored request listed earlier changes on its dates, that line last under "Since the last change"; then the held flags open. Its text is a size smaller, so three plans fit.
 - Scorecard: the nights already stayed for the hotel and for all together, as five large tiles each. With the checkbox on, the complete outcome's tiles follow each, in a compact size, and then the small line of the contribution difference.
 - Holds: the file, parameter, plot, tile, colour and mark constants, FILE_VARIABLE to REASON_MARKS ([[RUL-105]], [[RUL-106]], [[RUL-112]] to [[RUL-123]]), and STYLE.
 - Reads: nothing in the package; streamlit, altair and duckdb only, the optional extra demo. The page computes nothing, and a test parses it for an arithmetic operator or an aggregate call. Tests: tests/test_demo_page.py.
@@ -269,13 +269,13 @@ which is also the order in which they depend on each other.
 
 ### MOD-28 [C] scripts/demo_screenshots.py
 - File: scripts/demo_screenshots.py
-- Owns: the check that the demo page fits one window ([[DEC-58]]). It starts the page's server on a free loopback port, opens three pages in a headless Chromium-based browser at 1440 by 900, and screenshots and measures each.
-- Pages: PAGES names them: the convention hotel on day 10, the airport hotel on day 20 and the full-service hotel on day 30, each with the end-of-run result off and on. The command fails when a page's content is taller than the window.
+- Owns: the check that the demo page fits one window ([[DEC-58]]). It starts the page's server on a free loopback port, opens each page in a headless Chromium-based browser at 1440 by 900, and measures it.
+- Pages: HOTELS and DAYS name the pages measured: every hotel on days 10, 18, 20, 23, 30, 34 and 40, each with the end-of-run result off and on. PAGES names the six saved as screenshots. The command fails when a page is taller.
 - Browser: find_browser() takes the path in HOTEL_MARKET_BROWSER, else the first of BROWSERS found: a Chromium under /Applications or in Playwright's cache, Google Chrome, or a chromium or chrome on the PATH.
 - Driver: the Browser class drives it over the DevTools pipe, file descriptors 3 and 4, with no package beyond the standard library. The server's output goes to SERVER_LOG beside the screenshots, printed when a page does not render.
 - Reads: [[MOD-27]] as the page it runs; nothing from the package
 - Tests: tests/test_demo_screenshots.py
-- Evidence: test_a_page_is_too_tall_when_its_content_passes_the_window_or_it_scrolls, test_the_three_pages_fit_the_window, test_a_page_that_does_not_render_prints_the_servers_log
+- Evidence: test_a_page_is_too_tall_when_its_content_passes_the_window_or_it_scrolls, test_every_checked_page_fits_the_window_and_six_are_saved, test_a_page_that_does_not_render_prints_the_servers_log
 
 ### MOD-29 [C] scripts/no_comp_raise.py
 - File: scripts/no_comp_raise.py

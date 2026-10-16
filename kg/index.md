@@ -15,11 +15,11 @@ nodes and its words, len(text.split()) over the file.
 | concepts.md | 12 | 1,370 |
 | measures.md | 14 | 962 |
 | sources.md | 4 | 855 |
-| decisions.md | 70 | 10,383 |
+| decisions.md | 70 | 10,387 |
 | results.md | 44 | 7,403 |
 | forks.md | 14 | 2,037 |
 | unknowns.md | 16 | 2,164 |
-| every node file | 378 | 40,686 |
+| every node file | 378 | 40,690 |
 | index.md | | 2,969 |
 
 ## Modules (`modules.md`)
