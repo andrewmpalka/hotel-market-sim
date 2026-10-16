@@ -11,7 +11,9 @@ one day, and the query string can name them (?hotel=convention&day=10). The side
 file's seed and where its reasons came from, and defines contribution. The page then shows what
 became known that day, the stay dates ahead as two charts side by side, the day's queue with its
 reasons and held flags, and the scorecard: the nights already stayed for the hotel and for all
-the hotels together. A sidebar checkbox, off by default, adds the end-of-run result: the tiles
+the hotels together. Where the stored request listed the hotel's earlier changes on a plan's
+stay dates, the plan's last line shows them under "Since the last change", as the request wrote
+them. A sidebar checkbox, off by default, adds the end-of-run result: the tiles
 once every stay date is complete and the contribution difference by stay date. The query string
 can turn it on (&end=1). Everything fits a 1440 by 900 window in both states, which
 scripts/demo_screenshots.py checks. Streamlit is an optional extra: pip install -e ".[demo]".
@@ -297,7 +299,8 @@ def main() -> None:
     # ---- today's queue and the scorecard, side by side ----------------------------------------
     queue = rows(
         "SELECT stays, causes, plan, value_text, reason, outcome, queued, alternative, "
-        "alternative_text FROM queue WHERE as_of_day = ? AND hotel = ? ORDER BY position",
+        "alternative_text, since_last_change FROM queue WHERE as_of_day = ? AND hotel = ? "
+        "ORDER BY position",
         day,
         key,
     )
@@ -312,6 +315,8 @@ def main() -> None:
             words = plain(f"{plan.plan} for {plan.stays}, {plan.value_text}. ")
             reason = plain(plan.reason, REASON_MARKS)
             st.markdown(f"**{plan.outcome.capitalize()}:** {words}{reason}")
+            if plan.since_last_change:  # the stored request's own line, shown as written
+                st.markdown(f"**Since the last change:** {plain(plan.since_last_change)}")
         if held.empty:
             st.markdown("No flag was held today.")
         else:

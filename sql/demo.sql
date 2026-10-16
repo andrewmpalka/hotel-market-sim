@@ -75,6 +75,7 @@ CREATE TABLE IF NOT EXISTS queue (
     outcome VARCHAR NOT NULL,          -- accepted, declined or held
     alternative VARCHAR NOT NULL,      -- held only: the best alternative to holding, in words
     alternative_text VARCHAR NOT NULL, -- held only: how far it fell short of holding or of the minimum
+    since_last_change VARCHAR NOT NULL, -- queued only: the stored request's earlier changes on the stay dates, as it lists them; empty when none
     PRIMARY KEY (as_of_day, hotel, position)
 );
 

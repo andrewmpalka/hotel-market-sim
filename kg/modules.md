@@ -250,7 +250,7 @@ which is also the order in which they depend on each other.
 ### MOD-26 [C] demo_data.py
 - File: src/hotel_market/demo_data.py
 - Owns: the demo file ([[DAT-33]], [[DEC-57]], [[DEC-58]]), at one tick a day or at --ticks N. build() runs days 0 to 59 through run_days ([[MOD-12]]) with the recorded run's client, or the template with a warning; both book to day 149.
-- Rows: _news_rows, _stay_rows and _queue_rows fill the day's tables from the feeds, the detect numbers and the entries ([[MOD-07]], [[MOD-11]]). _stay_rows adds an accepted plan's rate, and _alternative names a held flag's best one.
+- Rows: _news_rows, _stay_rows and _queue_rows fill the day's tables from the feeds, the detect numbers and the entries ([[MOD-07]], [[MOD-11]]). _queue_rows copies the request's earlier changes; _alternative names a held flag's best one.
 - Scorecard: figures() gives the five measures over hotels and stay dates together ([[MEA-01]] to [[MEA-05]]). _stayed takes stay dates 0 to the day before, _outcome_rows every stay date, and _gain_rows the contribution by stay date.
 - Dates: stay_label, stay_span and day_label write a date as "Thu 18 Feb [45]" from SIM_START ([[RUL-01]]). tiles(), value_text and delta_text write the tiles' texts; a change that rounds to nothing is "0".
 - Holds: DEMO_FILE, DEMO_SCHEMA_FILE and RECORDED_RUNS, the paths, and DEMO_TABLES, NOTHING_NEW, ALL, MEASURES, RATE_AXIS, GAIN_TICK_DAYS and NUMBER_WORDS ([[RUL-103]], [[RUL-104]], [[RUL-107]] to [[RUL-111]]).
@@ -261,7 +261,7 @@ which is also the order in which they depend on each other.
 - File: src/hotel_market/demo_page.py
 - Owns: the read-only demo page ([[DEC-57]], [[DEC-58]]), a Streamlit app over [[DAT-33]]. The sidebar picks a hotel and a day, a checkbox shows the end-of-run result, and a caption reads the file's seed and reason source.
 - Charts: our rate, the comp set median and an accepted plan's rate as a dashed aqua line, then the rooms on the books against the pace curve, side by side. The planned rate joins the legend only on a day with an accepted plan.
-- Queue: each queued plan with its reason, and the held flags open, each with its stay dates, its cause, the best alternative and how far it fell short. plain() escapes the markdown marks, so a dollar sign shows as written.
+- Queue: each queued plan with its reason and, where the stored request listed earlier changes on its dates, that line last under "Since the last change"; then the held flags open with their best alternative. plain() escapes the marks.
 - Scorecard: the nights already stayed for the hotel and for all together, as five large tiles each. With the checkbox on, the complete outcome's tiles follow each, in a compact size, and then the small line of the contribution difference.
 - Holds: the file, parameter, plot, tile, colour and mark constants, FILE_VARIABLE to REASON_MARKS ([[RUL-105]], [[RUL-106]], [[RUL-112]] to [[RUL-123]]), and STYLE.
 - Reads: nothing in the package; streamlit, altair and duckdb only, the optional extra demo. The page computes nothing, and a test parses it for an arithmetic operator or an aggregate call. Tests: tests/test_demo_page.py.

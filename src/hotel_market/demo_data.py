@@ -15,7 +15,9 @@ seed with no recording, the template writes every reason.
 
 The file adds the tables the page reads as they are (sql/demo.sql): hotels, days, news,
 stay_dates, queue, scorecard, outcome and gains, and a run table with the seed and the words for
-where the reasons came from, which the sidebar shows. Code computes every figure in them and writes
+where the reasons came from, which the sidebar shows. A queued plan's row also carries the
+earlier changes on its stay dates as the stored request lists them, the read-back the page shows
+under "Since the last change". Code computes every figure in them and writes
 every date as a calendar date with its day of the week and the day number in brackets. The page
 (demo_page.py) formats and draws them and computes nothing. The scorecard holds the nights
 already stayed as of the day, stay dates 0 to the day before. The outcome holds the result once
@@ -160,12 +162,14 @@ def build(
             texts.setdefault((day, hotel.key), []).extend(
                 _news_texts(day, hotel, feed, table, customer, tick, ticks)
             )
+            asked = (day, hotel.key) if ticks == 1 else (day, tick, hotel.key)
             rows["queue"] += _queue_rows(
                 day,
                 hotel,
                 own,
                 customer.min_value_at_stake,
                 len(entries_of[(day, hotel.key)]) - len(own),
+                agent.asked.get(asked),
             )
             if tick == ticks:
                 rows["stay_dates"] += _stay_rows(
@@ -423,11 +427,24 @@ def _stay_rows(
 
 
 def _queue_rows(
-    day: int, hotel: Hotel, entries: Sequence[Entry], minimum: float, start: int = 0
+    day: int,
+    hotel: Hotel,
+    entries: Sequence[Entry],
+    minimum: float,
+    start: int = 0,
+    asked: tuple[dict, dict] | None = None,
 ) -> list[tuple]:
     """The day's flags for the hotel: each plan, its value, its reason and what became of it. A
-    held flag also carries the best alternative to holding and how far it fell short. On a finer
-    clock each tick's flags follow the earlier ticks', from the position `start`."""
+    held flag also carries the best alternative to holding and how far it fell short. A queued
+    flag carries the earlier changes on its stay dates as the stored request lists them, the
+    request the hotel's queue was asked with (`asked`), so the page shows what the last change
+    did without computing it; a held flag was never asked. On a finer clock each tick's flags
+    follow the earlier ticks', from the position `start`."""
+    request = asked[0] if asked else {}
+    since = {
+        entry["id"]: "; ".join(entry.get("earlier_changes_on_these_dates", []))
+        for entry in request.get("entries", [])
+    }
     rows = []
     for position, entry in enumerate(entries, start):
         if not entry.queued:
@@ -451,6 +468,7 @@ def _queue_rows(
                 outcome,
                 alternative,
                 short,
+                since.get(entry.id, "") if entry.queued else "",
             )
         )
     return rows

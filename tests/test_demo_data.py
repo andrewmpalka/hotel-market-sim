@@ -242,6 +242,34 @@ def test_a_held_flag_names_the_best_alternative_and_how_far_it_fell_short(demo_f
     assert queued == [("", "")]
 
 
+def test_a_queued_plan_carries_the_stored_requests_earlier_changes(demo_file):
+    # Day 20 at the lifestyle hotel: the request's entry for stay date 75 lists the day-18 raise
+    # with the rooms booked since, and the queue row carries that line as the request wrote it.
+    # No other queued row, the airport's day-20 plan included, carries one, and a held flag was
+    # never asked, so it carries none either.
+    line = "day 18: raised 10% to $264 on Sat 75; since then 2 rooms booked against 1 expected"
+    rows = _rows(
+        demo_file,
+        "SELECT stays, since_last_change FROM queue "
+        "WHERE as_of_day = 20 AND hotel = 'lifestyle' AND queued ORDER BY position",
+    )
+    assert [(stays, since) for stays, since in rows if since] == [(stay_label(75), line)]
+    [(stored,)] = _rows(
+        demo_file,
+        "SELECT request FROM decisions WHERE as_of_day = 20 AND hotel = 'lifestyle' AND queued "
+        "AND first_stay = 75",
+    )
+    request = json.loads(stored)
+    [listed] = [
+        e["earlier_changes_on_these_dates"] for e in request["entries"] if e["id"] == "75-75"
+    ]
+    assert listed == [line]
+    assert _rows(demo_file, "SELECT count(*) FROM queue WHERE since_last_change <> ''") == [(1,)]
+    assert _rows(demo_file, "SELECT DISTINCT since_last_change FROM queue WHERE NOT queued") == [
+        ("",)
+    ]
+
+
 def test_the_news_names_the_convention_the_filings_and_the_comp_set_cut(demo_file):
     day0 = _rows(demo_file, "SELECT DISTINCT text FROM news WHERE as_of_day = 0")
     assert day0 == [(NOTHING_NEW,)]

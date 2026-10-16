@@ -100,6 +100,7 @@ def test_the_page_shows_the_airport_hotel_on_day_20(demo_file, monkeypatch):
     assert "**Stay dates ahead, Sun 24 Jan [20] to Fri 23 Apr [109].**" in text
     assert AIRPORT_DAY_20 in text
     assert "No flag was held today." in text and not page.expander
+    assert "Since the last change" not in text  # the airport's request listed no earlier change
     # The accepted plan's rate is a dashed line in its own colour, with a legend entry.
     spec = _rate_chart_spec(page)
     assert '"planned_rate"' in spec and "#1baf7a" in spec and "#2a78d6" in spec
@@ -158,6 +159,23 @@ def test_the_query_string_opens_a_hotel_and_a_day_and_the_held_flags_are_open(
     assert len(page.metric) == 0 and not page.sidebar.checkbox[0].value
     page = _page(testing, monkeypatch, demo_file, "nowhere", 999)
     assert page.subheader[0].value == "Downtown convention hotel, Mon 4 Jan 2027 [day 0]"
+
+
+def test_the_decision_panel_shows_the_stored_requests_earlier_change_last(demo_file, monkeypatch):
+    """The lifestyle hotel's day-20 page: the plan for stay date 75 ends with the earlier change
+    the stored request listed, under its label and as the request wrote it, with the dollar sign
+    escaped; nothing else on the page carries the label."""
+    testing = pytest.importorskip("streamlit.testing.v1")
+    page = _page(testing, monkeypatch, demo_file, "lifestyle", 20)
+    blocks = [block.value for block in page.markdown]
+    label = (
+        "**Since the last change:** day 18: raised 10% to \\$264 on Sat 75; since then 2 rooms "
+        "booked against 1 expected"
+    )
+    assert blocks.count(label) == 1 and sum("Since the last change" in b for b in blocks) == 1
+    at = blocks.index(label)
+    assert blocks[at - 1].startswith("**Accepted:** ") and "Sat 20 Mar [75]" in blocks[at - 1]
+    assert at + 1 == len(blocks) or not blocks[at + 1].startswith("**Since")
 
 
 def test_a_reason_with_two_dollar_amounts_shows_both_as_written(demo_file, monkeypatch, tmp_path):
