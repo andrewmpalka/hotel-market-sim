@@ -15,12 +15,12 @@ nodes and its words, len(text.split()) over the file.
 | concepts.md | 12 | 1,370 |
 | measures.md | 14 | 962 |
 | sources.md | 4 | 855 |
-| decisions.md | 69 | 10,240 |
+| decisions.md | 70 | 10,386 |
 | results.md | 44 | 7,403 |
 | forks.md | 14 | 2,037 |
 | unknowns.md | 16 | 2,164 |
-| every node file | 377 | 40,482 |
-| index.md | | 2,954 |
+| every node file | 378 | 40,628 |
+| index.md | | 2,969 |
 
 ## Modules (`modules.md`)
 
@@ -286,7 +286,8 @@ nodes and its words, len(text.split()) over the file.
 - DEC-27 [H] The modules lived flat at the repository root
 - DEC-28 [C] The code is the package src/hotel_market, with pyproject.toml and a command
 - DEC-29 [H] A hosted workflow ran the tests on every push
-- DEC-30 [C] No hosted CI; the checks run locally through make and pytest
+- DEC-30 [H] No hosted CI; the checks run locally through make and pytest
+- DEC-70 [C] A hosted workflow runs the three checks on every push to main
 - DEC-31 [H] One agent.py held the planning, the model call and the daily loop
 - DEC-32 [C] The agent is plan.py, model.py and agent.py, with text.py for shared wording
 - DEC-33 [C] ruff formats the code at 100 columns, and lint checks the format

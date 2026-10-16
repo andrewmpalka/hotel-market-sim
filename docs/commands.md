@@ -62,6 +62,8 @@ With make, on a Mac or Linux machine:
     make screenshots           # screenshot the demo page at 1440 by 900, in both states, and fail if a page is taller than the window
     make help                  # every target
 
+Continuous integration runs the same checks on every push and pull request to main: `.github/workflows/test.yml` installs the package on Python 3.12 and runs `make lint`, `make test` and `python kg_check.py`, with no API key and no network beyond pip.
+
 With Docker:
 
     docker build -t hotel-market:py3.12 .                        # --build-arg PYTHON=3.11 for another Python

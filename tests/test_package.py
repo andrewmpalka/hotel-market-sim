@@ -30,8 +30,15 @@ def test_the_formatter_runs_at_100_columns():
     assert "ruff" in pyproject["project"]["optional-dependencies"]["dev"]
 
 
-def test_the_checks_run_locally_with_no_hosted_workflow():
-    assert not (ROOT / ".github").exists()
+def test_the_workflow_runs_the_checks_on_push_to_main():
+    # The hosted workflow runs the same three checks as a laptop does, on Python 3.12, with no
+    # key and nothing fetched beyond pip; the Makefile targets it calls exist.
+    workflow = (ROOT / ".github" / "workflows" / "test.yml").read_text()
+    assert "branches: [main]" in workflow and "pull_request:" in workflow
+    assert 'python-version: "3.12"' in workflow and "ubuntu-latest" in workflow
+    for step in ('pip install -e ".[dev]"', "make lint", "make test", "python kg_check.py"):
+        assert step in workflow, step
+    assert "ANTHROPIC_API_KEY" not in workflow and "fetch-depth: 0" in workflow
     makefile = (ROOT / "Makefile").read_text()
     assert "\ntest:" in makefile and "\nlint:" in makefile and "\ntest-all:" in makefile
     assert "--slow" in (ROOT / "tests" / "conftest.py").read_text()

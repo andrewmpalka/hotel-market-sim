@@ -483,14 +483,21 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Commit: 15e0215
 - Links: [[MOD-15]]
 
-### DEC-30 [C] No hosted CI; the checks run locally through make and pytest
-- Decided: the workflow file is gone. The tests, ruff and the knowledge-graph check run locally with python -m pytest and the two ruff commands. The Makefile wraps them.
-- Detail: nine slow tests, each a 20-seed sweep or several, take about twenty minutes in all. Plain pytest skips them, and pytest --slow (make test-all) includes them.
-- Replaces: [[DEC-29]]
-- Reason: the owner chose it after the queued run, and nothing in the repository depends on a hosted runner.
+### DEC-30 [H] No hosted CI; the checks run locally through make and pytest
+- Decided: the workflow file was gone. The tests, ruff and the knowledge-graph check ran locally with python -m pytest and the two ruff commands. The Makefile wrapped them.
+- Replaced by: [[DEC-70]]
+- Reason it went: the repository is shown to other people, and a check that runs on every push says more than one that runs on one laptop. The local commands stay as they were.
 - Commit: 5cef53e
-- Evidence: test_the_checks_run_locally_with_no_hosted_workflow
-- Links: [[MOD-15]]
+- Links: [[MOD-15]], [[DEC-29]]
+
+### DEC-70 [C] A hosted workflow runs the three checks on every push to main
+- Decided: .github/workflows/test.yml runs on a push or a pull request to main, on Python 3.12 and ubuntu-latest. It installs the package with pip and runs make lint, make test and python kg_check.py.
+- Detail: the workflow carries no API key and fetches nothing beyond pip, so the tests run offline as they do locally. It fetches the whole history, because kg_check.py looks each Commit line up in it.
+- Slow tests: the nine slow tests stay out of the workflow, as plain pytest skips them. pytest --slow (make test-all) still runs them locally.
+- Replaces: [[DEC-30]]; the first workflow, [[DEC-29]], was dropped after a queued run on a private repository.
+- Reason: the three checks are the same on a runner and on a laptop, and a badge on the README shows that they pass.
+- Evidence: test_the_workflow_runs_the_checks_on_push_to_main
+- Links: [[MOD-15]], [[DEC-29]], [[DEC-30]], [[DEC-33]]
 
 ### DEC-31 [H] One agent.py held the planning, the model call and the daily loop
 - Decided: candidates, estimates, the request, the cache, the template, the client and the loop were one module of 539 lines.

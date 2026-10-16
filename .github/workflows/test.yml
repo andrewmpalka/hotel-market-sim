@@ -1,0 +1,30 @@
+# The checks a push or a pull request to main runs: the linter, the tests and the
+# knowledge-graph check, on Python 3.12, with no API key and no network beyond pip.
+# The package goes into the Makefile's .venv, so make lint and make test run as they
+# do on a laptop. The whole history is fetched because kg_check.py looks each
+# Commit line up in it.
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Create the Makefile's venv and put it on the path
+        run: python -m venv .venv && echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+      - name: Install the package, pytest and ruff
+        run: pip install -e ".[dev]" && touch .venv/.installed
+      - run: make lint
+      - run: make test
+      - run: python kg_check.py

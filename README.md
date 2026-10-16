@@ -1,5 +1,7 @@
 # Hotel market simulator
 
+[![tests](https://github.com/andrewmpalka/hotel-market-sim/actions/workflows/test.yml/badge.svg)](https://github.com/andrewmpalka/hotel-market-sim/actions/workflows/test.yml)
+
 A simulator of one made-up hotel market and its pricing agent. Four hotels of
 one brand share it; the agent reads the simulated feeds on days 0 to 59. Four
 shocks arrive: a convention (day 10), new flights (day 20), a competitor rate
