@@ -29,9 +29,9 @@ The recorded run covers the shipped market at seed 7 on world v2, and the
 template answers wherever it does not. Every other command is in
 docs/commands.md.
 
-![The demo page: the airport hotel on day 20](docs/images/day20.png)
+![The demo page: the lifestyle hotel on day 20](docs/images/day20.png)
 
-*The airport hotel on day 20, the day the new flights were filed: the news, the stay dates ahead, the plan the agent queued, and the scorecard; the reason under the plan is the model's, recorded in the live run.*
+*The lifestyle hotel on day 20, the day the new flights were filed: the filing in the news line, the three plans the agent queued with the model's recorded reasons, and under the second the "Since the last change" line that reads back its day-18 raise, together on one page.*
 
 ## Results
 
