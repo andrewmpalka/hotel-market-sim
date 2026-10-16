@@ -122,11 +122,11 @@ entry in a request lists the hotel's earlier changes on its stay dates, with
 the rooms booked since each against the rooms expected, so the model sees what
 its last decision did before it makes the next one.
 
-On a clock, not in real time, the loop runs, and a tick is a slice of a
-simulated day: with `--ticks N` each day is cut into N ticks, the bookings
-land at every tick, the rate shop at tick 2, the airlines' filings at tick 3
-and the events at tick 4, each at tick 1 when N is smaller than its slot, and
-the agent runs after each tick reading the feeds as of that tick. Until a feed
+The loop runs on a clock, not in real time. A tick is a slice of a simulated
+day: with `--ticks N` each day is cut into N ticks, the bookings land at every
+tick, the rate shop at tick 2, the airlines' filings at tick 3 and the events
+at tick 4, each at tick 1 when N is smaller than its slot, and the agent runs
+after each tick reading the feeds as of that tick. Until a feed
 lands, a tick sees the previous value. N of 1 is the daily loop unchanged:
 every feed lands at the one tick and the agent runs once a day, as every figure
 above was measured. Real time is this loop with a wall clock behind the
