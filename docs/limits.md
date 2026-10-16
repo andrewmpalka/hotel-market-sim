@@ -6,11 +6,11 @@
   holds the forecast equal to the simulator's demand at the default demand bias
   of 1.0, and the curve is never learned. The option `--demand-bias F`
   multiplies the simulator's demand by F, which the agent never sees, so its
-  forecast is wrong by that factor. At 0.9 the default run keeps +$1,913 a seed
-  of its +$32,899, because every raise sells fewer rooms than the agent's
-  estimate says. At 1.1 it earns +$112,082 a seed, because the start rates were
-  set for a smaller market. The learning agent's day-59 elasticity stays at 1.26
-  to 1.49 at both biases, so a level error that is a constant factor lands in
+  forecast is wrong by that factor. At 0.9 the default run keeps +$1,069 a seed
+  of its +$16,164, because every raise sells fewer rooms than the agent's
+  estimate says. At 1.1 it earns +$66,687 a seed, because the start rates were
+  set for a smaller market. The learning agent's day-59 elasticity stays at 1.40
+  to 1.51 at both biases, so a level error that is a constant factor lands in
   the estimator's intercept as designed. A weekday or an event error lands in
   the slope instead, by two to three standard errors, because it moves with the
   rate ratio on the dates where the medians and the rates move. The estimator
@@ -20,8 +20,8 @@
   back into its forecast and learns the level by day 10, but the gain at 0.9
   does not recover, because the opportunity shrank: the gain here comes from
   scarcity on the shock dates, and a market a tenth smaller has fewer nights
-  that sell out, so the level halved the false pace flags and could not make
-  rooms scarce. At 1.1 the level removes the false flags and the correct raises
+  that sell out, so the level cut the flags from 5420 to 1538 over the 20 seeds
+  and could not make rooms scarce. At 1.1 the level removes the false flags and the correct raises
   go with them, because the agent acts only on a flag and a market that is
   simply larger raises none (docs/results.md).
 - By default the agent is handed the simulator's elasticity of 1.5;
@@ -110,8 +110,8 @@
   clock the outcomes table still credits a decision with the rooms sold on
   later days, not with the later ticks of its own day.
 
-The next version reprices when data arrives during the day, adds per-weekday
-terms to the estimator, and adds cancellations and segments. Since world v2 the
+The next version adds per-weekday terms to the estimator, adds cancellations
+and segments, and puts an event known before the run into the preload. Since world v2 the
 request already lists each hotel's earlier changes on an entry's stay dates,
 with the rooms booked since against the rooms expected, and the competitors'
 reaction is an option of a run rather than the default.

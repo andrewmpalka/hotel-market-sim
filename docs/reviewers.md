@@ -17,8 +17,8 @@ instead of returning the old reasons.
 The oracle reviewer scores every plan with the simulator's own elasticity and
 declines the plan when holding scores at least as well. The oracle is the
 ceiling in expectation over the agent's own candidates; a single seed's draw can
-beat it, and at a demand bias of 0.9 it is ahead of the fixed-rate run in 13
-seeds of 20, which a sign test puts at p 0.26. In the reacting market the oracle
+beat it, and in the default mode at a demand bias of 0.9 it is ahead of the
+fixed-rate run in 15 seeds of 20, which a sign test puts at p 0.041. In the reacting market the oracle
 scores the competitors' reaction as immediate, where the simulator applies it
 three days later, so its ceiling there covers the agent's own candidates only.
 The control arm follows the shape of
