@@ -98,11 +98,11 @@ the default run the model added nothing, because every reviewer said yes to
 every plan, and as a reviewer in a mode where the agent's elasticity was wrong,
 Opus recovered 34% of what a perfect reviewer could at a fixed elasticity of 1.0
 and 10% in a learned mode, by declining 230 and 41 plans that the oracle also
-declined, while Sonnet declined 8 and 4 and Haiku none and 2, so those two tie
+declined, while Sonnet declined 8 and 3 and Haiku none and 3, so those two tie
 with saying yes to every plan. In those modes saying yes to every plan earns
 -$6,265 and +$804 a seed against the oracle's +$13,107 and +$13,199, so the
-reviewer matters more on world v2 than it did on world v1. The benchmark's 7,743
-calls cost $85.92 at list prices. The one piece that learns from the bookings is
+reviewer matters more on world v2 than it did on world v1. The benchmark's 7,744
+calls cost $85.87 at list prices. The one piece that learns from the bookings is
 the elasticity estimator, a Poisson regression with a prior, and on world v2 the
 agent that uses it keeps little of the gain unless the cautious rule is on
 (docs/reviewers.md for the reviewers, docs/results.md for the rest).

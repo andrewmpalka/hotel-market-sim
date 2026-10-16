@@ -43,14 +43,14 @@ At a fixed elasticity of 1.0, saying yes to every plan loses $6,265 a seed,
 because the agent prices with an elasticity below the simulator's 1.5 and raises
 too often. The oracle earns +$13,107 and accepts 11% of the plans. The
 difference, $19,372 a seed, is the value a reviewer can recover. Opus recovers
-34% of it. It earns +$305 a seed and beats the fixed-rate run in 8 of 20 seeds.
+34% of it. It earns +$346 a seed and beats the fixed-rate run in 9 of 20 seeds.
 
 Opus declines 230 plans, and the oracle declines every one of them, so its
 precision is 1.00. Because it catches three in ten of the oracle's declines, its
 recall is 0.31, and its dollar-weighted recall is 0.33. At a fixed elasticity of
 2.0, saying yes to every plan loses $2,687 a seed and the oracle earns +$6,006.
-Opus declines 40 plans with a precision of 0.93 and earns -$2,442, a recovered
-share of 0.03.
+Opus declines 38 plans with a precision of 0.92 and earns -$2,514, a recovered
+share of 0.02.
 
 Sonnet declines 8 plans at 1.0 and 5 at 2.0, each one the oracle also declines,
 and Haiku declines none, so both stay within $100 a seed of saying yes to every
@@ -63,19 +63,19 @@ without the cautious rule. One arm ran in the reacting market at a market
 elasticity of 0.5. From a prior of 1.0, saying yes to every plan earns +$804 a
 seed and the oracle +$13,199. The $12,395 a seed between them is open to a
 reviewer, and Opus recovers 10% of it. It declines 41 plans, the oracle agrees
-with every one, and it earns +$2,049. Sonnet declines 4 plans and Haiku 2.
+with every one, and it earns +$2,105. Sonnet declines 3 plans and Haiku 3.
 Opus's declines now follow the uncertainty the request shows: it declines 7 of
-the 8 plans whose estimate has a standard error under 0.15 and 6 of the 345 at
+the 8 plans whose estimate has a standard error under 0.15 and 6 of the 344 at
 0.35 and over. With the cautious rule, saying yes to every plan earns +$12,527
 and the oracle +$14,854. Opus declines 5 plans and earns +$12,561, Sonnet
 declines none, and Haiku declines one plan the oracle accepts. From a prior of
 2.0, Opus declines 12 plans without the rule, with a precision of 0.92, and none
-with it. In the reacting arm Opus held 27 of the 583 plans it was shown on stay
+with it. In the reacting arm Opus held 25 of the 577 plans it was shown on stay
 dates the hotel had changed within 14 days, and the oracle held none, because
-the simulator pays the second raise. The holds cost $2,238 a seed. Since world
+the simulator pays the second raise. The holds cost $2,491 a seed. Since world
 v2 the request lists the hotel's earlier changes on those dates, with the rooms
 booked since against the rooms expected. The five learn commands made 3,737
-calls for $48.73 at list prices, and the fixed modes 4,006 calls for $37.19
+calls for $48.64 at list prices, and the fixed modes 4,007 calls for $37.23
 (docs/results.md).
 
 This repository does no post-training. Every booking in this world comes from

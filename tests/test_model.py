@@ -671,6 +671,21 @@ def test_an_entry_lists_the_earlier_changes_on_its_dates_with_the_rooms_booked_s
     assert f" Our last change on these dates was on {text}." in decision["reason"]
 
 
+def test_an_earlier_change_with_one_room_booked_reads_in_the_singular():
+    from hotel_market.plan import EarlierChange
+
+    one = EarlierChange(18, 75, 240.0, 264.0, 1, 1.4)
+    assert earlier_change_text(one) == (
+        "day 18: raised 10% to $264 on Sat 75; since then 1 room booked against 1 expected"
+    )
+    assert earlier_change_text(replace(one, booked_since=2)).endswith(
+        "since then 2 rooms booked against 1 expected"
+    )
+    assert earlier_change_text(replace(one, booked_since=0, new_rate=228.0)).startswith(
+        "day 18: lowered 5% to $228 on Sat 75; since then 0 rooms booked"
+    )
+
+
 def test_the_system_prompt_tells_the_model_how_to_choose_and_write():
     for phrase in (
         'choose the plan to recommend it, or "hold" to decline it',

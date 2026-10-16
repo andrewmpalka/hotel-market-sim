@@ -80,7 +80,7 @@
   learned modes on 2026-10-15 on world v2 (docs/results.md). Only Opus recovered
   any of the oracle's margin, 34% in a fixed mode and 10% in a learned one;
   Sonnet and Haiku tie with saying yes to every plan. In the reacting market
-  Opus held 27 of the 583 plans on dates changed within 14 days, and the oracle
+  Opus held 25 of the 577 plans on dates changed within 14 days, and the oracle
   held none.
 - The container image was built on Python 3.11, 3.12 and 3.14 and passed the
   suite on each. A seed-7 run inside it matches the native run

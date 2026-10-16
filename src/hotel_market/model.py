@@ -428,13 +428,15 @@ def _entry_request(entry: Entry) -> dict:
 
 def earlier_change_text(change: EarlierChange) -> str:
     """One earlier change as the model and the manager read it, such as "day 10: raised 10% to
-    $242 on Thu 45; since then 31 rooms booked against 24 expected". Code computed every figure
-    (agent.py), so the model may cite it and must not compute from it."""
+    $242 on Thu 45; since then 31 rooms booked against 24 expected", or "1 room booked" for one.
+    Code computed every figure (agent.py), so the model may cite it and must not compute from
+    it."""
     moved = change.new_rate / change.old_rate - 1
+    booked = change.booked_since
     return (
         f"day {change.day}: {'raised' if moved > 0 else 'lowered'} {abs(moved):.0%} to "
         f"{dollars(change.new_rate)} on {DAY_NAMES[weekday(change.stay_day)]} {change.stay_day}; "
-        f"since then {rooms(change.booked_since)} rooms booked against "
+        f"since then {rooms(booked)} {'room' if booked == 1 else 'rooms'} booked against "
         f"{rooms(change.expected_since)} expected"
     )
 
