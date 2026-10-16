@@ -344,7 +344,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Replaces: nothing built; the daily loop stays the default and every pinned figure is measured on it.
 - Reason: an event-driven agent must read a feed when it lands and act before the day ends. A configurable clock gives that without a wall clock, and N of 1 keeps the daily loop byte for byte.
 - Feeds: each simulated feed lands at a fixed tick, the shop at [[RUL-129]], the filing at [[RUL-130]], the events at [[RUL-131]], bookings at every tick ([[DEC-67]]). Real time is this loop with a wall clock behind the sources.
-- Record: with more than one tick a day, flags, plans and decisions carry as_of_tick, and each line data_arrived and decided ([[DAT-18]], [[DAT-28]]). The cache names the tick ([[DEC-23]]).
+- Record: with more than one tick a day, flags, plans and decisions carry as_of_tick, and each line data_arrived and decided ([[DAT-18]], [[DAT-28]]). The cache names the tick ([[DEC-23]]). The outcomes table credits later days only.
 - Evidence: test_a_source_made_for_a_tick_refuses_a_later_tick_of_its_day_on_both_routes, test_the_default_clock_books_byte_for_byte_what_it_booked_before_the_split
 - Links: [[RUL-128]], [[DEC-46]], [[DEC-67]], [[MOD-02]], [[MOD-06]], [[MOD-10]], [[MOD-19]], [[MOD-21]], [[RES-43]]
 

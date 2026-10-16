@@ -106,7 +106,9 @@
   react within a day: a reaction, when it is on, reads the hotel's rate three
   days back. On this world a finer clock earns nothing, because the demand
   moves once a day except at the shocks (docs/results.md, The clock); it would
-  earn where shops, filings or bookings move within the day.
+  earn where shops, filings or bookings move within the day. On a finer
+  clock the outcomes table still credits a decision with the rooms sold on
+  later days, not with the later ticks of its own day.
 
 The next version reprices when data arrives during the day, adds per-weekday
 terms to the estimator, and adds cancellations and segments. Since world v2 the

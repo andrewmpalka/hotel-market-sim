@@ -181,15 +181,14 @@ class Limited:
         latest = day - 1 if before else day
         if self.as_of_day is not None and latest > self.as_of_day:
             raise ValueError(f"asked about day {day} on day {self.as_of_day}: it is not known yet")
-        if (
-            not before
-            and self.as_of_day is not None
-            and self.as_of_tick is not None
-            and day == self.as_of_day
-            and tick > self.as_of_tick
-        ):
+        if self.as_of_day is None or self.as_of_tick is None or latest != self.as_of_day:
+            return
+        # A question about the bookings before tomorrow means the whole of today, which a source
+        # made for an earlier tick of today does not know yet.
+        later = self.ticks if before else tick
+        if later > self.as_of_tick:
             raise ValueError(
-                f"asked about tick {tick} of day {day} on tick {self.as_of_tick}: it is not "
+                f"asked about tick {later} of day {latest} on tick {self.as_of_tick}: it is not "
                 f"known yet"
             )
 

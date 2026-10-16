@@ -257,6 +257,12 @@ def test_a_source_made_for_a_tick_refuses_a_later_tick_of_its_day_on_both_routes
                     ask()
             with pytest.raises(ValueError, match="day 21 on day 20"):
                 sources.events.known(21, 1)
+            # The bookings before tomorrow are the whole of today, which tick 2 does not know.
+            with pytest.raises(ValueError, match="tick 4 of day 20 on tick 2"):
+                sources.bookings.history(21)
+            with pytest.raises(ValueError, match="tick 4 of day 20 on tick 2"):
+                sources.shops.median_history(21)
+            sources.bookings.history(20)  # the days before today are known
             with pytest.raises(ValueError, match="tick 5 is not 1 to 4"):
                 sources.events.known(19, 5)
     finally:

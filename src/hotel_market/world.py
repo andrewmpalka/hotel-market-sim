@@ -84,11 +84,6 @@ def stay_window(day: int) -> range:
     return range(day, min(day + LOOKAHEAD_DAYS, HORIZON_DAYS))
 
 
-def last_tick(ticks: int = TICKS_PER_DAY) -> int:
-    """The last tick of a day, which a question with no tick means: after the whole day."""
-    return ticks
-
-
 def arrival_tick(slot: int, ticks: int = TICKS_PER_DAY) -> int:
     """The tick a feed with this slot lands at on a day of `ticks` ticks: its slot, or tick 1 when
     the day has fewer ticks than the slot."""
