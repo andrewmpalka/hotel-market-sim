@@ -180,7 +180,14 @@ class Books:
         curve = hotel.curve
         ratio = median / hotel.starting_median() if self.market_elasticity else 1.0
         demand = expected_demand(
-            hotel, stay_day, day, self.demand_bias, ratio, self.market_elasticity, self.scenario
+            hotel,
+            stay_day,
+            day,
+            self.demand_bias,
+            ratio,
+            self.market_elasticity,
+            self.scenario,
+            self.customer,
         )
         return demand * (curve(days_out) - curve(days_out + 1)) * (rate / median) ** -ELASTICITY
 
@@ -192,7 +199,9 @@ class Books:
     def comp_median(self, day: int, hotel: Hotel, stay_day: int) -> float:
         """The comp median the run shops on a day, with the reaction when it is on."""
         change = self.hotel_change(day, hotel, stay_day)
-        return comp_median(day, hotel, stay_day, seed=self.seed, hotel_change=change)
+        return comp_median(
+            day, hotel, stay_day, seed=self.seed, hotel_change=change, customer=self.customer
+        )
 
     def book(self, day: int, tick: int = 1) -> None:
         """Draw one day's new bookings for every hotel and stay date in the window. With several

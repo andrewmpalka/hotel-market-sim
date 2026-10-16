@@ -30,7 +30,7 @@ from __future__ import annotations
 from functools import lru_cache
 from types import MappingProxyType
 
-from hotel_market.customer import demo
+from hotel_market.customer import Customer, demo
 from hotel_market.schedule import DEFAULT_SCENARIO, Scenario, passenger_change
 from hotel_market.shocks import event_uplift
 from hotel_market.world import Hotel, weekday
@@ -62,15 +62,16 @@ def expected_demand(
     median_ratio: float = 1.0,
     market_elasticity: float = MARKET_ELASTICITY,
     scenario: Scenario = DEFAULT_SCENARIO,
+    customer: Customer | None = None,
 ) -> float:
     """Rooms a hotel expects to sell for a stay date, given what is known on as_of_day. The
     demand bias multiplies it. median_ratio is the comp median as shopped over its starting
     level, and the market elasticity scales demand by median_ratio ** -market_elasticity. The
-    scenario is the air schedule's filings."""
+    scenario is the air schedule's filings, and the customer's events carry the uplift."""
     return (
         normal_demand(hotel, stay_day, demand_bias)
         * (1 + hotel.air_share * known_passenger_change(as_of_day, scenario)[stay_day])
-        * (1 + event_uplift(hotel.key, stay_day, as_of_day))
+        * (1 + event_uplift(hotel.key, stay_day, as_of_day, customer))
         * median_ratio**-market_elasticity
     )
 

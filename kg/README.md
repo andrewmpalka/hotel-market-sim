@@ -90,7 +90,7 @@ A change to the code and the change to its nodes go in the same commit. If a con
 - a constant whose value or kind here differs from the code,
 - a constant in the code with no node here,
 - a measure whose function does not exist,
-- an Event, a RateCut or a scenario's Shock in the code with no SHK node naming its known day,
+- an event or a rate cut in the demo customer file, or a scenario's Shock in the code, with no SHK node naming its known day,
 - a RES node whose table is not in `docs/results.md`,
 - a field line over 240 characters,
 - a node with more than 8 fields,

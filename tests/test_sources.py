@@ -96,6 +96,26 @@ def test_the_simulated_sources_answer_as_of_the_day():
     assert sources.shops.median(10, hotel, 46) == pytest.approx(statistics.median(shopped.values()))
 
 
+def test_the_sources_hand_the_agent_another_markets_calendar():
+    """The events and the rate cuts a run's sources carry are the customer's own, so the agent
+    learns of another market's regatta through the same interface, with no module of its own
+    changed."""
+    from hotel_market.customer import load
+
+    harbour = load(Path(hotel_market.__file__).resolve().parents[2] / "customers" / "harbour.toml")
+    books = simulate(7, last_day=26, customer=harbour)
+    sources = simulated_sources(books, 26)
+    assert [e.name for e in sources.events.known(11)] == []
+    assert [e.name for e in sources.events.known(12)] == ["Regatta"]
+    resort, _, station = harbour.hotels
+    assert sources.shops.median(12, resort, 41) > 1.05 * sources.shops.median(11, resort, 41)
+    assert sources.shops.median(25, station, 34) < 0.94 * sources.shops.median(24, station, 34)
+    assert sources.bookings.on_books(26).shape == (3, 150)
+    demo_sources = simulated_sources(simulate(7, last_day=12), 12)
+    assert [e.name for e in demo_sources.events.known(9)] == []  # the convention is day 10's
+    assert [e.name for e in demo_sources.events.known(12)] == ["Convention"]
+
+
 def test_the_simulated_rate_shops_carry_the_reaction_the_simulator_used():
     from hotel_market.bookings import Books
     from hotel_market.shops import REACTION_SHARE, comp_median

@@ -10,6 +10,8 @@ hotels' starting rates nor their competitors' rates therefore follow the day of 
                       x (1 - rate cut known by shop_day)
                       + REACTION_SHARE x the hotel's change from its start rate
 
+The event raise and the rate cut are the market's, from its customer file (shocks.py).
+
 shop_day is the as_of_day of a rate shop. The noise is drawn afresh for every shop day, competitor
 and stay date, from a stream keyed by the run's seed, the hotel's key and the competitor's name,
 so a hotel added to the customer file leaves every other hotel's shops as they were. A comp median
@@ -29,6 +31,7 @@ from functools import lru_cache
 
 import numpy as np
 
+from hotel_market.customer import Customer
 from hotel_market.schedule import HORIZON_DAYS
 from hotel_market.shocks import comp_rate_raise, rate_cut
 from hotel_market.world import Hotel
@@ -54,19 +57,26 @@ def _noise(seed: int, hotel: str, competitor: str) -> np.ndarray:
 
 
 def comp_rates(
-    shop_day: int, hotel: Hotel, stay_day: int, *, seed: int, hotel_change: float = 0.0
+    shop_day: int,
+    hotel: Hotel,
+    stay_day: int,
+    *,
+    seed: int,
+    hotel_change: float = 0.0,
+    customer: Customer | None = None,
 ) -> dict[str, float]:
     """Each competitor's rate for a stay date, as shopped on shop_day. hotel_change is the hotel's
     change from its start rate that the competitors react to, in dollars. Each moves
-    REACTION_SHARE of it. The caller passes the lagged change, or nothing for no reaction."""
-    raise_ = 1 + comp_rate_raise(hotel.key, stay_day, shop_day)
+    REACTION_SHARE of it. The caller passes the lagged change, or nothing for no reaction. The
+    customer's events and rate cuts move the rates on the dates they cover."""
+    raise_ = 1 + comp_rate_raise(hotel.key, stay_day, shop_day, customer)
     reaction = REACTION_SHARE * hotel_change
     return {
         comp.name: (
             comp.base_rate
             * raise_
             * (1 + _noise(seed, hotel.key, comp.name)[shop_day + 1, stay_day])
-            * (1 - rate_cut(hotel.key, comp.name, stay_day, shop_day))
+            * (1 - rate_cut(hotel.key, comp.name, stay_day, shop_day, customer))
             + reaction
         )
         for comp in hotel.competitors
@@ -74,10 +84,18 @@ def comp_rates(
 
 
 def comp_median(
-    shop_day: int, hotel: Hotel, stay_day: int, *, seed: int, hotel_change: float = 0.0
+    shop_day: int,
+    hotel: Hotel,
+    stay_day: int,
+    *,
+    seed: int,
+    hotel_change: float = 0.0,
+    customer: Customer | None = None,
 ) -> float:
     """The median rate of a hotel's comp set for a stay date, as shopped on shop_day, after the
     reaction to hotel_change (see comp_rates)."""
     return statistics.median(
-        comp_rates(shop_day, hotel, stay_day, seed=seed, hotel_change=hotel_change).values()
+        comp_rates(
+            shop_day, hotel, stay_day, seed=seed, hotel_change=hotel_change, customer=customer
+        ).values()
     )

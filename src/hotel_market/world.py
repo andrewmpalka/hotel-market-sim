@@ -3,8 +3,9 @@
 The types a market is described with, and the calendar the simulation runs on. A Hotel carries
 everything the agent and the simulator need to know about it: its rooms, starting rate, share of
 guests arriving by air and rooms sold on a normal night. It also has its demand factors across the
-week, booking curve, rate floor and ceiling, cost per occupied room and comp set. The hotels
-themselves, and the rest of a market's settings, come from a customer file (customer.py).
+week, booking curve, rate floor and ceiling, cost per occupied room and comp set. A RateCut is a
+scripted move by some of a hotel's competitors. The hotels themselves, the market's events and
+rate cuts, and the rest of a market's settings come from a customer file (customer.py).
 
 Nothing here is random. The seed only matters once competitor rates and bookings are drawn.
 """
@@ -37,6 +38,26 @@ EVENT_TICK = 4
 class Competitor:
     name: str
     base_rate: float  # before event and noise adjustments
+
+
+@dataclass(frozen=True)
+class RateCut:
+    """A scripted cut by some of a hotel's competitors, part of a market's description. The
+    simulator alone applies it; the agent sees it only through the rate shop."""
+
+    known_day: int  # the first shop day that shows the cut
+    start_day: int  # first stay date affected
+    end_day: int  # last stay date affected
+    hotel: str  # key of the hotel whose comp set this is
+    competitors: tuple[str, ...]  # names of the competitors that cut
+    cut: float  # 0.20 means rates are 20% lower
+
+    def covers(self, hotel_key: str, competitor: str, stay_day: int) -> bool:
+        return (
+            hotel_key == self.hotel
+            and competitor in self.competitors
+            and self.start_day <= stay_day <= self.end_day
+        )
 
 
 @dataclass(frozen=True)

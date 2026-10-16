@@ -118,7 +118,6 @@ from hotel_market.model import MODELS, ClaudeClient, Client
 from hotel_market.plan import DAY_NAMES, HOLD, Entry, Pricing
 from hotel_market.policy import POLICIES
 from hotel_market.schedule import DEFAULT_SCENARIO, HORIZON_DAYS, SCENARIOS, Scenario
-from hotel_market.shocks import EVENTS, RATE_CUTS
 from hotel_market.shops import REACTION_LAG, REACTION_SHARE
 from hotel_market.simulated import deciding, simulated_sources
 from hotel_market.text import capitalize_first, money_range, pace_text, percent_range, stay_range
@@ -597,7 +596,8 @@ def sweep(
                     ),
                     own_median_flags=own_median_flags(agent.entries, books),
                     noise_median_flags=sum(
-                        bool(MEDIAN_CAUSES & set(e.causes)) and e.day not in median_shock_days()
+                        bool(MEDIAN_CAUSES & set(e.causes))
+                        and e.day not in median_shock_days(customer)
                         for e in agent.entries
                     ),
                     outcomes=outcomes_of(agent.entries, books, customer),
@@ -691,11 +691,12 @@ def cache_root(
     return root
 
 
-def median_shock_days() -> frozenset[int]:
-    """The days a scripted shock first moves a comp median: an event's competitor raise or a
-    rate cut. A comp-median flag on any other day came from the shop noise or the reaction."""
-    raises = {e.known_day for e in EVENTS if e.comp_rate_raise}
-    return frozenset(raises | {c.known_day for c in RATE_CUTS})
+def median_shock_days(customer: Customer) -> frozenset[int]:
+    """The days a scripted shock first moves a comp median in the customer's market: an event's
+    competitor raise or a rate cut. A comp-median flag on any other day came from the shop noise
+    or the reaction."""
+    raises = {e.known_day for e in customer.events if e.comp_rate_raise}
+    return frozenset(raises | {c.known_day for c in customer.rate_cuts})
 
 
 def own_median_flags(entries: Iterable[Entry], books: Books) -> int:
@@ -1537,7 +1538,7 @@ def _print_sweep(
     print()
     print("\n".join(_revision_table(arms)))
     print()
-    print("\n".join(_median_table(arms)))
+    print("\n".join(_median_table(arms, customer)))
     if react:
         print()
         print("\n".join(_reaction_table(arms, market_elasticity=market)))
@@ -1622,11 +1623,11 @@ def _revision_table(arms: list[ArmResult], named: bool = False) -> list[str]:
     return lines
 
 
-def _median_table(arms: list[ArmResult], named: bool = False) -> list[str]:
+def _median_table(arms: list[ArmResult], customer: Customer, named: bool = False) -> list[str]:
     """The comp-median flags, summed over the seeds: those on a day a scripted shock moved a
     median, and those on any other day, where the shop noise or the reaction moved it."""
     reviewer_heading = f"{'reviewer':20}" if named else ""
-    days = ", ".join(str(day) for day in sorted(median_shock_days()))
+    days = ", ".join(str(day) for day in sorted(median_shock_days(customer)))
     lines = [
         f"The comp-median flags, summed over the seeds: on the days a shock moved a median "
         f"({days}) and on every other day, where the shop noise or the reaction moved it",
@@ -1912,7 +1913,7 @@ def _print_bench(
         print()
         print("\n".join(_revision_table(arms, named=True)))
     print()
-    print("\n".join(_median_table(arms, named=True)))
+    print("\n".join(_median_table(arms, customer, named=True)))
     print()
     print("\n".join(_outcome_table(arms, named=True)))
     if policy:

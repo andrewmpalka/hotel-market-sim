@@ -17,7 +17,7 @@ which is also the order in which they depend on each other.
 
 ### MOD-02 [C] world.py
 - File: src/hotel_market/world.py
-- Owns: the types a market is described with: Hotel and Competitor ([[DAT-04]]). A Hotel carries its rooms, start rate, air share, base occupancy, weekday factors, booking curve ([[CON-01]]), comp set, floor, ceiling, room cost and row.
+- Owns: the types a market is described with: Hotel, Competitor ([[DAT-04]]) and RateCut ([[DAT-05]]). A Hotel carries its rooms, rate, air share, base occupancy, weekday factors, curve ([[CON-01]]), comp set, limits, room cost and row.
 - Level: Hotel.starting_median() is the comp set's base-rate median, the level the market term and the forecast measure a shopped median against ([[DEC-52]], [[DEC-62]]).
 - Holds: the calendar: SIM_DAYS ([[RUL-12]]), the 90-day window ([[RUL-13]]), the clock TICKS_PER_DAY ([[RUL-128]]) and weekday. The hotels come from the customer file ([[MOD-20]], [[DEC-41]]). Nothing here is random.
 - Reads: [[MOD-01]] for SIM_START and HORIZON_DAYS
@@ -27,10 +27,10 @@ which is also the order in which they depend on each other.
 
 ### MOD-03 [C] shocks.py
 - File: src/hotel_market/shocks.py
-- Owns: the two shocks that are not in the schedule: the convention ([[SHK-01]]) and the competitor rate cut ([[SHK-03]]). They are Event and RateCut records ([[DAT-05]]).
-- Lookups: events_as_of, event_uplift, comp_rate_raise and rate_cut, each as of a day. The Event type itself lives at the boundary ([[MOD-17]]), so both sides share it.
-- Reads: [[MOD-17]] for the Event type
-- Writes: [[DAT-05]]
+- Owns: the lookups over a market's events and competitor rate cuts ([[DAT-05]]), which its customer file holds ([[DEC-69]]). The demo market's are the convention ([[SHK-01]]) and the rate cut ([[SHK-03]]).
+- Lookups: events_as_of, event_uplift, comp_rate_raise, rate_cuts_as_of and rate_cut, each as of a day and for a customer, the demo market by default. The Event type lives at the boundary ([[MOD-17]]).
+- Reads: [[MOD-17]] for the Event type, [[MOD-20]] for the customer and its calendar, [[MOD-02]] for RateCut
+- Writes: nothing; it reads [[DAT-05]] out of [[DAT-27]]
 - Tests: tests/test_shocks.py
 - Evidence: test_convention_is_not_known_before_day_10, test_two_full_service_competitors_cut_20_percent_on_days_37_to_39_from_day_30
 
@@ -143,7 +143,7 @@ which is also the order in which they depend on each other.
 ### MOD-15 [C] kg_check.py
 - File: kg_check.py
 - Owns: the checks that this graph agrees with the code. Links resolve, every source file has a MOD node, and every [H] node links to its replacement. Every [C] node cites tests that exist or is a reviewed policy node.
-- Checks: every constant's value and kind match the code, and every customer setting has a node. Every measure's function exists, every shock in the code has an SHK node naming its day, and every RES node names its table.
+- Checks: every constant's value and kind match the code, and every customer setting has a node. Every measure's function exists, each demo-file shock or filing has an SHK node naming its day, and every RES node names its table.
 - Limits: a field line has at most 240 characters and a node at most 8 fields. The index is the one it writes with --write-index. A commit named in a Commit field is looked up when the history is present, and a miss is a warning.
 - Reads: the package modules, to read the constants' values. A module whose import fails, such as the demo page without its extra, is skipped and named in a warning.
 - Writes: kg/index.md with --write-index; otherwise nothing. It prints the problems and exits 1 when there are any
@@ -192,11 +192,11 @@ which is also the order in which they depend on each other.
 
 ### MOD-20 [C] customer.py
 - File: src/hotel_market/customer.py
-- Owns: everything specific to one market, read from its customer file ([[DEC-41]]). load(path) turns the TOML into a Customer ([[DAT-27]]): hotels ([[DAT-04]]), limits, thresholds, hold, minimum, market elasticity and target ([[RUL-58]]).
+- Owns: one market, read from its customer file ([[DEC-41]]). load(path) turns the TOML into a Customer ([[DAT-27]]): hotels ([[DAT-04]]), limits, thresholds, hold, minimum, price response, target and calendar ([[DEC-69]]).
 - Default: demo() is the demo market, loaded once and the default wherever no customer is given. demo_path() finds it through CUSTOMER_VARIABLE ([[RUL-71]]) or under the package's repository, never the working directory.
-- Checks: load() refuses a bad target ([[RUL-70]]), a repeated hotel key or name, a share outside 0 to 1, a floor at or above the ceiling, a curve not falling from 1 on the night, and a hotel short of weekday factors, rooms or a rate.
+- Checks: load() refuses a bad target ([[RUL-70]]), a repeated key or name, a share outside 0 to 1, a floor above the ceiling, a curve that rises, a hotel short of factors, rooms or rate, and a shock naming an unknown hotel or competitor.
 - Reads: [[MOD-02]] for the Hotel and Competitor types
-- Writes: [[DAT-27]], [[DAT-04]]
+- Writes: [[DAT-27]], [[DAT-04]]; customers/harbour.toml is a second market it reads the same way ([[RES-44]])
 - Tests: tests/test_customer.py
 - Evidence: test_the_demo_file_describes_the_market_in_claude_md, test_a_customer_file_with_a_bad_target_or_repeated_key_or_name_is_refused, test_a_hotel_needs_seven_weekday_factors, test_a_share_must_lie_between_0_and_1
 
@@ -279,7 +279,7 @@ which is also the order in which they depend on each other.
 
 ### MOD-29 [C] scripts/no_comp_raise.py
 - File: scripts/no_comp_raise.py
-- Owns: the template sweep with the convention's competitor raise at zero, next to the shipped run ([[RES-41]]). sweep() replaces the Event in shocks.EVENTS ([[SHK-01]]) before its runs and puts it back after them.
+- Owns: the template sweep with the convention's competitor raise at zero, next to the shipped run ([[RES-41]]). sweep() runs a copy of the demo market whose convention ([[SHK-01]]) carries the raise; the demo stays as it is ([[DEC-69]]).
 - Run: each seed is the command's template run ([[MOD-12]]), with its decisions file in a temporary folder, and no model is called. table() prints the rows as markdown.
 - Tests: tests/test_no_comp_raise.py
 - Evidence: test_the_raise_at_zero_keeps_the_uplift_and_puts_the_event_back

@@ -32,14 +32,14 @@ here for the rest.
 - Evidence: test_the_default_mode_gives_the_pinned_seed_7_figure, test_every_other_pair_books_the_same_in_both_runs, test_fixed_rate_occupancy_is_between_60_and_90_percent_for_stay_dates_0_to_59
 - Links: [[DEC-05]], [[DEC-12]], [[DEC-17]], [[DEC-22]], [[SHK-04]], [[DAT-20]], [[MOD-12]], [[RES-01]]
 
-### RES-03 [O] A wrong elasticity, fixed:1.0 and fixed:2.0, on seeds 1 to 20
+### RES-03 [O] A wrong elasticity on seeds 1 to 20
 - Ran: `hotel-market --seeds 1 20 --template --elasticity true --elasticity fixed:1.0 --elasticity fixed:2.0` on 2026-10-15 on world v2, each arm against the same fixed-rate runs.
 - Result: fixed:1.0 earns -$6,265 a seed, ahead in 3 of 20, with 766 rate changes. fixed:2.0 earns -$2,687, ahead in 6 of 20, with 566.
 - Detail: on world v2 a wrong value loses money against the true arm's +$16,164. The shock plans earn -$138,974 and -$57,555 over the seeds, the other plans +$13,682 and +$3,823.
 - Table: docs/results.md, "Seeds 1 to 20 per elasticity arm"
 - Links: [[DEC-38]], [[CON-06]], [[RES-01]], [[RES-04]], [[RES-06]], [[UNK-07]]
 
-### RES-04 [O] A learned elasticity, learn:1.0 and learn:2.0, on seeds 1 to 20
+### RES-04 [O] A learned elasticity on seeds 1 to 20
 - Ran: `hotel-market --seeds 1 20 --template --elasticity learn:1.0 --elasticity learn:2.0` on 2026-10-15 on world v2, each arm against the same fixed-rate runs.
 - Result: learn:1.0 earns +$804 a seed, ahead in 11 of 20, with 510 rate changes. learn:2.0 earns +$2,416, ahead in 13 of 20, with 398.
 - Detail: learning wins back little of what a wrong value loses on world v2, where the shop noise moves the ratio every day. The shock plans earn -$1,818 and +$33,752 over the seeds.
@@ -232,7 +232,7 @@ here for the rest.
 - Evidence: test_the_median_follows_the_hotels_change_after_the_lag
 - Links: [[DEC-51]], [[RES-24]], [[RES-02]], [[SHK-01]], [[MOD-24]]
 
-### RES-26 [C] The market elasticity with the reaction on, seeds 1 to 20
+### RES-26 [C] The market elasticity with the reaction on
 - Ran: `hotel-market bench --seeds 1 20 --template --react --market-elasticity E --elasticity true` at E = 0.0 and 0.5 on 2026-10-15 on world v2; 1.0 is [[RES-24]]. The same with `--elasticity learn:1.0 --cautious` ran the cautious arms.
 - Result: the true mode earns +$87,519 a seed at 0.0, +$58,275 at 0.5 and +$35,324 at 1.0. Its rate changes are 236, 164 and 119, and the dates changed twice within 14 days 95, 46 and 23.
 - Cautious: the cautious learn arm earns +$224,222, +$141,469 and +$65,216 accepting all. Its changes are 963, 822 and 734.
@@ -321,7 +321,7 @@ here for the rest.
 - Evidence: test_the_learn_arms_pin_their_headline
 - Links: [[RES-05]], [[RES-34]], [[RES-36]], [[RES-38]], [[CON-11]], [[DEC-39]], [[DEC-56]], [[MOD-08]], [[MOD-11]], [[UNK-01]]
 
-### RES-36 [C] The reviewers at learn:2.0, with and without the cautious rule
+### RES-36 [C] The reviewers at learn:2.0
 - Ran: the commands of [[RES-34]] and [[RES-35]], the learn:2.0 arms, on 2026-10-15 on world v2. Opus and Haiku ran them; Sonnet did not.
 - Plain: the template earns +$2,416 a seed and the oracle +$7,190 while accepting 28%. Opus earns +$2,812 with 12 plans declined and Haiku +$2,457 with 1.
 - Cautious: the template earns +$2,018 and the oracle +$4,132 while accepting 31%. Opus earns +$2,018 with 0 plans declined and Haiku +$2,018 with 0.
@@ -330,7 +330,7 @@ here for the rest.
 - Evidence: test_the_learn_arms_pin_their_headline
 - Links: [[RES-04]], [[RES-05]], [[RES-17]], [[RES-34]], [[RES-35]], [[RES-38]], [[UNK-01]]
 
-### RES-37 [C] The reviewers at learn:1.0 cautious in the reacting market at 0.5
+### RES-37 [C] The reviewers at learn:1.0 cautious, reacting
 - Ran: `hotel-market bench --seeds 1 20 --elasticity learn:1.0 --cautious --react --market-elasticity 0.5 --model claude-opus-5-5` on 2026-10-15 on world v2. The template and the oracle ran beside Opus.
 - Result: the template earns +$141,469 a seed ([[RES-26]]) and the oracle +$141,469 while accepting 100% of the plans. Opus earns +$139,231 with 28 plans declined, $2,238 a seed under accepting all.
 - Recent: Opus is shown 583 plans on stay dates the hotel changed within 14 days and holds 27 ([[MEA-14]]). The oracle holds 0 of 582. Opus's dates changed twice are 602 against the template's 609.
@@ -347,7 +347,7 @@ here for the rest.
 - Table: docs/results.md, "The decline rate by the standard error of the plan's elasticity"
 - Links: [[RUL-102]], [[MEA-13]], [[RES-34]], [[RES-35]], [[RES-36]], [[RES-37]], [[UNK-07]]
 
-### RES-39 [O] The reviewers ranked across the learned modes, and the arms' cost
+### RES-39 [O] The reviewers ranked across the learned modes
 - Ran: the commands of [[RES-34]] and [[RES-35]] on 2026-10-15 on world v2. Each ranking pools the two priors, 40 seeds per reviewer. Sonnet ran from the prior of 1.0 only, so it is not ranked.
 - Plain: the oracle earns +$10,194 a seed accepting 21% of the plans. Opus earns +$2,431 with a recovered share of 0.10, precision 0.98 and recall 0.09. The template earns +$1,610 and Haiku +$1,620.
 - Cautious: the oracle earns +$9,493 accepting 32%. Opus earns +$7,289, the template +$7,273 and Haiku +$7,143. Opus's precision is 1.00 and its recall 0.02.
@@ -384,7 +384,7 @@ here for the rest.
 - Evidence: test_the_measures_are_the_books_measures_over_the_seeds
 - Links: [[MEA-01]], [[MEA-02]], [[MEA-03]], [[RUL-61]], [[RES-01]], [[UNK-06]], [[MOD-30]]
 
-### RES-43 [O] The clock: one tick a day against four, seeds 1 to 20
+### RES-43 [O] The clock: one tick a day against four
 - Ran: `python scripts/tick_sweep.py --seeds 1 20` on 2026-10-15 on world v2: each seed with the template at --ticks 1 and at --ticks 4, the same world, each against the fixed-rate run ([[MOD-31]]).
 - Result: at four ticks the agent earns +$16,204 a seed against +$16,164 at one. The paired difference is +$40 a seed (sd $483, se $108), range -$1,246 to +$1,001, the finer clock ahead in 10 of 20, p 1.0.
 - Finding: a finer clock earns nothing in this world, because the world's demand moves once a day except at the shocks, and that is the expected result. It would earn where shops, filings or bookings move within the day.
@@ -393,3 +393,11 @@ here for the rest.
 - Table: docs/results.md, "Seeds 1 to 20 at one tick a day and at four"
 - Links: [[DEC-67]], [[RUL-128]], [[RUL-130]], [[RES-01]], [[MOD-31]]
 
+
+### RES-44 [O] The default agent on the second market, seeds 1 to 20
+- Ran: `hotel-market --customer customers/harbour.toml --seeds 1 20` on 2026-10-16: the agent against the fixed-rate run on the second market, three hotels, with template reasons and the simulator's elasticity ([[DEC-69]]).
+- Result: the agent run earns +$4,815 more contribution a seed (sd $5,151, se $1,152), from -$8,256 to +$13,718, ahead in 18 of 20 seeds, p <0.001. Room revenue rises $69,700 a seed.
+- Detail: 150 rate changes over the seeds. The 94 plans the regatta and the new flights raised earn +$91,232 and the 56 other plans +$5,077. The estimates on the 3,181 nights changed sum to 0.99 of what was earned.
+- Why: the sweep shows that the agent runs on another market from its file alone. No figure of it is a headline, and no test pins one.
+- Table: docs/results.md, "Seeds 1 to 20 on the second market"
+- Links: [[DEC-69]], [[RES-01]], [[MOD-20]], [[SHK-01]], [[SHK-03]]

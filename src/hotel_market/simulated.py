@@ -117,6 +117,7 @@ class SimulatedRateShops(Limited, RateShops):
         self.ticks = books.ticks
         self._seed = books.seed
         self._react = books.react
+        self._customer = books.customer  # its events and rate cuts move the shops
         self._daily_rates = books.daily_rates[: _through(as_of_day)].copy()
         self._daily_medians = books.daily_medians[: _through(as_of_day)].copy()
 
@@ -141,6 +142,7 @@ class SimulatedRateShops(Limited, RateShops):
             stay_day,
             seed=self._seed,
             hotel_change=self._hotel_change(shop_day, hotel, stay_day),
+            customer=self._customer,
         )
 
     def median(
@@ -153,6 +155,7 @@ class SimulatedRateShops(Limited, RateShops):
             stay_day,
             seed=self._seed,
             hotel_change=self._hotel_change(shop_day, hotel, stay_day),
+            customer=self._customer,
         )
 
     def median_history(self, as_of_day: int) -> np.ndarray:
@@ -206,19 +209,20 @@ def _counts(filing_day: int, scenario: Scenario) -> tuple[np.ndarray, np.ndarray
 
 
 class SimulatedEvents(Limited, Events):
-    """The events announced by the day, copied from the calendar, so an event still to be
-    announced is not in it."""
+    """The events announced by the day, copied from the market's calendar, so an event still to
+    be announced is not in it."""
 
     def __init__(
         self,
         as_of_day: int | None = None,
         as_of_tick: int | None = None,
         ticks: int = TICKS_PER_DAY,
+        customer: Customer | None = None,
     ):
         self.as_of_day = as_of_day
         self.as_of_tick = as_of_tick
         self.ticks = ticks
-        self._events = events_as_of(HORIZON_DAYS if as_of_day is None else as_of_day)
+        self._events = events_as_of(HORIZON_DAYS if as_of_day is None else as_of_day, customer)
 
     def known(self, as_of_day: int, as_of_tick: int | None = None) -> list[Event]:
         """The events announced by the day and landed by the tick: the day's own announcements
@@ -239,7 +243,7 @@ def simulated_sources(
         SimulatedBookings(books, as_of_day, as_of_tick),
         SimulatedRateShops(books, as_of_day, as_of_tick),
         SimulatedSchedules(books.scenario, as_of_day, as_of_tick, books.ticks),
-        SimulatedEvents(as_of_day, as_of_tick, books.ticks),
+        SimulatedEvents(as_of_day, as_of_tick, books.ticks, books.customer),
     )
 
 

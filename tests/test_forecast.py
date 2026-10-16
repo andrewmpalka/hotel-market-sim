@@ -14,7 +14,6 @@ from hotel_market.forecast import (
     normal_demand,
     peak_night,
 )
-from hotel_market.shocks import EVENTS
 from hotel_market.simulated import simulated_sources
 from hotel_market.sources import Event
 from hotel_market.world import stay_window
@@ -54,7 +53,7 @@ def test_the_forecast_is_the_simulators_demand_for_the_demo_market(as_of_day, so
 
 
 def test_convention_peak_night_is_its_busiest_night_as_of_day_10(sources):
-    [convention] = EVENTS
+    [convention] = DEMO.events
     for key in convention.hotels:
         # Thursday 45 has the highest day-of-week factor of the four nights.
         assert peak_night(DEMO.hotel(key), convention, sources) == 45

@@ -4,7 +4,9 @@ Everything specific to one market, read from a customer file such as customers/d
 file holds the hotels with their rooms, starting rates, demand pattern, booking curves and comp
 sets. It also holds the cost share and rate limits. The detect thresholds, the hold period and
 the minimum value at stake follow. The market's price response and the target the agent scores
-candidates on, "contribution" or "revenue", complete it.
+candidates on, "contribution" or "revenue", complete it, with the market's calendar: the events
+that lift some of its hotels, and the scripted cuts by some hotel's competitors (shocks.py looks
+them up). customers/harbour.toml is a second market with three hotels of other shapes.
 
 Both sides read it: the simulator to make the market, the agent to know its hotels and settings. The
 constants of the simulator itself, the calendar, the elasticity, the noise, the schedule and the
@@ -20,7 +22,8 @@ from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
-from hotel_market.world import Competitor, Hotel
+from hotel_market.sources import Event
+from hotel_market.world import Competitor, Hotel, RateCut
 
 TARGETS = ("contribution", "revenue")  # what the agent may score candidates on
 DEMO_FILE = Path("customers") / "demo.toml"  # the demo market, relative to the repository root
@@ -44,6 +47,8 @@ class Customer:
     hold_days: int
     min_value_at_stake: float
     market_elasticity: float  # the market's own price response, which a run may override
+    events: tuple[Event, ...] = ()  # the events that lift some of the hotels, by the day announced
+    rate_cuts: tuple[RateCut, ...] = ()  # scripted cuts by some hotel's competitors
 
     def hotel(self, key: str) -> Hotel:
         for hotel in self.hotels:
@@ -85,15 +90,40 @@ def load(path: Path | str) -> Customer:
         hold_days=detect["hold_days"],
         min_value_at_stake=agent["min_value_at_stake"],
         market_elasticity=market["elasticity"],
+        events=tuple(Event(**_event(entry)) for entry in data.get("events", [])),
+        rate_cuts=tuple(RateCut(**_rate_cut(entry)) for entry in data.get("rate_cuts", [])),
     )
+
+
+def _event(entry: dict) -> dict:
+    return {**entry, "hotels": tuple(entry["hotels"])}
+
+
+def _rate_cut(entry: dict) -> dict:
+    return {**entry, "competitors": tuple(entry["competitors"])}
 
 
 def _validate(path: Path | str, data: dict) -> None:
     """The checks a market file must pass. Each error names the field and, for a hotel, the hotel.
     The market elasticity is zero or more, the shares lie between 0 and 1, the floor sits below
     the ceiling, and every hotel has seven weekday factors, positive rooms, a positive start rate
-    and a booking curve that starts at 1 on the night and falls with the days out."""
+    and a booking curve that starts at 1 on the night and falls with the days out. An event names
+    hotels of the market, and a rate cut names a hotel and competitors of its comp set."""
     limits, detect = data["limits"], data["detect"]
+    keys = {entry["key"]: entry for entry in data["hotels"]}
+    for event in data.get("events", []):
+        unknown = set(event["hotels"]) - set(keys)
+        if unknown:
+            raise ValueError(f"{path}: event {event['name']!r} names no hotel {sorted(unknown)}")
+    for cut in data.get("rate_cuts", []):
+        if cut["hotel"] not in keys:
+            raise ValueError(f"{path}: rate cut names no hotel {cut['hotel']!r}")
+        names = {comp["name"] for comp in keys[cut["hotel"]]["competitors"]}
+        unknown = set(cut["competitors"]) - names
+        if unknown:
+            raise ValueError(
+                f"{path}: rate cut at hotel {cut['hotel']!r} names no competitor {sorted(unknown)}"
+            )
     if not data["market"]["elasticity"] >= 0:
         raise ValueError(
             f"{path}: market.elasticity must be zero or more, not {data['market']['elasticity']!r}"

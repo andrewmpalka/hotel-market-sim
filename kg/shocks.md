@@ -1,16 +1,19 @@
 # Shocks
 
 The four shocks, with the day each becomes known. Two live in the schedule
-([[MOD-01]]) and two in shocks.py ([[MOD-03]]). Each one produces a flag on
-the day it becomes known, and every lookup on them takes the day it is made
-on ([[RUL-03]]). kg_check.py fails when a shock in the code has no node here
-whose File and Known on day match it, so a new shock needs a node.
+([[MOD-01]]) and two in the demo customer file, which [[MOD-20]] reads and
+[[MOD-03]] looks up ([[DEC-69]]). Each one produces a flag on the day it
+becomes known, and every lookup on them takes the day it is made on
+([[RUL-03]]). kg_check.py fails when a shock in the demo file or a filing in
+the code has no node here whose File and Known on day match it, so a new
+shock needs a node.
 
 ### SHK-01 [C] The convention
 - Known on day: 10
 - Stay dates: 45 to 48
 - Effect: demand at the two downtown hotels rises 35%. From shop day 10 their competitors charge 15% more on those nights. The peak night is computed: Thursday 45 ([[DEC-09]]).
-- File: src/hotel_market/shocks.py
+- File: customers/demo.toml
+- Held in: the demo file's events ([[DEC-69]]). The second market's regatta is in customers/harbour.toml ([[RES-44]]).
 - Flags: [[RUL-37]] and [[RUL-35]] on day 10 at both downtown hotels for stay dates 45 to 48
 - Evidence: test_convention_raises_downtown_demand_35_percent_on_days_45_to_48_from_day_10, test_each_shock_flags_on_the_day_it_becomes_known
 
@@ -27,7 +30,8 @@ whose File and Known on day match it, so a new shock needs a node.
 - Known on day: 30, the first shop day that shows it
 - Stay dates: 37 to 39
 - Effect: the two cheapest competitors of the full-service hotel cut their rates 20%. That moves the comp median down by 5% or more.
-- File: src/hotel_market/shocks.py
+- File: customers/demo.toml
+- Held in: the demo file's rate cuts ([[DEC-69]]). The second market's cut hits its station hotel ([[RES-44]]).
 - Flags: [[RUL-36]] on day 30 at the full-service hotel for stay dates 37 to 39. The candidate [[RUL-42]] joins the usual four, and in the seed-7 run nothing beat holding ([[RES-02]]).
 - Evidence: test_two_full_service_competitors_cut_20_percent_on_days_37_to_39_from_day_30, test_the_cut_moves_the_full_service_comp_median_by_5_percent_or_more, test_each_shock_flags_on_the_day_it_becomes_known
 

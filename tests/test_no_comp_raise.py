@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from hotel_market import shocks
+from hotel_market.customer import demo
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -21,10 +21,12 @@ def script():
 
 
 def test_the_raise_at_zero_keeps_the_uplift_and_puts_the_event_back(script, tmp_path):
-    shipped = shocks.EVENTS[0]
+    shipped = demo().events[0]
     assert shipped.comp_rate_raise == 0.15 and shipped.uplift == 0.35
+    zero = script.with_raise(0.0)
+    assert zero.events[0].comp_rate_raise == 0.0 and zero.events[0].uplift == 0.35
     rows = [script.sweep(7, 7, raise_, tmp_path / f"raise-{raise_:g}") for raise_ in (0.15, 0.0)]
-    assert shocks.EVENTS[0] == shipped  # put back after each sweep
+    assert demo().events[0] == shipped  # the demo market itself is untouched
     # As shipped, seed 7 is the README's run. On world v2 the downtown hotels hold most of their
     # convention business before the announcement, so neither arm accepts a plan on the
     # convention nights at this seed, nothing sells out at fixed rates, and the two agree.

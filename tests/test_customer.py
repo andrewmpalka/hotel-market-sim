@@ -16,8 +16,11 @@ from hotel_market.forecast import ORACLE_MARKET_ELASTICITY
 from hotel_market.model import request_for
 from hotel_market.plan import entry_for
 from hotel_market.simulated import simulated_sources
+from hotel_market.sources import Event
+from hotel_market.world import RateCut
 
 ROOT = Path(__file__).resolve().parents[1]
+HARBOUR_FILE = ROOT / "customers" / "harbour.toml"
 DEMO = demo()
 
 
@@ -45,7 +48,69 @@ def test_the_demo_file_describes_the_market_in_claude_md():
     }
     assert DEMO.hotel("lifestyle").curve(45) == pytest.approx(0.3)
     assert DEMO.market_elasticity == 1.0 == MARKET_ELASTICITY == ORACLE_MARKET_ELASTICITY
+    # The market's calendar is the file's too: the convention and the competitor rate cut.
+    assert DEMO.events == (
+        Event("Convention", 10, 45, 48, ("convention", "full-service"), 0.35, 0.15),
+    )
+    assert DEMO.rate_cuts == (
+        RateCut(30, 37, 39, "full-service", ("full-service comp 1", "full-service comp 2"), 0.2),
+    )
     assert load(ROOT / DEMO_FILE) == DEMO
+
+
+def test_the_second_market_has_three_hotels_of_other_shapes_and_its_own_calendar():
+    harbour = load(HARBOUR_FILE)
+    assert harbour.name == "harbour" and [h.key for h in harbour.hotels] == [
+        "resort",
+        "city-centre",
+        "station",
+    ]
+    assert [h.row for h in harbour.hotels] == [0, 1, 2]
+    resort, city, station = harbour.hotels
+    # A resort that books far out and takes few guests by air; a station hotel that books late.
+    assert resort.curve(90) == 0.35 and station.curve(30) == 0.15 and station.curve(90) == 0
+    assert max(resort.air_share, station.air_share) < city.air_share
+    assert {h.curve_share for h in harbour.hotels} != {h.curve_share for h in DEMO.hotels}
+    # Its own limits, thresholds, comp offsets and price response.
+    assert (harbour.floor_share, harbour.ceiling_share, harbour.cost_share) == (0.75, 1.35, 0.30)
+    assert (harbour.pace_share, harbour.median_threshold, harbour.hold_days) == (0.12, 0.06, 5)
+    assert harbour.min_value_at_stake == 200 and harbour.market_elasticity == 0.8
+    assert resort.starting_median() != resort.start_rate  # the offsets are not symmetric
+    assert len(resort.competitors) == 4
+    # The regatta lifts the resort and the city-centre hotel; the cut hits the station hotel.
+    [regatta] = harbour.events
+    assert (regatta.name, regatta.known_day, regatta.hotels) == (
+        "Regatta",
+        12,
+        ("resort", "city-centre"),
+    )
+    [cut] = harbour.rate_cuts
+    assert (cut.known_day, cut.hotel, cut.competitors) == (
+        25,
+        "station",
+        ("station comp 1", "station comp 2"),
+    )
+
+
+def test_an_event_or_a_cut_that_names_an_unknown_hotel_or_competitor_is_refused(tmp_path):
+    _refused(
+        tmp_path,
+        'hotels = ["convention", "full-service"]',
+        'hotels = ["convention", "casino"]',
+        "event 'Convention' names no hotel",
+    )
+    _refused(tmp_path, 'hotel = "full-service"', 'hotel = "casino"', "rate cut names no hotel")
+    _refused(
+        tmp_path,
+        'competitors = ["full-service comp 1", "full-service comp 2"]',
+        'competitors = ["full-service comp 1", "full-service comp 9"]',
+        "rate cut at hotel 'full-service' names no competitor",
+    )
+    # A market may have no calendar at all.
+    text = (ROOT / DEMO_FILE).read_text()
+    bare = tmp_path / "bare.toml"
+    bare.write_text(text[: text.index("[[events]]")])
+    assert load(bare).events == () and load(bare).rate_cuts == ()
 
 
 def test_a_customer_file_with_a_bad_target_or_repeated_key_or_name_is_refused(tmp_path):
@@ -147,6 +212,21 @@ def test_the_command_takes_a_customer_file_and_a_target(tmp_path, monkeypatch, c
         main(["--seed", "7", "--target", "profit"])
     with pytest.raises(FileNotFoundError):
         main(["--seed", "7", "--replay", "0", "--template", "--customer", "missing.toml"])
+
+
+def test_the_second_market_runs_from_its_file_with_no_change_to_the_agent(
+    tmp_path, monkeypatch, capsys
+):
+    """One flag runs the other market: the summary names its three hotels and nothing of the
+    demo market's, and the agent's modules are the ones tests/test_sources.py keeps out of the
+    simulator."""
+    monkeypatch.chdir(tmp_path)
+    main(["--seed", "7", "--template", "--customer", str(HARBOUR_FILE)])
+    out = capsys.readouterr().out
+    assert "All three hotels" in out and "Harbour resort" in out and "Station hotel" in out
+    assert "Downtown" not in out and "Airport hotel" not in out
+    assert "Days 0 to 59:" in out and (tmp_path / "decisions.jsonl").exists()
+    assert "at an elasticity of 0.8 in both runs" in out
 
 
 def test_without_a_customer_the_demo_market_is_the_default(tmp_path):

@@ -42,12 +42,12 @@ the plans, the model's request and answer, and what the command writes.
 - Evidence: test_hotels_match_the_table, test_each_hotel_has_four_competitors_within_10_percent_of_its_rate, test_day_of_week_factors_match_the_table
 
 ### DAT-05 [C] Event and RateCut
-- File: src/hotel_market/shocks.py
+- File: src/hotel_market/world.py
 - Fields: Event(name, known_day, start_day, end_day, hotels, uplift, comp_rate_raise) with covers(hotel_key, stay_day). It is defined at the boundary in [[MOD-17]], so the agent and the simulator share it.
-- Cut: RateCut(known_day, start_day, end_day, hotel, competitors, cut) with covers(hotel_key, competitor, stay_day), the simulator's alone.
-- Held in: EVENTS ([[SHK-01]]) and RATE_CUTS ([[SHK-03]])
-- Read by: [[MOD-04]], [[MOD-05]], [[MOD-19]], which hands the events to the agent through [[DAT-25]]
-- Evidence: test_shocks_name_hotels_and_competitors_that_exist, test_convention_raises_downtown_demand_35_percent_on_days_45_to_48_from_day_10
+- Cut: RateCut(known_day, start_day, end_day, hotel, competitors, cut) with covers(hotel_key, competitor, stay_day), in [[MOD-02]], the simulator's alone.
+- Held in: Customer.events and Customer.rate_cuts ([[DAT-27]]), read from the market's customer file ([[DEC-69]]). The demo market's are [[SHK-01]] and [[SHK-03]].
+- Read by: [[MOD-03]] (the lookups), [[MOD-04]], [[MOD-05]], [[MOD-19]], which hands the events to the agent through [[DAT-25]]
+- Evidence: test_shocks_name_hotels_and_competitors_that_exist, test_convention_raises_downtown_demand_35_percent_on_days_45_to_48_from_day_10, test_the_lookups_read_the_customers_own_calendar
 
 ### DAT-06 [C] The rate shop
 - File: src/hotel_market/shops.py
@@ -237,9 +237,9 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-27 [C] Customer
 - File: src/hotel_market/customer.py
-- Fields: Customer(name, target, hotels, floor_share, ceiling_share, cost_share, pace_share, pace_noise_sd, seat_threshold, median_threshold, hold_days, min_value_at_stake, market_elasticity), frozen.
+- Fields: Customer(name, target, hotels, floor_share, ceiling_share, cost_share, pace_share, pace_noise_sd, seat_threshold, median_threshold, hold_days, min_value_at_stake, market_elasticity, events, rate_cuts), frozen.
 - Methods: hotel(key) finds a hotel ([[DAT-04]]), which carries its own booking curve ([[CON-01]]). scores_contribution() says whether the target is contribution ([[RUL-58]]).
-- Settings: one market's description and settings, read from its TOML file by load(path) ([[MOD-20]]). The demo market's settings are the nodes [[RUL-57]] to [[RUL-69]].
+- Settings: one market's description and settings, read from its TOML file by load(path) ([[MOD-20]]). The demo market's settings are the nodes [[RUL-57]] to [[RUL-69]], and its calendar [[SHK-01]] and [[SHK-03]] ([[DEC-69]]).
 - Written by: [[MOD-20]]; demo() holds the demo market, the default wherever no customer is given
 - Read by: [[MOD-05]], [[MOD-06]], [[MOD-07]], [[MOD-08]], [[MOD-10]], [[MOD-12]], [[MOD-16]], [[MOD-19]]
 - Evidence: test_the_demo_file_describes_the_market_in_claude_md, test_the_command_takes_a_customer_file_and_a_target, test_without_a_customer_the_demo_market_is_the_default

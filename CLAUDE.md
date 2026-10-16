@@ -50,10 +50,10 @@ with pip install -e ".[dev]" and import it as hotel_market.<module>.
 | Module | Holds |
 | --- | --- |
 | schedule.py | the air schedule as known on a day, its seats and the passengers they carry, the filings, scenarios and churn |
-| world.py | the Hotel and Competitor dataclasses, each hotel's booking curve, the calendar and the clock: ticks a day and the tick each feed lands at |
-| customer.py | reads a market's customer file; demo() is customers/demo.toml, found under the package's repository or through HOTEL_MARKET_CUSTOMER |
+| world.py | the Hotel, Competitor and RateCut dataclasses, each hotel's booking curve, the calendar and the clock: ticks a day and the tick each feed lands at |
+| customer.py | reads a market's customer file, its hotels and its events and rate cuts; demo() is customers/demo.toml, found under the package's repository or through HOTEL_MARKET_CUSTOMER |
 | sources.py | the four interfaces: Bookings, RateShops, Schedules, Events |
-| shocks.py | the convention (known day 10) and the competitor rate cut (day 30) |
+| shocks.py | the lookups over a market's events and competitor rate cuts as of a day; the demo's are the convention (known day 10) and the cut (day 30) |
 | demand.py | the simulator's expected and normal demand per hotel and stay date, and the market's price response |
 | shops.py | competitor rates and comp medians from a seeded rate shop |
 | bookings.py | the booking curve, the day-0 preload and the daily booking loop |
@@ -74,8 +74,9 @@ with pip install -e ".[dev]" and import it as hotel_market.<module>.
 
 Around the package, tests/ holds one test file per module, conftest.py and
 tests/fixtures/live_seed7/, one recorded live run. customers/demo.toml is the
-demo market, sql/schema.sql defines the eight stored tables and sql/demo.sql the
-demo page's eight. scripts/live_audit.py runs and audits a live seed, and
+demo market and customers/harbour.toml a second market of three hotels, which
+runs with --customer alone. sql/schema.sql defines the eight stored tables and
+sql/demo.sql the demo page's eight. scripts/live_audit.py runs and audits a live seed, and
 scripts/median_path.py prints a comp median's path next to the hotel's rate.
 scripts/no_comp_raise.py reruns the sweep with the convention's competitor
 raise at zero, scripts/measures.py prints both runs in a revenue manager's

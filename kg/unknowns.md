@@ -48,7 +48,7 @@ and a RES node records the run. A claim that no test can confirm stays [U].
 - Resolves when: never within this repository.
 - Links: [[DEC-12]], [[FRK-01]], [[DEC-41]]
 
-### UNK-07 [U] The real price elasticity, and what the learned estimate settles
+### UNK-07 [U] The real price elasticity
 - Unknown: the real elasticity of any hotel. 1.5 is assumed in the simulator ([[RUL-21]]) and, in the default mode, handed to the agent as an oracle ([[RUL-56]]).
 - Settled: the agent recovers a value it is not told ([[DEC-38]], [[RES-10]]). Day-59 estimates from 1.0 or 2.0 land at 1.36 to 1.68 ([[RES-04]]). What a wrong value costs is measured ([[RES-03]] to [[RES-05]]), which closed [[FRK-02]].
 - Reacting: the simulator's 1.5 fits a hotel whose competitors never move. Under the reaction the true mode is too timid. The learner's lower estimate raises more and is right to ([[RES-26]]). A reacting market needs the effective one.
@@ -80,7 +80,7 @@ and a RES node records the run. A claim that no test can confirm stays [U].
 - Resolves when: someone runs the file on one of them.
 - Links: [[DAT-28]], [[MOD-21]], [[DEC-42]]
 
-### UNK-11 [U] How competitors react to a rate change, and what it does to revenue
+### UNK-11 [U] How competitors react to a rate change
 - Unknown: the simulator's competitors never react ([[CON-03]]). The revenue target's gain ([[RES-07]]) comes from cuts that real competitors might match.
 - Best guess: a matched cut gives back most of the revenue gain. The contribution target's raises are less exposed, because a competitor need not follow a raise.
 - Measured: with --react, competitors move half of a change three days later ([[DEC-51]]). At a market elasticity of 0.0 the default mode then earns +$111,272 a seed ([[RES-24]]). At 0.5 it earns +$72,229 and at 1.0 +$43,584 ([[RES-26]]).

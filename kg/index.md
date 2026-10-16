@@ -8,19 +8,19 @@ nodes and its words, len(text.split()) over the file.
 
 | File | Nodes | Words |
 | --- | ---: | ---: |
-| modules.md | 32 | 4,408 |
-| data.md | 33 | 4,404 |
+| modules.md | 32 | 4,443 |
+| data.md | 33 | 4,432 |
 | rules.md | 132 | 5,763 |
-| shocks.md | 7 | 762 |
+| shocks.md | 7 | 813 |
 | concepts.md | 11 | 1,205 |
 | measures.md | 14 | 962 |
 | sources.md | 4 | 855 |
-| decisions.md | 68 | 10,125 |
-| results.md | 43 | 7,269 |
+| decisions.md | 69 | 10,240 |
+| results.md | 44 | 7,403 |
 | forks.md | 14 | 2,037 |
-| unknowns.md | 16 | 2,176 |
-| every node file | 374 | 39,966 |
-| index.md | | 2,998 |
+| unknowns.md | 16 | 2,164 |
+| every node file | 376 | 40,317 |
+| index.md | | 2,947 |
 
 ## Modules (`modules.md`)
 
@@ -244,18 +244,18 @@ nodes and its words, len(text.split()) over the file.
 - DEC-09 [C] The peak night is the expected-demand peak on the event's known day
 - DEC-10 [C] A minimum stay is advice only, never simulated
 - DEC-11 [H] The rule "seats up, so raise the rate"
-- DEC-12 [C] Contribution with a room cost is the target; the start rate wins ordinary nights
+- DEC-12 [C] Contribution with a room cost is the target
 - DEC-13 [C] Every flag gets scored candidates; hold is the default
-- DEC-14 [C] Base occupancy is 0.85 at the airport hotel and 0.75 elsewhere
+- DEC-14 [C] Base occupancy is 0.85 at the airport hotel
 - DEC-15 [H] Rates followed the day of the week
-- DEC-16 [C] Flat rates: start and competitor rates ignore the day of the week
+- DEC-16 [C] Flat rates ignore the day of the week
 - DEC-17 [C] A plan needs $250 over holding to enter the queue
 - DEC-18 [H] One candidate moved all of a flag's stay dates together
 - DEC-19 [C] The best candidate is chosen per day of the week within a flag
 - DEC-20 [H] Expected bookings were capped at the unsold rooms
 - DEC-21 [C] Estimated bookings are E[min(N, unsold)] for a Poisson N
 - DEC-22 [C] One random number per booking draw, fixed by the seed
-- DEC-26 [H] AGENT_ELASTICITY is the agent's own constant and never imports the simulator's
+- DEC-26 [H] AGENT_ELASTICITY is the agent's own constant
 - DEC-35 [C] Every number is synthetic; the schedule's columns follow a published dictionary
 - DEC-36 [C] The summary reports what the run produces; nothing is tuned
 - DEC-37 [H] Competitor noise drawn once per competitor and stay date
@@ -273,14 +273,15 @@ nodes and its words, len(text.split()) over the file.
 - DEC-52 [C] The market can answer the comp median's level
 - DEC-53 [C] The filings are a named scenario; the churn files what a feed files
 - DEC-54 [C] A learning agent can feed the fitted demand level into its forecast
-- DEC-55 [C] A rule-based control is the fair comparison; frozen rates never move
+- DEC-55 [C] A rule-based control is the fair comparison
 - DEC-59 [C] The README names the competitors' raise as the convention's source of gain
+- DEC-69 [C] The market's events and rate cuts live in the customer file
 
 ### Engineering
 
 - DEC-23 [C] The cache key is seed, day and hotel, with the request's digest
 - DEC-24 [H] Template answers were cached like the model's
-- DEC-25 [C] Only the model's answers are cached; the template needs no cache
+- DEC-25 [C] Only the model's answers are cached
 - DEC-27 [H] The modules lived flat at the repository root
 - DEC-28 [C] The code is the package src/hotel_market, with pyproject.toml and a command
 - DEC-29 [H] A hosted workflow ran the tests on every push
@@ -289,7 +290,7 @@ nodes and its words, len(text.split()) over the file.
 - DEC-32 [C] The agent is plan.py, model.py and agent.py, with text.py for shared wording
 - DEC-33 [C] ruff formats the code at 100 columns, and lint checks the format
 - DEC-34 [C] The answer schema lists the request's entry ids and options as enums
-- DEC-40 [C] The agent reads only through four interfaces; the simulator is one implementation
+- DEC-40 [C] The agent reads only through four interfaces
 - DEC-41 [C] Everything specific to the market is a customer file
 - DEC-42 [C] Stored tables the agent can run against a day at a time
 - DEC-47 [C] The oracle reviewer is a grader outside the agent's path
@@ -297,15 +298,15 @@ nodes and its words, len(text.split()) over the file.
 - DEC-56 [C] The band verdict is a display field; small band-end gains read to the dollar
 - DEC-57 [C] A read-only demo page over a file code writes
 - DEC-58 [C] The demo page fits one window, and every date is a calendar date
-- DEC-60 [C] Every printed mean carries its spread, every ahead count a sign test
+- DEC-60 [C] Every printed mean carries its spread
 - DEC-61 [C] The sources hold only what the day knows, on both routes
 
 ## Results (`results.md`)
 
 - RES-01 [C] The default agent on seeds 1 to 20
 - RES-02 [C] Seed 7 in the default mode
-- RES-03 [O] A wrong elasticity, fixed:1.0 and fixed:2.0, on seeds 1 to 20
-- RES-04 [O] A learned elasticity, learn:1.0 and learn:2.0, on seeds 1 to 20
+- RES-03 [O] A wrong elasticity on seeds 1 to 20
+- RES-04 [O] A learned elasticity on seeds 1 to 20
 - RES-05 [O] The cautious rule on seeds 1 to 20
 - RES-06 [O] Where the gain came from, by arm
 - RES-07 [O] The revenue target on seeds 1 to 20
@@ -327,7 +328,7 @@ nodes and its words, len(text.split()) over the file.
 - RES-23 [C] The same arms at the default demand bias of 1.0
 - RES-24 [C] The competitor reaction on seeds 1 to 20
 - RES-25 [C] The comp median's path on seed 7, reaction on
-- RES-26 [C] The market elasticity with the reaction on, seeds 1 to 20
+- RES-26 [C] The market elasticity with the reaction on
 - RES-27 [C] The day-30 competitor cut on seed 7 by market elasticity
 - RES-28 [C] The churn on seeds 1 to 20
 - RES-29 [C] The fitted level fed back at a demand bias of 0.9
@@ -337,14 +338,15 @@ nodes and its words, len(text.split()) over the file.
 - RES-33 [C] The agent against the pace and the rules policies
 - RES-34 [C] The reviewers at learn:1.0 on seeds 1 to 20
 - RES-35 [C] The reviewers at learn:1.0 with the cautious rule
-- RES-36 [C] The reviewers at learn:2.0, with and without the cautious rule
-- RES-37 [C] The reviewers at learn:1.0 cautious in the reacting market at 0.5
+- RES-36 [C] The reviewers at learn:2.0
+- RES-37 [C] The reviewers at learn:1.0 cautious, reacting
 - RES-38 [O] The decline rate by standard-error group, learn arms
-- RES-39 [O] The reviewers ranked across the learned modes, and the arms' cost
+- RES-39 [O] The reviewers ranked across the learned modes
 - RES-40 [C] The agent against the never-cut policy
 - RES-41 [C] The convention without the competitors' raise
 - RES-42 [C] The default agent in a revenue manager's measures
-- RES-43 [O] The clock: one tick a day against four, seeds 1 to 20
+- RES-43 [O] The clock: one tick a day against four
+- RES-44 [O] The default agent on the second market, seeds 1 to 20
 
 ## Open forks (`forks.md`)
 
@@ -371,11 +373,11 @@ nodes and its words, len(text.split()) over the file.
 - UNK-04 [H] Whether the suite passes on Python 3.12 and 3.13
 - UNK-05 [U] How arriving passengers turn into hotel demand in a real market
 - UNK-06 [U] The real cost to service an occupied room
-- UNK-07 [U] The real price elasticity, and what the learned estimate settles
+- UNK-07 [U] The real price elasticity
 - UNK-08 [U] Whether the measured gains say anything about a real hotel
 - UNK-09 [C] What a live run costs and takes
 - UNK-10 [U] Whether sql/schema.sql runs on a cloud warehouse unchanged
-- UNK-11 [U] How competitors react to a rate change, and what it does to revenue
+- UNK-11 [U] How competitors react to a rate change
 - UNK-12 [U] The effect of cancellations, no-shows, groups and room types
 - UNK-13 [U] Whether a 5% cut, the largest on the menu, is enough
 - UNK-14 [U] The estimate's bias when a hotel prices to demand

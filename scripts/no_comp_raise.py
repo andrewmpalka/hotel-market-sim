@@ -5,13 +5,14 @@ The template sweep with the convention's competitor raise set to zero, next to t
     python scripts/no_comp_raise.py --seeds 1 20
 
 The convention raises demand 35% at the two downtown hotels and, as shipped, their competitors'
-rates 15% (shocks.py). This script runs the sweep twice, once as shipped and once with the raise
-at 0.0 and the demand uplift unchanged, and prints one markdown table with a row per setting: the
-mean contribution change a seed against the fixed-rate run, its range, the seeds ahead, the
-accepted plans the convention raised, the gain on the stay dates those plans changed, and the
-convention nights the two downtown hotels sold out at fixed rates. The Event is replaced in
-shocks.EVENTS before each sweep and put back after it, so the simulator and the agent see the
-same convention. The decisions files go to a temporary folder, and no model is called.
+rates 15% (customers/demo.toml). This script runs the sweep twice, once as shipped and once with
+the raise at 0.0 and the demand uplift unchanged, and prints one markdown table with a row per
+setting: the mean contribution change a seed against the fixed-rate run, its range, the seeds
+ahead, the accepted plans the convention raised, the gain on the stay dates those plans changed,
+and the convention nights the two downtown hotels sold out at fixed rates. Each sweep runs a
+copy of the demo market whose convention carries the raise, so the simulator and the agent see
+the same convention and the demo market itself is untouched. The decisions files go to a
+temporary folder, and no model is called.
 """
 
 from __future__ import annotations
@@ -22,38 +23,37 @@ import tempfile
 from dataclasses import replace
 from pathlib import Path
 
-from hotel_market import shocks
 from hotel_market.cli import _gain_on, run
-from hotel_market.customer import demo
+from hotel_market.customer import Customer, demo
 from hotel_market.detect import NEW_EVENT
 from hotel_market.plan import HOLD
+
+
+def with_raise(comp_rate_raise: float) -> Customer:
+    """The demo market with its convention's competitor raise set to this, the uplift unchanged."""
+    market = demo()
+    event = replace(market.events[0], comp_rate_raise=comp_rate_raise)
+    return replace(market, events=(event, *market.events[1:]))
 
 
 def sweep(first: int, last: int, comp_rate_raise: float, out: Path) -> dict:
     """One row of the table: the seeds' contribution changes, the accepted plans the convention
     raised with the gain on their stay dates, and the sold-out convention nights at fixed rates."""
-    customer = demo()
-    shipped = shocks.EVENTS[0]
-    shocks.EVENTS[0] = replace(shipped, comp_rate_raise=comp_rate_raise)
-    event = shocks.EVENTS[0]
+    customer = with_raise(comp_rate_raise)
+    event = customer.events[0]
     changes, plans, gain, sellouts = [], 0, 0.0, 0
     out.mkdir(parents=True, exist_ok=True)
-    try:
-        for seed in range(first, last + 1):
-            fixed, books, agent = run(seed, out / f"seed{seed}.jsonl", out / "cache")
-            changes.append(
-                sum(books.contribution(h) - fixed.contribution(h) for h in customer.hotels)
-            )
-            raised = [e for e in agent.entries if e.action != HOLD and NEW_EVENT in e.causes]
-            plans += len(raised)
-            pairs = {(e.hotel, s) for e in raised for s in e.new_rates}
-            gain += _gain_on(fixed, books, pairs, customer.hotels, customer.target)
-            for key in event.hotels:
-                hotel = customer.hotel(key)
-                for stay in range(event.start_day, event.end_day + 1):
-                    sellouts += int(fixed.rooms[hotel.row, stay] >= hotel.rooms)
-    finally:
-        shocks.EVENTS[0] = shipped
+    for seed in range(first, last + 1):
+        fixed, books, agent = run(seed, out / f"seed{seed}.jsonl", out / "cache", customer=customer)
+        changes.append(sum(books.contribution(h) - fixed.contribution(h) for h in customer.hotels))
+        raised = [e for e in agent.entries if e.action != HOLD and NEW_EVENT in e.causes]
+        plans += len(raised)
+        pairs = {(e.hotel, s) for e in raised for s in e.new_rates}
+        gain += _gain_on(fixed, books, pairs, customer.hotels, customer.target)
+        for key in event.hotels:
+            hotel = customer.hotel(key)
+            for stay in range(event.start_day, event.end_day + 1):
+                sellouts += int(fixed.rooms[hotel.row, stay] >= hotel.rooms)
     seeds = last - first + 1
     nights = len(event.hotels) * (event.end_day - event.start_day + 1) * seeds
     return {
@@ -102,7 +102,7 @@ def main(argv: list[str] | None = None) -> None:
     with tempfile.TemporaryDirectory() as folder:
         rows = [
             sweep(*args.seeds, raise_, Path(folder) / f"raise-{raise_:g}")
-            for raise_ in (shocks.EVENTS[0].comp_rate_raise, 0.0)
+            for raise_ in (demo().events[0].comp_rate_raise, 0.0)
         ]
     print(table(rows))
 

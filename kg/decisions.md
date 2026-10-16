@@ -143,7 +143,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Commit: abef71f
 - Links: [[SHK-02]]
 
-### DEC-12 [C] Contribution with a room cost is the target; the start rate wins ordinary nights
+### DEC-12 [C] Contribution with a room cost is the target
 - Decided: each occupied room costs one third of the hotel's start rate to service ([[RUL-61]]). Contribution is room revenue minus that cost for every room sold, and the agent scores candidates on it.
 - Replaces: [[DEC-11]], and revenue as the implicit target
 - Reason: revenue rewards selling every room at any price. With ELASTICITY 1.5 the contribution-best rate on a night that will not sell out is 3 x cost. That is the start rate, so only a night that may sell out can pay for a raise.
@@ -161,7 +161,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: test_each_day_of_the_week_gets_hold_raise_5_raise_10_and_lower_5_clamped_to_the_limits, test_a_comp_median_drop_adds_lower_halfway_to_the_new_median, test_a_model_that_declines_changes_no_rate
 - Links: [[MOD-08]], [[DAT-11]], [[DAT-12]], [[CON-08]]
 
-### DEC-14 [C] Base occupancy is 0.85 at the airport hotel and 0.75 elsewhere
+### DEC-14 [C] Base occupancy is 0.85 at the airport hotel
 - Decided: the customer file stores base occupancy per hotel ([[DAT-04]]), and the airport hotel's is 0.85.
 - Replaces: one base occupancy of 0.75 for every hotel.
 - Reason: the value is a choice about the scenario. At 0.75 the new flights never fill the airport hotel, so the schedule data would never matter there. At 0.85 Mondays, Thursdays and Sundays after day 50 are expected 101% full.
@@ -177,7 +177,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Commit: bd556fb
 - Links: [[MOD-05]], [[DAT-04]], [[RES-11]]
 
-### DEC-16 [C] Flat rates: start and competitor rates ignore the day of the week
+### DEC-16 [C] Flat rates ignore the day of the week
 - Decided: every hotel's starting rate is its table start rate on every stay date. Competitor rates are base rate x noise with the shocks applied. Demand still follows the day of the week ([[DAT-04]]).
 - Replaces: [[DEC-15]]
 - Reason: with a fixed room cost the best rate on an ordinary night is the same every day. Flat starting rates are therefore right on those nights, and the agent's gain comes from reacting to the market.
@@ -238,7 +238,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: test_a_rate_change_applies_from_the_next_day_and_touches_no_other_stay_date, test_every_other_pair_books_the_same_in_both_runs, test_a_bigger_mean_never_draws_fewer_rooms_on_the_same_luck
 - Links: [[MOD-06]], [[DAT-07]], [[RUL-02]], [[RUL-22]]
 
-### DEC-26 [H] AGENT_ELASTICITY is the agent's own constant and never imports the simulator's
+### DEC-26 [H] AGENT_ELASTICITY is the agent's own constant
 - Decided: plan.py defined AGENT_ELASTICITY = 1.5 ([[RUL-39]]). A test read the module's imports to make sure ELASTICITY ([[RUL-21]]) was not among them.
 - Replaced by: [[DEC-40]], which draws the line around the whole agent and names the value an oracle ([[RUL-56]]).
 - Reason it went: one constant kept apart was the right idea on too small a scale. The agent still read the simulator's demand, draws and shocks directly.
@@ -404,7 +404,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: test_a_level_agent_scales_its_forecast_by_the_fitted_demand_level, test_a_level_scales_one_hotels_pace_baseline_and_expected_demand, test_the_level_factor_is_the_fitted_level_once_the_fit_has_enough_observations
 - Links: [[DEC-38]], [[DEC-50]], [[DEC-52]], [[RUL-96]], [[RUL-97]], [[RUL-98]], [[RES-29]], [[RES-30]], [[RES-31]], [[RES-32]], [[UNK-07]], [[UNK-08]]
 
-### DEC-55 [C] A rule-based control is the fair comparison; frozen rates never move
+### DEC-55 [C] A rule-based control is the fair comparison
 - Decided: --policy runs a rule-based control beside each arm ([[MOD-25]]). pace raises POLICY_STEP where a stay date runs ahead of pace and lowers it where behind ([[RUL-99]]). Both keep the agent's hold, floor and ceiling.
 - Rules: rules keeps the pace steps and adds the retired rules of [[DEC-11]]. It raises on an event or seat-up flag and lowers on a seat-cut flag. A flag whose causes point both ways is left alone.
 - Why rules: pace skips every flag that is not a pace flag. It cannot act on the two shocks that carry most of the gain ([[RES-06]]). Against it the agent was beaten on the part of the problem the control was never given.
@@ -421,6 +421,14 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Measured: at fixed rates the two downtown hotels sell out 79 of 160 convention nights with the raise and 10 without it ([[RES-41]]).
 - Evidence: test_the_raise_at_zero_keeps_the_uplift_and_puts_the_event_back
 - Links: [[RES-41]], [[RES-06]], [[SHK-01]], [[RUL-21]], [[MOD-29]], [[FRK-08]]
+
+### DEC-69 [C] The market's events and rate cuts live in the customer file
+- Decided: a customer file holds its events, each with the hotels it lifts and by how much, and its competitor rate cuts, each with the hotel it hits ([[DAT-05]], [[DAT-27]]). shocks.py keeps the lookups and takes the customer.
+- Replaces: EVENTS and RATE_CUTS as constants in shocks.py, which named the demo market's hotel keys and competitors.
+- Reason: a second market could not run while the simulator's shocks named the demo's hotels. The demo file carries the same values, so the seed-7 checksum holds, and the agent's modules do not change.
+- Second market: customers/harbour.toml, three hotels of other shapes with its own regatta and cut, runs with --customer alone ([[RES-44]]). kg_check reads the demo file's calendar for the SHK nodes ([[MOD-15]]).
+- Evidence: test_the_demo_file_describes_the_market_in_claude_md, test_the_lookups_read_the_customers_own_calendar, test_the_second_market_runs_from_its_file_with_no_change_to_the_agent, test_the_agent_reads_only_through_the_interfaces
+- Links: [[DEC-41]], [[DAT-05]], [[DAT-27]], [[MOD-03]], [[MOD-20]], [[SHK-01]], [[SHK-03]], [[RES-44]]
 
 ## Engineering
 
@@ -441,7 +449,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Commit: abef71f
 - Links: [[MOD-09]]
 
-### DEC-25 [C] Only the model's answers are cached; the template needs no cache
+### DEC-25 [C] Only the model's answers are cached
 - Decided: without a client the template answers and nothing is written. With a client the model's cached answer is read first. A cache file whose source is not "model" is ignored and overwritten.
 - Detail: a replay reads the model's cache when a client is given and uses the template otherwise.
 - Uncached: a client whose cached flag is false, such as the oracle grader ([[DEC-47]]), joins the template as an uncached answer. Nothing is written or read; its decisions record the client's name as their source.
@@ -517,7 +525,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: test_the_schema_limits_ids_and_choices_to_the_requests_options
 - Links: [[MOD-09]], [[DAT-16]], [[UNK-02]], [[RES-09]]
 
-### DEC-40 [C] The agent reads only through four interfaces; the simulator is one implementation
+### DEC-40 [C] The agent reads only through four interfaces
 - Decided: sources.py ([[MOD-17]]) defines Bookings, RateShops, Schedules and Events ([[DAT-25]]). Every method takes the day it is asked on and returns only what was known then.
 - Boundary: the modules detect, forecast, estimate, plan, model and agent read data through them and import none of the simulator's modules. A test reads their imports and fails if one does.
 - Detail: the agent's own demand model is forecast.py ([[MOD-18]]), held equal to demand.py by a test. The simulator implements the four in simulated.py ([[MOD-19]]). ORACLE_ELASTICITY ([[RUL-56]]) names the default elasticity an oracle.
@@ -596,7 +604,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: test_the_three_pages_fit_the_window, test_every_date_reads_as_a_calendar_date_with_its_day_number_in_brackets, test_a_held_flag_names_the_best_alternative_and_how_far_it_fell_short
 - Links: [[DEC-57]], [[MOD-26]], [[MOD-27]], [[MOD-28]], [[DAT-33]], [[RUL-67]], [[RUL-109]]
 
-### DEC-60 [C] Every printed mean carries its spread, every ahead count a sign test
+### DEC-60 [C] Every printed mean carries its spread
 - Decided: the sweep, arm, bench and control tables print the standard deviation and the standard error beside every mean ([[MOD-12]]). They print a two-sided sign test's p beside every count of seeds ahead. docs/results.md carries them.
 - Replaces: means and counts with no spread. Under them +$1,913 a seed at a demand bias of 0.9, ahead in 12 of 20, read as a gain.
 - Reason: a reader has to tell a result from a coin flip. 12 of 20 has p 0.50 ([[RES-21]]), 13 of 20 has p 0.26, and 17 of 20 has p 0.0026 ([[RES-40]]).

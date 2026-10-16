@@ -105,3 +105,32 @@ competitors = [
     { name = "airport comp 3", offset = 0.03 },
     { name = "airport comp 4", offset = 0.08 },
 ]
+
+# The market's calendar: the events that lift some of its hotels, each from the
+# day it is announced, and the scripted cuts by some hotel's competitors, each
+# from the first shop day that shows it. shocks.py looks both up as of a day.
+# The two air-schedule filings are the simulator's (schedule.py), so every
+# market shares them.
+
+# Announced on day 10: a convention on stay dates 45 to 48 raises demand 35%
+# at the two downtown hotels, and their competitors raise rates 15% on those
+# nights. Its peak night is not set here: forecast.peak_night() works it out
+# from expected demand.
+[[events]]
+name = "Convention"
+known_day = 10
+start_day = 45
+end_day = 48
+hotels = ["convention", "full-service"]
+uplift = 0.35
+comp_rate_raise = 0.15
+
+# Shopped from day 30: the two cheapest competitors of the full-service hotel
+# cut their rates 20% for stay dates 37 to 39.
+[[rate_cuts]]
+known_day = 30
+start_day = 37
+end_day = 39
+hotel = "full-service"
+competitors = ["full-service comp 1", "full-service comp 2"]
+cut = 0.20

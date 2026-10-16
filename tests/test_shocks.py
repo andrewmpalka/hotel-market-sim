@@ -1,13 +1,12 @@
-"""Module 2: the convention and the competitor rate cut."""
+"""Module 2: the convention and the competitor rate cut, looked up from the market's file."""
 
 import statistics
+from pathlib import Path
 
 import pytest
 
-from hotel_market.customer import demo
+from hotel_market.customer import demo, load
 from hotel_market.shocks import (
-    EVENTS,
-    RATE_CUTS,
     comp_rate_raise,
     event_uplift,
     events_as_of,
@@ -16,6 +15,7 @@ from hotel_market.shocks import (
 )
 
 DEMO = demo()
+HARBOUR = load(Path(__file__).resolve().parents[1] / "customers" / "harbour.toml")
 
 DOWNTOWN = {h.key for h in DEMO.hotels if h.name.startswith("Downtown")}
 CONVENTION_NIGHTS = range(45, 49)
@@ -96,7 +96,23 @@ def test_the_cut_moves_the_full_service_comp_median_by_5_percent_or_more():
 
 
 def test_shocks_name_hotels_and_competitors_that_exist():
-    for event in EVENTS:
-        assert set(event.hotels) <= {h.key for h in DEMO.hotels}
-    for cut in RATE_CUTS:
-        assert set(cut.competitors) <= {c.name for c in DEMO.hotel(cut.hotel).competitors}
+    for market in (DEMO, HARBOUR):
+        for event in market.events:
+            assert set(event.hotels) <= {h.key for h in market.hotels}
+        for cut in market.rate_cuts:
+            assert set(cut.competitors) <= {c.name for c in market.hotel(cut.hotel).competitors}
+
+
+def test_the_lookups_read_the_customers_own_calendar():
+    # The demo market is the default; another market's events and cuts come from its own file.
+    assert [e.name for e in events_as_of(12)] == ["Convention"]
+    assert [e.name for e in events_as_of(11, HARBOUR)] == []
+    assert [e.name for e in events_as_of(12, HARBOUR)] == ["Regatta"]
+    assert event_uplift("resort", 40, 12, HARBOUR) == pytest.approx(0.30)
+    assert event_uplift("station", 40, 12, HARBOUR) == 0
+    assert comp_rate_raise("city-centre", 43, 12, HARBOUR) == pytest.approx(0.10)
+    assert event_uplift("convention", 46, 12, HARBOUR) == 0  # no such hotel there
+    assert [c.hotel for c in rate_cuts_as_of(25, HARBOUR)] == ["station"]
+    assert rate_cut("station", "station comp 1", 34, 25, HARBOUR) == pytest.approx(0.15)
+    assert rate_cut("station", "station comp 3", 34, 25, HARBOUR) == 0
+    assert rate_cut("station", "station comp 1", 34, 24, HARBOUR) == 0

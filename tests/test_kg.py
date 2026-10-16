@@ -131,17 +131,18 @@ def test_a_key_with_a_star_reads_every_hotels_setting_and_a_missing_one_is_undef
 
 
 def test_a_shock_in_the_code_without_a_node_is_reported(monkeypatch):
-    """A second event added to shocks.py has no SHK node, so the check fails until a node names
-    its file and its known day. The shipped shocks all have one."""
+    """A second event added to the demo customer file has no SHK node, so the check fails until a
+    node names its file and its known day. The shipped shocks all have one."""
     from dataclasses import replace
 
-    from hotel_market import shocks
+    from hotel_market import customer
 
     assert not any("has no SHK node" in problem for problem in kg_check.problems())
-    second = replace(shocks.EVENTS[0], name="Trade fair", known_day=25, start_day=70, end_day=72)
-    monkeypatch.setattr(shocks, "EVENTS", shocks.EVENTS + [second])
+    demo = customer.demo()
+    second = replace(demo.events[0], name="Trade fair", known_day=25, start_day=70, end_day=72)
+    monkeypatch.setattr(customer, "load", lambda path: replace(demo, events=(*demo.events, second)))
     assert any(
-        "src/hotel_market/shocks.py: the event 'Trade fair' known on day 25 has no SHK node "
+        "customers/demo.toml: the event 'Trade fair' known on day 25 has no SHK node "
         "naming that day" in problem
         for problem in kg_check.problems()
     )

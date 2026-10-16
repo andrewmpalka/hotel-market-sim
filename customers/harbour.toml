@@ -1,0 +1,105 @@
+# A second market: three hotels of one brand in a made-up harbour city. Every
+# number is synthetic, and the hotels are shaped unlike the demo market's: a
+# resort that books far out and takes few guests by air, a city-centre hotel on
+# a midweek pattern, and a limited-service hotel by the rail station that books
+# late. The air schedule is the simulator's and is shared by every market
+# (schedule.py), so the two filings arrive here too; what differs is how much
+# of each hotel's demand arrives by air. Nothing in the agent names this market.
+
+name = "harbour"
+target = "contribution"
+
+[limits]
+floor_share = 0.75
+ceiling_share = 1.35
+cost_share = 0.30
+
+[detect]
+pace_share = 0.12
+pace_noise_sd = 3
+seat_threshold = 0.04
+median_threshold = 0.06
+hold_days = 5
+
+[agent]
+min_value_at_stake = 200
+
+# A harbour market where a guest who must travel still books somewhere, so a
+# market-wide rate rise loses less demand than one for one.
+[market]
+elasticity = 0.8
+
+# The resort holds more than a third of its rooms 90 or more days out, mostly
+# leisure guests who drive in, and its week peaks on Friday and Saturday.
+[[hotels]]
+key = "resort"
+name = "Harbour resort"
+rooms = 320
+start_rate = 260
+air_share = 0.25
+base_occupancy = 0.70
+weekday_factors = [0.80, 0.80, 0.85, 0.95, 1.20, 1.30, 1.10]
+booking_curve = { days_out = [0, 7, 30, 60, 90], share = [1.00, 0.90, 0.75, 0.55, 0.35] }
+competitors = [
+    { name = "resort comp 1", offset = -0.10 },
+    { name = "resort comp 2", offset = -0.05 },
+    { name = "resort comp 3", offset = 0.02 },
+    { name = "resort comp 4", offset = 0.07 },
+]
+
+# The city-centre hotel sells to business travel: midweek is strong, the weekend
+# weak, and a tenth of its rooms are on the books 90 days out.
+[[hotels]]
+key = "city-centre"
+name = "City-centre hotel"
+rooms = 200
+start_rate = 175
+air_share = 0.45
+base_occupancy = 0.75
+weekday_factors = [1.00, 1.10, 1.10, 1.05, 0.90, 0.85, 0.80]
+booking_curve = { days_out = [0, 7, 30, 60, 90], share = [1.00, 0.70, 0.45, 0.25, 0.10] }
+competitors = [
+    { name = "city-centre comp 1", offset = -0.06 },
+    { name = "city-centre comp 2", offset = -0.02 },
+    { name = "city-centre comp 3", offset = 0.04 },
+    { name = "city-centre comp 4", offset = 0.09 },
+]
+
+# The station hotel is limited-service: most guests arrive by rail, half its
+# bookings come in the last week, and it runs fuller than the other two.
+[[hotels]]
+key = "station"
+name = "Station hotel"
+rooms = 100
+start_rate = 105
+air_share = 0.20
+base_occupancy = 0.80
+weekday_factors = [1.05, 1.05, 1.05, 1.05, 0.95, 0.85, 0.95]
+booking_curve = { days_out = [0, 7, 30, 60, 90], share = [1.00, 0.45, 0.15, 0.05, 0.00] }
+competitors = [
+    { name = "station comp 1", offset = -0.12 },
+    { name = "station comp 2", offset = -0.04 },
+    { name = "station comp 3", offset = 0.03 },
+    { name = "station comp 4", offset = 0.05 },
+]
+
+# The market's calendar. A regatta, announced on day 12, lifts the resort and
+# the city-centre hotel 30% on stay dates 40 to 43, and their competitors raise
+# rates 10% on those nights. From shop day 25 the two cheapest competitors of
+# the station hotel cut their rates 15% for stay dates 33 to 35.
+[[events]]
+name = "Regatta"
+known_day = 12
+start_day = 40
+end_day = 43
+hotels = ["resort", "city-centre"]
+uplift = 0.30
+comp_rate_raise = 0.10
+
+[[rate_cuts]]
+known_day = 25
+start_day = 33
+end_day = 35
+hotel = "station"
+competitors = ["station comp 1", "station comp 2"]
+cut = 0.15

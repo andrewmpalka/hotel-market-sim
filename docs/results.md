@@ -646,3 +646,37 @@ Seeds 1 to 20 at one tick a day and at four, the template in the true mode, each
 Paired difference, 4 ticks minus 1: mean +$40 a seed (sd 483, se 108), range -$1,246 to +$1,001, the finer clock ahead in 10 of 20 seeds, sign test p 1.0.
 
 A finer clock earns nothing in this world: the paired difference is +$40 a seed with a standard error of $108, the finer clock ahead in 10 seeds of 20, which a sign test puts at p 1.0, because the world's demand moves once a day except at the shocks, and that is the expected result. The 4,504 decisions off the last tick are mostly pace flags the agent reads again at every tick, and 86 plans were accepted at a tick other than the last. The lag from the day-20 filing to the first accepted raise on its stay dates is 0 ticks at both clocks: the raise comes at the tick the filing lands, which at four ticks is three quarters of the way through the day rather than its end. A finer clock would earn in worlds where shops, filings or bookings move within the day, which this world's feeds do not.
+
+## The second market
+
+`hotel-market --customer customers/harbour.toml --seeds 1 20`, run on 2026-10-16. The file describes a second made-up market, a harbour city with three hotels of one brand: a resort that holds more than a third of its rooms 90 days out and takes a quarter of its guests by air, a city-centre hotel on a midweek pattern, and a limited-service hotel by the rail station that books half of its rooms in the last week. The market has its own comp offsets, limits and thresholds, a price response of 0.8, a regatta announced on day 12 that lifts the resort and the city-centre hotel on stay dates 40 to 43, and a cut by two of the station hotel's competitors from shop day 25. The air schedule is the simulator's, so the two filings reach this market as they reach the demo. The agent ran with no change to any of its modules, because the one flag names the file and everything specific to the market is in it. The sweep is here to show that the agent runs on another market, so its figures are reported as they came out and none of them is a headline.
+
+Seeds 1 to 20 on the second market, customers/harbour.toml, the template in the true mode, each against the fixed-rate run, run on 2026-10-16. The last two rows are the standard deviation across the seeds and the standard error of the mean.
+
+| Seed | Contribution change | Revenue change | Rate changes |
+| ---: | ---: | ---: | ---: |
+| 1 | +2,985 | +75,748 | 6 |
+| 2 | +12,244 | +76,948 | 8 |
+| 3 | +7,485 | +77,265 | 13 |
+| 4 | +2,058 | +67,563 | 8 |
+| 5 | +1,089 | +65,206 | 6 |
+| 6 | +9,939 | +74,806 | 7 |
+| 7 | +6,988 | +64,578 | 8 |
+| 8 | +13,718 | +81,765 | 7 |
+| 9 | +2,671 | +70,037 | 7 |
+| 10 | +6,696 | +77,652 | 7 |
+| 11 | +2,389 | +64,537 | 6 |
+| 12 | -8,256 | +51,601 | 8 |
+| 13 | -578 | +64,088 | 7 |
+| 14 | +3,017 | +66,020 | 5 |
+| 15 | +11,597 | +80,000 | 9 |
+| 16 | +1,751 | +59,809 | 10 |
+| 17 | +8,678 | +79,083 | 8 |
+| 18 | +1,559 | +70,313 | 6 |
+| 19 | +3,083 | +59,761 | 8 |
+| 20 | +7,199 | +67,222 | 6 |
+| Mean | +4,815 | +69,700 | |
+| SD | 5,151 | 8,042 | |
+| SE | 1,152 | 1,798 | |
+
+The agent is ahead in 18 of 20 seeds, which a sign test puts at p <0.001, and the mean is +$4,815 a seed with a standard error of $1,152, so the gain is smaller and noisier than the demo market's. Room revenue rises in every seed here, by +$69,700 a seed, where it falls in every seed of the demo market. That reads as raises landing on nights that filled either way, but it is an inference from the two figures and not something this sweep measured. The accepted plans were estimated to earn +$128,206 over holding and earned +$96,309, and on their 3,181 nights the estimates sum to +$42,585,263 against +$42,241,708 realised, 0.99 of it. The plans the regatta and the new flights raised, 94 over the 20 seeds, earned +$91,232 on their stay dates, and the other 56 plans +$5,077, so the shocks carry the gain here as they do in the demo market. The two filings raised 129 seat flags over the seeds, and the agent changed 150 rates in all. All 63 comp-median flags fell on the two shock days, 12 and 25, because this market's 6% threshold sits above the shop noise.
