@@ -12,15 +12,15 @@ nodes and its words, len(text.split()) over the file.
 | data.md | 33 | 4,432 |
 | rules.md | 132 | 5,763 |
 | shocks.md | 7 | 813 |
-| concepts.md | 11 | 1,205 |
+| concepts.md | 12 | 1,370 |
 | measures.md | 14 | 962 |
 | sources.md | 4 | 855 |
 | decisions.md | 69 | 10,240 |
 | results.md | 44 | 7,403 |
 | forks.md | 14 | 2,037 |
 | unknowns.md | 16 | 2,164 |
-| every node file | 376 | 40,317 |
-| index.md | | 2,947 |
+| every node file | 377 | 40,482 |
+| index.md | | 2,954 |
 
 ## Modules (`modules.md`)
 
@@ -199,6 +199,7 @@ nodes and its words, len(text.split()) over the file.
 - CON-09 [C] Sell-out
 - CON-10 [C] Hold period
 - CON-11 [C] The cautious rule
+- CON-12 [C] The customer's real counterparts
 
 ## Measures (`measures.md`)
 

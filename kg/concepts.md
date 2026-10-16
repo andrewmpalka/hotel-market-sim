@@ -73,3 +73,13 @@ the modules, constants and decisions that implement it.
 - Implemented by: Pricing.band and WeekdayGroup.best, replaces_hold and rejected_at_an_end in [[MOD-08]]. --cautious in [[MOD-12]] sets it on every learn mode ([[DAT-22]]). The request and the template in [[MOD-09]] carry the three values.
 - Decision: [[DEC-39]], with [[DEC-43]] for the one minimum rule.
 - Evidence: test_under_the_cautious_rule_a_candidate_that_loses_at_one_end_is_held, test_the_cautious_rule_scores_each_candidate_one_standard_error_either_side, test_the_three_values_reach_the_model_request
+
+### CON-12 [C] The customer's real counterparts
+- Definition: each piece here stands for one thing a hotel company has. The customer file is the market ([[DAT-27]]). The four interfaces ([[DAT-25]]) are the reservation system, the rate shop, the schedule feed and the events calendar.
+- Tables: the stored tables ([[DAT-28]]) are the day's snapshot the customer's systems write, and run-day ([[MOD-12]]) is the daily job over them ([[DEC-42]]).
+- Clock: the clock ([[RUL-128]]) is the cadence of their feeds. A feed that lands once a day gives the daily loop, and one that lands through the day gives the ticks ([[DEC-46]]).
+- Audit: the cache ([[DAT-17]]) and the replay are the audit trail. Each decision keeps its request, answer and digests ([[DEC-45]]).
+- Market: a second market runs with --customer and no change to the agent ([[DEC-69]], [[RES-44]]).
+- Where: the README section "What this is when a customer stands behind it", under "Data as it comes in".
+- Kind: policy
+- Evidence: review

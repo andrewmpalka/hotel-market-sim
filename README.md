@@ -107,17 +107,41 @@ the elasticity estimator, a Poisson regression with a prior, and on world v2 the
 agent that uses it keeps little of the gain unless the cautious rule is on
 (docs/reviewers.md for the reviewers, docs/results.md for the rest).
 
-## On a clock, not in real time
+## Data as it comes in
 
-The agent runs on a clock, not in real time. A tick is a slice of a simulated
-day: with `--ticks N` each day is cut into N ticks, the bookings land at every
-tick, the rate shop at tick 2, the airlines' filings at tick 3 and the events at
-tick 4, each at tick 1 when N is smaller than its slot, and the agent runs after
-each tick reading the feeds as of that tick. Until a feed lands, a tick sees the
-previous value. N of 1 is the daily loop unchanged: every feed lands at the one
-tick and the agent runs once a day, as every figure above was measured. Real
-time is this loop with a wall clock behind the sources: a feed arrives when it
-arrives, and the agent runs when one does.
+Data as it comes in means that the agent runs at the tick the data lands, a
+rate applies from the next tick, and the next day's request carries what
+happened on the dates it changed. The third of those is the read-back: each
+entry in a request lists the hotel's earlier changes on its stay dates, with
+the rooms booked since each against the rooms expected, so the model sees what
+its last decision did before it makes the next one.
+
+On a clock, not in real time, the loop runs, and a tick is a slice of a
+simulated day: with `--ticks N` each day is cut into N ticks, the bookings
+land at every tick, the rate shop at tick 2, the airlines' filings at tick 3
+and the events at tick 4, each at tick 1 when N is smaller than its slot, and
+the agent runs after each tick reading the feeds as of that tick. Until a feed
+lands, a tick sees the previous value. N of 1 is the daily loop unchanged:
+every feed lands at the one tick and the agent runs once a day, as every figure
+above was measured. Real time is this loop with a wall clock behind the
+sources: a feed arrives when it arrives, and the agent runs when one does.
+
+## What this is when a customer stands behind it
+
+Each piece here stands for something a hotel company already has. The customer
+file is the market: its hotels, their curves and comp sets, its thresholds and
+its calendar of events and competitor moves. The four interfaces are the
+reservation system, the rate shop, the schedule feed and the events calendar,
+which is why the agent reads nothing else. The stored tables are the day's
+snapshot that the customer's systems write, and run-day is the daily job that
+runs the agent over them, so a deployment is that job on that snapshot. The
+clock is the cadence of their feeds: a feed that lands once a day gives the
+daily loop, and one that lands through the day gives the ticks. The cache and
+the replay are the audit trail, because every decision keeps the request the
+model saw, the answer it gave and the digest that ties the two together, and a
+day can be rebuilt from the tables alone. A second market is run with one flag
+and no change to the agent: `hotel-market --customer customers/harbour.toml
+--seed 7 --template`.
 
 ## What the world taught me
 
