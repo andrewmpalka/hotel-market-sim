@@ -150,7 +150,8 @@ the plans, the model's request and answer, and what the command writes.
 - Template: template answers are not cached ([[DEC-25]]). A file from an older version that holds one is ignored and overwritten. A record from before the model field has none and still reads back ([[DAT-29]]).
 - Written by: [[MOD-09]]
 - Read by: [[MOD-09]] on a rerun or a replay; a digest that does not match the request, or a prompt_digest that is not the running prompt's, raises StaleCache. A record with no prompt_digest is current.
-- Evidence: test_ask_calls_the_model_once_and_then_reads_the_cache, test_a_learn_run_keeps_its_own_cache_and_says_where_its_estimates_ended, test_another_model_gets_its_own_cache_folder_and_record
+- Market: a market other than the demo's ([[DAT-27]]) puts the folder under cache/<name>/, such as cache/harbour/seed7/, so a run of a second market never reads the demo's answers.
+- Evidence: test_ask_calls_the_model_once_and_then_reads_the_cache, test_another_model_gets_its_own_cache_folder_and_record, test_another_market_keeps_its_cache_under_its_own_name
 
 ### DAT-18 [C] A decisions.jsonl line
 - File: src/hotel_market/plan.py

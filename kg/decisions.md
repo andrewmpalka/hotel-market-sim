@@ -435,7 +435,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 ### DEC-23 [C] The cache key is seed, day and hotel, with the request's digest
 - Decided: the answer to one hotel's queue on one day is saved at cache/seed<seed>/day<DDD>_<hotel key>.json. The file records the sha256 of the request's sorted-keys JSON ([[DAT-17]]), and a rerun reads the cache first.
 - Detail: a file whose digest does not match the request, or whose prompt_digest differs from the running prompt, raises StaleCache. A record with no prompt_digest is current. A replay never calls the model.
-- Model: a model other than MODEL ([[RUL-46]]) adds -<model> to the folder, as a mode does. Each new record names its model. The default model in the default mode keeps cache/seed<seed>/, so [[DAT-29]] replays unchanged.
+- Model and market: another model ([[RUL-46]]) adds -<model> to the folder, and each record names it. Another market puts its folders under cache/<name>/, so the demo keeps cache/seed<seed>/ and [[DAT-29]] replays unchanged.
 - Replaces: nothing built.
 - Reason: each hotel's queue costs one model call a day, paid once per seed. A changed rule or constant changes the request, so it cannot reuse a stale answer silently.
 - Commit: abef71f

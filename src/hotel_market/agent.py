@@ -31,7 +31,7 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, replace
 from pathlib import Path
 
-from hotel_market.customer import Customer, demo
+from hotel_market.customer import DEMO_FILE, Customer, demo
 from hotel_market.detect import AHEAD, days_in, detect_numbers, flags
 from hotel_market.estimate import Estimate, estimate_elasticity, level_factor
 from hotel_market.forecast import peak_night
@@ -128,9 +128,10 @@ class Agent:
 
     `model` names the model the client asks. It is the client's own name when the client has one,
     else model.MODEL. It goes into the cache folder when it is not the default, and into every cache
-    record. `market_elasticity` is the run's market price response, handed to the agent as the
-    share elasticity is in the default mode, the customer file's when the run sets none. Every
-    plan record carries it.
+    record. A market other than the demo's keeps its folders under cache/<name>/, so a run of a
+    second market never reads the demo's answers. `market_elasticity` is the run's market price
+    response, handed to the agent as the share elasticity is in the default mode, the customer
+    file's when the run sets none. Every plan record carries it.
     """
 
     def __init__(
@@ -160,6 +161,8 @@ class Agent:
             folder += f"-{self.model}"
         if ticks != TICKS_PER_DAY:
             folder += f"-ticks{ticks}"  # a finer clock asks other questions
+        if self.customer.name != DEMO_FILE.stem:  # another market: its name is a folder above
+            cache_dir = Path(cache_dir) / self.customer.name
         self.cache_dir = Path(cache_dir) / folder.replace(":", "-").replace(" ", "-")
         self.client = client
         self.replay = replay

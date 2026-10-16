@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from hotel_market import customer
-from hotel_market.agent import Agent
+from hotel_market.agent import Agent, ElasticityMode
 from hotel_market.bookings import Books, simulate
 from hotel_market.cli import main
 from hotel_market.customer import CUSTOMER_VARIABLE, DEMO_FILE, demo, demo_path, load
@@ -202,6 +202,18 @@ def test_the_revenue_target_scores_candidates_on_the_rate_alone(day10, tmp_path)
     assert "target" not in request_for(10, hotel, [on_contribution])
     agent = Agent(7, tmp_path, customer=revenue)
     assert agent.cache_dir.name == "seed7-revenue"
+
+
+def test_another_market_keeps_its_cache_under_its_own_name(tmp_path):
+    # The demo's paths do not change, so the recorded run replays. A second market's folders go
+    # under its name, so a keyed run of it never reads the demo's answers and stops with StaleCache.
+    assert DEMO.name == DEMO_FILE.stem
+    assert Agent(7, tmp_path).cache_dir == tmp_path / "seed7"
+    assert Agent(7, tmp_path, customer=DEMO).cache_dir == tmp_path / "seed7"
+    harbour = load(HARBOUR_FILE)
+    assert Agent(7, tmp_path, customer=harbour).cache_dir == tmp_path / "harbour" / "seed7"
+    fixed = Agent(7, tmp_path, customer=harbour, elasticity=ElasticityMode.parse("fixed:1.0"))
+    assert fixed.cache_dir == tmp_path / "harbour" / "seed7-fixed-1"
 
 
 def test_the_command_takes_a_customer_file_and_a_target(tmp_path, monkeypatch, capsys):
