@@ -97,7 +97,10 @@ day with `--ticks 4`, the agent earns +$16,204 a seed against +$16,164 on the
 daily clock, a paired difference of +$40 with a standard error of $108, p 1.0:
 a finer clock earns nothing in this world, because the world's demand moves
 once a day except at the shocks, and that is the expected result
-(docs/results.md, The clock).
+(docs/results.md, The clock). On the same market with its news inside the day,
+customers/demo-intraday.toml, the same clock earns +$2,101 a seed more, ahead
+in 18 seeds of 20, p below 0.001, because a concert there books within the day
+(docs/results.md, The clock on the world with intraday news).
 
 **What the model adds, and what learns.** Measured on 2026-10-15 on world v2: in
 the default run the model added nothing, because every reviewer said yes to
@@ -123,14 +126,50 @@ the rooms booked since each against the rooms expected, so the model sees what
 its last decision did before it makes the next one.
 
 The loop runs on a clock, not in real time. A tick is a slice of a simulated
-day: with `--ticks N` each day is cut into N ticks, the bookings land at every
-tick, the rate shop at tick 2, the airlines' filings at tick 3 and the events
-at tick 4, each at tick 1 when N is smaller than its slot, and the agent runs
-after each tick reading the feeds as of that tick. Until a feed
-lands, a tick sees the previous value. N of 1 is the daily loop unchanged:
-every feed lands at the one tick and the agent runs once a day, as every figure
-above was measured. Real time is this loop with a wall clock behind the
-sources: a feed arrives when it arrives, and the agent runs when one does.
+day: with `--ticks N` each day is cut into N ticks, and the agent runs after
+each tick reading the feeds as of that tick. By default the bookings land at
+every tick, the rate shop at tick 2, the airlines' filings at tick 3 and the
+events at the day's last tick, each at tick 1 when N is smaller than its slot.
+A customer file can instead name the tick its shops, filings, events and cuts
+land at, which is how customers/demo-intraday.toml puts the demo market's news
+inside the day. Until a feed lands, a tick sees the previous value. N of 1 is
+the daily loop unchanged: every feed lands at the one tick and the agent runs
+once a day, as every figure above was measured. Real time is this loop with a
+wall clock behind the sources: a feed arrives when it arrives, and the agent
+runs when one does.
+
+`python scripts/tick_lag.py` prints what one piece of news did at each clock:
+the tick it landed at, the tick the first flag rose at, the tick the first
+raise was accepted at, the stay dates that raise covered and what they earned
+against the fixed-rate run. On the demo market, the day-20 filing at the
+airport hotel of seed 7:
+
+| The day-20 filing | --ticks 1 | --ticks 4 |
+| --- | --- | --- |
+| The filing landed at | tick 1 of 1 on day 20 | tick 3 of 4 on day 20 |
+| The first flag rose at | tick 1 of 1 on day 20 | tick 3 of 4 on day 20 |
+| The first raise was accepted at | tick 1 of 1 on day 20 | tick 3 of 4 on day 20 |
+| The stay dates it covered | 50 to 109 | 50 to 109 |
+| Contribution on them against the fixed-rate run | +$5,565 | +$5,542 |
+
+On the intraday market, the concert announced at tick 2 of day 25, at the
+lifestyle hotel of seed 7 (`--customer customers/demo-intraday.toml --event
+concert`):
+
+| The concert announcement | --ticks 1 | --ticks 4 |
+| --- | --- | --- |
+| The announcement landed at | tick 1 of 1 on day 25 | tick 2 of 4 on day 25 |
+| The first flag rose at | tick 1 of 1 on day 25 | tick 2 of 4 on day 25 |
+| The first raise was accepted at | tick 1 of 1 on day 25 | tick 2 of 4 on day 25 |
+| The stay dates it covered | 31 to 32 | 31 to 32 |
+| Contribution on them against the fixed-rate run | +$1,872 | +$2,472 |
+
+At both clocks the raise comes at the tick the news lands, so the lag is zero
+either way, and the filing's stay dates earn the same at either clock because
+nothing books on them within the day. The concert's nights earn more at four
+ticks because the rush books from the announcement on: on the daily clock the
+raise applies from day 26, after a day of bookings at the old rate, and at four
+ticks it applies from tick 3 of day 25.
 
 ## What this is when a customer stands behind it
 
@@ -191,6 +230,19 @@ runs before the data lands sees yesterday's numbers and has nothing new to
 decide. A finer clock would earn where a shop, a filing or a booking stream
 moves within the day, which is what a live feed does and this one does not
 ([the clock table](docs/results.md#the-clock-one-tick-a-day-against-four)).
+So I gave the same market news inside the day, in a second file: a shop at
+every tick, the day-30 cut known at tick 2, a concert announced at tick 2 of
+day 25 that sells two nights out with half of its uplift booking by the end of
+the next day, a competitor raise at tick 3 of day 45 and the day-20 filing at
+tick 1. On that file the same clock earns +$2,101 a seed more, +$21,741
+against +$19,640, ahead in 18 seeds of 20, p below 0.001. The agent is the same
+code with the same thresholds and the same template, and on both markets the
+first raise comes at the tick the news lands, so the difference is the news and
+not the agent: the rush lands rooms from tick 2 of day 25, the daily loop
+cannot raise before day 26, and the concert nights book 103.8 rooms at the old
+rate before the first raise against 30.4 at four ticks, earning +$3,320 against
++$4,418 ([the intraday clock
+table](docs/results.md#the-clock-on-the-world-with-intraday-news)).
 So the loop keeps three cadences: the day, on which the feeds land and the
 figures are measured, the tick, at which the agent reads the feeds and a rate
 takes effect, and the read-back of outcomes into the next request, which

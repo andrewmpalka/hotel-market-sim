@@ -302,8 +302,8 @@ which is also the order in which they depend on each other.
 
 ### MOD-32 [C] scripts/tick_lag.py
 - File: scripts/tick_lag.py
-- Owns: the day-20 filing at one tick a day and at a finer clock, five lines each: the tick the filing landed at, the tick the first seats flag rose at, the tick the first raise was accepted at, its stay dates and what they earned.
-- Page: the same five facts are the demo page's day-20 news line on a finer clock ([[MOD-26]], [[DEC-46]]); the script is the walkthrough's one screen for the clock.
-- Run: one seed and one hotel, the airport hotel by default, each as the command's template run ([[MOD-12]]) in a temporary folder, with no model call.
+- Owns: the day-20 filing, or with --event an announcement, at one tick a day and at a finer clock, five lines each: the tick it landed at, when the first flag rose and the first raise was accepted, its stay dates and what they earned.
+- Page: the same five facts are the demo page's news line for a filing or an event on a finer clock ([[MOD-26]], [[DEC-46]]); the script is the walkthrough's one screen for the clock.
+- Run: one seed and one hotel, the airport hotel or the event's first by default, each as the command's template run ([[MOD-12]]) on the market --customer names, in a temporary folder, with no model call.
 - Tests: tests/test_tick_lag.py
-- Evidence: test_the_five_lines_follow_the_filing_at_each_clock
+- Evidence: test_the_five_lines_follow_the_filing_at_each_clock, test_the_five_lines_follow_the_concert_on_the_intraday_market

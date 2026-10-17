@@ -61,6 +61,8 @@ Python 3.11 or later, from the repository root:
     python scripts/tick_sweep.py --seeds 1 20 --customer customers/demo-intraday.toml --event concert
                                                         # the same on the intraday market, the lag from the concert's announcement, and what its stay dates booked before the first raise and earned
     python scripts/tick_lag.py --seed 7                 # the day-20 filing at one tick a day and at four: the ticks it landed, the first flag rose and the first raise was accepted at, the stay dates and what they earned
+    python scripts/tick_lag.py --seed 7 --customer customers/demo-intraday.toml --event concert
+                                                        # the same five lines for the concert's announcement on the intraday market, at the lifestyle hotel
 
 With make, on a Mac or Linux machine:
 

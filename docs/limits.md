@@ -73,9 +73,10 @@
   retries stops the run with a traceback, and the single-run route then writes
   no decisions file for the days before it.
 - A change to the world, such as a fifth hotel or a second event, invalidates
-  the pinned tests, the seed-7 recording under tests/fixtures and the live
+  the pinned tests, the seed-7 recordings under tests/fixtures and the live
   benchmark tables. The template sweeps rerun for nothing, a new recording of
-  seed 7 costs about $0.08, and the live tables cost about $86 to make again.
+  seed 7 costs about $0.08 on the daily clock and $0.20 on the intraday
+  market, and the live tables cost about $86 to make again.
 - The benchmark ran the live models on seeds 1 to 20 in the fixed and the
   learned modes on 2026-10-15 on world v2 (docs/results.md). Only Opus recovered
   any of the oracle's margin, 34% in a fixed mode and 10% in a learned one;
@@ -88,8 +89,9 @@
 - The audit's phrase matcher does not recognise a request figure quoted in a
   different phrase, so a reason that writes "$2,780 on Monday" for the request's
   "$2,780 more than holding" is listed as unmatched; the figure is in the
-  request, and the seed-7 recording has two such reasons, holding five such figures
-  between them.
+  request, and the daily seed-7 recording has two such reasons, holding five
+  such figures between them, while the intraday recording has two more, holding
+  seven.
 - On world v2 the convention is mostly on the books before day 0 because of the
   convention hotel's early booking curve, while its uplift applies only to
   demand after day 0, so an event announced on day 10 adds little; the next
@@ -102,16 +104,28 @@
   test.
 - The clock is event-driven on a configurable clock, not real time. With
   `--ticks N` each day is cut into N ticks and the agent runs after each, but
-  the simulated feeds arrive at fixed ticks: the rate shop at tick 2, the
-  airlines' filings at tick 3, the events at tick 4 and the bookings at every
-  tick. A shop or a booking carries no timestamp in the feeds, so a tick knows
-  only that a feed has landed, not when within the tick. The comp set does not
-  react within a day: a reaction, when it is on, reads the hotel's rate three
-  days back. On this world a finer clock earns nothing, because the demand
-  moves once a day except at the shocks (docs/results.md, The clock); it would
-  earn where shops, filings or bookings move within the day. On a finer
+  the simulated feeds arrive at fixed ticks unless the customer file names
+  one: the rate shop at tick 2, the airlines' filings at tick 3, the events at
+  the day's last tick and the bookings at every tick. A shop or a booking
+  carries no timestamp in the feeds, so a tick knows only that a feed has
+  landed, not when within the tick. The comp set does not react within a day:
+  a reaction, when it is on, reads the hotel's rate three days back. On the
+  demo market a finer clock earns nothing, because the demand moves once a day
+  except at the shocks (docs/results.md, The clock); on the intraday market it
+  earns +$2,101 a seed, because the concert's rush books within the day
+  (docs/results.md, The clock on the world with intraday news). On a finer
   clock the outcomes table still credits a decision with the rooms sold on
   later days, not with the later ticks of its own day.
+- An event's rush is a share of its uplift spread evenly over the ticks from
+  the announcement to the end of the next day, not a timestamped stream of
+  bookings, so the simulator knows how many rooms a tick books and nothing
+  about when within the tick they came. The intraday market is a second file,
+  customers/demo-intraday.toml, so the pinned default market, its recording
+  and its checksum are unchanged, and a file that names no tick for its news
+  lands it where the slots put it. An event's competitor raise follows the
+  tick the event is known at, so a shop earlier in that day shows the old
+  rates, while an event with no named tick shows its raise in every shop of
+  its day, as before.
 - The request's seat_change and seat_revision fields have carried
   arriving-passenger figures since world v2 under their world v1 names, so a
   recorded reason may say seats where the page's news line says passengers;
