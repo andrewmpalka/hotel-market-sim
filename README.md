@@ -6,14 +6,18 @@ A made-up city with four hotels, and a pricing agent that reads the city's
 feeds and recommends rate changes. Every number is synthetic. The agent runs
 for 60 days; the bookings run for 150, so every night is finished and counted.
 
-Four things happen while it runs, each written into the market file in advance:
+Most days in this city nothing happens. Guests book along the usual curve
+with the usual luck, competitors' rates wobble a little, and the best price
+for an ordinary night is the one the hotel already charges. Four times,
+something does happen, and each is written into the market file in advance:
 a convention is announced on day 10, new flights are filed on day 20, a
-competitor cuts its rate on day 30, and an airline suspends a route on day 40.
-The repository calls these shocks: the only events that change demand or a
-comp set, so every dollar the agent earns can be traced to the one that
-produced it. The schedule rows follow Cirium's published column names; every
-row is invented, and the repository has no Cirium data and no affiliation
-with Cirium.
+competitor cuts its rate on day 30, and an airline suspends a route on day
+40. The repository calls these shocks. They are the only events that change
+demand or move a comp set, which means they are the only moments a pricing
+agent can earn anything, and because each lands on a known day, every dollar
+in the results can be traced to the shock that produced it. The schedule rows
+follow Cirium's published column names; every row is invented, and the
+repository has no Cirium data and no affiliation with Cirium.
 
 ![The lifestyle hotel on day 20](docs/images/day20.png)
 
@@ -41,6 +45,31 @@ request's digest, so a rerun is free and a replay never calls the model. A
 live seed costs about $0.20; the whole benchmark cost $85.87.
 
 Every other command is in [docs/commands.md](docs/commands.md).
+
+## Same luck twice
+
+A computer cannot roll dicee, so it uses a scrambler: give it a number
+and it hands back a stream of numbers that look random, pass every test for
+random, and are completely fixed by the number you started with. That
+starting number is the seed. Set it to 7 and you get one particular stream;
+set it to 7 again, on any machine, and you get the identical stream.
+
+Everything that is luck in this city comes from that stream: which night a
+guest books, how far a rate shop wobbles, how many people turn up for the
+concert. So the seed decides the whole five months of luck before the run
+starts, and running seed 7 twice gives the same five months twice.
+
+That is the point. The agent run and the frozen-rate run both use seed 7,
+so both get the same guests on the same days, and whatever differs between
+them is the agent's doing. Anyone who clones this repository and runs seed 7
+gets the same decisions file, byte for byte, which is how a claim here can
+be checked instead of trusted.
+
+One seed is one roll. Seeds 1 to 20 are twenty different five months, and
+the results are averaged over them with the spread shown, so you can tell a
+real gain from a lucky seed. Seven is the demo seed because it is the number
+typed into the first run; it is one dial position among many, and it
+happens to be row 7 of every table.
 
 ## What the agent does each day
 
