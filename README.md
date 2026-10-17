@@ -21,8 +21,9 @@ repository has no Cirium data and no affiliation with Cirium.
 
 ![The lifestyle hotel on day 20](docs/images/day20.png)
 
-*Day 20 at the lifestyle hotel: the filing in the news line, three plans with
-the model's recorded reasons, and the read-back of its day-18 raise.*
+*Day 20 at the lifestyle hotel: the filing in the news, three recommendations
+with the model's reasons, and what happened since the last change on those
+dates.*
 
 ## Run it
 
@@ -185,6 +186,9 @@ it can raise; the four-tick loop sells 30. The agent is the same code with
 the same thresholds on both markets. The difference is the news.
 
 ![The lifestyle hotel on day 25, tick 2](docs/images/day25.png)
+
+*Day 25 at the lifestyle hotel, 11:00: the concert announced an hour ago, the
+recommendation, and the model's reason.*
 
 Details: [the clock](docs/results.md#the-clock-one-tick-a-day-against-four),
 [the clock with intraday news](docs/results.md#the-clock-on-the-world-with-intraday-news).

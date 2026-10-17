@@ -7,21 +7,26 @@ The read-only demo page: a Streamlit app over the file hotel-market demo-data wr
 The page reads the file and computes nothing. Every figure it shows is a row code wrote
 (demo_data.py, sql/demo.sql), and the page only formats and draws it. A test fails if this module
 imports anything from the package or does arithmetic on a figure. The sidebar picks one hotel and
-one day, and the query string can name them (?hotel=convention&day=10). The sidebar also shows the
-file's seed and where its reasons came from, and defines contribution. The page then shows what
-became known that day, the stay dates ahead as two charts side by side, the day's queue with its
-reasons and held flags, and the scorecard: the nights already stayed for the hotel and for all
-the hotels together. Where the stored request listed the hotel's earlier changes on a plan's
-stay dates, the plan's last line shows them under "Since the last change", as the request wrote
-them. A sidebar checkbox, off by default, adds the end-of-run result: the tiles
-once every stay date is complete and the contribution difference by stay date. The query string
-can turn it on (&end=1). When the file was written on a finer clock, a tick slider under the day
-slider picks a tick of the day (&tick=2), the day's last by default, and the page shows the state
-as of that tick: the news landed so far, the queue decided at that tick, the charts and the
-planned rate as of it. Everything fits a 1440 by 900 window in both states and at every tick,
-which scripts/demo_screenshots.py checks; the queue's text is set a size smaller than the page's
-and the news's lines tighter, so a day with three accepted plans and two lines of news still
-fits. Streamlit is an optional extra: pip install -e ".[demo]".
+one day, and the query string can name them (?hotel=convention&day=10). The sidebar also says
+which of the results' runs this is, marks the stand-in's reasons when the file holds any, and
+defines contribution. Under the title and the day's number, four tiles give the day's first news,
+the nights flagged, the recommendations and their value at stake together. The page then shows
+what became known that day, the stay dates ahead as two charts side by side, the day's
+recommendations, each led by its value at stake with its reason under it, and the scorecard: the
+nights already stayed for the hotel and for all the hotels together. Where the stored request
+listed the hotel's earlier changes on a plan's stay dates, the plan's last line shows them under
+"Since our last change on these dates", with dates for the request's day numbers. The flags held
+by code sit in a closed expander. A sidebar checkbox, off by default, adds the full five months:
+the tiles once every stay date is complete and the contribution difference by stay date. The
+query string can turn it on (&end=1). When the file was written on a finer clock, a time-of-day
+slider under the day slider picks a tick of the day (&tick=2), the day's last by default, and the
+page shows the state as of that tick: the news landed so far, the recommendations made at that
+tick, the charts and the recommended rate as of it. The seed, the tick, the market's file and the
+requests' digests sit in a closed expander for engineers at the bottom. Everything fits a 1440 by
+900 window in both states and at every tick, which scripts/demo_screenshots.py checks; the
+recommendations' text is set a size smaller than the page's and the news's lines tighter, so a
+day with three accepted plans and two lines of news still fits. Streamlit is an optional extra:
+pip install -e ".[demo]".
 """
 
 import os
@@ -56,25 +61,30 @@ COLORS = {"blue": "#2a78d6", "orange": "#eb6834", "aqua": "#1baf7a", "red": "#e3
 STYLE = """<style>
 [data-testid="stToolbar"] {display: none;}
 [data-testid="stHeader"] {height: 2rem !important; background: transparent !important;}
-.block-container {padding-top: 2.25rem; padding-bottom: 0.25rem;}
-[data-testid="stVerticalBlock"] {gap: 0.3rem;}
+.block-container {padding-top: 0.75rem; padding-bottom: 0.25rem;}
+[data-testid="stVerticalBlock"] {gap: 0.2rem;}
 h3 {padding-top: 0 !important; padding-bottom: 0.25rem !important;}
+[data-testid="stMarkdownContainer"] p:has(> strong:only-child) {line-height: 1.25;}
 [data-testid="stMetric"] {padding: 0;}
-[data-testid="stMetricLabel"] {line-height: 1.1;}
+[data-testid="stMetricLabel"] {line-height: 1.1; min-height: 0;}
+[data-testid="stMetric"] div:has(> [data-testid="stMetricDelta"]) {padding-bottom: 0;}
 [data-testid="stMetricValue"] {line-height: 1.15; padding-bottom: 0;}
 [data-testid="stMetricValue"] div {line-height: 1.15;}
 [data-testid="stMetricDelta"] {padding-bottom: 0;}
 [data-testid="stMetricDelta"] svg {width: 0.9rem; height: 0.9rem;}
 [data-testid="stCaptionContainer"] {margin-bottom: 0 !important;}
-[data-testid="stCaptionContainer"] p {font-size: 1rem; margin-bottom: 0; line-height: 1.25;}
-[data-testid="stExpander"] details summary {padding: 0.25rem 0.5rem;}
-.st-key-queue p {font-size: 0.9rem; line-height: 1.3;}
-.st-key-news p {line-height: 1.3;}
+[data-testid="stCaptionContainer"] p {font-size: 1rem; margin-bottom: 0; line-height: 1.15;}
+[data-testid="stExpander"] details summary {padding: 0.1rem 0.5rem;}
+.st-key-queue p {font-size: 0.9rem; line-height: 1.25;}
+.st-key-news p {line-height: 1.2;}
+.st-key-index p {font-size: 0.8rem; line-height: 1.1;}
+.st-key-strip [data-testid="stMetricLabel"] p {font-size: 0.8rem;}
+.st-key-strip [data-testid="stMetricValue"] {font-size: 1rem;}
 </style>"""
 
 MARKDOWN_MARKS = ("\\", "$", "*", "_", "`")  # what the page escapes so a text shows as written
 # What a reason has escaped: those marks and the link, image, strikethrough and autolink marks,
-# which a model's text could hold. A date's brackets are code's own and stay.
+# which a model's text could hold.
 REASON_MARKS = ("\\", "$", "*", "_", "`", "[", "]", "!", "~", "<", ">")
 
 
@@ -134,7 +144,8 @@ def _y(field: str, title: str | None, **axis) -> alt.Y:
 
 
 def _legend(label_expr: str | None = None, orient: str = "top") -> alt.Legend:
-    """A legend above the plot, off the lines, with stroke symbols that show a dash."""
+    """A legend above the plot, off the lines, with stroke symbols that show a dash. Its labels are
+    the axes' size, so "Recommended rate (from 11:00)" fits beside the other two."""
     legend = alt.Legend(
         orient=orient,
         title=None,
@@ -142,6 +153,7 @@ def _legend(label_expr: str | None = None, orient: str = "top") -> alt.Legend:
         symbolStrokeWidth=2,
         offset=6,
         labelLimit=240,
+        labelFontSize=AXIS_LABEL_SIZE,
     )
     if label_expr is not None:
         legend["labelExpr"] = label_expr
@@ -192,9 +204,14 @@ def main() -> None:
     hotels = rows(
         "SELECT key, name, rooms, rate_axis_low, rate_axis_high FROM hotels ORDER BY position"
     )
-    days = rows("SELECT as_of_day, label, stay_window FROM days ORDER BY as_of_day")
-    run = rows("SELECT seed, reason_source, ticks FROM run").iloc[0]
+    days = rows("SELECT as_of_day, label, stay_window, index FROM days ORDER BY as_of_day")
+    run = rows("SELECT seed, ticks, market FROM run").iloc[0]
     ticks = int(run["ticks"])
+    # shortcut: the slider names the four times of a four-tick day, so a file written at more
+    # ticks offers only its first four; to offer more, write each tick's time into the file.
+    times = dict(enumerate(["08:00", "11:00", "14:00", "17:00"][:ticks], 1))  # tick -> its time
+    ticks_at = {time: tick for tick, time in times.items()}
+    stand_in = not rows("SELECT 1 FROM queue WHERE reason_source = 'template' LIMIT 1").empty
     keys = hotels["key"].tolist()
     numbers = days["as_of_day"].tolist()
     wanted_hotel = st.query_params.get(HOTEL_PARAMETER)
@@ -212,21 +229,48 @@ def main() -> None:
         st.header("Hotel market demo")
         name = st.selectbox("Hotel", hotels["name"].tolist(), index=first_hotel)
         day = st.slider("Day", min_value=numbers[0], max_value=numbers[-1], value=first_day)
-        tick = st.slider("Tick", min_value=1, max_value=ticks, value=first_tick) if ticks > 1 else 1
-        show_end = st.checkbox("Show the end-of-run result", value=wanted_end in ON_VALUES)
-        st.caption(
-            f"Seed {run['seed']} of the simulated market. The reasons are {run['reason_source']}. "
-            "The page reads a file code wrote and computes nothing."
+        time = (
+            st.select_slider(
+                "Time of day",
+                options=list(times.values()),
+                value=times.get(first_tick, list(times.values())[-1]),
+            )
+            if ticks > 1
+            else ""
         )
+        tick = ticks_at[time] if ticks > 1 else 1
+        show_end = st.checkbox("Show the full five months", value=wanted_end in ON_VALUES)
+        st.caption(
+            f"One simulated five months, run {run['seed']} of the 20 in the results. Every figure "
+            "is computed by code. The reasons are the model's own words."
+        )
+        if stand_in:
+            st.caption("Reasons marked * are the stand-in's, not the model's.")
         st.caption("Contribution is room revenue minus the cost of servicing every room sold.")
     st.markdown(_tile_style("compact" if show_end else "large"), unsafe_allow_html=True)
     hotel = hotels.loc[hotels["name"] == name].iloc[0]
     key = hotel["key"]
     today = days.loc[days["as_of_day"] == day].iloc[0]
 
-    # ---- what became known today ----------------------------------------------------------------
-    moment = f", tick {tick} of {ticks}" if ticks > 1 else ""
-    st.subheader(f"{name}, {today['label']}{moment}")
+    # ---- the title and the strip, then what became known today ---------------------------------
+    clock = f" · {time}" if ticks > 1 else ""
+    st.subheader(f"{name} · {today['label']}{clock}")
+    with st.container(key="index"):  # the key names the day's number for STYLE's small text
+        st.caption(today["index"])
+    strip = rows(
+        "SELECT news, nights_flagged, recommendations, value_at_stake FROM strip "
+        "WHERE as_of_day = ? AND hotel = ? AND as_of_tick = ?",
+        day,
+        key,
+        tick,
+    ).iloc[0]
+    with st.container(key="strip"):  # the key names the strip for STYLE
+        tiles = st.columns([3, 1, 1, 1])  # the news tile wide enough for its 60 characters
+        first = strip["news"] if len(strip["news"]) <= 60 else f"{strip['news'][:59]}…"
+        tiles[0].metric("Today's news", first)
+        tiles[1].metric("Nights flagged", strip["nights_flagged"])
+        tiles[2].metric("Recommendations", strip["recommendations"])
+        tiles[3].metric("Value at stake today", strip["value_at_stake"])
     news = rows(
         "SELECT text FROM news WHERE as_of_day = ? AND hotel = ? AND as_of_tick <= ? "
         "ORDER BY as_of_tick, position",
@@ -260,8 +304,8 @@ def main() -> None:
         "comp_median": ("Comp set median", "orange", [1, 0]),
     }
     if not planned.empty:
-        decided_at = planned.iloc[0]["decided_at"]  # "tick 3 of 4" on a finer clock, else empty
-        label = f"Planned rate ({decided_at})" if decided_at else "Planned rate"
+        decided_at = planned.iloc[0]["decided_at"]  # "14:00" on a finer clock, else empty
+        label = f"Recommended rate (from {decided_at})" if decided_at else "Recommended rate"
         rate_lines["planned_rate"] = (label, "aqua", [6, 4])
     rate_series = _series(rate_lines)
     dollars = _y("dollars:Q", "Rate ($)")
@@ -299,7 +343,7 @@ def main() -> None:
     room_series = _series(
         {
             "rooms_on_books": ("Rooms on the books", "aqua", [1, 0]),
-            "pace": ("Pace curve", "orange", [1, 0]),
+            "pace": ("Usual pace", "orange", [1, 0]),
         }
     )
     rooms = (
@@ -313,20 +357,18 @@ def main() -> None:
             **room_series,
         )
     )
-    st.markdown(
-        f"**Stay dates ahead, {plain(today['stay_window'])}.** The red bands are the stay dates "
-        "the agent flagged today."
-    )
+    st.markdown(f"**Stay dates ahead, {plain(today['stay_window'])}.**")
     left, right = st.columns(2)
     height = PLOT_HEIGHTS["chart"]
     left.altair_chart(_sized(alt.layer(*layers), height), width="stretch")
     right.altair_chart(_sized(alt.layer(marks, rooms), height), width="stretch")
+    st.caption("The red bands are the stay dates flagged today.")
 
-    # ---- today's queue and the scorecard, side by side ----------------------------------------
+    # ---- today's recommendations and the scorecard, side by side ------------------------------
     queue = rows(
-        "SELECT stays, causes, plan, value_text, reason, outcome, queued, alternative, "
-        "alternative_text, since_last_change FROM queue WHERE as_of_day = ? AND hotel = ? "
-        "AND as_of_tick = ? ORDER BY position",
+        "SELECT stays, causes, reason, reason_source, outcome, queued, alternative, "
+        "alternative_text, since_last_change_text, headline, request_digest FROM queue "
+        "WHERE as_of_day = ? AND hotel = ? AND as_of_tick = ? ORDER BY position",
         day,
         key,
         tick,
@@ -334,20 +376,27 @@ def main() -> None:
     plans = queue.loc[queue["queued"]]
     held = queue.loc[~queue["queued"]]
     left, right = st.columns([5, 6])
-    with left.container(key="queue"):  # the key names the queue for STYLE's smaller text
-        st.markdown("**Today's queue**")
+    with left.container(key="queue"):  # the key names the panel for STYLE's smaller text
+        st.markdown("**Today's recommendations**")
         if plans.empty:
-            st.markdown("No plan was queued today.")
+            st.markdown("No recommendation today.")
         for plan in plans.itertuples():
-            words = plain(f"{plan.plan} for {plan.stays}, {plan.value_text}. ")
-            reason = plain(plan.reason, REASON_MARKS)
-            st.markdown(f"**{plan.outcome.capitalize()}:** {words}{reason}")
-            if plan.since_last_change:  # the stored request's own line, shown as written
-                st.markdown(f"**Since the last change:** {plain(plan.since_last_change)}")
+            held_by_model = "Held: " if plan.outcome == "declined" else ""
+            star = " *" if plan.reason_source == "template" else ""
+            st.markdown(f"**{held_by_model}{plain(plan.headline)}**")
+            st.markdown(
+                f"<small>Why</small> {plain(plan.reason, REASON_MARKS)}{star}",
+                unsafe_allow_html=True,
+            )
+            if plan.since_last_change_text:  # the stored request's own line, with dates
+                st.markdown(
+                    f"**Since our last change on these dates:** "
+                    f"{plain(plan.since_last_change_text)}"
+                )
         if held.empty:
-            st.markdown("No flag was held today.")
+            st.markdown("Nothing else needed a decision today.")
         else:
-            with st.expander(f"Held flags: {len(held)}", expanded=True):
+            with st.expander(f"Also looked at today: {len(held)} held", expanded=False):
                 for flag in held.itertuples():
                     st.markdown(
                         plain(
@@ -356,16 +405,16 @@ def main() -> None:
                         )
                     )
     with right:
-        st.markdown("**Scorecard, the agent run against the fixed-rate run**")
+        st.markdown("**So far this run: with the agent / without it**")
         stayed = rows(
-            "SELECT hotel, title, nights, position, measure, value_text, delta_text "
+            "SELECT hotel, title, night_count, position, measure, value_text, delta_text "
             "FROM scorecard WHERE as_of_day = ? AND hotel IN (?, ?) ORDER BY position",
             day,
             key,
             ALL,
         )
         outcome = rows(
-            "SELECT hotel, title, nights, position, measure, value_text, delta_text "
+            "SELECT hotel, title, night_count, position, measure, value_text, delta_text "
             "FROM outcome WHERE hotel IN (?, ?) ORDER BY position",
             key,
             ALL,
@@ -375,15 +424,24 @@ def main() -> None:
             final = outcome.loc[outcome["hotel"] == scope]
             title = final.iloc[0]["title"]
             if own.empty:
-                st.caption(f"{title}: nights already stayed, none yet")
+                st.caption(f"{title}: no nights stayed yet")
             else:
-                st.caption(f"{title}: nights already stayed, {own.iloc[0]['nights']}")
+                st.caption(f"{title}: {own.iloc[0]['night_count']} nights stayed")
                 _tiles(own)
             if show_end:
-                st.caption(f"Once every stay date is complete, {final.iloc[0]['nights']}")
+                st.caption(f"All five months: {final.iloc[0]['night_count']} nights")
                 _tiles(final)
         if show_end:
             _gain_line(rows, key, stay_date)
+
+    # ---- for engineers: the program's own words, closed by default -----------------------------
+    at = f", tick {tick} of {ticks}" if ticks > 1 else ""
+    with st.expander("For engineers", expanded=False):
+        st.markdown(f"Seed {run['seed']}. Day {day}{at}.")
+        st.markdown(plain(f"Market file: {run['market']}"))
+        for plan in plans.itertuples():
+            st.markdown(f"Request digest: {plan.request_digest}")
+        st.markdown(plain("This page reads a file demo_data.py wrote and computes nothing."))
 
 
 def _gain_line(rows, key: str, stay_date: alt.Tooltip) -> None:
@@ -424,10 +482,13 @@ def _gain_line(rows, key: str, stay_date: alt.Tooltip) -> None:
 
 def _tiles(frame) -> None:
     """One row of metric tiles, one per measure, each with the change against the fixed-rate
-    run. A change written "0" shows with no arrow."""
+    run. A change that reads as nothing, such as "0", draws no chip."""
     columns = st.columns(len(frame))
     for tile in frame.itertuples():
-        columns[tile.position].metric(tile.measure, tile.value_text, tile.delta_text)
+        nothing = tile.delta_text in ("0", "+0", "-0", "0.0%", "+0.0%", "-0.0%")
+        columns[tile.position].metric(
+            tile.measure, tile.value_text, None if nothing else tile.delta_text
+        )
 
 
 if __name__ == "__main__":
