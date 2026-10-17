@@ -10,9 +10,11 @@ them up). customers/harbour.toml is a second market with three hotels of other s
 
 On a finer clock the file may also say when its news lands within the day: the market's
 shop_ticks, one rate shop per tick named, each with its own noise; an event's or a cut's
-known_tick; and a [[filings]] table giving a filing's known_day and the tick it lands at. Each
-is optional, and a file without them lands its feeds where world.py's slots put them, so it
-reads as it did. customers/demo-intraday.toml is the demo market with such news inside the day.
+known_tick; and a [[filings]] table giving a filing's known_day and the tick it lands at. An
+event may also carry a rush, the share of its uplift that books by the end of the next day
+(demand.py). Each is optional, and a file without them lands its feeds where world.py's slots put
+them and books along the curve, so it reads as it did. customers/demo-intraday.toml is the demo
+market with such news inside the day.
 
 Both sides read it: the simulator to make the market, the agent to know its hotels and settings. The
 constants of the simulator itself, the calendar, the elasticity, the noise, the schedule and the
@@ -133,6 +135,9 @@ def _validate(path: Path | str, data: dict) -> None:
     for news in data.get("events", []) + data.get("rate_cuts", []):
         if "known_tick" in news:
             _tick(path, f"known_tick on day {news['known_day']}", news["known_tick"])
+    for event in data.get("events", []):
+        if "rush" in event:
+            _share(path, event, "rush")
     for event in data.get("events", []):
         unknown = set(event["hotels"]) - set(keys)
         if unknown:

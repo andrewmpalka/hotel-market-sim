@@ -47,6 +47,7 @@ the plans, the model's request and answer, and what the command writes.
 - Fields: Event(name, known_day, start_day, end_day, hotels, uplift, comp_rate_raise, known_tick) with covers(hotel_key, stay_day). It is defined at the boundary in [[MOD-17]], so the agent and the simulator share it.
 - Cut: RateCut(known_day, start_day, end_day, hotel, competitors, cut, known_tick) with covers(hotel_key, competitor, stay_day), in [[MOD-02]], the simulator's alone.
 - Ticks: known_tick is the tick of the known day the news lands at, optional in the file. An event's default is the day's last tick and a cut's the day's first shop (world.news_tick), so a file without ticks reads as it did.
+- Rush: an event's rush, 0 by default, is the share of its uplift that books by the end of the next day ([[DEC-71]]). The simulator alone reads it; the forecast never does.
 - Held in: Customer.events and Customer.rate_cuts ([[DAT-27]]), read from the market's customer file ([[DEC-69]]). The demo market's are [[SHK-01]] and [[SHK-03]].
 - Read by: [[MOD-03]] (the lookups), [[MOD-04]], [[MOD-05]], [[MOD-19]], which hands the events to the agent through [[DAT-25]]
 - Evidence: test_shocks_name_hotels_and_competitors_that_exist, test_convention_raises_downtown_demand_35_percent_on_days_45_to_48_from_day_10, test_the_lookups_read_the_customers_own_calendar

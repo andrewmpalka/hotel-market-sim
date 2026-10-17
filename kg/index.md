@@ -8,19 +8,19 @@ nodes and its words, len(text.split()) over the file.
 
 | File | Nodes | Words |
 | --- | ---: | ---: |
-| modules.md | 32 | 4,441 |
-| data.md | 33 | 4,652 |
+| modules.md | 32 | 4,456 |
+| data.md | 33 | 4,685 |
 | rules.md | 132 | 5,778 |
 | shocks.md | 7 | 813 |
 | concepts.md | 12 | 1,370 |
 | measures.md | 14 | 962 |
 | sources.md | 4 | 855 |
-| decisions.md | 70 | 10,396 |
+| decisions.md | 71 | 10,598 |
 | results.md | 44 | 7,438 |
 | forks.md | 14 | 2,037 |
 | unknowns.md | 16 | 2,164 |
-| every node file | 378 | 40,906 |
-| index.md | | 2,969 |
+| every node file | 379 | 41,156 |
+| index.md | | 2,983 |
 
 ## Modules (`modules.md`)
 
@@ -276,6 +276,7 @@ nodes and its words, len(text.split()) over the file.
 - DEC-54 [C] A learning agent can feed the fitted demand level into its forecast
 - DEC-55 [C] A rule-based control is the fair comparison
 - DEC-59 [C] The README names the competitors' raise as the convention's source of gain
+- DEC-71 [C] An event's rush books part of its uplift within two days
 - DEC-69 [C] The market's events and rate cuts live in the customer file
 
 ### Engineering

@@ -38,6 +38,10 @@ class Event:
     uplift: float  # 0.35 means demand is 35% higher
     comp_rate_raise: float  # 0.15 means those hotels' competitors charge 15% more
     known_tick: int | None = None  # the tick of the known day it is announced at; None is the last
+    # The share of the uplift that books in the ticks from the announcement to the end of the
+    # next day. The simulator's demand alone applies it (demand.rush_profile); the agent's
+    # forecast reads the uplift and never this, as a real forecast could not.
+    rush: float = 0.0
 
     def covers(self, hotel_key: str, stay_day: int) -> bool:
         return hotel_key in self.hotels and self.start_day <= stay_day <= self.end_day

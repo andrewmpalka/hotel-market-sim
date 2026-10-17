@@ -438,3 +438,57 @@ def test_a_rate_changed_at_a_tick_thins_or_tops_up_the_ticks_after_it():
         )
         * hotel.ceiling
     )
+
+
+def test_a_rush_books_part_of_an_events_uplift_within_two_days_and_the_same_total_by_the_night(
+    tmp_path,
+):
+    """At four ticks a day, with the convention's rush at 0.5, the two downtown hotels book more
+    rooms for the convention nights on the announcement day than with no rush, from the tick the
+    announcement lands, and the stay dates expect the same rooms by the night: the rush moves
+    half of the uplift's rooms into the announcement day and the next, evenly over those ticks,
+    and takes them off the curve. The market elasticity is 0 here so the only demand factor that
+    moves between the two runs is the rush. The agent's forecast reads the uplift and never the
+    rush."""
+    from hotel_market.customer import DEMO_FILE, load
+    from hotel_market.demand import rush_profile
+
+    text = (ROOT / DEMO_FILE).read_text()
+    path = tmp_path / "rush.toml"
+    raise_ = "comp_rate_raise = 0.15\n"
+    path.write_text(text.replace(raise_, raise_ + "rush = 0.5\n"))
+    rushed = load(path)
+    assert rushed.events[0].rush == 0.5 and DEMO.events[0].rush == 0.0
+    plain = simulate(7, last_day=48, ticks=4, market_elasticity=0.0)
+    quick = simulate(7, last_day=48, ticks=4, market_elasticity=0.0, customer=rushed)
+    rows = [DEMO.hotel(key).row for key in ("convention", "full-service")]
+    nights = slice(45, 49)
+    # Nothing moves before the announcement day, and the announcement day books more at its
+    # last tick, the convention's, with the rush than without, and more over the day.
+    assert (quick.tick_rooms[:10] == plain.tick_rooms[:10]).all()
+    at_tick_4 = (3, rows, nights)
+    assert quick.tick_rooms[10][at_tick_4].sum() > plain.tick_rooms[10][at_tick_4].sum() + 10
+    assert quick.daily_rooms[10][rows, nights].sum() > plain.daily_rooms[10][rows, nights].sum()
+    assert quick.daily_rooms[11][rows, nights].sum() > plain.daily_rooms[11][rows, nights].sum()
+    # The other hotels and the other nights book exactly what they booked.
+    others = [DEMO.hotel(key).row for key in ("lifestyle", "airport")]
+    assert (quick.tick_rooms[:, :, others] == plain.tick_rooms[:, :, others]).all()
+    assert (quick.daily_rooms[:, rows, :45] == plain.daily_rooms[:, rows, :45]).all()
+    # The profile sums to nothing over the days: what the rush adds, the curve gives up.
+    hotel = DEMO.hotel("convention")
+    for night in range(45, 49):
+        moved = 0.0
+        for day in range(10, night + 1):
+            removed, added = rush_profile(hotel, night, day, 4, rushed)
+            moved += sum(added.values()) - removed
+        assert moved == pytest.approx(0.0, abs=1e-9)
+        assert rush_profile(hotel, night, 9, 4, rushed) == (0.0, {})
+        assert rush_profile(hotel, night, 10, 4, DEMO) == (0.0, {})
+    # The announcement day adds one tick's worth at tick 4 and the next day four ticks' worth.
+    removed, added = rush_profile(hotel, 46, 10, 4, rushed)
+    assert set(added) == {4} and removed > 0
+    _, next_day = rush_profile(hotel, 46, 11, 4, rushed)
+    assert set(next_day) == {1} and next_day[1] == pytest.approx(4 * added[4])
+    # By the night the stay dates hold the same rooms within the draws' noise.
+    before, after = plain.rooms[rows, nights].sum(), quick.rooms[rows, nights].sum()
+    assert abs(after - before) < 0.05 * before

@@ -22,6 +22,12 @@ The default is 1.0, a market-wide rate rise losing demand in proportion, which t
 records and the command's --market-elasticity overrides. The agent is told the run's value
 (forecast.py), as it is told the share elasticity.
 
+An event's rush is the share of its uplift that books early: in the ticks from the announcement to
+the end of the next day, spread evenly over those ticks, with the rest of the uplift following the
+booking curve as every uplift does. rush_profile() gives the booking loop what the rush moves on
+a day. It is the simulator's alone: the agent's forecast reads the uplift from the events feed
+and nothing of the rush, because a real forecast would not know it either.
+
 Run `python -m hotel_market.demand` to print normal demand as occupancy by day of week.
 """
 
@@ -32,8 +38,8 @@ from types import MappingProxyType
 
 from hotel_market.customer import Customer, demo
 from hotel_market.schedule import DEFAULT_SCENARIO, Scenario, passenger_change
-from hotel_market.shocks import event_uplift
-from hotel_market.world import Hotel, weekday
+from hotel_market.shocks import event_uplift, events_as_of
+from hotel_market.world import TICKS_PER_DAY, Hotel, news_tick, weekday
 
 # A factor on the simulator's demand that the agent never sees; --demand-bias sets it per run.
 DEMAND_BIAS = 1.0
@@ -74,6 +80,42 @@ def expected_demand(
         * (1 + event_uplift(hotel.key, stay_day, as_of_day, customer))
         * median_ratio**-market_elasticity
     )
+
+
+def rush_profile(
+    hotel: Hotel,
+    stay_day: int,
+    day: int,
+    ticks: int = TICKS_PER_DAY,
+    customer: Customer | None = None,
+) -> tuple[float, dict[int, float]]:
+    """What the known events' rushes move on the day for a hotel and stay date, as shares of
+    the stay date's demand without events: the share the booking curve no longer books that day,
+    and the share each rush books from a tick of the day on, by that tick. An event with rush r,
+    announced on day a at tick t, books r of its uplift's remaining rooms, uplift x the curve's
+    share still to come from a, evenly over the ticks from (a, t) to the end of day a + 1, or to
+    the stay date's last tick when that comes first. The other 1 - r follows the curve. The two
+    sum to the uplift's share over the days, so the stay date expects the same rooms by the
+    night. Both are empty on a day no rushed event covers, and a file with no rush books as it
+    did."""
+    curve = hotel.curve
+    removed, added = 0.0, {}
+    for event in events_as_of(day, customer):
+        if not event.rush or not event.covers(hotel.key, stay_day):
+            continue
+        announced = event.known_day
+        remaining = event.uplift * (1 - curve(stay_day - announced + 1))
+        first_tick = news_tick(event.known_tick, ticks, ticks)
+        last_day = min(announced + 1, stay_day)
+        window = {announced: ticks - first_tick + 1}
+        if last_day > announced:
+            window[last_day] = ticks
+        removed += event.rush * event.uplift * (curve(stay_day - day) - curve(stay_day - day + 1))
+        if day in window:
+            tick = first_tick if day == announced else 1
+            share = event.rush * remaining * window[day] / sum(window.values())
+            added[tick] = added.get(tick, 0.0) + share
+    return removed, added
 
 
 def last_filing(as_of_day: int, scenario: Scenario = DEFAULT_SCENARIO) -> int:

@@ -36,7 +36,7 @@ which is also the order in which they depend on each other.
 
 ### MOD-04 [C] demand.py
 - File: src/hotel_market/demand.py
-- Owns: the simulator's demand per hotel and stay date as known on a day. The formula is rooms x base occupancy x weekday factor x passengers x events. Normal demand leaves out passengers and events.
+- Owns: the simulator's demand per hotel and stay date as known on a day: rooms x base occupancy x weekday factor x passengers x events. Normal demand leaves both out. rush_profile() is what a rush moves on a day ([[DEC-71]]).
 - Holds: the per-filing cache of passenger changes (last_filing, known_passenger_change), keyed by the run's scenario ([[DEC-53]]). The agent never reads this module. Its own demand model is [[MOD-18]], which matches it by construction.
 - Bias: DEMAND_BIAS multiplies both demands for the simulator alone ([[RUL-82]], [[DEC-50]]). MARKET_ELASTICITY scales expected demand by the median's level, and the agent is told it ([[RUL-87]], [[DEC-52]]).
 - Reads: [[MOD-01]], [[MOD-02]], [[MOD-03]], [[MOD-20]]
@@ -58,8 +58,8 @@ which is also the order in which they depend on each other.
 - File: src/hotel_market/bookings.py
 - Owns: the day-0 preload ([[DEC-03]]) and the Poisson quantile draw with one random number per draw ([[DEC-22]]). It also owns the Books ([[DAT-07]]) and simulate(), the loop over days 0 to 149.
 - Holds: the five measures [[MEA-01]] to [[MEA-05]] as Books methods. The daily log records what each draw took, at what rate and against which median. ELASTICITY ([[RUL-21]]) and BOOKING_STREAM ([[RUL-22]]) live here.
-- Calls: the agent after each of days 0 to 59 ([[DEC-05]]), or after each tick with --ticks ([[DEC-67]]); the estimator learns from the log ([[MOD-16]]).
-- Reads: [[MOD-01]], [[MOD-02]], [[MOD-04]], [[MOD-05]], [[MOD-20]]
+- Calls: the agent after each of days 0 to 59 ([[DEC-05]]), or after each tick with --ticks ([[DEC-67]]); the estimator learns from the log ([[MOD-16]]). Books._rushed() applies the rushes to a day's draw ([[DEC-71]]).
+- Reads: [[MOD-01]], [[MOD-02]], [[MOD-03]], [[MOD-04]], [[MOD-05]], [[MOD-20]]
 - Writes: [[DAT-07]]
 - Tests: tests/test_bookings.py
 - Evidence: test_same_seed_gives_the_same_books_and_another_seed_does_not, test_expected_new_bookings_follow_the_formula, test_a_rate_change_applies_from_the_next_day_and_touches_no_other_stay_date

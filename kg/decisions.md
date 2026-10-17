@@ -422,6 +422,15 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Evidence: test_the_raise_at_zero_keeps_the_uplift_and_puts_the_event_back
 - Links: [[RES-41]], [[RES-06]], [[SHK-01]], [[RUL-21]], [[MOD-29]], [[FRK-08]]
 
+### DEC-71 [C] An event's rush books part of its uplift within two days
+- Decided: an event in the customer file may carry a rush, the share of its uplift that books in the ticks from the announcement to the end of the next day, spread evenly over those ticks. The rest follows the curve as before.
+- Applied: demand.rush_profile() gives the booking loop the share the curve gives up on a day and the share each rush books from a tick on ([[MOD-04]], [[MOD-06]]). The two sum to the uplift's share, so the night expects the same rooms.
+- Agent: the forecast reads the uplift from the events feed and nothing of the rush ([[MOD-18]]), because a real forecast would not know it. The rush shows the agent only as rooms ahead of pace.
+- Replaces: nothing built; a rush of 0, the default, draws byte for byte what the loop drew.
+- Reason: the clock needs news that books within the day to act on. A close-in event whose demand lands in hours is the case a finer clock is for, and the demo market had none.
+- Evidence: test_a_rush_books_part_of_an_events_uplift_within_two_days_and_the_same_total_by_the_night, test_the_agent_never_reads_an_events_rush
+- Links: [[DAT-05]], [[DEC-67]], [[DEC-68]], [[MOD-04]], [[MOD-06]], [[MOD-18]]
+
 ### DEC-69 [C] The market's events and rate cuts live in the customer file
 - Decided: a customer file holds its events, each with the hotels it lifts and by how much, and its competitor rate cuts, each with the hotel it hits ([[DAT-05]], [[DAT-27]]). shocks.py keeps the lookups and takes the customer.
 - Replaces: EVENTS and RATE_CUTS as constants in shocks.py, which named the demo market's hotel keys and competitors.

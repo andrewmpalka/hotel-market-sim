@@ -35,6 +35,11 @@ fixed-rate run books the same rooms per hotel and stay date at every N. A rate c
 applies from tick t+1: the bookings still to come that day are thinned, or topped up, in
 proportion to the simulator's demand response at the new rate, (new / old) ** -ELASTICITY.
 
+An event with a rush (demand.rush_profile) books part of its uplift early. The day's draw takes
+the rushed share off the curve's rooms and adds what the rush books from tick 1, and the rooms
+it books from a later tick of the announcement day are added to the ticks from that one on, by
+a Poisson draw from the hotel's tick stream. A file with no rush draws exactly as before.
+
 The books also keep a daily log of what each draw took, at what rate and against which competitor
 median. The agent can learn from the bookings it has seen (estimate.py). It reads nothing it did
 not know on the day.
@@ -51,8 +56,9 @@ from collections.abc import Callable, Sequence
 import numpy as np
 
 from hotel_market.customer import Customer, demo
-from hotel_market.demand import DEMAND_BIAS, expected_demand, normal_demand
+from hotel_market.demand import DEMAND_BIAS, expected_demand, normal_demand, rush_profile
 from hotel_market.schedule import DEFAULT_SCENARIO, HORIZON_DAYS, Scenario, with_churn
+from hotel_market.shocks import event_uplift
 from hotel_market.shops import REACTION_LAG, comp_median
 from hotel_market.world import SIM_DAYS, TICKS_PER_DAY, Hotel, shop_landings, stay_window
 
@@ -230,6 +236,7 @@ class Books:
                 mean = np.array(
                     [self.expected_new_bookings(hotel, s, day, m) for s, m in zip(window, medians)]
                 )
+                mean, later = self._rushed(hotel, day, window, medians, mean)
                 wanted = poisson_draw(self._daily_luck[day, i, stays], mean)
                 self.daily_rates[day, i, stays] = self.rates[i, stays]
                 self.daily_medians[day, i, stays] = medians
@@ -242,6 +249,11 @@ class Books:
                         [self.seed, TICK_STREAM, *hotel.key.encode(), day]
                     )
                     self._planned[:, i, stays] = self._split(self._split_rng[i], wanted)
+                    for first, rooms in later.items():  # a rush landing after tick 1
+                        ticks_left = self.ticks - first + 1
+                        self._planned[first - 1 :, i, stays] += self._split_rng[i].poisson(
+                            rooms / ticks_left, size=(ticks_left, len(stays))
+                        )
                     planned = self._planned[0, i, stays]
             else:
                 planned = self._planned[tick - 1, i, stays]
@@ -251,6 +263,37 @@ class Books:
             self.daily_rooms[day, i, stays] += taken
             self.tick_rooms[day, tick - 1, i, stays] = taken
             self.tick_rates[day, tick - 1, i, stays] = self.rates[i, stays]
+
+    def _rushed(
+        self, hotel: Hotel, day: int, window: range, medians: list[float], mean: np.ndarray
+    ) -> tuple[np.ndarray, dict[int, np.ndarray]]:
+        """The day's means with the known events' rushes applied (demand.rush_profile): each stay
+        date's mean less the rushed share the curve no longer books, plus what the rushes book
+        from tick 1; and the rooms they book from a later tick on, by that tick, for the ticks
+        after it. Each share is of the stay date's demand without events, at the day's price
+        response. The means come back untouched when no rushed event covers the window."""
+        profiles = [
+            rush_profile(hotel, s, day, self.ticks, self.customer)
+            if any(e.rush and e.covers(hotel.key, s) for e in self.customer.events)
+            else (0.0, {})
+            for s in window
+        ]
+        if not any(removed or added for removed, added in profiles):
+            return mean, {}
+        later: dict[int, np.ndarray] = {}
+        mean = mean.copy()
+        for at, ((removed, added), stay, median) in enumerate(zip(profiles, window, medians)):
+            if not removed and not added:
+                continue
+            uplift = event_uplift(hotel.key, stay, day, self.customer)
+            without_events = (
+                mean[at] / (1 + uplift) / (hotel.curve(stay - day) - hotel.curve(stay - day + 1))
+            )
+            mean[at] += without_events * (added.get(1, 0.0) - removed)
+            for tick, share in added.items():
+                if tick > 1:
+                    later.setdefault(tick, np.zeros(len(window)))[at] = without_events * share
+        return mean, later
 
     def _split(self, rng: np.random.Generator, wanted: np.ndarray) -> np.ndarray:
         """Each stay date's bookings assigned to the day's ticks, one draw per booking from the

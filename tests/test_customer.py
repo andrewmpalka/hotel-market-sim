@@ -298,6 +298,13 @@ def test_a_file_may_name_the_ticks_its_news_lands_at(tmp_path):
             load(_with_ticks(tmp_path, bad[:1], *bad[1:]))
     with pytest.raises(ValueError, match="names no tick"):
         load(_with_ticks(tmp_path, [], 2, 3, 1))
+    # An event's rush is a share, 0 by default.
+    _refused(tmp_path, "comp_rate_raise = 0.15\n", "comp_rate_raise = 0.15\nrush = 1.5\n", "rush")
+    text = (ROOT / DEMO_FILE).read_text()
+    (tmp_path / "rush.toml").write_text(
+        text.replace("comp_rate_raise = 0.15\n", "comp_rate_raise = 0.15\nrush = 0.5\n")
+    )
+    assert load(tmp_path / "rush.toml").events[0].rush == 0.5 and DEMO.events[0].rush == 0.0
 
 
 def test_the_default_file_runs_as_before_with_its_ticks_spelled_out(tmp_path):

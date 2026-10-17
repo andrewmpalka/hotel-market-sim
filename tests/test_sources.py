@@ -401,3 +401,11 @@ def test_news_lands_at_the_ticks_the_customer_file_names(tmp_path):
         sources.shops.competitor_rates(10, convention, 46, 1)
     )
     assert daily.schedules.seats(20)[55] == 4964
+
+
+def test_the_agent_never_reads_an_events_rush():
+    """The rush is the simulator's: the agent's modules never read it, so their forecast sees
+    the uplift the events feed carries and nothing of when it books."""
+    for name in AGENT_MODULES:
+        source = (Path(hotel_market.__file__).parent / f"{name}.py").read_text()
+        assert "rush" not in source, f"{name}.py reads the rush"
