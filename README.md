@@ -185,9 +185,9 @@ On the concert nights the daily loop sells 104 rooms at the old rate before
 it can raise; the four-tick loop sells 30. The agent is the same code with
 the same thresholds on both markets. The difference is the news.
 
-![The lifestyle hotel on day 25, tick 2](docs/images/day25.png)
+![The lifestyle hotel on day 25 at 11:00](docs/images/day25.png)
 
-*Day 25 at the lifestyle hotel, 11:00: the concert announced an hour ago, the
+*Day 25 at the lifestyle hotel, 11:00: the concert just announced, the
 recommendation, and the model's reason.*
 
 Details: [the clock](docs/results.md#the-clock-one-tick-a-day-against-four),
