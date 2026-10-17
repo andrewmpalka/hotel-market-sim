@@ -46,6 +46,15 @@ def test_a_page_is_too_tall_when_its_content_passes_the_window_or_it_scrolls(scr
     assert set(screenshots.PAGES) < set(
         (hotel, day) for hotel in screenshots.HOTELS for day in screenshots.DAYS
     )
+    # On a finer clock the pages are every hotel on four days at every tick, in both states.
+    daily = screenshots.pages()
+    assert len(daily) == 4 * 7 * 2 and daily[0] == ("convention", 10, 1, "off", "")
+    assert daily[1] == ("convention", 10, 1, "on", "&end=1")
+    intraday = screenshots.pages(4)
+    assert screenshots.INTRADAY_DAYS == (20, 25, 30, 45) and len(intraday) == 4 * 4 * 4 * 2
+    assert intraday[0] == ("convention", 20, 1, "off", "&tick=1")
+    assert intraday[1] == ("convention", 20, 1, "on", "&tick=1&end=1")
+    assert intraday[-1] == ("airport", 45, 4, "on", "&tick=4&end=1")
 
 
 def test_every_checked_page_fits_the_window_and_six_are_saved(screenshots, demo_file, tmp_path):
@@ -55,15 +64,15 @@ def test_every_checked_page_fits_the_window_and_six_are_saved(screenshots, demo_
     if browser is None:
         pytest.skip("no Chromium-based browser found")
     results = screenshots.shoot(demo_file, tmp_path / "shots", browser)
-    assert [(hotel, day, state) for hotel, day, state, _, _ in results] == [
-        (hotel, day, state)
+    assert [(hotel, day, tick, state) for hotel, day, tick, state, _, _ in results] == [
+        (hotel, day, 1, state)
         for hotel in screenshots.HOTELS
         for day in screenshots.DAYS
         for state, _ in screenshots.STATES
     ]
-    assert results[0][4].name == "convention-day10.png"
-    assert results[1][4].name == "convention-day10-end.png"
-    for hotel, day, state, measured, path in results:
+    assert results[0][5].name == "convention-day10.png"
+    assert results[1][5].name == "convention-day10-end.png"
+    for hotel, day, _, state, measured, path in results:
         if (hotel, day) in screenshots.PAGES:
             assert path.exists() and path.stat().st_size > 10_000
         else:
@@ -94,3 +103,26 @@ def test_a_page_that_does_not_render_prints_the_servers_log(screenshots, tmp_pat
     out = capsys.readouterr().out
     assert "did not render" in out and "server.log" in out and "hotels" in out
     assert (tmp_path / "shots" / screenshots.SERVER_LOG).exists()
+
+
+def test_the_intraday_pages_fit_the_window_at_every_tick_and_nothing_is_saved(
+    screenshots, demo_file_intraday, tmp_path
+):
+    # The lifestyle hotel's day 25 at each of four ticks, in both states, stands in for the
+    # script's full intraday check, which make screenshots runs. Needs a browser; skipped
+    # without one.
+    pytest.importorskip("streamlit")
+    browser = screenshots.find_browser()
+    if browser is None:
+        pytest.skip("no Chromium-based browser found")
+    results = screenshots.shoot(
+        demo_file_intraday, tmp_path / "shots", browser, ticks=4, wanted=[("lifestyle", 25)]
+    )
+    assert [(tick, state) for _, _, tick, state, _, _ in results] == [
+        (tick, state) for tick in (1, 2, 3, 4) for state, _ in screenshots.STATES
+    ]
+    for hotel, day, tick, state, measured, path in results:
+        assert (hotel, day) == ("lifestyle", 25) and path is None
+        assert measured["window"] == 900 and measured["metrics"] == (20 if state == "on" else 10)
+        assert not screenshots.too_tall(measured), (tick, state, measured)
+    assert [file.name for file in (tmp_path / "shots").iterdir()] == [screenshots.SERVER_LOG]

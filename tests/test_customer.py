@@ -270,15 +270,18 @@ def test_the_customer_variable_names_the_default_file(tmp_path, monkeypatch):
 
 
 def _with_ticks(tmp_path, shop_ticks, event_tick, cut_tick, filing_tick):
-    """A copy of the demo file that names the ticks its news lands at."""
+    """A copy of the demo file that names the ticks its news lands at; the event keeps no tick
+    when event_tick is None."""
     text = (ROOT / DEMO_FILE).read_text()
     assert text.count("elasticity = 1.0\n") == 1
     text = (
-        text.replace("elasticity = 1.0\n", f"elasticity = 1.0\nshop_ticks = {list(shop_ticks)}\n")
-        .replace("known_day = 10\n", f"known_day = 10\nknown_tick = {event_tick}\n")
-        .replace("known_day = 30\n", f"known_day = 30\nknown_tick = {cut_tick}\n")
+        text.replace(
+            "elasticity = 1.0\n", f"elasticity = 1.0\nshop_ticks = {list(shop_ticks)}\n"
+        ).replace("known_day = 30\n", f"known_day = 30\nknown_tick = {cut_tick}\n")
         + f"\n[[filings]]\nknown_day = 20\ntick = {filing_tick}\n"
     )
+    if event_tick is not None:
+        text = text.replace("known_day = 10\n", f"known_day = 10\nknown_tick = {event_tick}\n")
     path = tmp_path / "ticks.toml"
     path.write_text(text)
     return path
@@ -310,11 +313,13 @@ def test_a_file_may_name_the_ticks_its_news_lands_at(tmp_path):
 
 def test_the_default_file_runs_as_before_with_its_ticks_spelled_out(tmp_path):
     """A copy of the demo file that names the ticks the file defaults to, the shop at slot 2, the
-    filing at tick 3, the convention at the day's last tick and the cut in the day's first shop,
-    books the same rooms and writes the same decisions file byte for byte, at one tick a day and
-    at four. The clock lands a named tick 4 at tick 1 of a one-tick day, as it lands a slot."""
-    spelled = load(_with_ticks(tmp_path, [2], 4, 1, 3))
+    filing at tick 3, the cut in the day's first shop and, at one tick a day, the convention at
+    tick 4, which the clock lands at the day's one tick as it lands a slot, books the same rooms
+    and writes the same decisions file byte for byte. At four ticks the convention keeps no
+    tick, because a tick named for an event also moves its comp set's raise to that tick's shop,
+    where an event with no tick raises the rates in every shop of its day, as the demo does."""
     for ticks in (1, 4):
+        spelled = load(_with_ticks(tmp_path, [2], 4 if ticks == 1 else None, 1, 3))
         fixed, books, _ = run(7, tmp_path / f"demo{ticks}.jsonl", tmp_path / "a", ticks=ticks)
         named, named_books, _ = run(
             7, tmp_path / f"named{ticks}.jsonl", tmp_path / "b", customer=spelled, ticks=ticks

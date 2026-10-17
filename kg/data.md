@@ -299,10 +299,10 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-33 [C] The demo file
 - File: sql/demo.sql
-- Tables: eight from sql/demo.sql beside the eight stored tables ([[DAT-28]]), and run (seed, reason_source), which demo_data.py creates for the sidebar. Every date reads as "Thu 18 Feb [45]" ([[DEC-58]]).
-- Hotels and days: hotels (position, key, name, rooms, start_rate, rate_axis_low, rate_axis_high). days (as_of_day, label, stay_window). news (as_of_day, hotel, position, kind, text) holds what became known, and one row says nothing did.
-- Chart: stay_dates (as_of_day, hotel, stay_day, label, tick, rate, comp_median, rooms_on_books, pace, flagged, causes, flag, planned_rate, decided_at), one row per stay date in the window. planned_rate is NULL without an accepted plan.
-- Queue: queue (as_of_day, hotel, position, stays, causes, plan, value, value_text, reason, reason_source, queued, outcome, alternative, alternative_text, since_last_change). A held flag names its best alternative.
+- Tables: eight from sql/demo.sql beside the eight stored tables ([[DAT-28]]), and run (seed, reason_source, ticks), which demo_data.py creates for the sidebar. Every date reads as "Thu 18 Feb [45]" ([[DEC-58]]).
+- Hotels and days: hotels (position, key, name, rooms, start_rate, rate_axis_low, rate_axis_high). days (as_of_day, label, stay_window). news (as_of_day, hotel, as_of_tick, position, kind, text) is what became known, by tick.
+- Chart: stay_dates (as_of_day, hotel, as_of_tick, stay_day, label, tick, rate, comp_median, rooms_on_books, pace, flagged, causes, flag, planned_rate, decided_at), one row per stay date in the window, per tick as of it.
+- Queue: queue (as_of_day, hotel, as_of_tick, position, stays, causes, plan, value, value_text, reason, reason_source, queued, outcome, alternative, alternative_text, since_last_change), each tick's flags under its tick.
 - Read-back: since_last_change is the stored request's earlier changes on a queued plan's stay dates, as it lists them ([[DEC-45]]), and empty for a held flag or when it listed none. The page shows it under "Since the last change".
 - Scorecard: scorecard (as_of_day, hotel, title, nights, position, measure, agent, fixed, delta, value_text, delta_text) for the nights already stayed, none on day 0. outcome holds the same tiles once every stay date is complete.
 - Gains: gains (hotel, title, stay_day, label, tick, agent, fixed, difference), the contribution by stay date once complete. The scorecard tables hold each hotel and all together, under the key all ([[RUL-107]]).

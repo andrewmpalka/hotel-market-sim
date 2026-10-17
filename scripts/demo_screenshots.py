@@ -7,11 +7,15 @@ is taller than the window.
 
     python scripts/demo_screenshots.py                       # demo.duckdb, screenshots/
     python scripts/demo_screenshots.py --file FILE --out DIR
+    python scripts/demo_screenshots.py --file demo-intraday.duckdb --ticks 4 --out screenshots
 
-The pages saved are the convention hotel on day 10, the airport hotel on day 20 and the
-full-service hotel on day 30, in both states; nothing else is written beside them but the
-server's log. The script starts the page's Streamlit server on a free port, drives the browser
-headless over the DevTools pipe, and needs no package beyond the standard library and Streamlit.
+With --ticks N, for a file written on a finer clock, it measures every hotel on days 20, 25, 30
+and 45 at every tick of the day (&tick=t), in both states, and saves nothing; only the server's
+log is written. The pages saved on the daily clock are the convention hotel on day 10, the
+airport hotel on day 20 and the full-service hotel on day 30, in both states; nothing else is
+written beside them but the server's log. The script starts the page's Streamlit server on a
+free port, drives the browser headless over the DevTools pipe, and needs no package beyond the
+standard library and Streamlit.
 The browser is the first found of: the path in HOTEL_MARKET_BROWSER, a Chromium under
 /Applications or in Playwright's cache, Google Chrome, or a chromium or chrome on the PATH. The
 content height is the bottom edge of the page's main block, the title to the scorecard, which
@@ -32,6 +36,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from collections.abc import Sequence
 from itertools import product
 from pathlib import Path
 
@@ -40,6 +45,7 @@ PAGE = ROOT / "src" / "hotel_market" / "demo_page.py"
 WIDTH, HEIGHT = 1440, 900
 HOTELS = ("convention", "full-service", "lifestyle", "airport")  # the demo market's hotel keys
 DAYS = (10, 18, 20, 23, 30, 34, 40)  # every hotel's page is measured on these days
+INTRADAY_DAYS = (20, 25, 30, 45)  # on a finer clock, these days at every tick
 PAGES = (("convention", 10), ("airport", 20), ("full-service", 30))  # (hotel key, day): saved
 STATES = (("off", ""), ("on", "&end=1"))  # the end-of-run result: its name, and its query string
 BROWSER_VARIABLE = "HOTEL_MARKET_BROWSER"
@@ -256,12 +262,29 @@ def tail(log: Path, size: int = 4000) -> str:
     return log.read_text(errors="replace")[-size:] if log.exists() else ""
 
 
+def pages(ticks: int = 1) -> list[tuple[str, int, int, str, str]]:
+    """The pages to measure, as (hotel key, day, tick, state, query string): every hotel on DAYS in
+    both states on the daily clock, and on INTRADAY_DAYS at every tick of the day with ticks."""
+    if ticks == 1:
+        return [(h, d, 1, s, q) for h, d, (s, q) in product(HOTELS, DAYS, STATES)]
+    return [
+        (h, d, t, s, f"&tick={t}{q}")
+        for h, d, t, (s, q) in product(HOTELS, INTRADAY_DAYS, range(1, ticks + 1), STATES)
+    ]
+
+
 def shoot(
-    file: Path, out: Path, browser_path: str, timeout: float = RENDER_TIMEOUT
-) -> list[tuple[str, int, str, dict, Path | None]]:
-    """Each checked page's measurements, with the end-of-run result off and on, and its screenshot
-    path when it is one of PAGES. A page that does not render in the timeout stops the run, after
-    the server's log is printed."""
+    file: Path,
+    out: Path,
+    browser_path: str,
+    timeout: float = RENDER_TIMEOUT,
+    ticks: int = 1,
+    wanted: Sequence[tuple[str, int]] | None = None,
+) -> list[tuple[str, int, int, str, dict, Path | None]]:
+    """Each checked page's measurements, by hotel, day, tick and the end-of-run result's state,
+    and its screenshot path when it is one of PAGES on the daily clock. `wanted` keeps only
+    those (hotel, day) pages, for a test. A page that does not render in the timeout stops the
+    run, after the server's log is printed."""
     out.mkdir(parents=True, exist_ok=True)
     port = free_port()
     log = out / SERVER_LOG
@@ -270,7 +293,9 @@ def shoot(
     results = []
     try:
         browser = Browser(browser_path)
-        for hotel, day, (state, query) in product(HOTELS, DAYS, STATES):
+        for hotel, day, tick, state, query in pages(ticks):
+            if wanted is not None and (hotel, day) not in wanted:
+                continue
             url = f"http://127.0.0.1:{port}/?hotel={hotel}&day={day}{query}"
             try:
                 measured = browser.open(url, timeout)
@@ -278,10 +303,10 @@ def shoot(
                 print(f"{url} did not render. The server's log, {log}, says:\n{tail(log)}")
                 raise
             path = None
-            if (hotel, day) in PAGES:
+            if ticks == 1 and (hotel, day) in PAGES:
                 path = out / f"{hotel}-day{day}{'-end' if query else ''}.png"
                 browser.screenshot(path)
-            results.append((hotel, day, state, measured, path))
+            results.append((hotel, day, tick, state, measured, path))
     finally:
         if browser is not None:
             browser.close()
@@ -299,7 +324,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--out", type=Path, default=Path("screenshots"), help="where the screenshots go"
     )
+    parser.add_argument(
+        "--ticks",
+        type=int,
+        default=1,
+        metavar="N",
+        help="the ticks a day the file was written on: with more than one, measure every hotel "
+        "on days 20, 25, 30 and 45 at every tick, and save nothing (default 1)",
+    )
     args = parser.parse_args(argv)
+    if args.ticks < 1:
+        parser.error("--ticks: a day has one tick or more")
     if not args.file.exists():
         print(f"{args.file} is not there. Run: hotel-market demo-data --seed 7 --out {args.file}")
         return 2
@@ -308,15 +343,17 @@ def main(argv: list[str] | None = None) -> int:
         print(f"No Chromium-based browser found; set {BROWSER_VARIABLE} to one.")
         return 2
     print(f"Browser: {browser_path}")
-    results = shoot(args.file, args.out, browser_path)
-    for hotel, day, state, measured, path in results:
+    results = shoot(args.file, args.out, browser_path, ticks=args.ticks)
+    for hotel, day, tick, state, measured, path in results:
         verdict = "too tall" if too_tall(measured) else "fits"
+        at = f" tick {tick} of {args.ticks}," if args.ticks > 1 else ""
         print(
-            f"{hotel} day {day}, end-of-run result {state}: content {measured['content']} px "
+            f"{hotel} day {day},{at} end-of-run result {state}: content {measured['content']} px "
             f"of {measured['window']} ({verdict}){f', {path}' if path else ''}"
         )
-    hotel, day, state, measured, _ = max(results, key=lambda result: result[3]["content"])
-    print(f"Tallest: {hotel} day {day}, end-of-run result {state}, {measured['content']} px")
+    hotel, day, tick, state, measured, _ = max(results, key=lambda result: result[4]["content"])
+    at = f" tick {tick} of {args.ticks}," if args.ticks > 1 else ""
+    print(f"Tallest: {hotel} day {day},{at} end-of-run result {state}, {measured['content']} px")
     return 1 if any(too_tall(measured) for *_, measured, _ in results) else 0
 
 

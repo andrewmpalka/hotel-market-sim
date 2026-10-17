@@ -432,11 +432,10 @@ def test_at_four_ticks_the_news_names_each_feeds_tick_and_the_filings_outcome(de
         "SELECT kind, text FROM news WHERE as_of_day = 10 AND hotel = 'convention' "
         "ORDER BY position",
     )
-    assert [kind for kind, _ in day10] == [
-        "comp set",
-        "event",
-    ]  # the shop lands at tick 2, the event at tick 4
+    # The shop lands at tick 2 and the event at tick 4; the event's day closes with its outcome.
+    assert [kind for kind, _ in day10] == ["comp set", "event", "decision"]
     assert "at tick 2 of 4" in day10[0][1] and "was announced at tick 4 of 4" in day10[1][1]
+    assert day10[2][1].startswith("The first flag rose at tick 4 of 4")
     assert _rows(out, "SELECT DISTINCT text FROM news WHERE as_of_day = 0") == [(NOTHING_NEW,)]
     assert _rows(out, "SELECT COUNT(*) FROM news WHERE text = ?", NOTHING_NEW)[0][0] <= SIM_DAYS * 4
     planned = _rows(
@@ -465,3 +464,55 @@ def test_at_one_tick_a_day_the_demo_file_has_no_tick_in_it(demo_file):
     assert _rows(demo_file, "SELECT COUNT(*) FROM news WHERE text LIKE '%tick%'") == [(0,)]
     assert _rows(demo_file, "SELECT DISTINCT decided_at FROM stay_dates") == [("",)]
     assert _rows(demo_file, "SELECT DISTINCT kind FROM news WHERE kind = 'decision'") == []
+    assert _rows(demo_file, "SELECT ticks FROM run") == [(1,)]
+    for table in ("news", "stay_dates", "queue"):
+        assert _rows(demo_file, f"SELECT DISTINCT as_of_tick FROM {table}") == [(1,)]
+
+
+def test_the_intraday_file_holds_each_ticks_news_queue_and_chart_rows(demo_file_intraday):
+    """On the intraday market at four ticks a day, the run table says four, each news row names
+    the tick its news landed at, the queue holds each tick's flags under that tick, and the chart
+    rows come once per tick as of it. On day 25 the lifestyle hotel's concert lands at tick 2
+    with the raise accepted at the same tick, the outcome line lands at tick 4, and tick 1 has
+    nothing yet; the day-20 filing lands at tick 1 and the day-45 repricing at tick 3."""
+    out = demo_file_intraday
+    assert _rows(out, "SELECT ticks FROM run") == [(4,)]
+    news = _rows(
+        out,
+        "SELECT as_of_tick, kind, text FROM news WHERE as_of_day = 25 AND hotel = 'lifestyle' "
+        "ORDER BY position",
+    )
+    assert [(tick, kind) for tick, kind, _ in news] == [(2, "event"), (4, "decision")]
+    assert news[0][2].startswith(
+        "An event, the concert, was announced at tick 2 of 4 for Thu 4 Feb [31] to Fri 5 Feb [32]."
+    )
+    assert news[1][2].startswith(
+        "The first flag rose at tick 2 of 4, and the first raise was accepted at tick 2 of 4 for "
+        "Thu 4 Feb [31] to Fri 5 Feb [32]; those stay dates earned "
+    )
+    queue = _rows(
+        out,
+        "SELECT as_of_tick, position, plan, outcome FROM queue WHERE as_of_day = 25 AND "
+        "hotel = 'lifestyle' ORDER BY as_of_tick, position",
+    )
+    assert queue == [(2, 0, "raise 10% on Thu, Fri", "accepted")]
+    charts = _rows(
+        out,
+        "SELECT as_of_tick, COUNT(*), MAX(planned_rate), MAX(decided_at) FROM stay_dates "
+        "WHERE as_of_day = 25 AND hotel = 'lifestyle' GROUP BY as_of_tick ORDER BY as_of_tick",
+    )
+    assert charts == [
+        (1, 90, None, ""),
+        (2, 90, 264.0, "tick 2 of 4"),
+        (3, 90, 264.0, "tick 2 of 4"),
+        (4, 90, 264.0, "tick 2 of 4"),
+    ]
+    landed = "SELECT as_of_tick FROM news WHERE as_of_day = ? AND hotel = ? AND kind = ?"
+    assert _rows(out, landed, 20, "airport", "schedule") == [(1,)]
+    assert _rows(out, landed, 45, "lifestyle", "event") == [(3,)]
+    # Every tick of every day has its chart rows for every hotel, and a day with no news holds
+    # one row saying so, at tick 1.
+    assert _rows(out, "SELECT COUNT(DISTINCT (as_of_day, hotel, as_of_tick)) FROM stay_dates") == [
+        (60 * 4 * 4,)
+    ]
+    assert _rows(out, "SELECT DISTINCT as_of_tick FROM news WHERE kind = 'none'") == [(1,)]

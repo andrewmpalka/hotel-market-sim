@@ -250,7 +250,7 @@ which is also the order in which they depend on each other.
 ### MOD-26 [C] demo_data.py
 - File: src/hotel_market/demo_data.py
 - Owns: the demo file ([[DAT-33]], [[DEC-57]], [[DEC-58]]), at one tick a day or at --ticks N. build() runs days 0 to 59 through run_days ([[MOD-12]]) with the recorded run's client, or the template with a warning; both book to day 149.
-- Rows: _news_rows, _stay_rows and _queue_rows fill the day's tables from the feeds, the detect numbers and the entries ([[MOD-07]], [[MOD-11]]). _queue_rows copies the request's earlier changes; _alternative names a held flag's best one.
+- Rows: _news_texts, _stay_rows and _queue_rows fill the tables per moment from the feeds, the detect numbers and the entries ([[MOD-07]], [[MOD-11]]); _add_outcomes closes a filing's or event's day. _alternative names a held flag's best.
 - Scorecard: figures() gives the five measures over hotels and stay dates together ([[MEA-01]] to [[MEA-05]]). _stayed takes stay dates 0 to the day before, _outcome_rows every stay date, and _gain_rows the contribution by stay date.
 - Dates: stay_label, stay_span and day_label write a date as "Thu 18 Feb [45]" from SIM_START ([[RUL-01]]). tiles(), value_text and delta_text write the tiles' texts; a change that rounds to nothing is "0".
 - Holds: DEMO_FILE, DEMO_SCHEMA_FILE and RECORDED_RUNS, the paths, and DEMO_TABLES, NOTHING_NEW, ALL, MEASURES, RATE_AXIS, GAIN_TICK_DAYS and NUMBER_WORDS ([[RUL-103]], [[RUL-104]], [[RUL-107]] to [[RUL-111]]).
@@ -259,23 +259,23 @@ which is also the order in which they depend on each other.
 
 ### MOD-27 [C] demo_page.py
 - File: src/hotel_market/demo_page.py
-- Owns: the read-only demo page ([[DEC-57]], [[DEC-58]]), a Streamlit app over [[DAT-33]]. The sidebar picks a hotel and a day, a checkbox shows the end-of-run result, and a caption reads the file's seed and reason source.
+- Owns: the read-only demo page ([[DEC-57]], [[DEC-58]]) over [[DAT-33]]. The sidebar picks a hotel, a day and, on a file with several ticks, a tick, the day's last by default; the page shows the state as of it ([[RUL-133]], [[RUL-134]]).
 - Charts: our rate, the comp set median and an accepted plan's rate as a dashed aqua line, then the rooms on the books against the pace curve, side by side. The planned rate joins the legend only on a day with an accepted plan.
 - Queue: each queued plan with its reason and, where the stored request listed earlier changes on its dates, that line last under "Since the last change"; then the held flags open. Its text is a size smaller, so three plans fit.
 - Scorecard: the nights already stayed for the hotel and for all together, as five large tiles each. With the checkbox on, the complete outcome's tiles follow each, in a compact size, and then the small line of the contribution difference.
-- Holds: the file, parameter, plot, tile, colour and mark constants, FILE_VARIABLE to REASON_MARKS ([[RUL-105]], [[RUL-106]], [[RUL-112]] to [[RUL-123]]), and STYLE.
+- Holds: the file, parameter, plot, tile, colour and mark constants, FILE_VARIABLE to REASON_MARKS ([[RUL-105]], [[RUL-106]], [[RUL-112]] to [[RUL-123]], [[RUL-133]], [[RUL-134]]), and STYLE.
 - Reads: nothing in the package; streamlit, altair and duckdb only, the optional extra demo. The page computes nothing, and a test parses it for an arithmetic operator or an aggregate call. Tests: tests/test_demo_page.py.
 - Evidence: test_the_page_imports_nothing_from_the_package_or_the_simulator, test_the_page_does_no_arithmetic_on_a_figure, test_the_page_shows_the_airport_hotel_on_day_20, test_a_reason_with_two_dollar_amounts_shows_both_as_written
 
 ### MOD-28 [C] scripts/demo_screenshots.py
 - File: scripts/demo_screenshots.py
 - Owns: the check that the demo page fits one window ([[DEC-58]]). It starts the page's server on a free loopback port, opens each page in a headless Chromium-based browser at 1440 by 900, and measures it.
-- Pages: HOTELS and DAYS name the pages measured: every hotel on days 10, 18, 20, 23, 30, 34 and 40, each with the end-of-run result off and on. PAGES names the six saved as screenshots. The command fails when a page is taller.
+- Pages: pages() is every hotel on DAYS, 10, 18, 20, 23, 30, 34 and 40, in both states, or with --ticks N every hotel on INTRADAY_DAYS, 20, 25, 30 and 45, at every tick. PAGES names the six daily pages saved. A taller page fails it.
 - Browser: find_browser() takes the path in HOTEL_MARKET_BROWSER, else the first of BROWSERS found: a Chromium under /Applications or in Playwright's cache, Google Chrome, or a chromium or chrome on the PATH.
 - Driver: the Browser class drives it over the DevTools pipe, file descriptors 3 and 4, with no package beyond the standard library. The server's output goes to SERVER_LOG beside the screenshots, printed when a page does not render.
 - Reads: [[MOD-27]] as the page it runs; nothing from the package
 - Tests: tests/test_demo_screenshots.py
-- Evidence: test_a_page_is_too_tall_when_its_content_passes_the_window_or_it_scrolls, test_every_checked_page_fits_the_window_and_six_are_saved, test_a_page_that_does_not_render_prints_the_servers_log
+- Evidence: test_a_page_is_too_tall_when_its_content_passes_the_window_or_it_scrolls, test_every_checked_page_fits_the_window_and_six_are_saved, test_the_intraday_pages_fit_the_window_at_every_tick_and_nothing_is_saved
 
 ### MOD-29 [C] scripts/no_comp_raise.py
 - File: scripts/no_comp_raise.py

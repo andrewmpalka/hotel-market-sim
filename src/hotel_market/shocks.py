@@ -36,10 +36,17 @@ def event_uplift(
 
 
 def comp_rate_raise(
-    hotel_key: str, stay_day: int, as_of_day: int, customer: Customer | None = None
+    hotel_key: str,
+    stay_day: int,
+    as_of_day: int,
+    customer: Customer | None = None,
+    as_of_tick: int | None = None,
+    ticks: int = TICKS_PER_DAY,
 ) -> float:
-    """Fractional raise in the rates of a hotel's competitors for a stay date,
-    from the events known on as_of_day.
+    """Fractional raise in the rates of a hotel's competitors for a stay date, from the events
+    known on as_of_day. In a shop at a tick of the event's known day, an event whose file names
+    a known_tick raises the rates from that tick on; one with no tick raises them in every shop
+    of the day, as it did.
 
     0 when no known event covers the date. Overlapping events add up.
     """
@@ -47,6 +54,12 @@ def comp_rate_raise(
         e.comp_rate_raise
         for e in events_as_of(as_of_day, customer)
         if e.covers(hotel_key, stay_day)
+        and (
+            e.known_day < as_of_day
+            or as_of_tick is None
+            or e.known_tick is None
+            or news_tick(e.known_tick, ticks, ticks) <= as_of_tick
+        )
     )
 
 

@@ -15,9 +15,13 @@ the hotels together. Where the stored request listed the hotel's earlier changes
 stay dates, the plan's last line shows them under "Since the last change", as the request wrote
 them. A sidebar checkbox, off by default, adds the end-of-run result: the tiles
 once every stay date is complete and the contribution difference by stay date. The query string
-can turn it on (&end=1). Everything fits a 1440 by 900 window in both states, which
-scripts/demo_screenshots.py checks; the queue's text is set a size smaller than the page's, so a
-day with three accepted plans still fits. Streamlit is an optional extra: pip install -e ".[demo]".
+can turn it on (&end=1). When the file was written on a finer clock, a tick slider under the day
+slider picks a tick of the day (&tick=2), the day's last by default, and the page shows the state
+as of that tick: the news landed so far, the queue decided at that tick, the charts and the
+planned rate as of it. Everything fits a 1440 by 900 window in both states and at every tick,
+which scripts/demo_screenshots.py checks; the queue's text is set a size smaller than the page's
+and the news's lines tighter, so a day with three accepted plans and two lines of news still
+fits. Streamlit is an optional extra: pip install -e ".[demo]".
 """
 
 import os
@@ -31,7 +35,9 @@ FILE_VARIABLE = "HOTEL_MARKET_DEMO_FILE"  # the environment variable that names 
 DEFAULT_FILE = "demo.duckdb"  # the file when the variable is not set
 HOTEL_PARAMETER = "hotel"  # the query parameter that names the hotel, by its key
 DAY_PARAMETER = "day"  # the query parameter that names the day
+TICK_PARAMETER = "tick"  # the query parameter that names the tick of the day, on a finer clock
 END_PARAMETER = "end"  # the query parameter that turns the end-of-run result on
+NOTHING_YET = "Nothing new has become known yet today."  # a tick before the day's news lands
 ON_VALUES = ("1", "true", "on", "yes")  # what the end parameter reads as on
 ALL = "all"  # the scorecard's key for the hotels together, as demo_data writes it
 PLOT_HEIGHTS = {
@@ -41,7 +47,7 @@ PLOT_HEIGHTS = {
 AXIS_LABEL_SIZE = 12  # the axes' tick labels, in points
 TILE_SIZES = {
     "compact": (0.75, 1.1),
-    "large": (0.9, 1.5),
+    "large": (0.9, 1.2),
 }  # a tile's label and value font sizes in rem: with the end-of-run result shown, and without
 COLORS = {"blue": "#2a78d6", "orange": "#eb6834", "aqua": "#1baf7a", "red": "#e34948"}  # the lines
 
@@ -63,6 +69,7 @@ h3 {padding-top: 0 !important; padding-bottom: 0.25rem !important;}
 [data-testid="stCaptionContainer"] p {font-size: 1rem; margin-bottom: 0; line-height: 1.25;}
 [data-testid="stExpander"] details summary {padding: 0.25rem 0.5rem;}
 .st-key-queue p {font-size: 0.9rem; line-height: 1.3;}
+.st-key-news p {line-height: 1.3;}
 </style>"""
 
 MARKDOWN_MARKS = ("\\", "$", "*", "_", "`")  # what the page escapes so a text shows as written
@@ -88,13 +95,17 @@ def plain(text: str, marks: tuple[str, ...] = MARKDOWN_MARKS) -> str:
 
 
 def _tile_style(size: str) -> str:
-    """The tiles' font sizes: compact with the end-of-run result shown, large without."""
+    """The tiles' font sizes: compact with the end-of-run result shown, large without. The
+    scorecard's captions follow the tiles, so a long hotel name keeps to one line when the
+    column holds four rows of tiles."""
     label, value = TILE_SIZES[size]
+    caption = "" if size == "large" else '[data-testid="stCaptionContainer"] p {font-size: 0.9rem;}'
     return (
         "<style>"
         f'[data-testid="stMetricLabel"] p {{font-size: {label}rem;}}'
         f'[data-testid="stMetricValue"] {{font-size: {value}rem;}}'
         f'[data-testid="stMetricDelta"] {{font-size: {label}rem;}}'
+        f"{caption}"
         "</style>"
     )
 
@@ -182,20 +193,26 @@ def main() -> None:
         "SELECT key, name, rooms, rate_axis_low, rate_axis_high FROM hotels ORDER BY position"
     )
     days = rows("SELECT as_of_day, label, stay_window FROM days ORDER BY as_of_day")
-    run = rows("SELECT seed, reason_source FROM run").iloc[0]
+    run = rows("SELECT seed, reason_source, ticks FROM run").iloc[0]
+    ticks = int(run["ticks"])
     keys = hotels["key"].tolist()
     numbers = days["as_of_day"].tolist()
     wanted_hotel = st.query_params.get(HOTEL_PARAMETER)
     wanted_day = st.query_params.get(DAY_PARAMETER)
+    wanted_tick = str(st.query_params.get(TICK_PARAMETER))
     wanted_end = str(st.query_params.get(END_PARAMETER)).lower()
     first_hotel = keys.index(wanted_hotel) if wanted_hotel in keys else 0
     first_day = numbers[0]
     if wanted_day is not None and wanted_day.isdigit() and int(wanted_day) in numbers:
         first_day = int(wanted_day)
+    first_tick = ticks  # the day's last tick, the whole day, unless the query names one
+    if wanted_tick.isdigit() and 1 <= int(wanted_tick) <= ticks:
+        first_tick = int(wanted_tick)
     with st.sidebar:
         st.header("Hotel market demo")
         name = st.selectbox("Hotel", hotels["name"].tolist(), index=first_hotel)
         day = st.slider("Day", min_value=numbers[0], max_value=numbers[-1], value=first_day)
+        tick = st.slider("Tick", min_value=1, max_value=ticks, value=first_tick) if ticks > 1 else 1
         show_end = st.checkbox("Show the end-of-run result", value=wanted_end in ON_VALUES)
         st.caption(
             f"Seed {run['seed']} of the simulated market. The reasons are {run['reason_source']}. "
@@ -208,19 +225,26 @@ def main() -> None:
     today = days.loc[days["as_of_day"] == day].iloc[0]
 
     # ---- what became known today ----------------------------------------------------------------
-    st.subheader(f"{name}, {today['label']}")
+    moment = f", tick {tick} of {ticks}" if ticks > 1 else ""
+    st.subheader(f"{name}, {today['label']}{moment}")
     news = rows(
-        "SELECT text FROM news WHERE as_of_day = ? AND hotel = ? ORDER BY position", day, key
+        "SELECT text FROM news WHERE as_of_day = ? AND hotel = ? AND as_of_tick <= ? "
+        "ORDER BY as_of_tick, position",
+        day,
+        key,
+        tick,
     )
-    st.markdown("  \n".join(plain(text) for text in news["text"].tolist()))
+    with st.container(key="news"):  # the key names the news for STYLE's tighter lines
+        st.markdown("  \n".join(plain(text) for text in news["text"].tolist()) or NOTHING_YET)
 
     # ---- the stay dates ahead -------------------------------------------------------------------
     stays = rows(
         "SELECT stay_day, label, tick, rate, comp_median, rooms_on_books, pace, flagged, "
         "causes, flag, planned_rate, decided_at FROM stay_dates WHERE as_of_day = ? AND hotel = ? "
-        "ORDER BY stay_day",
+        "AND as_of_tick = ? ORDER BY stay_day",
         day,
         key,
+        tick,
     )
     axis = _axis(stays["label"].tolist(), stays.loc[stays["tick"], "label"].tolist())
     flagged = stays.loc[stays["flagged"]]
@@ -302,13 +326,14 @@ def main() -> None:
     queue = rows(
         "SELECT stays, causes, plan, value_text, reason, outcome, queued, alternative, "
         "alternative_text, since_last_change FROM queue WHERE as_of_day = ? AND hotel = ? "
-        "ORDER BY position",
+        "AND as_of_tick = ? ORDER BY position",
         day,
         key,
+        tick,
     )
     plans = queue.loc[queue["queued"]]
     held = queue.loc[~queue["queued"]]
-    left, right = st.columns([4, 7])
+    left, right = st.columns([5, 6])
     with left.container(key="queue"):  # the key names the queue for STYLE's smaller text
         st.markdown("**Today's queue**")
         if plans.empty:
@@ -355,7 +380,7 @@ def main() -> None:
                 st.caption(f"{title}: nights already stayed, {own.iloc[0]['nights']}")
                 _tiles(own)
             if show_end:
-                st.caption(f"{title}: once every stay date is complete, {final.iloc[0]['nights']}")
+                st.caption(f"Once every stay date is complete, {final.iloc[0]['nights']}")
                 _tiles(final)
         if show_end:
             _gain_line(rows, key, stay_date)

@@ -5,6 +5,8 @@ A test marked slow runs a 20-seed sweep or several, and the ten together take ab
 runs) includes them.
 """
 
+from pathlib import Path
+
 import pytest
 
 from hotel_market.bookings import Books
@@ -51,6 +53,18 @@ def demo_file(tmp_path_factory):
 
     path = tmp_path_factory.mktemp("demo") / "demo.duckdb"
     build(7, path)  # the recorded run where it covers a request, the template elsewhere
+    return path
+
+
+@pytest.fixture(scope="session")
+def demo_file_intraday(tmp_path_factory):
+    """The demo page's file for the intraday market at four ticks a day, built once."""
+    from hotel_market.customer import load
+    from hotel_market.demo_data import build
+
+    root = Path(__file__).resolve().parents[1]
+    path = tmp_path_factory.mktemp("intraday") / "demo-intraday.duckdb"
+    build(7, path, load(root / "customers" / "demo-intraday.toml"), ticks=4)
     return path
 
 

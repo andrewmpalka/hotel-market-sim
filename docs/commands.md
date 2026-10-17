@@ -49,6 +49,10 @@ Python 3.11 or later, from the repository root:
     hotel-market bench --seeds 1 3 --template --ticks 4 # the bench on four ticks a day
     hotel-market demo-data --seed 7 --ticks 4 --out demo4.duckdb
                                                         # the demo file on four ticks a day; the news names each feed's tick
+    hotel-market demo-data --seed 7 --customer customers/demo-intraday.toml --ticks 4 --out demo-intraday.duckdb
+                                                        # the intraday market's file: the page then offers a tick slider and shows the state as of the tick
+    python scripts/demo_screenshots.py --file demo-intraday.duckdb --ticks 4
+                                                        # every hotel on days 20, 25, 30 and 45 at every tick, both states, nothing saved, a failure if one is taller
     python scripts/tick_sweep.py --seeds 1 20           # seeds 1 to 20 at one tick a day and at four, with the paired difference and the day-20 filing's lag
     python scripts/tick_sweep.py --seeds 1 20 --customer customers/demo-intraday.toml --event concert
                                                         # the same on the intraday market, the lag from the concert's announcement, and what its stay dates booked before the first raise and earned
@@ -63,7 +67,7 @@ With make, on a Mac or Linux machine:
     make bench FIRST=1 LAST=3  # the reviewers benchmarked; make bench BENCH=--template runs it offline
     make day SEED=7 DAY=20     # a day through the stored tables; make day-replay DAY=20 replays it
     make demo SEED=7           # write demo.duckdb from the recorded run and start the demo page on 127.0.0.1
-    make screenshots           # measure the demo page at 1440 by 900, every hotel on seven days in both states, save six screenshots, and fail if a page is taller than the window
+    make screenshots           # measure the demo page at 1440 by 900, every hotel on seven days in both states and the intraday file at every tick of four days, save six screenshots, and fail if a page is taller than the window
     make help                  # every target
 
 Continuous integration runs the same checks on every push and pull request to main: `.github/workflows/test.yml` installs the package on Python 3.12 and runs `make lint`, `make test` and `python kg_check.py`, with no API key and no network beyond pip.

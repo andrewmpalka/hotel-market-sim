@@ -28,20 +28,25 @@ CREATE TABLE IF NOT EXISTS days (
 );
 
 -- What became known on the day, in plain words: an event, a schedule filing, a
--- comp set move, or one row saying nothing new became known.
+-- comp set move, or one row saying nothing new became known. On a finer clock
+-- each row names the tick its news landed at, and the page shows the rows
+-- landed by the tick it is on; a decision row, the day's outcome, lands last.
 CREATE TABLE IF NOT EXISTS news (
     as_of_day INTEGER NOT NULL,
     hotel VARCHAR NOT NULL,
+    as_of_tick INTEGER NOT NULL,       -- the tick the news landed at; 1 on the daily clock
     position INTEGER NOT NULL,
-    kind VARCHAR NOT NULL,             -- event, schedule, comp set or none
+    kind VARCHAR NOT NULL,             -- event, schedule, comp set, decision or none
     text VARCHAR NOT NULL,
     PRIMARY KEY (as_of_day, hotel, position)
 );
 
 -- One row per stay date in the day's window: the charts' lines, labels and marks.
+-- On a finer clock, one row per tick of the day, as of that tick.
 CREATE TABLE IF NOT EXISTS stay_dates (
     as_of_day INTEGER NOT NULL,
     hotel VARCHAR NOT NULL,
+    as_of_tick INTEGER NOT NULL,       -- the tick the row is as of; 1 on the daily clock
     stay_day INTEGER NOT NULL,
     label VARCHAR NOT NULL,            -- "Thu 18 Feb [45]", the x axis value
     tick BOOLEAN NOT NULL,             -- whether the x axis labels this date (the Mondays)
@@ -54,15 +59,17 @@ CREATE TABLE IF NOT EXISTS stay_dates (
     flag VARCHAR NOT NULL,             -- the flag's id, "45-48"; empty when not flagged
     planned_rate DOUBLE,               -- the rate an accepted plan sets from tomorrow; NULL without one
     decided_at VARCHAR NOT NULL,       -- "tick 3 of 4" on a finer clock; empty on the daily clock or without a plan
-    PRIMARY KEY (as_of_day, hotel, stay_day)
+    PRIMARY KEY (as_of_day, hotel, as_of_tick, stay_day)
 );
 
 -- The day's flags for the hotel in the agent's order: the queued plans with the
 -- model's or the template's reason, and the flags held by code with their cause
--- and the best alternative to holding.
+-- and the best alternative to holding. On a finer clock, each tick's flags
+-- under the tick they were decided at.
 CREATE TABLE IF NOT EXISTS queue (
     as_of_day INTEGER NOT NULL,
     hotel VARCHAR NOT NULL,
+    as_of_tick INTEGER NOT NULL,       -- the tick the flag was decided at; 1 on the daily clock
     position INTEGER NOT NULL,
     stays VARCHAR NOT NULL,            -- "Thu 18 Feb [45]" or "Thu 18 Feb [45] to Sun 21 Feb [48]"
     causes VARCHAR NOT NULL,
@@ -76,7 +83,7 @@ CREATE TABLE IF NOT EXISTS queue (
     alternative VARCHAR NOT NULL,      -- held only: the best alternative to holding, in words
     alternative_text VARCHAR NOT NULL, -- held only: how far it fell short of holding or of the minimum
     since_last_change VARCHAR NOT NULL, -- queued only: the stored request's earlier changes on the stay dates, as it lists them; empty when none
-    PRIMARY KEY (as_of_day, hotel, position)
+    PRIMARY KEY (as_of_day, hotel, as_of_tick, position)
 );
 
 -- The scorecard's tiles for the nights already stayed as of the day: one row per

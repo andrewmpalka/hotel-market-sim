@@ -283,6 +283,20 @@ marked [H], with one line that names the node it moved to.
 
 ## forecast.py
 
+### RUL-133 [C] TICK_PARAMETER
+- Value: "tick"
+- File: src/hotel_market/demo_page.py
+- Kind: label
+- Meaning: the query parameter that names the tick of the day the page shows, on a file written at several ticks (&tick=2); the day's last tick otherwise ([[DAT-33]]).
+- Evidence: test_the_tick_slider_shows_the_state_as_of_a_tick
+
+### RUL-134 [C] NOTHING_YET
+- Value: "Nothing new has become known yet today."
+- File: src/hotel_market/demo_page.py
+- Kind: label
+- Meaning: the line the page shows at a tick before any of the day's news has landed.
+- Evidence: test_the_tick_slider_shows_the_state_as_of_a_tick
+
 ### RUL-132 [C] TICK_STREAM
 - Value: 4
 - File: src/hotel_market/bookings.py
@@ -925,7 +939,7 @@ hotels themselves are data ([[DAT-04]]).
 - Evidence: test_every_checked_page_fits_the_window_and_six_are_saved
 
 ### RUL-121 [C] TILE_SIZES
-- Value: {"compact": (0.75, 1.1), "large": (0.9, 1.5)}
+- Value: {"compact": (0.75, 1.1), "large": (0.9, 1.2)}
 - File: src/hotel_market/demo_page.py
 - Kind: parameter
 - Meaning: a tile's label and value font sizes in rem. The large size shows the nights already stayed alone, and the compact size fits the end-of-run result under them ([[DEC-58]]).

@@ -24,11 +24,14 @@ already stayed as of the day, stay dates 0 to the day before. The outcome holds 
 every stay date is complete, every booking through day 149. The gains are that result's
 contribution difference by stay date. Each is given per hotel and for all the hotels together.
 
-With --ticks N the run is the finer clock's (world.py): each news line then names the tick its
-feed landed at, the queue holds every tick's flags, a planned rate names the tick it was decided
-at, and on a filing day the news adds the first flag, the first accepted raise, its stay dates
-and what they earned against the fixed-rate run. The recorded run is at one tick a day, so the
-template writes every reason. At one tick a day the file reads as before.
+With --ticks N the run is the finer clock's (world.py): each news line names the tick its feed
+landed at, the queue holds each tick's flags under that tick, the chart rows are written per
+tick as of it, a planned rate names the tick it was decided at, and on a day a filing or an
+event lands the news adds, at the day's last tick, the first flag, the first accepted raise on
+its stay dates and what they earned against the fixed-rate run. The run table carries the ticks
+a day was cut into, so the page can offer a tick. At one tick a day the file reads as before,
+every row at tick 1. The recorded run is at one tick a day, so on a finer clock the template
+writes every reason.
 """
 
 from __future__ import annotations
@@ -46,7 +49,7 @@ from hotel_market import stored
 from hotel_market.agent import Agent
 from hotel_market.bookings import Books, simulate
 from hotel_market.customer import Customer, demo, load
-from hotel_market.detect import SEATS_UP, detect_numbers, moment_index
+from hotel_market.detect import NEW_EVENT, SEATS_UP, detect_numbers, moment_index
 from hotel_market.model import request_digest, template_decisions
 from hotel_market.plan import DAY_NAMES, HOLD, PLAN_ORDER, Entry, WeekdayGroup
 from hotel_market.schedule import SIM_START
@@ -148,33 +151,29 @@ def build(
     ]
     figures: dict[tuple[int, str, str], tuple[float, ...]] = {}  # (day, scope, run) -> the five
     final: dict[str, Books] = {}
-    texts: dict[tuple[int, str], list[tuple[str, str]]] = {}  # (day, hotel) -> the news so far
+    # (day, hotel) -> the news so far, each with the tick it landed at
+    texts: dict[tuple[int, str], list[tuple[int, str, str]]] = {}
     entries_of: dict[tuple[int, str], list[Entry]] = {}  # (day, hotel) -> the day's entries so far
 
     def observe(day: int, books: Books, agent: Agent, tick: int = 1) -> None:
-        """After each moment: the news its feeds brought and its queue; at the day's last tick
-        the day's news rows, chart rows and scorecard."""
+        """After each moment: the news its feeds brought, its queue and the chart rows as of it;
+        at the day's last tick the scorecard."""
         feed = simulated_sources(books, day, tick if ticks > 1 else None)
         table = detect_numbers(day, feed, customer, tick=tick if ticks > 1 else None)
         for hotel in customer.hotels:
             own = [e for e in agent.entries if e.day == day and e.hotel == hotel.key]
             entries_of.setdefault((day, hotel.key), []).extend(own)
             texts.setdefault((day, hotel.key), []).extend(
-                _news_texts(day, hotel, feed, table, customer, tick, ticks)
+                (tick, kind, text)
+                for kind, text in _news_texts(day, hotel, feed, table, customer, tick, ticks)
             )
             asked = (day, hotel.key) if ticks == 1 else (day, tick, hotel.key)
             rows["queue"] += _queue_rows(
-                day,
-                hotel,
-                own,
-                customer.min_value_at_stake,
-                len(entries_of[(day, hotel.key)]) - len(own),
-                agent.asked.get(asked),
+                day, hotel, own, customer.min_value_at_stake, tick, agent.asked.get(asked)
             )
-            if tick == ticks:
-                rows["stay_dates"] += _stay_rows(
-                    day, hotel, table, entries_of[(day, hotel.key)], ticks
-                )
+            rows["stay_dates"] += _stay_rows(
+                day, hotel, table, entries_of[(day, hotel.key)], ticks, tick
+            )
         if tick == ticks:
             figures.update(_stayed(day, "agent", books, customer))
             final["agent"] = books
@@ -200,11 +199,11 @@ def build(
     source = reason_source(recording, client.fallbacks if client is not None else 0, ticks)
     final["fixed"] = simulate(seed, record_fixed, customer=customer, ticks=ticks)
     if ticks > 1:
-        _add_filing_outcomes(texts, entries_of, final["agent"], final["fixed"], customer, ticks)
+        _add_outcomes(texts, entries_of, final["agent"], final["fixed"], customer, ticks)
     for (day, key), found in texts.items():
         rows["news"] += [
-            (day, key, position, kind, text)
-            for position, (kind, text) in enumerate(found or [("none", NOTHING_NEW)])
+            (day, key, tick, position, kind, text)
+            for position, (tick, kind, text) in enumerate(found or [(1, "none", NOTHING_NEW)])
         ]
     rows["news"].sort()
     rows["scorecard"] = _scorecard_rows(figures, customer)
@@ -220,9 +219,10 @@ def build(
                 f"INSERT INTO {table} VALUES ({', '.join('?' * width)})", rows[table]
             )
         connection.execute(
-            "CREATE TABLE IF NOT EXISTS run (seed INTEGER NOT NULL, reason_source VARCHAR NOT NULL)"
+            "CREATE TABLE IF NOT EXISTS run (seed INTEGER NOT NULL, "
+            "reason_source VARCHAR NOT NULL, ticks INTEGER NOT NULL)"
         )
-        connection.execute("INSERT INTO run VALUES (?, ?)", [seed, source])
+        connection.execute("INSERT INTO run VALUES (?, ?, ?)", [seed, source, ticks])
     finally:
         connection.close()
     return source
@@ -283,14 +283,6 @@ def _ends(stays: Sequence[int]) -> tuple[int, int]:
 # ---- the page's rows, one function per table ----------------------------------------------
 
 
-def _news_rows(day: int, hotel: Hotel, feed: Sources, table, customer: Customer) -> list[tuple]:
-    """What became known today for the hotel, as news rows: each event announced today that
-    covers it, each schedule filing's stay dates, and each comp set move beyond the threshold,
-    or one row saying nothing new became known."""
-    texts = _news_texts(day, hotel, feed, table, customer) or [("none", NOTHING_NEW)]
-    return [(day, hotel.key, position, kind, text) for position, (kind, text) in enumerate(texts)]
-
-
 def _news_texts(
     day: int, hotel: Hotel, feed: Sources, table, customer: Customer, tick: int = 1, ticks: int = 1
 ) -> list[tuple[str, str]]:
@@ -342,43 +334,56 @@ def _landed(table, column: str) -> bool:
     return bool(table[column].notna().any())
 
 
-def _add_filing_outcomes(
+def _add_outcomes(
     texts: dict, entries_of: dict, agent: Books, fixed: Books, customer: Customer, ticks: int
 ) -> None:
-    """On a finer clock, after each hotel's filing-day news: the tick the first seats flag rose,
-    the tick the first raise was accepted, the stay dates it covered and what they earned
-    against the fixed-rate run; or that no raise was accepted on the filing's stay dates."""
+    """On a finer clock, after each hotel's news of a filing or an event announced that day: the
+    tick the first flag with that cause rose, the tick the first raise was accepted on its stay
+    dates, those stay dates and what they earned against the fixed-rate run; or that no raise
+    was accepted. The line lands at the day's last tick, as it reads the whole day."""
     for (day, key), found in texts.items():
-        if not any(kind == "schedule" for kind, _ in found):
-            continue
         hotel = customer.hotel(key)
-        flagged = [e for e in entries_of.get((day, key), []) if SEATS_UP in e.causes]
-        raised = [
-            e
-            for e in entries_of.get((day, key), [])
-            if SEATS_UP in e.causes and e.action != HOLD and "raise" in e.action
-        ]
-        if not flagged:
-            text = "No flag rose on the stay dates the filing changed."
-        elif not raised:
-            first = min(flagged, key=lambda e: moment_index(e.day, e.tick, ticks))
-            text = (
-                f"The first flag rose at tick {first.tick} of {ticks}; no raise was accepted on "
-                f"the stay dates the filing changed."
-            )
-        else:
-            first = min(flagged, key=lambda e: moment_index(e.day, e.tick, ticks))
-            raise_ = min(raised, key=lambda e: moment_index(e.day, e.tick, ticks))
-            stays = sorted(raise_.new_rates)
-            measure = Books.contribution if customer.scores_contribution() else Books.room_revenue
-            earned = measure(agent, hotel, stays) - measure(fixed, hotel, stays)
-            text = (
-                f"The first flag rose at tick {first.tick} of {ticks}, and the first raise was "
-                f"accepted at tick {raise_.tick} of {ticks} for "
-                f"{stay_span(stays[0], stays[-1])}; those stay dates earned "
-                f"{'-' if earned < 0 else '+'}${abs(round(earned)):,} against the fixed-rate run."
-            )
-        found.append(("decision", text))
+        causes = []
+        if any(kind == "schedule" for _, kind, _ in found):
+            causes.append((SEATS_UP, "the stay dates the filing changed", None))
+        for event in customer.events:
+            if event.known_day == day and key in event.hotels:
+                causes.append((NEW_EVENT, f"the {event.name.lower()}'s stay dates", event))
+        for cause, what, event in causes:
+            flagged = [e for e in entries_of.get((day, key), []) if cause in e.causes]
+            if event is None:
+                raised = [e for e in flagged if e.action != HOLD and "raise" in e.action]
+            else:
+                stays = set(range(event.start_day, event.end_day + 1))
+                raised = [
+                    e
+                    for e in entries_of.get((day, key), [])
+                    if e.action != HOLD and "raise" in e.action and stays & set(e.new_rates)
+                ]
+            if not flagged:
+                text = f"No flag rose on {what}."
+            elif not raised:
+                first = min(flagged, key=lambda e: moment_index(e.day, e.tick, ticks))
+                text = (
+                    f"The first flag rose at tick {first.tick} of {ticks}; no raise was accepted "
+                    f"on {what}."
+                )
+            else:
+                first = min(flagged, key=lambda e: moment_index(e.day, e.tick, ticks))
+                raise_ = min(raised, key=lambda e: moment_index(e.day, e.tick, ticks))
+                stays = sorted(raise_.new_rates)
+                measure = (
+                    Books.contribution if customer.scores_contribution() else Books.room_revenue
+                )
+                earned = measure(agent, hotel, stays) - measure(fixed, hotel, stays)
+                text = (
+                    f"The first flag rose at tick {first.tick} of {ticks}, and the first raise "
+                    f"was accepted at tick {raise_.tick} of {ticks} for "
+                    f"{stay_span(stays[0], stays[-1])}; those stay dates earned "
+                    f"{'-' if earned < 0 else '+'}${abs(round(earned)):,} against the fixed-rate "
+                    f"run."
+                )
+            found.append((ticks, "decision", text))
 
 
 def _runs(stays: Iterable[int]) -> list[tuple[int, int]]:
@@ -389,13 +394,13 @@ def _runs(stays: Iterable[int]) -> list[tuple[int, int]]:
 
 
 def _stay_rows(
-    day: int, hotel: Hotel, table, entries: Sequence[Entry], ticks: int = 1
+    day: int, hotel: Hotel, table, entries: Sequence[Entry], ticks: int = 1, tick: int = 1
 ) -> list[tuple]:
-    """The charts' rows: the hotel's rate, the comp median, the rooms on the books and the
-    rooms the pace curve expects, per stay date in the window, with the flag that covers it and
-    the rate an accepted plan sets. A plan's held days of the week keep the current rate. On a
-    finer clock the flag is the last of the day's to cover the date, and a planned rate names
-    the tick its plan was decided at."""
+    """The charts' rows as of a moment: the hotel's rate, the comp median, the rooms on the books
+    and the rooms the pace curve expects, per stay date in the window, with the flag that covers
+    it and the rate an accepted plan sets. A plan's held days of the week keep the current rate.
+    On a finer clock the flag is the last so far that day to cover the date, and a planned rate
+    names the tick its plan was decided at."""
     own = table[table["hotel"] == hotel.key]
     rows = []
     for record in own.to_dict("records"):
@@ -409,6 +414,7 @@ def _stay_rows(
             (
                 day,
                 hotel.key,
+                tick,
                 stay,
                 stay_label(stay),
                 weekday(stay) == 0,
@@ -431,22 +437,22 @@ def _queue_rows(
     hotel: Hotel,
     entries: Sequence[Entry],
     minimum: float,
-    start: int = 0,
+    tick: int = 1,
     asked: tuple[dict, dict] | None = None,
 ) -> list[tuple]:
-    """The day's flags for the hotel: each plan, its value, its reason and what became of it. A
+    """A moment's flags for the hotel: each plan, its value, its reason and what became of it. A
     held flag also carries the best alternative to holding and how far it fell short. A queued
     flag carries the earlier changes on its stay dates as the stored request lists them, the
     request the hotel's queue was asked with (`asked`), so the page shows what the last change
     did without computing it; a held flag was never asked. On a finer clock each tick's flags
-    follow the earlier ticks', from the position `start`."""
+    sit under their tick, in the agent's order."""
     request = asked[0] if asked else {}
     since = {
         entry["id"]: "; ".join(entry.get("earlier_changes_on_these_dates", []))
         for entry in request.get("entries", [])
     }
     rows = []
-    for position, entry in enumerate(entries, start):
+    for position, entry in enumerate(entries):
         if not entry.queued:
             outcome = "held"
         else:
@@ -456,6 +462,7 @@ def _queue_rows(
             (
                 day,
                 hotel.key,
+                tick,
                 position,
                 stay_span(entry.first_stay, entry.last_stay),
                 ", ".join(entry.causes),

@@ -386,6 +386,14 @@ def test_news_lands_at_the_ticks_the_customer_file_names(tmp_path):
     assert sources.shops.competitor_rates(10, convention, 46, 1) != (
         demo_sources.shops.competitor_rates(10, convention, 46, 2)
     )
+    # An event's comp raise with a known tick shows from that tick's shop: the convention at
+    # tick 2 raises the downtown medians in the tick-2 shop of day 10 and not the tick-1 shop.
+    assert sources.shops.median(10, convention, 46, 2) > 1.1 * sources.shops.median(
+        9, convention, 46
+    )
+    assert sources.shops.median(10, convention, 46, 1) < 1.05 * sources.shops.median(
+        9, convention, 46
+    )
     # The simulator's day-30 draw shopped the day's first shop, before the cut showed.
     assert books.daily_medians[30, full.row, 38] == sources.shops.median(30, full, 38, 1)
     assert books.daily_medians[30, full.row, 38] > sources.shops.median(30, full, 38, 3)
@@ -397,9 +405,10 @@ def test_news_lands_at_the_ticks_the_customer_file_names(tmp_path):
     daily = simulated_sources(simulate(7, last_day=31, customer=market))
     assert [e.name for e in daily.events.known(10)] == ["Convention"]
     assert daily.shops.competitor_rates(30, full, 38)[cheapest.name] < cut
-    assert daily.shops.competitor_rates(10, convention, 46) == (
-        sources.shops.competitor_rates(10, convention, 46, 1)
+    assert daily.shops.competitor_rates(9, convention, 46) == (
+        sources.shops.competitor_rates(9, convention, 46, 1)
     )
+    assert daily.shops.median(10, convention, 46) > 1.1 * daily.shops.median(9, convention, 46)
     assert daily.schedules.seats(20)[55] == 4964
 
 

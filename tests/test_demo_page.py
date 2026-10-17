@@ -36,9 +36,9 @@ def _tree() -> ast.Module:
     return ast.parse(PAGE.read_text())
 
 
-def _page(testing, monkeypatch, file, hotel=None, day=None, end=False):
-    """The page run on the file, opened at the hotel and day the query string names, with the
-    end-of-run result turned on by the query string when asked."""
+def _page(testing, monkeypatch, file, hotel=None, day=None, end=False, tick=None):
+    """The page run on the file, opened at the hotel, day and tick the query string names, with
+    the end-of-run result turned on by the query string when asked."""
     monkeypatch.setenv("HOTEL_MARKET_DEMO_FILE", str(file))
     page = testing.AppTest.from_file(str(PAGE), default_timeout=60)
     if hotel is not None:
@@ -47,6 +47,8 @@ def _page(testing, monkeypatch, file, hotel=None, day=None, end=False):
         page.query_params["day"] = str(day)
     if end:
         page.query_params["end"] = "1"
+    if tick is not None:
+        page.query_params["tick"] = str(tick)
     page.run()
     assert not page.exception
     return page
@@ -124,11 +126,12 @@ def test_the_page_shows_the_airport_hotel_on_day_20(demo_file, monkeypatch):
     page.sidebar.checkbox[0].check()
     page.run()
     assert not page.exception
+    complete = "Once every stay date is complete, Mon 4 Jan [0] to Wed 2 Jun [149]"
     assert [caption.value for caption in page.main.caption] == [
         stayed[0],
-        "Airport hotel: once every stay date is complete, Mon 4 Jan [0] to Wed 2 Jun [149]",
+        complete,
         stayed[1],
-        "All four hotels: once every stay date is complete, Mon 4 Jan [0] to Wed 2 Jun [149]",
+        complete,
         "Contribution difference by stay date, once every stay date is complete",
     ]
     assert [metric.label for metric in page.metric] == labels * 4
@@ -227,3 +230,34 @@ def test_at_four_ticks_the_day_20_page_names_the_ticks_in_the_news_and_the_legen
         "Seed 7 of the simulated market. The reasons are the template's, as the recorded run is "
         "at one tick a day"
     )
+
+
+def test_the_tick_slider_shows_the_state_as_of_a_tick(demo_file_intraday, demo_file, monkeypatch):
+    """On a file written at four ticks a day the sidebar adds a tick slider under the day slider,
+    the day's last tick by default, and the page shows the state as of the tick: on day 25 at
+    the lifestyle hotel, tick 1 has nothing yet and no queue, tick 2 has the concert's news, the
+    accepted raise and the planned rate decided at tick 2, and tick 4 adds the outcome line.
+    The daily file has no tick slider and no tick in its title."""
+    testing = pytest.importorskip("streamlit.testing.v1")
+    page = _page(testing, monkeypatch, demo_file_intraday, "lifestyle", 25, tick=1)
+    assert page.subheader[0].value == "Lifestyle hotel, Fri 29 Jan 2027 [day 25], tick 1 of 4"
+    assert [slider.label for slider in page.sidebar.slider] == ["Day", "Tick"]
+    assert page.sidebar.slider[1].value == 1
+    text = _text(page)
+    assert "Nothing new has become known yet today." in text
+    assert "No plan was queued today." in text and '"planned_rate"' not in _rate_chart_spec(page)
+    page.sidebar.slider[1].set_value(2)
+    page.run()
+    assert not page.exception
+    assert page.subheader[0].value.endswith(", tick 2 of 4")
+    text = _text(page)
+    assert "An event, the concert, was announced at tick 2 of 4" in text
+    assert "**Accepted:** raise 10% on Thu, Fri for Thu 4 Feb [31] to Fri 5 Feb [32]" in text
+    assert "The first flag rose" not in text
+    assert "Planned rate (tick 2 of 4)" in _rate_chart_spec(page)
+    page = _page(testing, monkeypatch, demo_file_intraday, "lifestyle", 25)
+    assert page.sidebar.slider[1].value == 4  # the day's last tick, the whole day, by default
+    assert "The first flag rose at tick 2 of 4, and the first raise was accepted" in _text(page)
+    page = _page(testing, monkeypatch, demo_file, "lifestyle", 20)
+    assert [slider.label for slider in page.sidebar.slider] == ["Day"]
+    assert page.subheader[0].value == "Lifestyle hotel, Sun 24 Jan 2027 [day 20]"

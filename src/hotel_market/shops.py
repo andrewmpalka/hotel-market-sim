@@ -79,9 +79,9 @@ def comp_rates(
     change from its start rate that the competitors react to, in dollars. Each moves
     REACTION_SHARE of it. The caller passes the lagged change, or nothing for no reaction. The
     customer's events and rate cuts move the rates on the dates they cover. slot names the shop's
-    noise stream, and shop_tick the tick of the day the shop lands at, which a cut known that day
-    must be known by; with no tick every cut of the day shows."""
-    raise_ = 1 + comp_rate_raise(hotel.key, stay_day, shop_day, customer)
+    noise stream, and shop_tick the tick of the day the shop lands at, which a cut known that day,
+    or an event's raise with a known_tick, must be known by; with no tick every move shows."""
+    raise_ = 1 + comp_rate_raise(hotel.key, stay_day, shop_day, customer, shop_tick, ticks)
     reaction = REACTION_SHARE * hotel_change
     return {
         comp.name: (
