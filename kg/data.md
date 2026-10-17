@@ -299,11 +299,11 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-33 [C] The demo file
 - File: sql/demo.sql
-- Tables: eight from sql/demo.sql beside the eight stored tables ([[DAT-28]]), and run (seed, reason_source, ticks), which demo_data.py creates for the sidebar. Every date reads as "Thu 18 Feb [45]" ([[DEC-58]]).
-- Hotels and days: hotels (position, key, name, rooms, start_rate, rate_axis_low, rate_axis_high). days (as_of_day, label, stay_window). news (as_of_day, hotel, as_of_tick, position, kind, text) is what became known, by tick.
+- Tables: eight from sql/demo.sql beside the stored tables ([[DAT-28]]). demo_data.py also creates run (seed, reason_source, ticks, market) and strip (as_of_day, hotel, as_of_tick, news, nights_flagged, recommendations, value_at_stake).
+- Hotels and days: hotels (position, key, name, rooms, start_rate, rate_axis_low, rate_axis_high). days (as_of_day, label, stay_window, index). news (as_of_day, hotel, as_of_tick, position, kind, text) is what became known, by tick.
 - Chart: stay_dates (as_of_day, hotel, as_of_tick, stay_day, label, tick, rate, comp_median, rooms_on_books, pace, flagged, causes, flag, planned_rate, decided_at), one row per stay date in the window, per tick as of it.
-- Queue: queue (as_of_day, hotel, as_of_tick, position, stays, causes, plan, value, value_text, reason, reason_source, queued, outcome, alternative, alternative_text, since_last_change), each tick's flags under its tick.
-- Read-back: since_last_change is the stored request's earlier changes on a queued plan's stay dates, as it lists them ([[DEC-45]]), and empty for a held flag or when it listed none. The page shows it under "Since the last change".
-- Scorecard: scorecard (as_of_day, hotel, title, nights, position, measure, agent, fixed, delta, value_text, delta_text) for the nights already stayed, none on day 0. outcome holds the same tiles once every stay date is complete.
+- Queue: queue (as_of_day, hotel, as_of_tick, position, stays, causes, plan, value, value_text, reason, reason_source, queued, outcome, alternative, alternative_text, since_last_change, since_last_change_text, headline, request_digest).
+- Read-back: since_last_change is the stored request's earlier changes on a plan's stay dates, empty when none ([[DEC-45]]). since_last_change_text writes its day numbers as dates ([[DEC-58]]) for "Since our last change on these dates".
+- Scorecard: scorecard (as_of_day, hotel, title, nights, night_count, position, measure, agent, fixed, delta, value_text, delta_text) for the nights already stayed, none on day 0. outcome holds the same tiles over stay dates 0 to 149.
 - Gains: gains (hotel, title, stay_day, label, tick, agent, fixed, difference), the contribution by stay date once complete. The scorecard tables hold each hotel and all together, under the key all ([[RUL-107]]).
 - Evidence: test_the_file_holds_the_stored_tables_for_every_day_and_the_pages_tables, test_the_chart_rows_mark_the_flagged_stay_dates_and_carry_the_planned_rate, test_the_scorecard_counts_the_nights_already_stayed

@@ -612,13 +612,13 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Links: [[MOD-26]], [[MOD-27]], [[DAT-33]], [[DAT-28]], [[DAT-29]], [[DEC-42]], [[DEC-58]], [[RUL-01]], [[RES-02]]
 
 ### DEC-58 [C] The demo page fits one window, and every date is a calendar date
-- Decided: the page fits 1440 by 900 pixels with nothing cut off: the title, the news, both charts, the queue and the scorecard. scripts/demo_screenshots.py ([[MOD-28]]) measures every hotel on seven days, and four days at every tick.
-- Dates: every stay date reads as a calendar date with its day of the week and the day number in brackets, on the axes and in the text ([[DAT-33]]). The model's recorded reasons keep their day numbers, so the brackets tie the two together.
+- Decided: the page fits 1440 by 900 pixels with nothing cut off, from the title to the engineers' expander. scripts/demo_screenshots.py ([[MOD-28]]) measures every hotel on seven days, and four days at every tick.
+- Dates: every date reads as a calendar date with its day of the week, such as "Thu 18 Feb" ([[DAT-33]]). The day's number sits small under the title. The recorded reasons keep their day numbers.
 - Plan: on the day a plan is accepted, the rate chart draws the new rate as a dashed line beside the current one. A held day of the week keeps the current rate on that line.
-- Held: the held flags are open by default. Each shows its stay dates, its cause, the best alternative and how far it fell short of holding, or of the minimum when its plan beats holding ([[RUL-67]]).
-- Text: the page escapes the markdown marks in every reason and plan, so a pair of dollar amounts is not a formula and a model's text cannot draw a link. A tile writes a change that rounds to nothing as "0", with no arrow.
-- Layout: the charts sit side by side, the queue beside the scorecard, and the toolbar is hidden. The end-of-run result is behind a checkbox, off by default. The queue's text is a size smaller and the news's lines tighter, so a day fits.
-- Evidence: test_every_checked_page_fits_the_window_and_six_are_saved, test_the_intraday_pages_fit_the_window_at_every_tick_and_nothing_is_saved, test_a_held_flag_names_the_best_alternative_and_how_far_it_fell_short
+- Held: the held flags sit in a closed expander, "Also looked at today". Each shows its stay dates, its cause, the best alternative and how far it fell short of holding, or of the minimum when its plan beats holding ([[RUL-67]]).
+- Text: the page escapes the markdown marks in every reason and plan, so a pair of dollar amounts is not a formula and a model's text cannot draw a link. A tile draws no chip for a change that rounds to nothing.
+- Layout: the charts sit side by side, the recommendations beside the scorecard, and the toolbar is hidden. The five months sit behind a checkbox, off by default. Smaller text and tighter lines let a busy day fit.
+- Evidence: test_every_checked_page_fits_the_window_and_six_are_saved, test_a_held_flag_names_the_best_alternative_and_how_far_it_fell_short, test_every_date_reads_as_a_calendar_date
 - Links: [[DEC-57]], [[MOD-26]], [[MOD-27]], [[MOD-28]], [[DAT-33]], [[RUL-67]], [[RUL-109]]
 
 ### DEC-60 [C] Every printed mean carries its spread

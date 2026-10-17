@@ -900,7 +900,7 @@ hotels themselves are data ([[DAT-04]]).
 - Value: {"blue": "#2a78d6", "orange": "#eb6834", "aqua": "#1baf7a", "red": "#e34948"}
 - File: src/hotel_market/demo_page.py
 - Kind: label
-- Meaning: the lines' colours and the red of the flagged bands. Blue is our rate and the hotel, orange the comp set median and the pace curve, aqua the planned rate, the rooms on the books and all hotels together.
+- Meaning: the lines' colours and the red of the flagged bands. Blue is our rate and the hotel, orange the comp set median and the usual pace, aqua the recommended rate, the rooms on the books and all hotels together.
 - Evidence: test_every_checked_page_fits_the_window_and_six_are_saved
 
 ### RUL-117 [C] MARKDOWN_MARKS
@@ -914,7 +914,7 @@ hotels themselves are data ([[DAT-04]]).
 - Value: ("\\", "$", "*", "_", "`", "[", "]", "!", "~", "<", ">")
 - File: src/hotel_market/demo_page.py
 - Kind: label
-- Meaning: the characters a reason has escaped: those of [[RUL-117]] and the link, image, strikethrough and autolink marks a model's text could hold. A date's brackets are code's own, so the news and the stays keep them.
+- Meaning: the characters a reason has escaped: those of [[RUL-117]] and the link, image, strikethrough and autolink marks a model's text could hold.
 - Evidence: test_a_reason_with_two_dollar_amounts_shows_both_as_written
 
 ### RUL-118 [C] END_PARAMETER
@@ -935,7 +935,7 @@ hotels themselves are data ([[DAT-04]]).
 - Value: 12
 - File: src/hotel_market/demo_page.py
 - Kind: parameter
-- Meaning: the font size in points of the tick labels on every axis of the page's charts ([[DEC-58]]).
+- Meaning: the font size in points of the tick labels on every axis of the page's charts ([[DEC-58]]). The legends' labels take it too, so "Recommended rate (from 11:00)" fits its legend.
 - Evidence: test_every_checked_page_fits_the_window_and_six_are_saved
 
 ### RUL-121 [C] TILE_SIZES
