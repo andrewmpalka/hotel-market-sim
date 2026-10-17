@@ -6,11 +6,14 @@ A made-up city with four hotels, and a pricing agent that reads the city's
 feeds and recommends rate changes. Every number is synthetic. The agent runs
 for 60 days; the bookings run for 150, so every night is finished and counted.
 
-Four things happen while it runs: a convention is announced on day 10, new
-flights are filed on day 20, a competitor cuts its rate on day 30, and an
-airline suspends a route on day 40. The schedule rows follow Cirium's
-published column names; every row is invented, and the repository has no
-Cirium data and no affiliation with Cirium.
+Four things happen while it runs, each written into the market file in advance:
+a convention is announced on day 10, new flights are filed on day 20, a
+competitor cuts its rate on day 30, and an airline suspends a route on day 40.
+The repository calls these shocks: the only events that change demand or a
+comp set, so every dollar the agent earns can be traced to the one that
+produced it. The schedule rows follow Cirium's published column names; every
+row is invented, and the repository has no Cirium data and no affiliation
+with Cirium.
 
 ![The lifestyle hotel on day 20](docs/images/day20.png)
 
