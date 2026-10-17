@@ -21,10 +21,23 @@ the model's recorded reasons, and the read-back of its day-18 raise.*
 
     make setup          # .venv with the package, pytest and ruff
     make test           # the tests; make test-all adds the ten slow ones
-    make demo SEED=7    # the demo page, with the model's recorded reasons
+    make demo SEED=7    # the demo page for seed 7, with the model's recorded reasons
 
-No API key is needed. `make demo` installs streamlit once. Every other
-command is in [docs/commands.md](docs/commands.md).
+**Without an API key** you can run everything except a new model call: the
+simulator, the tests, every experiment in docs/results.md, and the demo page.
+The model's answers for seed 7 are recorded in the repository, so the demo
+shows its real reasons offline. Where no answer is recorded, a stand-in
+answers in the model's place: it says yes to every plan and writes a reason
+from the entry's own figures, and the run says so. That is what the tests
+and the 20-seed sweeps use, because they measure the plans, not the model.
+
+**With an API key** the model reviews each plan and writes each reason
+itself. Put `ANTHROPIC_API_KEY` in `.env` and run `make live SEED=7` for one
+seed, or `make bench` for the reviewer benchmark. Answers are cached by the
+request's digest, so a rerun is free and a replay never calls the model. A
+live seed costs about $0.20; the whole benchmark cost $85.87.
+
+Every other command is in [docs/commands.md](docs/commands.md).
 
 ## What the agent does each day
 
