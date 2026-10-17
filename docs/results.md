@@ -1,6 +1,8 @@
 # Results
 
-Seeds 1 to 20 in the default mode: the agent run against the fixed-rate run, stay dates 0 to 149, run on 2026-10-15 on world v2 with `hotel-market --seeds 1 20 --template`. The reasons are the template's, and candidates are scored on contribution with the simulator's elasticity. The template is a stand-in that answers in the model's place when there is no key; it says yes to every plan and writes a reason from the entry's own figures. The last two rows are the standard deviation across the seeds and the standard error of the mean.
+This file holds the tables of every experiment, and unless the line above a table says otherwise, each was measured on world v2 on 2026-10-15 or 2026-10-16. Most rows are a seed, an arm, a reviewer or a hotel, and their dollar changes are in contribution against the fixed-rate run unless the column says revenue. The line above each table says what was run and with which command, and [docs/commands.md](commands.md) lists every command.
+
+Each of seeds 1 to 20 ran the agent against the fixed-rate run in the default mode, over stay dates 0 to 149, with the template's reasons. The command is `hotel-market --seeds 1 20 --template`.
 
 | Seed | Contribution change | Revenue change | Rate changes |
 | ---: | ---: | ---: | ---: |
@@ -28,7 +30,13 @@ Seeds 1 to 20 in the default mode: the agent run against the fixed-rate run, sta
 | SD | 3,166 | 4,231 | |
 | SE | 708 | 946 | |
 
-Accepted plans at the two downtown hotels by seed, read from the same sweep's decisions files, run on 2026-10-15 on world v2. It is a lookup for the walkthrough, not a result: a seed with no such plan reads none, and seed 7 is one of the three. The day-10 plans are the convention's, raised on the day it is announced; the others are pace plans on a single stay date.
+**Reading it**
+
+- The agent earns more contribution than the fixed-rate run in every seed, and less room revenue in every seed.
+- Contribution rises while room revenue falls, so the gain comes from the room cost the agent saves on rooms it did not sell.
+- Each seed changes only a few rates, so a handful of plans carries the whole result.
+
+Accepted plans at the two downtown hotels by seed are read from the decisions files of that sweep. The command is `hotel-market --seeds 1 20 --template`.
 
 | Seed | Day | Hotel | Stay dates | Cause | Plan |
 | ---: | ---: | --- | --- | --- | --- |
@@ -59,19 +67,37 @@ Accepted plans at the two downtown hotels by seed, read from the same sweep's de
 | 20 | 20 | Downtown full-service hotel | 72 | ahead of pace, seats up | raise 10% on Wed |
 | 20 | 36 | Downtown convention hotel | 45 | ahead of pace | raise 10% on Thu |
 
-Seed 7, days 0 to 59: what became of the flags, run on 2026-10-15 on world v2 with `hotel-market --seed 7 --template`.
+**Reading it**
+
+- Most seeds raise the convention's nights at one downtown hotel on the day the convention is announced.
+- The other downtown plans are pace raises on a single stay date.
+- The demo page's seed is one of the three with none, so its downtown hotels never change a rate.
+
+Seed 7's flags over days 0 to 59 are counted by what became of each one. The command is `hotel-market --seed 7 --template`.
 
 | Flags | Changed a rate | Held: no change beat hold | Held: worth under the minimum | Declined by the model | Minimum-stay advice |
 | ---: | ---: | ---: | ---: | ---: | ---: |
 | 117 | 6 | 101 | 10 | 0 | 1 |
 
-Comp-median flags over seeds 1 to 20 in the default mode, from the same sweep: those on a day a scripted shock moved a median (10, the convention's competitor raise, and 30, the rate cut) and those on every other day, where only the shop noise moved it. Since world v2 the rate shop moves every day, so the 5% threshold meets ordinary noise. Measured on 2026-10-15 on world v2 with `hotel-market --seeds 1 20 --template`.
+**Reading it**
+
+- Almost every flag ends in a hold, most of them because no change beats holding.
+- The template declines nothing, so every plan worth the minimum changes a rate.
+- The minimum-stay advice changes no rate, because the simulator has no length of stay.
+
+Comp-median flags over seeds 1 to 20 in the default mode are split by whether a scripted shock moved the median that day. The command is `hotel-market --seeds 1 20 --template`.
 
 | Median flags | On a shock day | On other days |
 | ---: | ---: | ---: |
 | 496 | 80 | 416 |
 
-Seed 7: room revenue and contribution per hotel, the fixed-rate run against the agent run, stay dates 0 to 149, run on 2026-10-15 on world v2.
+**Reading it**
+
+- Most median flags fall on days when only the shop's noise moved the median.
+- The rate shop has moved every day since world v2, so the 5% threshold meets ordinary noise.
+- The shock days are day 10, when the competitors raise for the convention, and day 30, when a competitor cuts its rate.
+
+The two runs of seed 7 give each hotel's room revenue and contribution over stay dates 0 to 149. The command is `hotel-market --seed 7 --template`.
 
 | Hotel | Revenue, fixed | Revenue, agent | Change | Contribution, fixed | Contribution, agent | Change |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -81,7 +107,13 @@ Seed 7: room revenue and contribution per hotel, the fixed-rate run against the 
 | Airport hotel | 2,809,380 | 2,783,585 | -25,795 | 1,872,920 | 1,879,045 | +6,125 (+0.3%) |
 | All four hotels | 21,728,000 | 21,706,676 | -21,324 | 14,485,333 | 14,505,130 | +19,796 (+0.1%) |
 
-Seed 7 over only the 70 hotel and stay-date pairs where the agent changed a rate, run on 2026-10-15 on world v2. The pairs per hotel are in brackets.
+**Reading it**
+
+- The two downtown hotels change nothing at this seed, so the whole gain sits at the lifestyle and airport hotels.
+- The airport hotel's room revenue falls and its contribution rises, so its gain comes from the servicing cost of rooms it no longer sells.
+- The lifestyle hotel gains on both measures.
+
+Seed 7 over only the 70 hotel and stay-date pairs where the agent changed a rate repeats the comparison, with each hotel's count of pairs in brackets. The command is `hotel-market --seed 7 --template`.
 
 | Hotel | Revenue, fixed | Revenue, agent | Change | Contribution, fixed | Contribution, agent | Change |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -91,7 +123,12 @@ Seed 7 over only the 70 hotel and stay-date pairs where the agent changed a rate
 | Airport hotel (53) | 1,030,400 | 1,004,605 | -25,795 | 686,933 | 693,058 | +6,125 (+0.9%) |
 | All four hotels | 1,483,520 | 1,462,196 | -21,324 | 989,013 | 1,008,810 | +19,796 (+2.0%) |
 
-Seeds 1 to 20 per elasticity arm, each against the same fixed-rate runs, run on 2026-10-15 on world v2 with `hotel-market --seeds 1 20 --template --elasticity true --elasticity fixed:1.0 --elasticity fixed:2.0 --elasticity learn:1.0 --elasticity learn:2.0` and the same with `--elasticity learn:1.0 --elasticity learn:2.0 --cautious`. Estimated / realised is the accepted plans' estimated gain over holding, summed over the seeds, over the realised gain. Rejected at an end counts a cautious arm's candidates ahead of hold at the estimate but behind at an end.
+**Reading it**
+
+- These pairs carry the whole gain, because every other pair books the same rooms in both runs.
+- On the nights it touched, the agent's gain is a far larger share of contribution than over the whole run.
+
+Seeds 1 to 20 per elasticity arm are each measured against the same fixed-rate runs. The commands are `hotel-market --seeds 1 20 --template --elasticity true --elasticity fixed:1.0 --elasticity fixed:2.0 --elasticity learn:1.0 --elasticity learn:2.0` and the same with `--elasticity learn:1.0 --elasticity learn:2.0 --cautious`.
 
 | Elasticity | Mean gain per seed | SD | SE | Range | Seeds ahead | p | Rate changes | Estimated / realised | Rejected at an end |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -103,7 +140,13 @@ Seeds 1 to 20 per elasticity arm, each against the same fixed-rate runs, run on 
 | learn:2.0 | +$2,416 | $5,222 | $1,168 | -$8,435 to +$9,983 | 13 of 20 | 0.26 | 398 | 26.0 |  |
 | learn:2.0 --cautious | +$2,018 | $4,187 | $936 | -$8,396 to +$10,445 | 12 of 20 | 0.50 | 213 | 17.4 | 2,733 |
 
-Where each arm's gain came from, summed over the 20 seeds, run on 2026-10-15 on world v2. The first group is the plans the convention (day 10) and the new flights (day 20) raised. The second is every other plan.
+**Reading it**
+
+- A wrong fixed elasticity, too low or too high, loses money on average.
+- Learning wins back little on its own, and the cautious rule keeps most of the true arm's gain only from the prior below the truth.
+- The estimated-to-realised ratio is far from one in every arm but the true one, so a wrong elasticity also misjudges what its plans gain over holding.
+
+Where each arm's gain came from is summed over the 20 seeds, with the plans the convention and the new flights raised kept apart from every other plan. The same two commands print it.
 
 | Elasticity | Shock plans | Gain on their stay dates | Other plans | Gain on theirs |
 | --- | ---: | ---: | ---: | ---: |
@@ -115,7 +158,13 @@ Where each arm's gain came from, summed over the 20 seeds, run on 2026-10-15 on 
 | learn:2.0 | 133 | +$33,752 | 265 | +$14,571 |
 | learn:2.0 --cautious | 60 | +$10,405 | 153 | +$29,955 |
 
-What the accepted plans' nights came to, summed over the 20 seeds, run on 2026-10-15 on world v2: each plan's estimate for the night, the contribution on the rooms then unsold, against what the rooms sold after the decision earned on it. The sweep computes these from the run's own books as the stored outcomes table records them.
+**Reading it**
+
+- In the true arm the shock plans carry almost all of the gain.
+- A wrong fixed elasticity loses its money on the shock plans, while its other plans earn a little.
+- From the low prior the cautious rule keeps most of the shock gain, and from the high prior it keeps little.
+
+Each accepted plan's estimate for a night is set against what the rooms sold after the decision earned on it, summed over the 20 seeds. The same two commands compute it from each run's own books.
 
 | Elasticity | Nights changed | Estimated | Realised | Realised / estimated |
 | --- | ---: | ---: | ---: | ---: |
@@ -127,28 +176,49 @@ What the accepted plans' nights came to, summed over the 20 seeds, run on 2026-1
 | learn:2.0 | 5,426 | +$91,773,051 | +$89,074,240 | 0.97 |
 | learn:2.0 --cautious | 1,556 | +$26,407,231 | +$25,270,377 | 0.96 |
 
-The learning agent's day-59 elasticity estimates against a true value of 1.5, run on 2026-10-15 on world v2. Each figure is the range over the four hotels of each hotel's mean across the 20 seeds.
+**Reading it**
+
+- Every arm's nights earn close to their estimate, including the arms whose estimated gain over holding is far off in the arm table.
+- Every arm realises a little less than it estimated.
+- The fixed and plain learning arms change several times as many nights as the true arm.
+
+The learning agent's day-59 elasticity estimates are set against a true value of 1.5, as the range over the four hotels of each hotel's 20-seed mean. The command is `hotel-market --seeds 1 20 --template --elasticity learn:1.0 --elasticity learn:2.0`.
 
 | Prior | Day-59 estimate, by hotel |
 | ---: | --- |
 | 1.0 | 1.42 to 1.49 |
 | 2.0 | 1.52 to 1.75 |
 
-The cautious rule with and without a $250 minimum per day of the week, seeds 1 to 20. Measured on world v1 (commit b178e7b): the per-day minimum rule no longer exists, so the table is not rerun; the band alone on world v2 is in the arm table above. The band alone is the rule that stayed. Its rejection count includes every candidate ahead of hold at the estimate, including those worth less than $250.
+**Reading it**
+
+- Both priors end near the truth, and the low prior ends closer to it than the high one.
+- From the high prior one hotel still sits well above the truth at the end.
+
+The cautious rule with and without a $250 minimum per day of the week ran on seeds 1 to 20 on world v1. The command was `hotel-market --seeds 1 20 --elasticity learn:1.0 --elasticity learn:2.0 --cautious`, and it is not rerun because the per-day minimum no longer exists.
 
 | Arm | Band alone: mean gain | Rate changes | Rejected at an end | With a minimum per day of the week: mean gain | Rate changes | Rejected at an end |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | learn:1.0 --cautious | +$25,076 | 299 | 3,294 | +$25,084 | 299 | 1,205 |
 | learn:2.0 --cautious | +$17,634 | 240 | 2,681 | +$17,618 | 229 | 766 |
 
-Seeds 1 to 20 with the simulator's elasticity and the template, each target against the same fixed-rate runs, run on 2026-10-15 on world v2 with `hotel-market --seeds 1 20 --template` and the same with `--target revenue`. The last two columns are in the target's own measure.
+**Reading it**
+
+- The per-day minimum barely moves the gain or the rate changes, which is why the band alone is the rule that stayed.
+- The minimum cuts the rejections at an end sharply, because the band alone counts every candidate ahead of hold, however small.
+
+Seeds 1 to 20 ran once for each target, contribution and then revenue, with the simulator's elasticity and the template. The commands are `hotel-market --seeds 1 20 --template` and the same with `--target revenue`.
 
 | Target | Mean contribution change | SD | SE | Mean revenue change | Seeds ahead on contribution | p | Rate changes | Accepted plans' estimate | Realised |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | contribution | +$16,164 | $3,166 | $708 | -$27,684 | 20 of 20 | <0.001 | 106 | +$391,434 | +$323,281 |
 | revenue | -$8,214 | $4,500 | $1,006 | +$179,333 | 0 of 20 | <0.001 | 805 | +$3,608,913 | +$3,586,668 |
 
-Four live runs of seed 7 on world v1 (commit b178e7b) in the default mode with claude-opus-5-5, one per request format. Each made seven calls and said yes to every plan. The last was the recorded run under tests/fixtures/live_seed7/ until the world v2 run below replaced it. Cost is at list prices of $4 and $20 per million tokens.
+**Reading it**
+
+- The revenue target raises room revenue and loses contribution, and it changes far more rates to do it.
+- Each target's plans realise less than their estimate in the target's own measure, and the revenue target's estimate is nearly exact.
+
+Four live runs of seed 7 on world v1 tried one request format each, with claude-opus-5-5 in the default mode. The command was `python scripts/live_audit.py --seed 7`, run once per format.
 
 | Request format | Input tokens | Cost | Kept |
 | --- | ---: | ---: | --- |
@@ -157,7 +227,12 @@ Four live runs of seed 7 on world v1 (commit b178e7b) in the default mode with c
 | Display strings alone, each range as a named pair | 24,219 | $0.14 | no |
 | Display strings alone, each range as one phrase | 21,148 | $0.12 | until world v2 |
 
-The recorded live run of seed 7, made on 2026-10-15 on world v2 with `make live-audit SEED=7` and recorded with `python scripts/live_audit.py --seed 7 --record-fixture`. The model chose the template's option on every entry, so the contribution change is the template run's. The audit lists five figures in the reasons that it cannot match to a request phrase. Three are per-day gains that the request holds as "$2,780 more than holding" and the reason wrote as "$2,780 on Monday". Two are the day and the rooms of an earlier change: the request's line "day 18: raised 10% to $264 on Sat 75; since then 2 rooms booked against 1 expected" came back as "Since our day 18 raise to $264, 2 rooms have booked against 1 expected", although the prompt says to cite these lines as written.
+**Reading it**
+
+- The model said yes to every plan in all four runs, so the format changed the cost and left the result alone.
+- A signed display string beside each raw value costs the most tokens.
+
+The recorded live run of seed 7 is the default market's run with claude-opus-5-5, kept under tests/fixtures/live_seed7/. The commands are `make live-audit SEED=7` and, to record it, `python scripts/live_audit.py --seed 7 --record-fixture`.
 
 | Measure | Value |
 | --- | ---: |
@@ -173,7 +248,13 @@ The recorded live run of seed 7, made on 2026-10-15 on world v2 with `make live-
 | Figures the audit cannot match to a request phrase | 5 |
 | Sentences without a request figure | 4 |
 
-The recorded live run of seed 7 on the intraday market, made on 2026-10-16 with `python scripts/live_audit.py --seed 7 --customer customers/demo-intraday.toml --ticks 4` and recorded with the same command and `--record-fixture`. The run is at four ticks a day on customers/demo-intraday.toml, so the agent asked at the tick its news landed: the concert's announcement on day 25 at tick 2 brought one request at each of the two hotels it lifts. The model chose the template's option on every entry, so the contribution change is the template run's. The audit lists eleven figures it cannot match to a request phrase. Seven are per-day gains the request holds as "more than holding" phrases and the reason wrote as "$720 on Monday". Four are the days and rooms of earlier changes paraphrased from the request's read-back lines. The demo page's intraday file reads these records, so its day-25 reasons are the model's.
+**Reading it**
+
+- The model chose the template's option on every entry, so the run's result is the template run's.
+- Every figure the audit cannot match is in the request, reworded as a per-day gain or paraphrased from an earlier change's line.
+- The paraphrase breaks the prompt's rule to cite those lines as written.
+
+The recorded live run of seed 7 on the intraday market asked the model at the tick each piece of news landed, four ticks a day. The command is `python scripts/live_audit.py --seed 7 --customer customers/demo-intraday.toml --ticks 4`, with `--record-fixture` to record it.
 
 | Measure | Value |
 | --- | ---: |
@@ -189,7 +270,13 @@ The recorded live run of seed 7 on the intraday market, made on 2026-10-16 with 
 | Figures the audit cannot match to a request phrase | 11 |
 | Sentences without a request figure | 5 |
 
-Seed 7 with fixed rates: occupancy by hotel over stay dates 0 to 59 and over 140 to 149, measured on 2026-10-15 on world v2. The last column is the emptiest of those last ten nights.
+**Reading it**
+
+- The concert's announcement brought one request at each of the two hotels it lifts, at the tick it landed.
+- The model again chose the template's option on every entry, so the result is the template run's.
+- The demo page's intraday file reads these records, so its concert-day reasons are the model's.
+
+Seed 7 with fixed rates gives each hotel's occupancy over the first sixty stay dates and the last ten, with the emptiest of those ten nights. It comes from the fixed-rate run of `hotel-market --seed 7 --template`.
 
 | Hotel | Occupancy, stay dates 0 to 59 | Occupancy, stay dates 140 to 149 | Emptiest night, 140 to 149 |
 | --- | ---: | ---: | ---: |
@@ -198,7 +285,12 @@ Seed 7 with fixed rates: occupancy by hotel over stay dates 0 to 59 and over 140
 | Lifestyle hotel | 75.4% | 76.9% | 60% (stay date 148) |
 | Airport hotel | 83.8% | 96.1% | 79% (stay date 145) |
 
-Seed 7 under earlier designs, before the current estimate, Measured on world v1 (commit b178e7b). The last row is the design as it stood on world v1, whose world v2 figures are in the first tables. Its 20-seed mean is for the same design over seeds 1 to 20.
+**Reading it**
+
+- Every hotel ends fuller on the last ten stay dates than over the first sixty.
+- Every hotel's emptiest late night is still more than half full.
+
+Seed 7 under earlier designs ran on world v1, with a 20-seed mean where one was taken. No command reprints it, because world v1 and the two earlier designs are gone.
 
 | Design | Contribution change, seed 7 | Rate changes | Flags held under the minimum | 20-seed mean |
 | --- | ---: | ---: | ---: | ---: |
@@ -206,7 +298,13 @@ Seed 7 under earlier designs, before the current estimate, Measured on world v1 
 | Flat rates, a plan per day of the week, the $250 minimum, estimate capped at the unsold rooms | +$22,894 | 10 | 22 | +$27,350 |
 | The same with the exact estimate E[min(N, unsold)] | +$28,818 | 7 | 57 | +$32,899 |
 
-The estimator against known elasticities: seed 7 in learn mode from a prior of 1.5, measured on 2026-10-15 on world v2. The simulator's elasticity is set to each true value in turn. Each cell is the day-59 estimate at that hotel, with its standard error in brackets.
+**Reading it**
+
+- Each design change cut the rate changes, and the exact estimate earned the most with the fewest.
+- The first design's many small changes included several that lost money.
+- The last row is the current design on world v1, and the tables at the top of this file give its world v2 figures.
+
+The estimator against known elasticities runs seed 7 in learn mode from a prior of 1.5, with the simulator's elasticity set to each true value in turn. No command prints it, and `test_the_day_59_estimate_recovers_the_simulators_elasticity` runs the same three worlds.
 
 | True elasticity | Downtown convention | Downtown full-service | Lifestyle | Airport |
 | ---: | ---: | ---: | ---: | ---: |
@@ -214,7 +312,12 @@ The estimator against known elasticities: seed 7 in learn mode from a prior of 1
 | 1.5 | 1.30 (0.14) | 1.33 (0.22) | 1.35 (0.22) | 1.52 (0.23) |
 | 2.0 | 2.03 (0.17) | 1.54 (0.23) | 1.77 (0.26) | 1.91 (0.24) |
 
-Spread of the log rate ratio in the estimator's observations by hotel, measured on 2026-10-15 on world v2. The run is the fixed-rate run of seed 7 as of day 59; since world v2 the shop noise moves the ratio every day.
+**Reading it**
+
+- Every estimate lands within three standard errors of the truth, which is what the test allows.
+- The full-service hotel's estimate sits furthest from the truth at both the lowest and the highest true value.
+
+Spread of the log rate ratio in the estimator's observations is measured per hotel in the fixed-rate run of seed 7 as of day 59. No command prints it.
 
 | Hotel | Standard deviation of log(rate / comp median) | Observations |
 | --- | ---: | ---: |
@@ -223,7 +326,11 @@ Spread of the log rate ratio in the estimator's observations by hotel, measured 
 | Lifestyle hotel | 0.012 | 5,302 |
 | Airport hotel | 0.012 | 5,304 |
 
-Timings of the stored tables, measured once during development on the development machine.
+**Reading it**
+
+- The ratio moves even with fixed rates, because the shop noise moves the comp median every day.
+
+Timings of the stored tables were taken once during development, before world v2, on the development machine. The command was `hotel-market run-day --seed 7 --as-of 59 --from 0`, through a DuckDB file.
 
 | Operation | Time |
 | --- | --- |
@@ -232,7 +339,12 @@ Timings of the stored tables, measured once during development on the developmen
 | Inserting a day's rows one statement at a time (replaced by one frame per day) | 2.5 seconds per 3,000 rows |
 | Reading the events table once per detect row (replaced by one read per day) | 2 seconds a day |
 
-The suite on each Python version. The run of 2026-10-12 came from a fresh virtual environment with the slow tests included and passed 235 tests on both versions. The counts below were refreshed on 2026-10-15 on world v2 from the plain suite, with numpy 2.5.4, pandas 3.0.6 and duckdb 1.5.6 on both, and anthropic 1.13.0 on 3.12.6 and 1.14.0 on 3.13.7. The ten slow tests are skipped, and so are the five demo-page tests wherever the environment has the dev extra alone, which is what `make setup` installs: the fresh-copy row ran `make setup` and then `make test` in a copy of the repository with its history and without .venv, and the five ran once `make demo` had installed streamlit. `make test-all` on 3.12.6, the slow tests included, gave 386 passed on 2026-10-15, after the live run of seed 7 was re-recorded on world v2. The last two rows are the suite of 2026-10-16, before the repository was frozen, with the demo extra and a Chromium present, so nothing skipped but the slow tests.
+**Reading it**
+
+- Most of a day's time goes to the simulator's playback, so reading and writing the tables costs little.
+- Both slow paths in the last two rows were replaced, so a day's rows now go in as one frame and each source reads a day once.
+
+The suite on each Python version ran on world v2, with the plain suite on both versions and every test on one. Each row names its command.
 
 | Python | Command | Result |
 | --- | --- | --- |
@@ -242,9 +354,12 @@ The suite on each Python version. The run of 2026-10-12 came from a fresh virtua
 | 3.12.6 | `make test` on 2026-10-16 | 402 passed, 10 skipped |
 | 3.12.6 | `make test-all` on 2026-10-16 | 412 passed |
 
-The live answers under cache/ are the only copy of about $86 of model calls on each world, so they are archived as a dated tar outside the repository, with the archive's sha256 and a per-file list beside it. The archive of 2026-10-15 is cache-2026-10-15-0406.tar.gz under ~/backups/hotel-market-sim, 8,203 files with the sha256 ab3b5f7a6f49e81a81716ed9baa626efee668f79be5328ebd5d77addb6c3d9c6, and it restores with `tar -xzf` from the repository root. The world v2 benchmark of 2026-10-15 is archived the same way as cache-v2-2026-10-15-1040.tar.gz, 8,146 files with the sha256 f13dbef4f14d49638b4c5e34dc17c18501effd3e9628a5d8a43e5ee4496ebda7, and the world v1 cache it replaced sits beside it as cache-v1-2026-10-15. On 2026-10-16 the 163 answers whose request line read "1 rooms booked" were archived the same way as cache-singular-2026-10-16-1534.tar.gz, sha256 e1c5e3635b5367b69983de5c6f6e066467d2caa01e1617bdee113500e413351f, then deleted and asked again once the phrase read "1 room booked", because the phrase is a request field and a changed request has a new digest; 30 later answers that the new answers changed were asked again with them, 194 calls for $6.59 at list prices, and the tables above were reprinted from the caches.
+**Reading it**
 
-The container image on each Python version, built on 2026-10-12. Docker 28.4.0 ran on an aarch64 Ubuntu VM with 4 CPUs and 4 GiB. Each image ran the suite from its copy of the repository, and the 3.12 image ran seed 7 with the template. pandas 3.0.6, duckdb 1.5.6 and anthropic 1.13.0 were installed on every version, and every dependency came as a wheel, 3.14 included. The images were not rebuilt; the native plain suite has since grown to 402 passed and 10 skipped.
+- The rows with more skips lack the demo extra, because `make setup` installs the dev extra alone and the demo-page tests then skip.
+- The last two rows come from the day of the freeze, with the demo extra and a browser present, so nothing but the slow tests is skipped.
+
+The container image on each Python version was built before world v2 and ran the suite from its own copy of the repository. The commands were `make image PYTHON=3.11`, `make image` and `make image PYTHON=3.14`, then `make docker-test` on each.
 
 | Python | numpy | Build | Image | Tests | Suite time | Seed-7 run | decisions.jsonl |
 | --- | --- | ---: | ---: | --- | ---: | ---: | --- |
@@ -252,14 +367,65 @@ The container image on each Python version, built on 2026-10-12. Docker 28.4.0 r
 | 3.12.13 | 2.5.4 | 24 s | 592 MB | 278 passed, 3 skipped | 45 s | 1.6 s | matched the native run on world v1; on world v2 the native checksum is 263387b3 on this machine's numpy 2.5.4 and pandas 3.0.6, and a Linux run on numpy 2.5.3 and pandas 3.0.5 gave 8faafad0 with the same decisions; it was 19b766b8 on world v1 once the plan records gained two fields, and 8ce570ea when the image ran |
 | 3.14.8 | 2.5.4 | 24 s | 600 MB | 278 passed, 3 skipped | 45 s | | |
 
+**Reading it**
+
+- Every version built and passed the same suite, with each dependency installed from a wheel.
+- The images were not rebuilt, so their suite is older and smaller than the native one in the table above.
+- The checksum of the decisions file depends on the platform's numpy and pandas, so the decisions themselves are the cross-platform test.
+
+<details><summary>Notes</summary>
+
+Seeds 1 to 20 in the default mode: the agent run against the fixed-rate run, stay dates 0 to 149, run on 2026-10-15 on world v2 with `hotel-market --seeds 1 20 --template`. The reasons are the template's, and candidates are scored on contribution with the simulator's elasticity. The template is a stand-in that answers in the model's place when there is no key; it says yes to every plan and writes a reason from the entry's own figures. The last two rows are the standard deviation across the seeds and the standard error of the mean.
+
+Accepted plans at the two downtown hotels by seed, read from the same sweep's decisions files, run on 2026-10-15 on world v2. It is a lookup for the walkthrough, not a result: a seed with no such plan reads none, and seed 7 is one of the three. The day-10 plans are the convention's, raised on the day it is announced; the others are pace plans on a single stay date.
+
+Seed 7, days 0 to 59: what became of the flags, run on 2026-10-15 on world v2 with `hotel-market --seed 7 --template`.
+
+Comp-median flags over seeds 1 to 20 in the default mode, from the same sweep: those on a day a scripted shock moved a median (10, the convention's competitor raise, and 30, the rate cut) and those on every other day, where only the shop noise moved it. Since world v2 the rate shop moves every day, so the 5% threshold meets ordinary noise. Measured on 2026-10-15 on world v2 with `hotel-market --seeds 1 20 --template`.
+
+Seed 7: room revenue and contribution per hotel, the fixed-rate run against the agent run, stay dates 0 to 149, run on 2026-10-15 on world v2.
+
+Seed 7 over only the 70 hotel and stay-date pairs where the agent changed a rate, run on 2026-10-15 on world v2. The pairs per hotel are in brackets.
+
+Seeds 1 to 20 per elasticity arm, each against the same fixed-rate runs, run on 2026-10-15 on world v2 with `hotel-market --seeds 1 20 --template --elasticity true --elasticity fixed:1.0 --elasticity fixed:2.0 --elasticity learn:1.0 --elasticity learn:2.0` and the same with `--elasticity learn:1.0 --elasticity learn:2.0 --cautious`. Estimated / realised is the accepted plans' estimated gain over holding, summed over the seeds, over the realised gain. Rejected at an end counts a cautious arm's candidates ahead of hold at the estimate but behind at an end.
+
+Where each arm's gain came from, summed over the 20 seeds, run on 2026-10-15 on world v2. The first group is the plans the convention (day 10) and the new flights (day 20) raised. The second is every other plan.
+
+What the accepted plans' nights came to, summed over the 20 seeds, run on 2026-10-15 on world v2: each plan's estimate for the night, the contribution on the rooms then unsold, against what the rooms sold after the decision earned on it. The sweep computes these from the run's own books as the stored outcomes table records them.
+
+The learning agent's day-59 elasticity estimates against a true value of 1.5, run on 2026-10-15 on world v2. Each figure is the range over the four hotels of each hotel's mean across the 20 seeds.
+
+The cautious rule with and without a $250 minimum per day of the week, seeds 1 to 20. Measured on world v1 (commit b178e7b): the per-day minimum rule no longer exists, so the table is not rerun; the band alone on world v2 is in the arm table above. The band alone is the rule that stayed. Its rejection count includes every candidate ahead of hold at the estimate, including those worth less than $250.
+
+Seeds 1 to 20 with the simulator's elasticity and the template, each target against the same fixed-rate runs, run on 2026-10-15 on world v2 with `hotel-market --seeds 1 20 --template` and the same with `--target revenue`. The last two columns are in the target's own measure.
+
+Four live runs of seed 7 on world v1 (commit b178e7b) in the default mode with claude-opus-5-5, one per request format. Each made seven calls and said yes to every plan. The last was the recorded run under tests/fixtures/live_seed7/ until the world v2 run below replaced it. Cost is at list prices of $4 and $20 per million tokens.
+
+The recorded live run of seed 7, made on 2026-10-15 on world v2 with `make live-audit SEED=7` and recorded with `python scripts/live_audit.py --seed 7 --record-fixture`. The model chose the template's option on every entry, so the contribution change is the template run's. The audit lists five figures in the reasons that it cannot match to a request phrase. Three are per-day gains that the request holds as "$2,780 more than holding" and the reason wrote as "$2,780 on Monday". Two are the day and the rooms of an earlier change: the request's line "day 18: raised 10% to $264 on Sat 75; since then 2 rooms booked against 1 expected" came back as "Since our day 18 raise to $264, 2 rooms have booked against 1 expected", although the prompt says to cite these lines as written.
+
+The recorded live run of seed 7 on the intraday market, made on 2026-10-16 with `python scripts/live_audit.py --seed 7 --customer customers/demo-intraday.toml --ticks 4` and recorded with the same command and `--record-fixture`. The run is at four ticks a day on customers/demo-intraday.toml, so the agent asked at the tick its news landed: the concert's announcement on day 25 at tick 2 brought one request at each of the two hotels it lifts. The model chose the template's option on every entry, so the contribution change is the template run's. The audit lists eleven figures it cannot match to a request phrase. Seven are per-day gains the request holds as "more than holding" phrases and the reason wrote as "$720 on Monday". Four are the days and rooms of earlier changes paraphrased from the request's read-back lines. The demo page's intraday file reads these records, so its day-25 reasons are the model's.
+
+Seed 7 with fixed rates: occupancy by hotel over stay dates 0 to 59 and over 140 to 149, measured on 2026-10-15 on world v2. The last column is the emptiest of those last ten nights.
+
+Seed 7 under earlier designs, before the current estimate, Measured on world v1 (commit b178e7b). The last row is the design as it stood on world v1, whose world v2 figures are in the first tables. Its 20-seed mean is for the same design over seeds 1 to 20.
+
+The estimator against known elasticities: seed 7 in learn mode from a prior of 1.5, measured on 2026-10-15 on world v2. The simulator's elasticity is set to each true value in turn. Each cell is the day-59 estimate at that hotel, with its standard error in brackets.
+
+Spread of the log rate ratio in the estimator's observations by hotel, measured on 2026-10-15 on world v2. The run is the fixed-rate run of seed 7 as of day 59; since world v2 the shop noise moves the ratio every day.
+
+Timings of the stored tables, measured once during development on the development machine.
+
+The suite on each Python version. The run of 2026-10-12 came from a fresh virtual environment with the slow tests included and passed 235 tests on both versions. The counts below were refreshed on 2026-10-15 on world v2 from the plain suite, with numpy 2.5.4, pandas 3.0.6 and duckdb 1.5.6 on both, and anthropic 1.13.0 on 3.12.6 and 1.14.0 on 3.13.7. The ten slow tests are skipped, and so are the five demo-page tests wherever the environment has the dev extra alone, which is what `make setup` installs: the fresh-copy row ran `make setup` and then `make test` in a copy of the repository with its history and without .venv, and the five ran once `make demo` had installed streamlit. `make test-all` on 3.12.6, the slow tests included, gave 386 passed on 2026-10-15, after the live run of seed 7 was re-recorded on world v2. The last two rows are the suite of 2026-10-16, before the repository was frozen, with the demo extra and a Chromium present, so nothing skipped but the slow tests.
+
+The live answers under cache/ are the only copy of about $86 of model calls on each world, so they are archived as a dated tar outside the repository, with the archive's sha256 and a per-file list beside it. The archive of 2026-10-15 is cache-2026-10-15-0406.tar.gz under ~/backups/hotel-market-sim, 8,203 files with the sha256 ab3b5f7a6f49e81a81716ed9baa626efee668f79be5328ebd5d77addb6c3d9c6, and it restores with `tar -xzf` from the repository root. The world v2 benchmark of 2026-10-15 is archived the same way as cache-v2-2026-10-15-1040.tar.gz, 8,146 files with the sha256 f13dbef4f14d49638b4c5e34dc17c18501effd3e9628a5d8a43e5ee4496ebda7, and the world v1 cache it replaced sits beside it as cache-v1-2026-10-15. On 2026-10-16 the 163 answers whose request line read "1 rooms booked" were archived the same way as cache-singular-2026-10-16-1534.tar.gz, sha256 e1c5e3635b5367b69983de5c6f6e066467d2caa01e1617bdee113500e413351f, then deleted and asked again once the phrase read "1 room booked", because the phrase is a request field and a changed request has a new digest; 30 later answers that the new answers changed were asked again with them, 194 calls for $6.59 at list prices, and the tables above were reprinted from the caches.
+
+The container image on each Python version, built on 2026-10-12. Docker 28.4.0 ran on an aarch64 Ubuntu VM with 4 CPUs and 4 GiB. Each image ran the suite from its copy of the repository, and the 3.12 image ran seed 7 with the template. pandas 3.0.6, duckdb 1.5.6 and anthropic 1.13.0 were installed on every version, and every dependency came as a wheel, 3.14 included. The images were not rebuilt; the native plain suite has since grown to 402 passed and 10 skipped.
+
+</details>
+
 ## The benchmark of the reviewers
 
-
-`hotel-market bench --seeds 1 20`, run on 2026-10-15 on world v2. For every seed, the command makes the fixed-rate run once. It then makes one agent run per elasticity mode and reviewer. The reviewers are the template, the oracle reviewer, claude-opus-5-5, claude-sonnet-5-5 and claude-haiku-5-5, and each arm has its own cache folder. The live calls were made first, one process per model and seed range: seeds 1 to 3, then seeds 4 to 20 in six ranges of up to three seeds, sixteen processes at a time. The command that printed the tables read every folder's cache and made no call. The fixed modes' 4,007 calls cost $37.23 at list prices.
-
-In every table, mean change and range are the contribution change against the fixed-rate run, SD is the standard deviation of the per-seed changes, SE is the standard error of their mean, and p is a two-sided sign test on the seeds ahead, which is the chance that a fair coin gives a count at least as far from half. Ahead counts the seeds where the reviewer beat it. Flags counts the flags the arm raised over the seeds, pace flags those with a pace cause, and rate changes the changes the arm made. Regret is the oracle arm's mean minus the reviewer's. Recovered is the reviewer's gain over the template as a share of the oracle's. Accept, precision, recall, F1 and $ recall are the decline measures against the oracle's labels, pooled over the seeds. Invalid counts calls with a bad attempt. Calls, tokens, median seconds and cost are the arm's, from its calls.jsonl, at list prices.
-
-Seeds 1 to 20 at a fixed elasticity of 1.0, each reviewer against the fixed-rate run.
+Seeds 1 to 20 at a fixed elasticity of 1.0 ran once per reviewer, and each reviewer is measured against the fixed-rate run. The command is `hotel-market bench --seeds 1 20`, which printed the tables from the caches without a call.
 
 | Reviewer | Mean change | SD | SE | Range | Ahead | p | Flags | Pace flags | Rate changes | Regret | Recovered | Accept | Precision | Recall | F1 | $ recall | Invalid | Calls | Tokens in/out | Median s | Cost |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -269,7 +435,13 @@ Seeds 1 to 20 at a fixed elasticity of 1.0, each reviewer against the fixed-rate
 | claude-sonnet-5-5 | -6,184 | 6,986 | 1,562 | -16,608 to +11,323 | 4/20 | 0.012 | 1095 | 428 | 761 | +19,291 | 0.00 | 0.99 | 1.00 | 0.01 | 0.02 | 0.01 | 0 | 699 | 1,925,434/142,418 | 2.6 | $5.28 |
 | claude-haiku-5-5 | -6,265 | 6,944 | 1,553 | -17,084 to +11,323 | 3/20 | 0.0026 | 1099 | 432 | 766 | +19,372 | 0.00 | 1.00 | - | 0.00 | - | 0.00 | 0 | 696 | 1,919,431/484,956 | 4.0 | $0.43 |
 
-Seeds 1 to 20 at a fixed elasticity of 2.0, each reviewer against the fixed-rate run.
+**Reading it**
+
+- The template says yes to every plan, and the oracle declines each plan that holding matches or beats at the true elasticity, so their gap is open to a reviewer.
+- Opus is the only model to recover part of that gap, and the oracle also declines every plan Opus declines.
+- Sonnet and Haiku end level with the template, because they almost never decline.
+
+Seeds 1 to 20 at a fixed elasticity of 2.0 ran the same reviewers, each measured against the fixed-rate run. The command is `hotel-market bench --seeds 1 20`.
 
 | Reviewer | Mean change | SD | SE | Range | Ahead | p | Flags | Pace flags | Rate changes | Regret | Recovered | Accept | Precision | Recall | F1 | $ recall | Invalid | Calls | Tokens in/out | Median s | Cost |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -279,7 +451,13 @@ Seeds 1 to 20 at a fixed elasticity of 2.0, each reviewer against the fixed-rate
 | claude-sonnet-5-5 | -2,681 | 4,172 | 933 | -10,801 to +3,231 | 6/20 | 0.12 | 2586 | 1906 | 562 | +8,687 | 0.00 | 0.99 | 1.00 | 0.01 | 0.02 | 0.01 | 0 | 506 | 1,546,599/110,894 | 2.9 | $4.20 |
 | claude-haiku-5-5 | -2,687 | 4,119 | 921 | -10,801 to +3,231 | 6/20 | 0.12 | 2586 | 1906 | 566 | +8,693 | 0.00 | 1.00 | - | 0.00 | - | 0.00 | 0 | 505 | 1,543,512/390,769 | 4.3 | $0.35 |
 
-Seeds 1 to 20 in the true mode, each reviewer against the fixed-rate run.
+**Reading it**
+
+- The gap between the template and the oracle is smaller here than at the lower fixed elasticity.
+- Opus recovers almost none of it, and a few of its declines are plans the oracle accepts.
+- Sonnet and Haiku again end level with the template.
+
+Seeds 1 to 20 in the true mode ran the same reviewers, with every plan scored at the simulator's own elasticity. The command is `hotel-market bench --seeds 1 20`.
 
 | Reviewer | Mean change | SD | SE | Range | Ahead | p | Flags | Pace flags | Rate changes | Regret | Recovered | Accept | Precision | Recall | F1 | $ recall | Invalid | Calls | Tokens in/out | Median s | Cost |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -289,7 +467,12 @@ Seeds 1 to 20 in the true mode, each reviewer against the fixed-rate run.
 | claude-sonnet-5-5 | +16,164 | 3,166 | 708 | +11,589 to +23,394 | 20/20 | <0.001 | 2009 | 1337 | 106 | +0 | - | 1.00 | - | - | - | - | 0 | 97 | 321,704/20,349 | 2.7 | $0.85 |
 | claude-haiku-5-5 | +16,164 | 3,166 | 708 | +11,589 to +23,394 | 20/20 | <0.001 | 2009 | 1337 | 106 | +0 | - | 1.00 | - | - | - | - | 0 | 97 | 321,704/76,520 | 4.3 | $0.07 |
 
-The reviewers ranked across the mismatched modes, fixed:1.0 and fixed:2.0, on seeds 1 to 20.
+**Reading it**
+
+- Saying yes to every plan is correct here, so every reviewer earns exactly what the template earns.
+- No model declines a plan, so a gain in this mode belongs to the plans the code built.
+
+The reviewers ranked across the mismatched modes pool fixed:1.0 and fixed:2.0 over seeds 1 to 20. The command is `hotel-market bench --seeds 1 20`.
 
 | Rank | Reviewer | Mean change | SD | SE | Range | Ahead | p | Flags | Pace flags | Rate changes | Regret | Recovered | Accept | Precision | Recall | F1 | $ recall | Invalid | Calls | Tokens in/out | Median s | Cost |
 | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -299,15 +482,33 @@ The reviewers ranked across the mismatched modes, fixed:1.0 and fixed:2.0, on se
 | 4 | template | -4,476 | 5,920 | 936 | -17,084 to +11,323 | 9/40 | <0.001 | 3685 | 2338 | 1332 | +14,032 | 0.00 | 1.00 | - | 0.00 | - | 0.00 | - | - | - | - | - |
 | 5 | claude-haiku-5-5 | -4,476 | 5,920 | 936 | -17,084 to +11,323 | 9/40 | <0.001 | 3685 | 2338 | 1332 | +14,032 | 0.00 | 1.00 | - | 0.00 | - | 0.00 | 0 | 1201 | 3,462,943/875,725 | 4.1 | $0.78 |
 
+**Reading it**
+
+- Opus finishes well above the template, and Sonnet's few declines lift it only just above.
+- Opus's declines are nearly always right, but it misses most of the plans the oracle declines.
+- Haiku never declines a plan in either mode, so its calls change nothing and cost the least.
+
+<details><summary>Notes</summary>
+
+`hotel-market bench --seeds 1 20`, run on 2026-10-15 on world v2. For every seed, the command makes the fixed-rate run once. It then makes one agent run per elasticity mode and reviewer. The reviewers are the template, the oracle reviewer, claude-opus-5-5, claude-sonnet-5-5 and claude-haiku-5-5, and each arm has its own cache folder. The live calls were made first, one process per model and seed range: seeds 1 to 3, then seeds 4 to 20 in six ranges of up to three seeds, sixteen processes at a time. The command that printed the tables read every folder's cache and made no call. The fixed modes' 4,007 calls cost $37.23 at list prices.
+
+In every table, mean change and range are the contribution change against the fixed-rate run, SD is the standard deviation of the per-seed changes, SE is the standard error of their mean, and p is a two-sided sign test on the seeds ahead, which is the chance that a fair coin gives a count at least as far from half. Ahead counts the seeds where the reviewer beat it. Flags counts the flags the arm raised over the seeds, pace flags those with a pace cause, and rate changes the changes the arm made. Regret is the oracle arm's mean minus the reviewer's. Recovered is the reviewer's gain over the template as a share of the oracle's. Accept, precision, recall, F1 and $ recall are the decline measures against the oracle's labels, pooled over the seeds. Invalid counts calls with a bad attempt. Calls, tokens, median seconds and cost are the arm's, from its calls.jsonl, at list prices.
+
+Seeds 1 to 20 at a fixed elasticity of 1.0, each reviewer against the fixed-rate run.
+
+Seeds 1 to 20 at a fixed elasticity of 2.0, each reviewer against the fixed-rate run.
+
+Seeds 1 to 20 in the true mode, each reviewer against the fixed-rate run.
+
+The reviewers ranked across the mismatched modes, fixed:1.0 and fixed:2.0, on seeds 1 to 20.
+
 At a fixed elasticity of 1.0, saying yes to every plan earns -$6,265 a seed, and the oracle earns +$13,107 while accepting 11% of the plans, so $19,372 a seed is open to a reviewer. Opus earns +$346, ahead of the fixed-rate run in 9 of 20 seeds, a recovered share of 0.34. Opus declines 230 plans with precision 1.00 and recall 0.31, and its dollar-weighted recall is 0.33. Sonnet declines 8 plans with precision 1.00 and recall 0.01, and Haiku declines no plan. At a fixed elasticity of 2.0, saying yes to every plan earns -$2,687 and the oracle +$6,006 while accepting 13%. Opus declines 38 plans with precision 0.92 and recall 0.08, Sonnet declines 5 plans with precision 1.00 and recall 0.01, and Haiku declines no plan. In the true mode every plan is scored with the simulator's own elasticity, so saying yes to every plan is correct: every reviewer earns the template's +$16,164 a seed, and no model declines a plan. The fixed modes' 4,007 calls cost $37.23 at list prices. Over the whole benchmark 0 calls were retried and 0 failed.
+
+</details>
 
 ## The demand bias
 
-`hotel-market bench --seeds 1 20 --template --demand-bias F --elasticity true --elasticity fixed:1.0 --elasticity learn:1.0`, and the same command with `--elasticity learn:1.0 --cautious`, run on 2026-10-15 on world v2 at F = 0.9, 1.1 and 1.0. The option multiplies the simulator's demand by F, the day-0 preload included. The agent never sees F, so its forecast is wrong by that factor in every mode. The oracle reviewer, which is told F, stays the simulator's truth. Each arm is measured against the fixed-rate run at the same bias.
-
-In every table, mean change and range are the contribution change per seed against the fixed-rate run, and ahead counts the seeds where the arm beat it. Flags counts the flags the arm raised over the 20 seeds, and pace flags those with a pace cause. Rate changes counts the plans that changed a rate, and accept is the share of queued plans the reviewer accepted. The day-59 estimate is the learning agent's elasticity on day 59, as the range over the four hotels of each hotel's mean across the seeds. The true value is 1.5.
-
-Seeds 1 to 20 at a demand bias of 0.9, the template and the oracle in four modes, each against the fixed-rate run at the same bias.
+Seeds 1 to 20 at a demand bias of 0.9 cut the simulator's demand by a tenth without telling the agent. The commands are `hotel-market bench --seeds 1 20 --template --demand-bias F --elasticity true --elasticity fixed:1.0 --elasticity learn:1.0` and the same with `--elasticity learn:1.0 --cautious`, at F = 0.9.
 
 | Mode | Reviewer | Mean change | SD | SE | Range | Ahead | p | Flags | Pace flags | Rate changes | Accept | Day-59 estimate |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
@@ -320,7 +521,13 @@ Seeds 1 to 20 at a demand bias of 0.9, the template and the oracle in four modes
 | learn:1.0 --cautious | template | -4,122 | 4,936 | 1,104 | -11,914 to +3,973 | 4/20 | 0.012 | 4718 | 4027 | 454 | 1.00 | 1.36 to 1.50 |
 | learn:1.0 --cautious | oracle | +613 | 1,942 | 434 | -2,949 to +4,834 | 13/20 | 0.26 | 4567 | 3880 | 54 | 0.05 | 1.19 to 1.47 |
 
-Seeds 1 to 20 at a demand bias of 1.1, the same arms.
+**Reading it**
+
+- Every raise sells fewer rooms than its estimate says, so the default mode's gain almost vanishes.
+- Saying yes to every plan at a wrong elasticity loses money here, while the oracle accepts only a few of those plans.
+- The learning agent's estimates stay near the truth, because the missing demand mostly lands in the estimator's intercept.
+
+Seeds 1 to 20 at a demand bias of 1.1 raise the simulator's demand by a tenth, again unseen by the agent. The commands are the same, at F = 1.1.
 
 | Mode | Reviewer | Mean change | SD | SE | Range | Ahead | p | Flags | Pace flags | Rate changes | Accept | Day-59 estimate |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
@@ -333,7 +540,13 @@ Seeds 1 to 20 at a demand bias of 1.1, the same arms.
 | learn:1.0 --cautious | template | +60,666 | 10,863 | 2,429 | +37,870 to +78,464 | 20/20 | <0.001 | 7467 | 6729 | 837 | 1.00 | 1.40 to 1.48 |
 | learn:1.0 --cautious | oracle | +63,660 | 9,789 | 2,189 | +38,299 to +74,657 | 20/20 | <0.001 | 9517 | 8775 | 536 | 0.27 | 1.38 to 1.46 |
 
-Seeds 1 to 20 at the default demand bias of 1.0, the same arms, as the reference. The template rows repeat the earlier tables.
+**Reading it**
+
+- Every arm gains a great deal, because the start rates were set for a smaller market and the dates run ahead of pace.
+- In the true mode saying yes to every plan earns almost exactly what the oracle earns.
+- The learning agent's estimates stay near the truth here too.
+
+Seeds 1 to 20 at the default demand bias of 1.0 run the same arms as the reference. The commands are the same, at F = 1.0.
 
 | Mode | Reviewer | Mean change | SD | SE | Range | Ahead | p | Flags | Pace flags | Rate changes | Accept | Day-59 estimate |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
@@ -346,13 +559,31 @@ Seeds 1 to 20 at the default demand bias of 1.0, the same arms, as the reference
 | learn:1.0 --cautious | template | +12,527 | 5,265 | 1,177 | +1,658 to +21,698 | 20/20 | <0.001 | 1571 | 902 | 295 | 1.00 | 1.36 to 1.46 |
 | learn:1.0 --cautious | oracle | +14,854 | 3,672 | 821 | +10,124 to +23,687 | 20/20 | <0.001 | 1882 | 1211 | 138 | 0.32 | 1.32 to 1.43 |
 
+**Reading it**
+
+- The template rows repeat the earlier tables, because this is the default world.
+- Only the arms with a wrong elasticity leave money for the oracle to win.
+- The cautious rule takes the learning agent most of the way to the oracle.
+
+<details><summary>Notes</summary>
+
+`hotel-market bench --seeds 1 20 --template --demand-bias F --elasticity true --elasticity fixed:1.0 --elasticity learn:1.0`, and the same command with `--elasticity learn:1.0 --cautious`, run on 2026-10-15 on world v2 at F = 0.9, 1.1 and 1.0. The option multiplies the simulator's demand by F, the day-0 preload included. The agent never sees F, so its forecast is wrong by that factor in every mode. The oracle reviewer, which is told F, stays the simulator's truth. Each arm is measured against the fixed-rate run at the same bias.
+
+In every table, mean change and range are the contribution change per seed against the fixed-rate run, and ahead counts the seeds where the arm beat it. Flags counts the flags the arm raised over the 20 seeds, and pace flags those with a pace cause. Rate changes counts the plans that changed a rate, and accept is the share of queued plans the reviewer accepted. The day-59 estimate is the learning agent's elasticity on day 59, as the range over the four hotels of each hotel's mean across the seeds. The true value is 1.5.
+
+Seeds 1 to 20 at a demand bias of 0.9, the template and the oracle in four modes, each against the fixed-rate run at the same bias.
+
+Seeds 1 to 20 at a demand bias of 1.1, the same arms.
+
+Seeds 1 to 20 at the default demand bias of 1.0, the same arms, as the reference. The template rows repeat the earlier tables.
+
 At 0.9 the agent expects 11% more demand than arrives, so every raise sells fewer rooms than its estimate says. The default mode's gain falls from +$16,164 to +$1,069 a seed, ahead in 12 of 20 seeds, and saying yes to every plan at a wrong elasticity loses money: -$25,072 at fixed:1.0 and -$15,174 at learn:1.0. In the mismatched modes the oracle accepts 1% to 5% of the plans. At 1.1 the default mode earns +$66,687 a seed, ahead in 20 of 20, because the start rates were set for a smaller market and the dates run ahead of pace. The learning agent's day-59 estimates are 1.40 to 1.51 at 0.9 and 1.43 to 1.50 at 1.1 against 1.42 to 1.49 at 1.0, so the demand-level error mostly lands in the estimator's intercept, as estimate.py intends.
+
+</details>
 
 ## The competitor reaction
 
-`hotel-market bench --seeds 1 20 --template --react --elasticity true` and the same command with `--elasticity learn:1.0 --cautious`, run on 2026-10-15 on world v2, where the market's own price response is 1.0 by default. With `--react`, each competitor moves half of a hotel's change from its start rate three days after the change takes effect. The shop on a day reads the hotel's rate in force three days earlier from the Books' own log, so nothing is used before it is known. The reaction leaves the fixed-rate run as it is, because that run never changes a rate. The columns are those of the demand-bias tables. Median flags counts the flags with a comp-median cause, own changes those among them that the hotels' own changes caused, and changed twice the stay dates changed twice or more within 14 days.
-
-Seeds 1 to 20 with the reaction on, the template and the oracle in the true mode and the cautious learning mode, each against the fixed-rate run. The oracle is told the reaction and the market elasticity.
+This sweep of seeds 1 to 20 turns the reaction on, so each competitor follows half of a hotel's change three days after it takes effect. The commands are `hotel-market bench --seeds 1 20 --template --react --elasticity true` and the same with `--elasticity learn:1.0 --cautious`.
 
 | Mode | Reviewer | Mean change | SD | SE | Range | Ahead | p | Flags | Pace flags | Rate changes | Median flags | Own changes | Changed twice | Accept | Day-59 estimate |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
@@ -361,7 +592,13 @@ Seeds 1 to 20 with the reaction on, the template and the oracle in the true mode
 | learn:1.0 --cautious | template | +65,216 | 30,310 | 6,778 | +28,426 to +134,913 | 20/20 | <0.001 | 2628 | 983 | 734 | 1490 | 1054 | 535 | 1.00 | 1.29 to 1.47 |
 | learn:1.0 --cautious | oracle | +65,216 | 30,310 | 6,778 | +28,426 to +134,913 | 20/20 | <0.001 | 2628 | 983 | 734 | 1490 | 1054 | 535 | 1.00 | 1.29 to 1.47 |
 
-Seed 7 with the reaction on, run on 2026-10-15 on world v2 with `python scripts/median_path.py --seed 7 --react --hotel lifestyle --stays 75 75 --days 16 25`: the lifestyle hotel's rate in force and its comp median on stay date 75, a Saturday, by shop day. On world v2 the downtown hotels change nothing on the convention nights at seed 7, so the first accepted plan is the lifestyle hotel's day-18 raise of 10%, in force from day 19, and a second raise on day 20, in force from day 21. The competitors move half of each three days later, on days 22 and 24, while the daily shop noise moves the median every day.
+**Reading it**
+
+- The reaction roughly doubles the default mode's gain, because a raise the competitors half follow costs the hotel few rooms.
+- A competitor's move raises a new flag on the same dates, so the hold lifts and the agent raises again.
+- The cautious learner, which underrates what a raise costs, rides that loop furthest and changes many dates twice within two weeks.
+
+Seed 7 with the reaction on follows the lifestyle hotel's rate and its comp median on stay date 75, a Saturday, by shop day. The command is `python scripts/median_path.py --seed 7 --react --hotel lifestyle --stays 75 75 --days 16 25`.
 
 | Shop day | Stay 75 rate | Median |
 | ---: | ---: | ---: |
@@ -376,13 +613,27 @@ Seed 7 with the reaction on, run on 2026-10-15 on world v2 with `python scripts/
 | 24 | 290.40 | 264.87 |
 | 25 | 290.40 | 265.08 |
 
+**Reading it**
+
+- The hotel raises twice, and the median climbs three days after each raise, when the competitors follow half of it.
+- Between those steps the daily shop noise moves the median up and down.
+- The downtown hotels change nothing on the convention nights at this seed, so the lifestyle hotel's first raise here is the run's first accepted plan.
+
+<details><summary>Notes</summary>
+
+`hotel-market bench --seeds 1 20 --template --react --elasticity true` and the same command with `--elasticity learn:1.0 --cautious`, run on 2026-10-15 on world v2, where the market's own price response is 1.0 by default. With `--react`, each competitor moves half of a hotel's change from its start rate three days after the change takes effect. The shop on a day reads the hotel's rate in force three days earlier from the Books' own log, so nothing is used before it is known. The reaction leaves the fixed-rate run as it is, because that run never changes a rate. The columns are those of the demand-bias tables. Median flags counts the flags with a comp-median cause, own changes those among them that the hotels' own changes caused, and changed twice the stay dates changed twice or more within 14 days.
+
+Seeds 1 to 20 with the reaction on, the template and the oracle in the true mode and the cautious learning mode, each against the fixed-rate run. The oracle is told the reaction and the market elasticity.
+
+Seed 7 with the reaction on, run on 2026-10-15 on world v2 with `python scripts/median_path.py --seed 7 --react --hotel lifestyle --stays 75 75 --days 16 25`: the lifestyle hotel's rate in force and its comp median on stay date 75, a Saturday, by shop day. On world v2 the downtown hotels change nothing on the convention nights at seed 7, so the first accepted plan is the lifestyle hotel's day-18 raise of 10%, in force from day 19, and a second raise on day 20, in force from day 21. The competitors move half of each three days later, on days 22 and 24, while the daily shop noise moves the median every day.
+
 With the reaction on, the default mode earns +$35,324 a seed against +$16,164 without it, 2.2 times its gain, and changes 119 rates against 106. The simulator's bookings follow the hotel's rate against the comp median, and since world v2 the market's demand also falls with the median's level, so a raise the competitors half follow still costs the hotel few rooms. The moved median raises a new flag on the same dates, the hold lifts for it, and the agent raises again. In the true mode 427 of the 898 comp-median flags follow the hotels' own changes, and 23 stay dates change twice within 14 days. The cautious learning arm starts from an elasticity of 1.0, so it expects a raise to cost less than it does. It changes 734 rates, 535 of them twice within 14 days, and earns +$65,216 a seed. The oracle, told the reaction and the market elasticity, accepts 100% of that arm's plans and earns +$65,216.
+
+</details>
 
 ## The market-level price response
 
-`hotel-market bench --seeds 1 20 --template --react --market-elasticity E --elasticity true` and the same command with `--elasticity learn:1.0 --cautious`, run on 2026-10-15 on world v2 at E = 0.0 and 0.5; the rows at 1.0 are the reaction tables above, because 1.0 is the customer file's default since world v2. The option multiplies expected demand by the comp median as shopped that day over the comp set's starting level, the median of its base rates, to the power of minus E. The agent is told E and every plan record carries it. The oracle re-scores each plan with E and with the share of a change the competitors follow, so it is the ceiling again over the agent's own candidates, with the reaction scored as immediate where the simulator applies it three days later. The columns are those of the reaction table, and oracle gap is the oracle arm's mean change minus say-yes-to-everything's.
-
-Seeds 1 to 20 with the reaction on at a market elasticity of 0.0, 0.5 and 1.0, the template and the oracle in the true mode and the cautious learning mode, each against the fixed-rate run.
+Seeds 1 to 20 ran with the reaction on at three market elasticities, the power at which demand falls as the comp median rises. The commands are `hotel-market bench --seeds 1 20 --template --react --market-elasticity E --elasticity true` and the same with `--elasticity learn:1.0 --cautious`.
 
 | Market elasticity | Mode | Reviewer | Mean change | SD | SE | Range | Ahead | p | Rate changes | Median flags | Own changes | Changed twice | Oracle gap | Day-59 estimate |
 | ---: | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
@@ -399,7 +650,13 @@ Seeds 1 to 20 with the reaction on at a market elasticity of 0.0, 0.5 and 1.0, t
 | 1.0 | learn:1.0 --cautious | template | +65,216 | 30,310 | 6,778 | +28,426 to +134,913 | 20/20 | <0.001 | 734 | 1490 | 1054 | 535 | +$0 | 1.29 to 1.47 |
 | 1.0 | learn:1.0 --cautious | oracle | +65,216 | 30,310 | 6,778 | +28,426 to +134,913 | 20/20 | <0.001 | 734 | 1490 | 1054 | 535 | - | 1.29 to 1.47 |
 
-Seed 7 at a market elasticity of 0.0, 0.5 and 1.0 with no reaction, run on 2026-10-15 on world v2 with `python scripts/median_path.py --seed 7 --hotel full-service --stays 37 39 --days 29 39 --market-elasticity E` (1.0 is the default): the full-service hotel's rate, its comp median on the day before and the day of the day-30 cut, and the rooms it sold on the cut's stay dates, 37 to 39, by day 39.
+**Reading it**
+
+- A stronger market response shrinks the gain in both modes, because a raise that every hotel matches now costs rooms.
+- It also damps the loop, so fewer dates change twice within two weeks as the market elasticity rises.
+- The last four rows repeat the reaction table above, because they are the default market.
+
+Seed 7 at a market elasticity of 0.0, 0.5 and 1.0, with no reaction, follows the full-service hotel through the day-30 competitor cut. The command is `python scripts/median_path.py --seed 7 --hotel full-service --stays 37 39 --days 29 39 --market-elasticity E`.
 
 | Market elasticity | Stay date | Rate | Median before the cut | Median after | Rooms sold by day 39 |
 | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -413,13 +670,27 @@ Seed 7 at a market elasticity of 0.0, 0.5 and 1.0 with no reaction, run on 2026-
 | 1.0 | 38 | 190.00 | 189.04 | 173.41 | 184 |
 | 1.0 | 39 | 190.00 | 189.22 | 169.93 | 170 |
 
+**Reading it**
+
+- The cut drops the comp median on its stay dates while the hotel holds its rate.
+- The cheaper market draws more demand as the market elasticity rises, so the hotel sells a few more rooms at the higher values.
+- The medians are the same at every value, because the reaction is off and the market elasticity moves demand alone.
+
+<details><summary>Notes</summary>
+
+`hotel-market bench --seeds 1 20 --template --react --market-elasticity E --elasticity true` and the same command with `--elasticity learn:1.0 --cautious`, run on 2026-10-15 on world v2 at E = 0.0 and 0.5; the rows at 1.0 are the reaction tables above, because 1.0 is the customer file's default since world v2. The option multiplies expected demand by the comp median as shopped that day over the comp set's starting level, the median of its base rates, to the power of minus E. The agent is told E and every plan record carries it. The oracle re-scores each plan with E and with the share of a change the competitors follow, so it is the ceiling again over the agent's own candidates, with the reaction scored as immediate where the simulator applies it three days later. The columns are those of the reaction table, and oracle gap is the oracle arm's mean change minus say-yes-to-everything's.
+
+Seeds 1 to 20 with the reaction on at a market elasticity of 0.0, 0.5 and 1.0, the template and the oracle in the true mode and the cautious learning mode, each against the fixed-rate run.
+
+Seed 7 at a market elasticity of 0.0, 0.5 and 1.0 with no reaction, run on 2026-10-15 on world v2 with `python scripts/median_path.py --seed 7 --hotel full-service --stays 37 39 --days 29 39 --market-elasticity E` (1.0 is the default): the full-service hotel's rate, its comp median on the day before and the day of the day-30 cut, and the rooms it sold on the cut's stay dates, 37 to 39, by day 39.
+
 Since world v2 the market has a price response of its own, 1.0 by default, so a raise that every hotel matches now costs rooms. In the reacting market the true mode earns +$87,519 a seed at a market elasticity of 0.0, +$58,275 at 0.5 and +$35,324 at 1.0, the default, against +$16,164 with no reaction. Its rate changes fall from 236 to 164 and 119, and the dates changed twice within 14 days from 95 to 46 and 23. The cautious learning arm earns +$224,222, +$141,469 and +$65,216. Two things show in the table. The first is a price effect: competitors that follow half of a raise lower the hotel's effective own-price elasticity below 1.5, because its rate against the median moves only half as far as its rate, so a raise pays more in that world than against competitors that never move, and the market term takes part of that back. The second is the loop: the competitors' answer to the hotel's own change arrives three days later, the detector reads it as news, the hold lifts, and the agent raises again on the same dates. FRK-09 is the open question whether a comp move that follows our own change should count as a flag cause at all. On the day-30 cut the cheaper market draws more demand as the elasticity rises: by day 39 the full-service hotel sells 196, 182, 165 rooms on stays 37 to 39 at 0.0, 198, 183, 168 at 0.5 and 199, 184, 170 at 1.0.
+
+</details>
 
 ## The air schedule's filings
 
-`hotel-market --seeds 1 20 --template --churn` and `hotel-market --seeds 1 20 --template`, run on 2026-10-15 on world v2, then `hotel-market --seeds 1 20 --template --scenario upgauge`. With `--churn` the airline files weekly revisions drawn from the seed on days 7 to 56: an equipment swap of two to three weeks between codes within 24 seats a flight of each other, and a departure-time change for a fortnight. A day then moves at most 96 seats, 77 passengers at the mature load factor, against a threshold of 5%. The scenario option replaces the default's two filings with another list. The upgauge scenario files an upgauge of the MSP route to 738s on day 15 and a cut of the ORD route to two daily flights on day 35. Filings counts the days the airline filed something through day 59, summed over the seeds, and seat flags the flags with a seat cause.
-
-Seeds 1 to 20 with the churn, the default and the upgauge scenario, the template in the true mode, each against the fixed-rate run.
+Seeds 1 to 20 ran three ways, with the airline's weekly churn, with the default filings and with the upgauge scenario. The commands are `hotel-market --seeds 1 20 --template --churn`, `hotel-market --seeds 1 20 --template` and `hotel-market --seeds 1 20 --template --scenario upgauge`.
 
 | Arm | Mean change | SD | SE | Range | Ahead | p | Filings | Seat flags | Rate changes |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -427,13 +698,25 @@ Seeds 1 to 20 with the churn, the default and the upgauge scenario, the template
 | default with the churn | +17,848 | 3,628 | 811 | +13,161 to +25,286 | 20/20 | <0.001 | 200 | 199 | 108 |
 | upgauge | +5,913 | 4,472 | 1,000 | -1,123 to +12,574 | 17/20 | 0.0026 | 40 | 201 | 84 |
 
+**Reading it**
+
+- The churn files far more often but raises the same seat flags, because every revision stays under the threshold by construction.
+- The churn still moves the gain a little, and all of that comes through the passenger change in the agent's demand forecast.
+- The upgauge scenario earns less, because its two filings move fewer seats than the default's new flights and suspension.
+
+<details><summary>Notes</summary>
+
+`hotel-market --seeds 1 20 --template --churn` and `hotel-market --seeds 1 20 --template`, run on 2026-10-15 on world v2, then `hotel-market --seeds 1 20 --template --scenario upgauge`. With `--churn` the airline files weekly revisions drawn from the seed on days 7 to 56: an equipment swap of two to three weeks between codes within 24 seats a flight of each other, and a departure-time change for a fortnight. A day then moves at most 96 seats, 77 passengers at the mature load factor, against a threshold of 5%. The scenario option replaces the default's two filings with another list. The upgauge scenario files an upgauge of the MSP route to 738s on day 15 and a cut of the ORD route to two daily flights on day 35. Filings counts the days the airline filed something through day 59, summed over the seeds, and seat flags the flags with a seat cause.
+
+Seeds 1 to 20 with the churn, the default and the upgauge scenario, the template in the true mode, each against the fixed-rate run.
+
 The churn adds 160 filing days over the 20 seeds and raises 199 seat flags against 199 without it. That is by construction, because every revision stays under the threshold, so the count proves nothing. The finding is that a filing as such never reaches the detector, which keys on the day-over-day passenger revision. The test test_a_detector_that_fires_on_any_revision_is_caught_by_the_churn pins it by holding the seat flags to the same two days with the churn as without. The block swaps move seats, and so passengers, for two to three weeks at a time, so the gain moves from +$16,164 to +$17,848 a seed and the rate changes from 106 to 108. The churn therefore reached the agent's decisions through the passenger change in its demand forecast, and none of it came through the detector. That is the designed path, because DEC-04 keeps the change for the forecast and the revision for the flag. The upgauge scenario earns +$5,913, ahead in 17 of 20 seeds, because its two filings move fewer seats than the default's new flights and suspension, and an upgauge of a route that flew before the run keeps its mature load factor.
+
+</details>
 
 ## The intercept fed back
 
-`hotel-market bench --seeds 1 20 --template --demand-bias B --elasticity learn:1.0 --level` and the same command with `--level --cautious`, at B = 0.9, 1.0 and 1.1, run on 2026-10-15 on world v2, then the same two arms and a plain `learn:1.0` with `--react --market-elasticity 0.5`. With `--level` a learning agent scales its demand forecast, the pace baseline included, by the demand level its fit found, which is exp(intercept), once the fit has 500 observations and clamped to 0.5 to 2.0 as the elasticity is clamped. The plain learn rows repeat the demand-bias tables and the market table. Day-59 level is the factor each hotel scaled its forecast by on day 59, as the range over the hotels of each hotel's mean across the seeds.
-
-Seeds 1 to 20 at a demand bias of 0.9, the learning agent with and without the fitted level fed back, the template and the oracle, each against the fixed-rate run at the same bias.
+Seeds 1 to 20 at a demand bias of 0.9 run the learning agent with and without the fitted level fed back into its forecast. The commands are `hotel-market bench --seeds 1 20 --template --demand-bias B --elasticity learn:1.0 --level` and the same with `--level --cautious`, at B = 0.9.
 
 | Mode | Reviewer | Mean change | SD | SE | Range | Ahead | p | Rate changes | Accept | Day-59 estimate | Day-59 level |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
@@ -446,7 +729,13 @@ Seeds 1 to 20 at a demand bias of 0.9, the learning agent with and without the f
 | learn:1.0 --level --cautious | template | -3,534 | 4,645 | 1,039 | -12,811 to +4,602 | 4/20 | 0.012 | 287 | 1.00 | 1.28 to 1.51 | 0.90 to 0.90 |
 | learn:1.0 --level --cautious | oracle | +999 | 1,489 | 333 | -696 to +4,881 | 13/20 | 0.26 | 34 | 0.06 | 1.03 to 1.47 | 0.90 to 0.90 |
 
-Seeds 1 to 20 at the default demand bias of 1.0, the same arms.
+**Reading it**
+
+- The fitted level lands on the true bias, so the forecast stops expecting rooms that never come.
+- Feeding it back cuts the rate changes, but saying yes to every plan still loses money.
+- A market a tenth smaller leaves little to win for any arm, so the level cannot buy back the gain.
+
+Seeds 1 to 20 at the default demand bias of 1.0 run the same arms. The commands are the same, at B = 1.0.
 
 | Mode | Reviewer | Mean change | SD | SE | Range | Ahead | p | Rate changes | Accept | Day-59 estimate | Day-59 level |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
@@ -459,7 +748,12 @@ Seeds 1 to 20 at the default demand bias of 1.0, the same arms.
 | learn:1.0 --level --cautious | template | +12,346 | 5,025 | 1,124 | +531 to +18,556 | 20/20 | <0.001 | 309 | 1.00 | 1.35 to 1.49 | 1.00 to 1.00 |
 | learn:1.0 --level --cautious | oracle | +14,352 | 3,885 | 869 | +4,832 to +20,796 | 20/20 | <0.001 | 144 | 0.32 | 1.32 to 1.44 | 1.00 to 1.00 |
 
-Seeds 1 to 20 at a demand bias of 1.1, the same arms.
+**Reading it**
+
+- In the default world the fitted level stays where it started, so feeding it back changes almost nothing.
+- The plain learner still leaves the oracle a wide margin, with or without the level.
+
+Seeds 1 to 20 at a demand bias of 1.1 run the same arms in a market a tenth larger. The commands are the same, at B = 1.1.
 
 | Mode | Reviewer | Mean change | SD | SE | Range | Ahead | p | Rate changes | Accept | Day-59 estimate | Day-59 level |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
@@ -472,7 +766,13 @@ Seeds 1 to 20 at a demand bias of 1.1, the same arms.
 | learn:1.0 --level --cautious | template | +60,005 | 10,175 | 2,275 | +37,465 to +78,782 | 20/20 | <0.001 | 491 | 1.00 | 1.39 to 1.50 | 1.09 to 1.10 |
 | learn:1.0 --level --cautious | oracle | +61,929 | 8,796 | 1,967 | +47,785 to +78,299 | 20/20 | <0.001 | 361 | 0.55 | 1.38 to 1.50 | 1.09 to 1.10 |
 
-Seeds 1 to 20 with the reaction on at a market elasticity of 0.5, the same arms.
+**Reading it**
+
+- The level lands on the true bias again, and the pace baseline rises with it.
+- The corrected baseline removes raises on dates the start rates underprice, so the level arms earn a little less.
+- The agent acts only on a flag, so a market that is simply larger raises none, which is the gap FRK-11 holds.
+
+Seeds 1 to 20 with the reaction on at a market elasticity of 0.5 run the same arms. The command is `hotel-market bench --seeds 1 20 --template --react --market-elasticity 0.5 --elasticity learn:1.0`, then the same with `--level` and with `--level --cautious`.
 
 | Mode | Reviewer | Mean change | SD | SE | Range | Ahead | p | Rate changes | Accept | Day-59 estimate | Day-59 level |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
@@ -485,13 +785,31 @@ Seeds 1 to 20 with the reaction on at a market elasticity of 0.5, the same arms.
 | learn:1.0 --level --cautious | template | +139,141 | 78,512 | 17,556 | +34,930 to +318,605 | 20/20 | <0.001 | 859 | 1.00 | 1.29 to 1.47 | 1.00 to 1.00 |
 | learn:1.0 --level --cautious | oracle | +139,300 | 78,334 | 17,516 | +34,930 to +318,605 | 20/20 | <0.001 | 858 | 1.00 | 1.29 to 1.47 | 1.00 to 1.00 |
 
+**Reading it**
+
+- The plain learners, with or without the level, earn the most, because they ride the ratchet FRK-09 holds at its fullest.
+- The fitted level barely moves in this market, so it changes little for either learner.
+- The oracle accepts nearly every plan the plain learners make, because in this market the simulator pays for the repeated raises.
+
+<details><summary>Notes</summary>
+
+`hotel-market bench --seeds 1 20 --template --demand-bias B --elasticity learn:1.0 --level` and the same command with `--level --cautious`, at B = 0.9, 1.0 and 1.1, run on 2026-10-15 on world v2, then the same two arms and a plain `learn:1.0` with `--react --market-elasticity 0.5`. With `--level` a learning agent scales its demand forecast, the pace baseline included, by the demand level its fit found, which is exp(intercept), once the fit has 500 observations and clamped to 0.5 to 2.0 as the elasticity is clamped. The plain learn rows repeat the demand-bias tables and the market table. Day-59 level is the factor each hotel scaled its forecast by on day 59, as the range over the hotels of each hotel's mean across the seeds.
+
+Seeds 1 to 20 at a demand bias of 0.9, the learning agent with and without the fitted level fed back, the template and the oracle, each against the fixed-rate run at the same bias.
+
+Seeds 1 to 20 at the default demand bias of 1.0, the same arms.
+
+Seeds 1 to 20 at a demand bias of 1.1, the same arms.
+
+Seeds 1 to 20 with the reaction on at a market elasticity of 0.5, the same arms.
+
 The level is learned at once and closely: by day 59 the factor is 0.90 to 0.90 at a bias of 0.9, 1.09 to 1.10 at 1.1, 0.99 to 1.00 at 1.0 and 0.99 to 1.00 in the reacting market. At 0.9 it cuts the flags from 5420 to 1538 over the 20 seeds, because the pace baseline no longer expects rooms that never come. Saying yes to every plan there earns -$13,700 a seed with the level against -$15,174 without it, and the cautious arm -$3,534 against -$4,122; the true mode earns +$1,069 there, so the opportunity in a market a tenth smaller is small for every arm. At 1.0 the level arms earn +$825 and +$12,346 against +$804 and +$12,527 without it. At 1.1 they earn +$55,518 and +$60,005 against +$56,213 and +$60,666: the corrected pace baseline removes raises on dates the start rates underprice, and the agent acts only on a flag, so a market that is simply larger raises none, the gap FRK-11 holds. With the reaction on at 0.5 the plain learner earns +$302,095 a seed from 1959 rate changes, the level arms +$304,114 and +$139,141, and the cautious arm without the level +$141,469; the ratchet FRK-09 holds is at its fullest in the plain learner.
+
+</details>
 
 ## The rule-based control
 
-`hotel-market bench --seeds 1 20 --template --policy P --demand-bias B --elasticity true` at B = 0.9, 1.0 and 1.1, and the same command with `--react --market-elasticity 0.5` in place of the bias, for P = pace, rules and never-cut, run on 2026-10-15 on world v2. The pace policy raises 5% on every stay date that runs ahead of pace by the detect threshold and lowers 5% on every one behind it, with the same hold, floor and ceiling as the agent, and no estimate and no model. The rules policy keeps those steps and adds the rules the agent's first design retired: it raises 5% on an event flag's dates and on a seat-up flag's dates, and lowers 5% on a seat-cut flag's dates. The never-cut policy keeps the rules policy's raises and never lowers, because in this market the start rate is already the best rate on a night that will not sell out, so every cut the rules policy makes loses money. Each policy runs beside each arm on the same seed, and the table gives each arm's gain against frozen rates next to its gain against the policy. Ahead counts the seeds where the arm beat the policy, and changes the stay dates the policy changed over the 20 seeds.
-
-Seeds 1 to 20 in the true mode against the pace, the rules and the never-cut policies, under each demand bias and in the reacting market, the template and the oracle, each against the fixed-rate run and against the policy.
+Each policy ran beside the agent in the true mode on seeds 1 to 20, under each demand bias and in the reacting market. The command is `hotel-market bench --seeds 1 20 --template --policy P --demand-bias B --elasticity true`, and the reacting rows swap the bias for `--react --market-elasticity 0.5`.
 
 | Policy | World | Reviewer | Against frozen rates | Against the policy | SD | SE | Ahead of it | p | The policy against frozen rates | SD | SE | Policy changes |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -520,14 +838,25 @@ Seeds 1 to 20 in the true mode against the pace, the rules and the never-cut pol
 | never-cut | react, market 0.5 | template | +58,275 | -54,602 | 7,202 | 1,610 | 0/20 | <0.001 | +112,877 | 6,235 | 1,394 | 5266 |
 | never-cut | react, market 0.5 | oracle | +58,275 | -54,602 | 7,202 | 1,610 | 0/20 | <0.001 | +112,877 | 6,235 | 1,394 | 5266 |
 
+**Reading it**
+
+- Against the never-cut policy, which raises 5% on the same flags and never lowers, the agent stays ahead in nearly every seed of the default world.
+- The never-cut policy earns more than the rules policy in every world, because in this market every cut loses money.
+- In the reacting market the rules and never-cut policies beat the agent in every seed, because raising on every comp move that followed their own raise rides the ratchet further.
+
+<details><summary>Notes</summary>
+
+`hotel-market bench --seeds 1 20 --template --policy P --demand-bias B --elasticity true` at B = 0.9, 1.0 and 1.1, and the same command with `--react --market-elasticity 0.5` in place of the bias, for P = pace, rules and never-cut, run on 2026-10-15 on world v2. The pace policy raises 5% on every stay date that runs ahead of pace by the detect threshold and lowers 5% on every one behind it, with the same hold, floor and ceiling as the agent, and no estimate and no model. The rules policy keeps those steps and adds the rules the agent's first design retired: it raises 5% on an event flag's dates and on a seat-up flag's dates, and lowers 5% on a seat-cut flag's dates. The never-cut policy keeps the rules policy's raises and never lowers, because in this market the start rate is already the best rate on a night that will not sell out, so every cut the rules policy makes loses money. Each policy runs beside each arm on the same seed, and the table gives each arm's gain against frozen rates next to its gain against the policy. Ahead counts the seeds where the arm beat the policy, and changes the stay dates the policy changed over the 20 seeds.
+
+Seeds 1 to 20 in the true mode against the pace, the rules and the never-cut policies, under each demand bias and in the reacting market, the template and the oracle, each against the fixed-rate run and against the policy.
+
 A fixed-rate run is a control that never moves, so every gain against it includes what a hotel's own rules would have earned anyway. A policy that acts on the same flags is the fairer yardstick, and the never-cut policy is the one the README quotes first, with the rules policy after it, because the pace policy skips every flag that is not a pace flag. In the default world on 2026-10-15 the never-cut policy earns +$10,468 a seed over frozen rates from 5153 stay dates changed, and the agent's +$16,164 against frozen rates is +$5,696 against it, ahead in 18/20, p <0.001. The rules policy earns +$9,008 from 6857 changes, and the agent is +$7,156 against it, ahead in 19/20. The pace policy earns +$1,432 from the pace flags alone, and the agent is +$14,732 against it. At a bias of 0.9 the never-cut policy earns -$1,847 and the agent is +$2,916 against it; at 1.1 it earns +$51,711 from 6645 changes, because a market a tenth larger runs ahead of pace almost everywhere, and the agent's +$66,687 is +$14,976 against it. In the reacting market at a market elasticity of 0.5 the never-cut policy earns +$112,877 from 5266 changes and the rules policy +$83,273; the agent's +$58,275 is -$54,602 against the first and -$24,998 against the second, because a policy that raises on every comp move that followed its own raise rides the ratchet further than the agent. All three policies are anomaly-driven as the agent is: they act only on a flag, so they share the blind spot FRK-11 records, and a market that is simply larger raises nothing for any of them.
+
+</details>
 
 ## The reviewers in learn mode
 
-
-`hotel-market bench --seeds 1 20 --elasticity learn:1.0 --elasticity learn:2.0 --model claude-opus-5-5 --model claude-haiku-5-5`, the same command with `--cautious`, `hotel-market bench --seeds 1 20 --elasticity learn:1.0 --model claude-sonnet-5-5` with and without `--cautious`, and `hotel-market bench --seeds 1 20 --elasticity learn:1.0 --cautious --react --market-elasticity 0.5 --model claude-opus-5-5`, run on 2026-10-15 on world v2. The template and the oracle run beside the model in every arm. Opus runs the four arms with no reaction and the reacting one. Haiku runs the four arms with no reaction, and Sonnet the two from a prior of 1.0. The live calls ran in the same processes as the fixed arms, one per command and seed range. The projection from their seeds 1 to 3 priced the learn set at $43.68 for seeds 1 to 20, and it came to $48.64. The commands that printed the tables read the caches and made no call.
-
-Seeds 1 to 20 at a learned elasticity from a prior of 1.0, each reviewer against the fixed-rate run.
+Seeds 1 to 20 at a learned elasticity from a prior of 1.0 ran once for each reviewer, against the fixed-rate run. The commands are `hotel-market bench --seeds 1 20 --elasticity learn:1.0 --elasticity learn:2.0 --model claude-opus-5-5 --model claude-haiku-5-5` and `hotel-market bench --seeds 1 20 --elasticity learn:1.0 --model claude-sonnet-5-5`.
 
 | Reviewer | Mean change | SD | SE | Range | Ahead | p | Flags | Pace flags | Rate changes | Regret | Recovered | Accept | Precision | Recall | F1 | $ recall | Invalid | Calls | Tokens in/out | Median s | Cost | Day-59 estimate |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -537,7 +866,13 @@ Seeds 1 to 20 at a learned elasticity from a prior of 1.0, each reviewer against
 | claude-sonnet-5-5 | +806 | 8,153 | 1,823 | -14,583 to +14,562 | 11/20 | 0.82 | 1253 | 585 | 508 | +12,393 | 0.00 | 0.99 | 1.00 | 0.01 | 0.02 | 0.00 | 0 | 467 | 1,402,887/99,611 | 2.7 | $3.80 | 1.42 to 1.49 |
 | claude-haiku-5-5 | +763 | 8,099 | 1,811 | -14,583 to +14,562 | 11/20 | 0.82 | 1252 | 584 | 507 | +12,436 | -0.00 | 0.99 | 1.00 | 0.01 | 0.02 | 0.00 | 0 | 465 | 1,398,828/332,177 | 4.0 | $0.31 | 1.42 to 1.49 |
 
-Seeds 1 to 20 at a learned elasticity from a prior of 1.0 with the cautious rule, each reviewer against the fixed-rate run.
+**Reading it**
+
+- Saying yes to every plan earns little here, so most of the oracle's margin is open to a reviewer.
+- Opus recovers a small part of it, and the oracle agrees with every plan Opus declines.
+- Sonnet and Haiku decline a handful of plans each and end level with the template.
+
+Seeds 1 to 20 at a learned elasticity from a prior of 1.0 with the cautious rule ran the same reviewers. The commands are those above with `--cautious`.
 
 | Reviewer | Mean change | SD | SE | Range | Ahead | p | Flags | Pace flags | Rate changes | Regret | Recovered | Accept | Precision | Recall | F1 | $ recall | Invalid | Calls | Tokens in/out | Median s | Cost | Day-59 estimate |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -547,7 +882,13 @@ Seeds 1 to 20 at a learned elasticity from a prior of 1.0 with the cautious rule
 | claude-sonnet-5-5 | +12,527 | 5,265 | 1,177 | +1,658 to +21,698 | 20/20 | <0.001 | 1571 | 902 | 295 | +2,326 | 0.00 | 1.00 | - | 0.00 | - | 0.00 | 0 | 273 | 1,215,372/54,375 | 2.6 | $2.97 | 1.36 to 1.46 |
 | claude-haiku-5-5 | +12,269 | 5,234 | 1,170 | +1,658 to +21,698 | 20/20 | <0.001 | 1571 | 902 | 294 | +2,585 | -0.11 | 1.00 | 0.00 | 0.00 | 0.00 | 0.00 | 0 | 273 | 1,215,376/221,706 | 4.4 | $0.23 | 1.36 to 1.46 |
 
-Seeds 1 to 20 at a learned elasticity from a prior of 2.0, with and without the cautious rule. Each reviewer is against the fixed-rate run.
+**Reading it**
+
+- The cautious rule already takes saying yes to every plan most of the way to the oracle, so little is left for a reviewer.
+- Opus declines a few plans and gains a little, and Sonnet declines none.
+- Haiku's one decline is a plan the oracle accepts, so it ends just below saying yes to every plan.
+
+Seeds 1 to 20 at a learned elasticity from a prior of 2.0 ran Opus and Haiku, with and without the cautious rule. The command is the Opus and Haiku command above, with and without `--cautious`.
 
 | Mode | Reviewer | Mean change | SD | SE | Range | Ahead | p | Flags | Pace flags | Rate changes | Regret | Recovered | Accept | Precision | Recall | F1 | $ recall | Invalid | Calls | Tokens in/out | Median s | Cost | Day-59 estimate |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -560,7 +901,13 @@ Seeds 1 to 20 at a learned elasticity from a prior of 2.0, with and without the 
 | learn:2.0 --cautious | claude-opus-5-5 | +2,018 | 4,187 | 936 | -8,396 to +10,445 | 12/20 | 0.50 | 2245 | 1569 | 213 | +2,114 | 0.00 | 1.00 | - | 0.00 | - | 0.00 | 0 | 198 | 891,511/62,224 | 4.2 | $4.81 | 1.55 to 1.91 |
 | learn:2.0 --cautious | claude-haiku-5-5 | +2,018 | 4,187 | 936 | -8,396 to +10,445 | 12/20 | 0.50 | 2245 | 1569 | 213 | +2,114 | 0.00 | 1.00 | - | 0.00 | - | 0.00 | 0 | 198 | 891,511/167,042 | 4.7 | $0.17 | 1.55 to 1.91 |
 
-Seeds 1 to 20 at a learned elasticity from a prior of 1.0 with the cautious rule, the reaction on. The market elasticity is 0.5, and each reviewer is against the fixed-rate run. Recent shown counts the plans on stay dates the hotel changed within the previous 14 days, and recent held the holds among them.
+**Reading it**
+
+- From the high prior Opus recovers a little without the rule and nothing with it.
+- Haiku stays level with the template in both arms.
+- With the rule on, every reviewer but the oracle lands on the same result.
+
+Seeds 1 to 20 at a learned elasticity from a prior of 1.0 with the cautious rule ran Opus in the reacting market at a market elasticity of 0.5. The command is `hotel-market bench --seeds 1 20 --elasticity learn:1.0 --cautious --react --market-elasticity 0.5 --model claude-opus-5-5`.
 
 | Reviewer | Mean change | SD | SE | Range | Ahead | p | Rate changes | Regret | Recovered | Accept | Precision | Median flags | Own changes | Changed twice | Recent shown | Recent held | Invalid | Calls | Tokens in/out | Median s | Cost | Day-59 estimate |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -568,7 +915,13 @@ Seeds 1 to 20 at a learned elasticity from a prior of 1.0 with the cautious rule
 | oracle | +141,469 | 78,588 | 17,573 | +46,172 to +318,833 | 20/20 | <0.001 | 822 | +0 | - | 1.00 | - | 1566 | 1138 | 609 | 582 | 0 | - | - | - | - | - | 1.31 to 1.46 |
 | claude-opus-5-5 | +138,978 | 77,671 | 17,368 | +45,279 to +318,620 | 20/20 | <0.001 | 794 | +2,491 | - | 0.97 | 0.00 | 1539 | 1110 | 604 | 577 | 25 | 0 | 388 | 2,359,674/191,189 | 4.6 | $13.26 | 1.31 to 1.46 |
 
-The decline rate by the standard error of the plan's elasticity, pooled over seeds 1 to 20. The table holds every live arm that declined a plan. Each cell is the plans declined of the plans queued in the group, with the rate in brackets.
+**Reading it**
+
+- Opus holds some of the plans on dates the hotel changed within two weeks, and the oracle holds none of them.
+- Those holds cost money, because in this market the simulator pays for the second raise.
+- The request lists the hotel's earlier changes on those dates, with the rooms booked since against the rooms expected.
+
+The decline rate by the standard error of the plan's elasticity pools seeds 1 to 20 for every live arm that declined a plan. The learn commands above print it with their other tables.
 
 | Mode | Reviewer | Under 0.15 | 0.15 to 0.25 | 0.25 to 0.35 | 0.35 and over |
 | --- | --- | ---: | ---: | ---: | ---: |
@@ -581,7 +934,13 @@ The decline rate by the standard error of the plan's elasticity, pooled over see
 | learn:1.0 --cautious | claude-opus-5-5 | none queued | 1 of 25 (0.04) | 3 of 47 (0.06) | 1 of 225 (0.00) |
 | learn:1.0 --cautious, react, market 0.5 | claude-opus-5-5 | none queued | 5 of 34 (0.15) | 13 of 172 (0.08) | 7 of 613 (0.01) |
 
-The reviewers ranked across the learned modes, learn:1.0 and learn:2.0 pooled over 40 seeds, with and without the cautious rule. Sonnet ran from the prior of 1.0 only, so it is not ranked.
+**Reading it**
+
+- Opus's decline rate falls as the standard error of the plan's elasticity rises, most clearly from the low prior.
+- On world v1 the rate was flat across the groups, and now Opus's declines follow the uncertainty the request shows.
+- Haiku and Sonnet decline only a handful of plans in all, spread across the groups.
+
+The reviewers ranked across the learned modes pool the priors of 1.0 and 2.0 over 40 seeds, with and without the cautious rule. The command is the Opus and Haiku command above, with and without `--cautious`.
 
 | Arms | Rank | Reviewer | Mean change | SD | SE | Range | Ahead | p | Flags | Pace flags | Rate changes | Regret | Recovered | Accept | Precision | Recall | F1 | $ recall | Invalid | Calls | Tokens in/out | Median s | Cost |
 | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -594,7 +953,13 @@ The reviewers ranked across the learned modes, learn:1.0 and learn:2.0 pooled ov
 | with the rule | 3 | template | +7,273 | 7,097 | 1,122 | -8,396 to +21,698 | 32/40 | <0.001 | 3816 | 2471 | 508 | +2,220 | 0.00 | 1.00 | - | 0.00 | - | 0.00 | - | - | - | - | - |
 | with the rule | 4 | claude-haiku-5-5 | +7,143 | 6,988 | 1,105 | -8,396 to +21,698 | 32/40 | <0.001 | 3816 | 2471 | 507 | +2,350 | -0.06 | 1.00 | 0.00 | 0.00 | 0.00 | 0.00 | 0 | 471 | 2,106,887/388,748 | 4.6 | $0.41 |
 
-The learn arms' cost at list prices. The first column prices the calls of seeds 1 to 3. The projection is their cost per seed times 20. The last two columns are the cost and the calls of seeds 1 to 20.
+**Reading it**
+
+- Opus is the only model ahead of the template in both groups, and only by a little.
+- Haiku ends level with the template without the rule and just below it with the rule.
+- Sonnet is missing because it ran from the low prior alone.
+
+The learn arms' cost at list prices sets a projection from seeds 1 to 3 against the measured cost of seeds 1 to 20. The learn commands above made the calls.
 
 | Mode | Model | Seeds 1 to 3 | Projected, seeds 1 to 20 | Measured, seeds 1 to 20 | Calls |
 | --- | --- | ---: | ---: | ---: | ---: |
@@ -611,26 +976,60 @@ The learn arms' cost at list prices. The first column prices the calls of seeds 
 | learn:1.0 --cautious, react, market 0.5 | claude-opus-5-5 | $1.50 | $9.98 | $13.26 | 388 |
 | every arm |  | $6.56 | $43.68 | $48.64 | 3,737 |
 
+**Reading it**
+
+- The projection came in under the measured cost overall, and furthest under in the reacting arm.
+
+<details><summary>Notes</summary>
+
+`hotel-market bench --seeds 1 20 --elasticity learn:1.0 --elasticity learn:2.0 --model claude-opus-5-5 --model claude-haiku-5-5`, the same command with `--cautious`, `hotel-market bench --seeds 1 20 --elasticity learn:1.0 --model claude-sonnet-5-5` with and without `--cautious`, and `hotel-market bench --seeds 1 20 --elasticity learn:1.0 --cautious --react --market-elasticity 0.5 --model claude-opus-5-5`, run on 2026-10-15 on world v2. The template and the oracle run beside the model in every arm. Opus runs the four arms with no reaction and the reacting one. Haiku runs the four arms with no reaction, and Sonnet the two from a prior of 1.0. The live calls ran in the same processes as the fixed arms, one per command and seed range. The projection from their seeds 1 to 3 priced the learn set at $43.68 for seeds 1 to 20, and it came to $48.64. The commands that printed the tables read the caches and made no call.
+
+Seeds 1 to 20 at a learned elasticity from a prior of 1.0, each reviewer against the fixed-rate run.
+
+Seeds 1 to 20 at a learned elasticity from a prior of 1.0 with the cautious rule, each reviewer against the fixed-rate run.
+
+Seeds 1 to 20 at a learned elasticity from a prior of 2.0, with and without the cautious rule. Each reviewer is against the fixed-rate run.
+
+Seeds 1 to 20 at a learned elasticity from a prior of 1.0 with the cautious rule, the reaction on. The market elasticity is 0.5, and each reviewer is against the fixed-rate run. Recent shown counts the plans on stay dates the hotel changed within the previous 14 days, and recent held the holds among them.
+
+The decline rate by the standard error of the plan's elasticity, pooled over seeds 1 to 20. The table holds every live arm that declined a plan. Each cell is the plans declined of the plans queued in the group, with the rate in brackets.
+
+The reviewers ranked across the learned modes, learn:1.0 and learn:2.0 pooled over 40 seeds, with and without the cautious rule. Sonnet ran from the prior of 1.0 only, so it is not ranked.
+
+The learn arms' cost at list prices. The first column prices the calls of seeds 1 to 3. The projection is their cost per seed times 20. The last two columns are the cost and the calls of seeds 1 to 20.
+
 From a prior of 1.0, saying yes to every plan earns +$804 a seed. The oracle earns +$13,199 while accepting 17% of the plans, so $12,395 a seed is open to a reviewer. Opus earns +$2,105, a recovered share of 0.10. Opus declines 41 plans with precision 1.00 and recall 0.11, Sonnet declines 3 plans with precision 1.00 and recall 0.01, and Haiku declines 3 plans with precision 1.00 and recall 0.01. With the cautious rule, saying yes to every plan earns +$12,527 and the oracle +$14,854 while accepting 32%. Opus declines 5 plans with precision 1.00 and recall 0.03, Sonnet declines no plan, and Haiku declines 1 plan with precision 0.00 and recall 0.00. From a prior of 2.0, saying yes to every plan earns +$2,416 without the rule and +$2,018 with it; Opus declines 12 and 0, and Haiku 1 and 0. In the reacting market at a market elasticity of 0.5, saying yes to every plan earns +$141,469 a seed and the oracle +$141,469. Opus earns +$138,978 with 26 plans declined. It is shown 577 plans on stay dates the hotel changed within the previous 14 days and holds 25 of them; the oracle holds 0 of 582. Since world v2 the request lists the hotel's earlier changes on those dates with the rooms booked since against the rooms expected. The decline rate falls as the standard error of the plan's elasticity rises: from the prior of 1.0 Opus declines 7 of the 8 plans whose estimate has a standard error under 0.15, 20 of 76 from 0.15 to 0.25, 8 of 96 to 0.35 and 6 of 344 above, where on world v1 the rate was flat across the groups. The five commands made 3,737 calls for $48.64 at list prices. Opus's five arms cost $40.90, Sonnet's two $6.77 and Haiku's four $0.97. The projection from seeds 1 to 3 was $43.68.
+
+</details>
 
 ## The convention without the competitors' raise
 
-`python scripts/no_comp_raise.py --seeds 1 20`, run on 2026-10-15 on world v2. The script runs the template sweep as shipped and then again with the convention's competitor raise set to 0.0 and its demand uplift left at 35%, and it runs each sweep on a copy of the demo market in memory, so the shipped file is never touched. A convention plan is an accepted plan whose causes include the event's announcement, and its gain is the contribution change on the stay dates it changed. The last column counts the convention nights, four at each of the two downtown hotels, that sold out at fixed rates over the 20 seeds.
-
-Seeds 1 to 20 with the convention's competitor raise as shipped and at zero, the template in the true mode, each against the fixed-rate run, run on 2026-10-15 on world v2.
+Seeds 1 to 20 with the convention's competitor raise as shipped and at zero ran the template in the true mode. The command is `python scripts/no_comp_raise.py --seeds 1 20`, which runs both sweeps on a copy of the demo market in memory.
 
 | Competitors' raise | Mean change a seed | Range | Ahead | Convention plans accepted | Gain on their stay dates a seed | Convention nights sold out at fixed rates |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | 15% | +$16,164 | +$11,589 to +$23,394 | 20 of 20 | 14 | +$614 | 14 of 160 |
 | 0% | +$15,611 | +$11,019 to +$22,581 | 20 of 20 | 2 | +$100 | 4 of 160 |
 
+**Reading it**
+
+- Removing the competitors' raise barely moves the headline, because the convention's share of it is small either way.
+- Without the raise the downtown hotels sell out far fewer convention nights, and the agent accepts far fewer convention plans.
+- The downtown hotels hold most of their convention business as group blocks before the announcement.
+
+<details><summary>Notes</summary>
+
+`python scripts/no_comp_raise.py --seeds 1 20`, run on 2026-10-15 on world v2. The script runs the template sweep as shipped and then again with the convention's competitor raise set to 0.0 and its demand uplift left at 35%, and it runs each sweep on a copy of the demo market in memory, so the shipped file is never touched. A convention plan is an accepted plan whose causes include the event's announcement, and its gain is the contribution change on the stay dates it changed. The last column counts the convention nights, four at each of the two downtown hotels, that sold out at fixed rates over the 20 seeds.
+
+Seeds 1 to 20 with the convention's competitor raise as shipped and at zero, the template in the true mode, each against the fixed-rate run, run on 2026-10-15 on world v2.
+
 With the raise at zero the mean moves from +$16,164 to +$15,611 a seed. The convention plans, 14 over the 20 seeds with the raise and 2 without it, earn +$614 and +$100 a seed on their stay dates, and the downtown hotels sell out 14 of 160 convention nights at fixed rates with the raise and 4 of 160 without it. On world v2 the two downtown hotels hold most of their convention business as group blocks before the announcement, and the market's own price response takes back part of what the competitors' raise used to give, so the convention's share of the headline is small either way and the raise moves it little.
+
+</details>
 
 ## In a revenue manager's measures
 
-`python scripts/measures.py --seeds 1 20`, run on 2026-10-15 on world v2. Each measure is per hotel over stay dates 0 to 149 and is the mean over the 20 seeds, with the fixed-rate run beside the agent run. The second table divides the 20-seed totals by 20: the room nights the agent run gave up, their share of the hotel's capacity, the change in room revenue, the room cost saved on those nights and the contribution gained. The last column is the cost per occupied room, as a share of the start rate, at which the hotel's gain would be zero. The gain is positive above that share, and a hotel whose room revenue rose gains at any cost, so its share prints below zero.
-
-Seeds 1 to 20 in a revenue manager's measures: occupancy, average rate, RevPAR and the share of sold-out nights per hotel, the fixed-rate run and the agent run, each the mean over the seeds, run on 2026-10-15 on world v2.
+Seeds 1 to 20 in a revenue manager's measures give each hotel's occupancy, average rate, RevPAR and sold-out nights, as means over the seeds. The command is `python scripts/measures.py --seeds 1 20`.
 
 | Hotel | Occupancy, fixed | Occupancy, agent | Average rate, fixed | Average rate, agent | RevPAR, fixed | RevPAR, agent | Sold-out nights, fixed | Sold-out nights, agent |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -639,7 +1038,13 @@ Seeds 1 to 20 in a revenue manager's measures: occupancy, average rate, RevPAR a
 | Lifestyle hotel | 77.0% | 76.1% | $240.00 | $242.50 | $184.76 | $184.44 | 10.2% | 7.1% |
 | Airport hotel | 88.9% | 86.1% | $140.00 | $143.44 | $124.50 | $123.53 | 20.0% | 12.0% |
 
-Seeds 1 to 20: what the agent run gave up and saved a seed, per hotel, and the cost share at which the gain is zero, run on 2026-10-15 on world v2.
+**Reading it**
+
+- Every hotel sells slightly fewer rooms at a slightly better rate, and RevPAR is flat downtown and lower at the other two.
+- The agent sells out fewer nights at every hotel.
+- Revenue per available room rose nowhere, so the gain comes from room cost not paid.
+
+The same seeds give what the agent run gave up and saved a seed at each hotel, and the cost share at which its gain would be zero. The command is `python scripts/measures.py --seeds 1 20`.
 
 | Hotel | Room nights given up a seed | Share of capacity | Room revenue change a seed | Room cost saved a seed | Contribution gained a seed | Cost share at which the gain is zero |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -648,13 +1053,27 @@ Seeds 1 to 20: what the agent run gave up and saved a seed, per hotel, and the c
 | Lifestyle hotel | 166 | 0.92% | -$5,628 | +$13,300 | +$7,672 | 14.1% |
 | Airport hotel | 632 | 2.81% | -$21,851 | +$29,482 | +$7,630 | 24.7% |
 
+**Reading it**
+
+- The agent gives up rooms at every hotel, and the room cost it saves outweighs any room revenue it loses.
+- Each hotel's gain holds only while an occupied room costs more than the share in the last column.
+- The convention hotel's room revenue rose, so it gains at any cost and its share prints below zero.
+
+<details><summary>Notes</summary>
+
+`python scripts/measures.py --seeds 1 20`, run on 2026-10-15 on world v2. Each measure is per hotel over stay dates 0 to 149 and is the mean over the 20 seeds, with the fixed-rate run beside the agent run. The second table divides the 20-seed totals by 20: the room nights the agent run gave up, their share of the hotel's capacity, the change in room revenue, the room cost saved on those nights and the contribution gained. The last column is the cost per occupied room, as a share of the start rate, at which the hotel's gain would be zero. The gain is positive above that share, and a hotel whose room revenue rose gains at any cost, so its share prints below zero.
+
+Seeds 1 to 20 in a revenue manager's measures: occupancy, average rate, RevPAR and the share of sold-out nights per hotel, the fixed-rate run and the agent run, each the mean over the seeds, run on 2026-10-15 on world v2.
+
+Seeds 1 to 20: what the agent run gave up and saved a seed, per hotel, and the cost share at which the gain is zero, run on 2026-10-15 on world v2.
+
 The agent gives up rooms at every hotel, 5, 11, 166 and 632 room nights a seed by hotel, and RevPAR is flat at the two downtown hotels and lower at the other two, so the gain is room cost not paid rather than revenue earned. The airport hotel's gain holds only while the cost of an occupied room is above 24.7% of the rate, the lifestyle hotel's above 14.1% and the full-service hotel's above 18.2%, while the convention hotel gains at any cost because its room revenue rose.
+
+</details>
 
 ## The clock: one tick a day against four
 
-`python scripts/tick_sweep.py --seeds 1 20`, run on 2026-10-15 on world v2. Each seed runs twice with the template: at `--ticks 1`, the daily loop, and at `--ticks 4`, where each day is cut into four ticks, the rate shop lands at tick 2, the airlines' filings at tick 3, the events at tick 4 and the bookings at every tick, and the agent runs after each tick, reading the feeds as of that tick. The world is the same in both runs, and a fixed-rate run books the same rooms at either clock, because each day's bookings are drawn once and assigned to ticks from the hotel's own stream; the two runs differ only in when the agent saw the day's data and acted. Decisions off the last tick counts the entries decided at a tick other than the day's last, and accepted off the last tick the plans accepted among them. The lag is counted in ticks from the tick the day-20 filing lands at to the first accepted raise with a seats cause on the stay dates it changed, averaged over the seeds with one.
-
-Seeds 1 to 20 at one tick a day and at four, the template in the true mode, each against the fixed-rate run, run on 2026-10-15 on world v2.
+Seeds 1 to 20 at one tick a day and at four ran the template in the true mode on the same world. The command is `python scripts/tick_sweep.py --seeds 1 20`.
 
 | Ticks a day | Mean change a seed | SD | SE | Range | Ahead | p | Decisions off the last tick | Accepted off the last tick | Seeds with a raise after the day-20 filing | Mean lag in ticks |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -663,13 +1082,25 @@ Seeds 1 to 20 at one tick a day and at four, the template in the true mode, each
 
 Paired difference, 4 ticks minus 1: mean +$40 a seed (sd 483, se 108), range -$1,246 to +$1,001, the finer clock ahead in 10 of 20 seeds, sign test p 1.0.
 
+**Reading it**
+
+- The finer clock earns nothing measurable here, because the world's demand moves once a day except at the shocks.
+- The raise after the new flights' filing comes at the tick the filing lands, three quarters of the way through the day on the finer clock.
+- Most decisions off the last tick are pace flags the agent reads again at every tick.
+
+<details><summary>Notes</summary>
+
+`python scripts/tick_sweep.py --seeds 1 20`, run on 2026-10-15 on world v2. Each seed runs twice with the template: at `--ticks 1`, the daily loop, and at `--ticks 4`, where each day is cut into four ticks, the rate shop lands at tick 2, the airlines' filings at tick 3, the events at tick 4 and the bookings at every tick, and the agent runs after each tick, reading the feeds as of that tick. The world is the same in both runs, and a fixed-rate run books the same rooms at either clock, because each day's bookings are drawn once and assigned to ticks from the hotel's own stream; the two runs differ only in when the agent saw the day's data and acted. Decisions off the last tick counts the entries decided at a tick other than the day's last, and accepted off the last tick the plans accepted among them. The lag is counted in ticks from the tick the day-20 filing lands at to the first accepted raise with a seats cause on the stay dates it changed, averaged over the seeds with one.
+
+Seeds 1 to 20 at one tick a day and at four, the template in the true mode, each against the fixed-rate run, run on 2026-10-15 on world v2.
+
 A finer clock earns nothing in this world: the paired difference is +$40 a seed with a standard error of $108, the finer clock ahead in 10 seeds of 20, which a sign test puts at p 1.0, because the world's demand moves once a day except at the shocks, and that is the expected result. The 4,504 decisions off the last tick are mostly pace flags the agent reads again at every tick, and 86 plans were accepted at a tick other than the last. The lag from the day-20 filing to the first accepted raise on its stay dates is 0 ticks at both clocks: the raise comes at the tick the filing lands, which at four ticks is three quarters of the way through the day rather than its end. A finer clock would earn in worlds where shops, filings or bookings move within the day, which this world's feeds do not.
+
+</details>
 
 ## The clock on the world with intraday news
 
-`python scripts/tick_sweep.py --seeds 1 20 --customer customers/demo-intraday.toml --event concert`, run on 2026-10-16. The market is the demo's with its news inside the day (customers/demo-intraday.toml): the comp set shopped at every tick, the day-30 cut showing from the day's second shop, the day-20 filing landing at tick 1, a concert announced on day 25 at tick 2 for stay dates 31 and 32 that triples demand at the lifestyle and full-service hotels with a rush of 0.5, so half of the uplift books by the end of day 26, and the lifestyle hotel's comp set repricing stay dates 47 and 48 up 10% on day 45 at tick 3. The hotels, limits, thresholds, curves and the four shocks of the demo market are unchanged. The columns are the clock table's, with the lag counted from the concert's announcement to the first accepted raise on its stay dates at its two hotels, and two more: the rooms those hotels booked on the concert nights from the announcement to the first raise, the day's moments through the raise's, and the contribution on those nights against the fixed-rate run, each a mean over the seeds. At one tick a day every piece of the file's news lands at the day's one tick, so the rush books through the whole announcement day before the agent can act. The file was written for the shape of the news and not for the figure: the uplift is a round figure that sells both hotels out, the rush is a half, and the ticks are the ones a revenue manager would name.
-
-Seeds 1 to 20 on the intraday market at one tick a day and at four, the template in the true mode, each against the fixed-rate run, run on 2026-10-16.
+Seeds 1 to 20 on the intraday market at one tick a day and at four ran the template, with the lag counted from the concert's announcement. The command is `python scripts/tick_sweep.py --seeds 1 20 --customer customers/demo-intraday.toml --event concert`.
 
 | Ticks a day | Mean change a seed | SD | SE | Range | Ahead | p | Decisions off the last tick | Accepted off the last tick | Seeds with a raise after the concert announcement | Mean lag in ticks | Rooms booked on its stay dates before the first raise | Contribution on its stay dates against the fixed-rate run |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -678,13 +1109,25 @@ Seeds 1 to 20 on the intraday market at one tick a day and at four, the template
 
 Paired difference, 4 ticks minus 1: mean +$2,101 a seed (sd 2,075, se 464), range -$2,733 to +$5,503, the finer clock ahead in 18 of 20 seeds, sign test p <0.001.
 
+**Reading it**
+
+- The finer clock earns here, because the concert is announced inside the day and the daily loop's raise applies only from the next day.
+- Both clocks raise at the announcement's own tick, so the agent reacts as fast on either and the difference lies in when the news lands.
+- The concert nights carry about half of the difference, and the rest comes from earlier reads of the shop and the other news.
+
+<details><summary>Notes</summary>
+
+`python scripts/tick_sweep.py --seeds 1 20 --customer customers/demo-intraday.toml --event concert`, run on 2026-10-16. The market is the demo's with its news inside the day (customers/demo-intraday.toml): the comp set shopped at every tick, the day-30 cut showing from the day's second shop, the day-20 filing landing at tick 1, a concert announced on day 25 at tick 2 for stay dates 31 and 32 that triples demand at the lifestyle and full-service hotels with a rush of 0.5, so half of the uplift books by the end of day 26, and the lifestyle hotel's comp set repricing stay dates 47 and 48 up 10% on day 45 at tick 3. The hotels, limits, thresholds, curves and the four shocks of the demo market are unchanged. The columns are the clock table's, with the lag counted from the concert's announcement to the first accepted raise on its stay dates at its two hotels, and two more: the rooms those hotels booked on the concert nights from the announcement to the first raise, the day's moments through the raise's, and the contribution on those nights against the fixed-rate run, each a mean over the seeds. At one tick a day every piece of the file's news lands at the day's one tick, so the rush books through the whole announcement day before the agent can act. The file was written for the shape of the news and not for the figure: the uplift is a round figure that sells both hotels out, the rush is a half, and the ticks are the ones a revenue manager would name.
+
+Seeds 1 to 20 on the intraday market at one tick a day and at four, the template in the true mode, each against the fixed-rate run, run on 2026-10-16.
+
 On this world the finer clock earns: +$21,741 a seed against +$19,640, a paired difference of +$2,101 with a standard error of $464, ahead in 18 seeds of 20, which a sign test puts at p <0.001. The lag is 0 ticks at both clocks, because the raise comes at the announcement's own tick, so the difference is not in the agent but in the news. At one tick a day the announcement lands at the day's one tick, and the two hotels have 103.8 rooms of the concert's demand on the books before the raise takes effect the next day; at four ticks the agent raises at tick 2 of day 25 with 30.4 rooms booked, and the concert nights earn +$4,418 against +$3,320. Those nights carry about half of the paired difference, and the rest sits on other stay dates, where the shop at every tick and the news at ticks of their own give the finer clock earlier reads. The 5,475 decisions off the last tick are the pace flags read again at every tick, as on the demo market, and 166 plans were accepted at one.
+
+</details>
 
 ## The second market
 
-`hotel-market --customer customers/harbour.toml --seeds 1 20`, run on 2026-10-16. The file describes a second made-up market, a harbour city with three hotels of one brand: a resort that holds more than a third of its rooms 90 days out and takes a quarter of its guests by air, a city-centre hotel on a midweek pattern, and a limited-service hotel by the rail station that books half of its rooms in the last week. The market has its own comp offsets, limits and thresholds, a price response of 0.8, a regatta announced on day 12 that lifts the resort and the city-centre hotel on stay dates 40 to 43, and a cut by two of the station hotel's competitors from shop day 25. The air schedule is the simulator's, so the two filings reach this market as they reach the demo. The agent ran with no change to any of its modules, because the one flag names the file and everything specific to the market is in it. The sweep is here to show that the agent runs on another market, so its figures are reported as they came out and none of them is a headline.
-
-Seeds 1 to 20 on the second market, customers/harbour.toml, the template in the true mode, each against the fixed-rate run, run on 2026-10-16. The last two rows are the standard deviation across the seeds and the standard error of the mean.
+Seeds 1 to 20 on the second market ran the agent against the fixed-rate run on customers/harbour.toml, three hotels in a harbour city. The command is `hotel-market --customer customers/harbour.toml --seeds 1 20`.
 
 | Seed | Contribution change | Revenue change | Rate changes |
 | ---: | ---: | ---: | ---: |
@@ -712,4 +1155,18 @@ Seeds 1 to 20 on the second market, customers/harbour.toml, the template in the 
 | SD | 5,151 | 8,042 | |
 | SE | 1,152 | 1,798 | |
 
+**Reading it**
+
+- The agent is ahead in most seeds, with a smaller and noisier gain than on the demo market.
+- Room revenue rises in every seed here, where it falls in every seed of the demo market.
+- The regatta and the new flights carry most of the gain, as the shocks do in the demo market.
+
+<details><summary>Notes</summary>
+
+`hotel-market --customer customers/harbour.toml --seeds 1 20`, run on 2026-10-16. The file describes a second made-up market, a harbour city with three hotels of one brand: a resort that holds more than a third of its rooms 90 days out and takes a quarter of its guests by air, a city-centre hotel on a midweek pattern, and a limited-service hotel by the rail station that books half of its rooms in the last week. The market has its own comp offsets, limits and thresholds, a price response of 0.8, a regatta announced on day 12 that lifts the resort and the city-centre hotel on stay dates 40 to 43, and a cut by two of the station hotel's competitors from shop day 25. The air schedule is the simulator's, so the two filings reach this market as they reach the demo. The agent ran with no change to any of its modules, because the one flag names the file and everything specific to the market is in it. The sweep is here to show that the agent runs on another market, so its figures are reported as they came out and none of them is a headline.
+
+Seeds 1 to 20 on the second market, customers/harbour.toml, the template in the true mode, each against the fixed-rate run, run on 2026-10-16. The last two rows are the standard deviation across the seeds and the standard error of the mean.
+
 The agent is ahead in 18 of 20 seeds, which a sign test puts at p <0.001, and the mean is +$4,815 a seed with a standard error of $1,152, so the gain is smaller and noisier than the demo market's. Room revenue rises in every seed here, by +$69,700 a seed, where it falls in every seed of the demo market. That reads as raises landing on nights that filled either way, but it is an inference from the two figures and not something this sweep measured. The accepted plans were estimated to earn +$128,206 over holding and earned +$96,309, and on their 3,181 nights the estimates sum to +$42,585,263 against +$42,241,708 realised, 0.99 of it. The plans the regatta and the new flights raised, 94 over the 20 seeds, earned +$91,232 on their stay dates, and the other 56 plans +$5,077, so the shocks carry the gain here as they do in the demo market. The two filings raised 129 seat flags over the seeds, and the agent changed 150 rates in all. All 63 comp-median flags fell on the two shock days, 12 and 25, because this market's 6% threshold sits above the shop noise.
+
+</details>

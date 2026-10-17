@@ -1,5 +1,15 @@
 # The model as a reviewer
 
+This file explains how the model reviews the agent's plans, and what the
+benchmark found on world v2 on 2026-10-15. A row of the benchmark tables in
+[docs/results.md](results.md) is one reviewer over seeds 1 to 20, scored against
+the fixed-rate run and against the oracle. Those tables sit under [The benchmark
+of the reviewers](results.md#the-benchmark-of-the-reviewers) and [The reviewers
+in learn mode](results.md#the-reviewers-in-learn-mode), each with its command,
+and [docs/commands.md](commands.md) lists every command.
+
+<details><summary>Notes</summary>
+
 The model does not set rates. Code computes every candidate action for a hotel
 and estimates the contribution of each one before the model is asked. The model
 then sees one hotel's queue of plans for the day. It accepts or declines each
@@ -84,3 +94,5 @@ Poisson draws and its elasticity of 1.5 and nothing about hotels. Its gains say
 nothing about a real market. The only learning that carries over to a real
 market is the kind in estimate.py. It fits one parameter to the observed
 bookings.
+
+</details>
