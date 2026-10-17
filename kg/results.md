@@ -395,6 +395,14 @@ here for the rest.
 - Links: [[DEC-67]], [[RUL-128]], [[RUL-130]], [[RES-01]], [[MOD-31]]
 
 
+### RES-45 [O] The clock with intraday news
+- Ran: `python scripts/tick_sweep.py --seeds 1 20 --customer customers/demo-intraday.toml --event concert` on 2026-10-16: each seed with the template at --ticks 1 and at --ticks 4 on the intraday market ([[MOD-31]], [[SHK-08]]).
+- Result: at four ticks the agent earns +$21,741 a seed against +$19,640 at one. The paired difference is +$2,101 a seed (sd $2,075, se $464), range -$2,733 to +$5,503, the finer clock ahead in 18 of 20, p <0.001.
+- Concert: the raise comes at the announcement's own tick at both clocks, a lag of 0. Before it, the two hotels book 103.8 rooms on the concert nights at one tick a day and 30.4 at four; those nights earn +$3,320 and +$4,418.
+- Finding: the finer clock earns here because the news books within the day. The rush lands rooms from tick 2 of day 25, and the daily loop cannot raise before day 26. The agent is the same as in [[RES-43]]; the news is not.
+- Table: docs/results.md, "Seeds 1 to 20 on the intraday market at one tick a day and at four"
+- Links: [[DEC-71]], [[DEC-68]], [[RES-43]], [[SHK-08]], [[SHK-09]], [[MOD-31]]
+
 ### RES-44 [O] The default agent on the second market, seeds 1 to 20
 - Ran: `hotel-market --customer customers/harbour.toml --seeds 1 20` on 2026-10-16: the agent against the fixed-rate run on the second market, three hotels, with template reasons and the simulator's elasticity ([[DEC-69]]).
 - Result: the agent run earns +$4,815 more contribution a seed (sd $5,151, se $1,152), from -$8,256 to +$13,718, ahead in 18 of 20 seeds, p <0.001. Room revenue rises $69,700 a seed.

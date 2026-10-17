@@ -50,6 +50,8 @@ Python 3.11 or later, from the repository root:
     hotel-market demo-data --seed 7 --ticks 4 --out demo4.duckdb
                                                         # the demo file on four ticks a day; the news names each feed's tick
     python scripts/tick_sweep.py --seeds 1 20           # seeds 1 to 20 at one tick a day and at four, with the paired difference and the day-20 filing's lag
+    python scripts/tick_sweep.py --seeds 1 20 --customer customers/demo-intraday.toml --event concert
+                                                        # the same on the intraday market, the lag from the concert's announcement, and what its stay dates booked before the first raise and earned
     python scripts/tick_lag.py --seed 7                 # the day-20 filing at one tick a day and at four: the ticks it landed, the first flag rose and the first raise was accepted at, the stay dates and what they earned
 
 With make, on a Mac or Linux machine:

@@ -8,19 +8,19 @@ nodes and its words, len(text.split()) over the file.
 
 | File | Nodes | Words |
 | --- | ---: | ---: |
-| modules.md | 32 | 4,456 |
+| modules.md | 32 | 4,495 |
 | data.md | 33 | 4,685 |
 | rules.md | 132 | 5,778 |
-| shocks.md | 9 | 1,032 |
+| shocks.md | 9 | 1,033 |
 | concepts.md | 12 | 1,370 |
 | measures.md | 14 | 962 |
 | sources.md | 4 | 855 |
-| decisions.md | 71 | 10,598 |
-| results.md | 44 | 7,438 |
+| decisions.md | 71 | 10,617 |
+| results.md | 45 | 7,633 |
 | forks.md | 14 | 2,037 |
 | unknowns.md | 16 | 2,164 |
-| every node file | 381 | 41,375 |
-| index.md | | 2,994 |
+| every node file | 382 | 41,629 |
+| index.md | | 2,997 |
 
 ## Modules (`modules.md`)
 
@@ -278,7 +278,7 @@ nodes and its words, len(text.split()) over the file.
 - DEC-54 [C] A learning agent can feed the fitted demand level into its forecast
 - DEC-55 [C] A rule-based control is the fair comparison
 - DEC-59 [C] The README names the competitors' raise as the convention's source of gain
-- DEC-71 [C] An event's rush books part of its uplift within two days
+- DEC-71 [C] The rush books an uplift early
 - DEC-69 [C] The market's events and rate cuts live in the customer file
 
 ### Engineering
@@ -351,6 +351,7 @@ nodes and its words, len(text.split()) over the file.
 - RES-41 [C] The convention without the competitors' raise
 - RES-42 [C] The default agent in a revenue manager's measures
 - RES-43 [O] The clock: one tick a day against four
+- RES-45 [O] The clock with intraday news
 - RES-44 [O] The default agent on the second market, seeds 1 to 20
 
 ## Open forks (`forks.md`)

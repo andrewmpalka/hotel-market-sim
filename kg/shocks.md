@@ -75,7 +75,7 @@ shock needs a node. The intraday market's two extra shocks follow at the end.
 - Effect: demand at the lifestyle and full-service hotels triples on the two nights, enough to sell both out, and half of that demand books by the end of day 26 ([[DEC-71]]). The comp sets do not move.
 - File: customers/demo-intraday.toml
 - Held in: the intraday file's events, the demo market with news inside the day ([[DAT-05]]). The demo file has no such event, so its pinned run is unchanged.
-- Flags: [[RUL-37]] at both hotels on day 25 at the announcement's tick, then pace flags as the rush lands ahead of the curve.
+- Flags: [[RUL-37]] at both hotels on day 25 at the announcement's tick, then pace flags as the rush lands ahead of the curve ([[RES-45]]).
 - Evidence: test_the_intraday_market_is_the_demo_market_with_news_inside_the_day
 
 ### SHK-09 [C] The weekend repricing
