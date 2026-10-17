@@ -42,13 +42,13 @@ and the 20-seed sweeps use, because they measure the plans, not the model.
 itself. Put `ANTHROPIC_API_KEY` in `.env` and run `make live SEED=7` for one
 seed, or `make bench` for the reviewer benchmark. Answers are cached by the
 request's digest, so a rerun is free and a replay never calls the model. A
-live seed costs about $0.20; the whole benchmark cost $85.87.
+live seed costs between $0.08 and $0.20; the whole benchmark cost $85.87.
 
 Every other command is in [docs/commands.md](docs/commands.md).
 
 ## Same luck twice
 
-A computer cannot roll dicee, so it uses a scrambler: give it a number
+A computer cannot roll dice, so it uses a scrambler: give it a number
 and it hands back a stream of numbers that look random, pass every test for
 random, and are completely fixed by the number you started with. That
 starting number is the seed. Set it to 7 and you get one particular stream;
@@ -74,8 +74,9 @@ happens to be row 7 of every table.
 ## What the agent does each day
 
 1. **Look.** For every hotel and stay date: are bookings ahead of or behind
-   pace, did the comp median move, did arriving passengers change, was an
-   event announced?
+   pace (where they usually are this far from arrival), did the comp median
+   move (the middle rate among the hotel's four competitors), did arriving
+   passengers change, was an event announced?
 2. **Price.** On the dates where something changed, estimate what holding,
    raising 5%, raising 10% or lowering 5% would earn, on the rooms still
    unsold, with the chance of a sell-out counted.
@@ -95,7 +96,7 @@ Twenty seeds, the agent against frozen rates, same booking luck in both runs.
 
 | | |
 | --- | ---: |
-| Seeds where the agent earned more contribution | 20 of 20 |
+| Seeds where the agent earned more contribution (room revenue minus the cost of servicing each room sold) | 20 of 20 |
 | Mean contribution change per seed | +$16,164 |
 | Smallest and largest | +$11,589 and +$23,394 |
 | Mean room revenue change per seed | −$27,684 |
