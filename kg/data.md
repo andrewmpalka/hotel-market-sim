@@ -260,15 +260,15 @@ the plans, the model's request and answer, and what the command writes.
 - Used by: [[MOD-21]] writes them with write_snapshot, write_decisions and write_outcomes, driven by run-day in [[MOD-12]], deleting first ([[DEC-42]]). Its four sources and run readers read them back for the playback and replay.
 - Evidence: test_the_schema_is_eight_tables_each_keyed_by_its_day, test_a_60_day_run_through_the_tables_gives_the_same_decisions_file, test_the_outcomes_hold_each_accepted_plans_nights_once_they_pass
 
-### DAT-29 [C] The recorded live run
-- File: tests/fixtures/live_seed7/
-- Fields: the four cache records ([[DAT-17]]) of one live run of seed 7 on world v2 in the default mode with claude-opus-5-5. The files day018_lifestyle.json to day023_airport.json hold the request, its digest, the model and its decisions.
-- Calls: calls.jsonl, one line per call, as [[MOD-22]] writes it with the fields [[DAT-30]] added. A line holds the tokens, seconds, stop reason, answering model, request id, day, hotel and retries.
-- Origin: copied from the run's cache/seed7/ and calls.jsonl by `python scripts/live_audit.py --seed 7 --record-fixture` on 2026-10-15, the day of the run, after the world v2 changes ([[DEC-66]]).
-- Stale: a change to the request makes the fixture stale, and the replay test then says to record a run again.
-- Written by: scripts/live_audit.py's live run, then its --record-fixture option, which replays the run from its cache and copies the records
-- Read by: tests/test_live_audit.py. The audit on it finds no declined plan, 5 figures outside a request phrase and 4 sentences without one. With it as the cache, seed 7 replays without a key and ends at +$19,796 ([[RES-09]]).
-- Evidence: test_the_recorded_live_run_of_seed_7_passes_the_audit, test_the_recorded_live_run_replays_without_a_key_and_gives_19796
+### DAT-29 [C] The recorded live runs
+- File: tests/fixtures/live_seed7/ and tests/fixtures/live_seed7_intraday/
+- Fields: the cache records ([[DAT-17]]) of two live runs of seed 7 with claude-opus-5-5: 4 of the demo market daily, 10 of the demo-intraday market at four ticks a day. Each holds the request, its digest, the model and its decisions.
+- Calls: calls.jsonl in each folder, one line per call, as [[MOD-22]] writes it with the fields [[DAT-30]] added. A line holds the tokens, seconds, stop reason, answering model, request id, day, hotel and retries.
+- Origin: the daily run, recorded by `python scripts/live_audit.py --seed 7 --record-fixture` on 2026-10-15 ([[DEC-66]]); the intraday run on 2026-10-16, with `--customer customers/demo-intraday.toml --ticks 4` added.
+- Stale: a change to the request makes a recording stale, and the replay test or the intraday file's test then says to record a run again.
+- Written by: scripts/live_audit.py's live run, then its --record-fixture option, which copies the records and calls.jsonl. A record at a finer clock carries its tick in its name, as day025-t2_lifestyle.json.
+- Read by: tests/test_live_audit.py, and recorded_run() in demo_data.py ([[MOD-26]]) for a file at that clock. The daily records replay seed 7 without a key to +$19,796; the intraday file's reasons are the model's ([[RES-09]]).
+- Evidence: test_the_recorded_live_run_of_seed_7_passes_the_audit, test_the_recorded_live_run_replays_without_a_key_and_gives_19796, test_the_recorded_intraday_run_of_seed_7_passes_the_audit
 
 ### DAT-30 [C] The call record
 - File: src/hotel_market/model.py

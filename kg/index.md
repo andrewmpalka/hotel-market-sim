@@ -8,18 +8,18 @@ nodes and its words, len(text.split()) over the file.
 
 | File | Nodes | Words |
 | --- | ---: | ---: |
-| modules.md | 32 | 4,505 |
-| data.md | 33 | 4,682 |
+| modules.md | 32 | 4,504 |
+| data.md | 33 | 4,699 |
 | rules.md | 134 | 5,863 |
 | shocks.md | 9 | 1,033 |
 | concepts.md | 12 | 1,370 |
 | measures.md | 14 | 962 |
 | sources.md | 4 | 855 |
 | decisions.md | 71 | 10,618 |
-| results.md | 45 | 7,633 |
+| results.md | 45 | 7,681 |
 | forks.md | 14 | 2,037 |
-| unknowns.md | 16 | 2,164 |
-| every node file | 384 | 41,722 |
+| unknowns.md | 16 | 2,172 |
+| every node file | 384 | 41,794 |
 | index.md | | 2,999 |
 
 ## Modules (`modules.md`)
@@ -87,7 +87,7 @@ nodes and its words, len(text.split()) over the file.
 - DAT-26 [C] BookingHistory
 - DAT-27 [C] Customer
 - DAT-28 [C] The stored tables
-- DAT-29 [C] The recorded live run
+- DAT-29 [C] The recorded live runs
 - DAT-30 [C] The call record
 - DAT-31 [C] DeclineCounts
 - DAT-32 [C] Reviewer
@@ -316,7 +316,7 @@ nodes and its words, len(text.split()) over the file.
 - RES-06 [O] Where the gain came from, by arm
 - RES-07 [O] The revenue target on seeds 1 to 20
 - RES-08 [C] Four live runs of seed 7, one per request format
-- RES-09 [C] The recorded live run of seed 7, measured
+- RES-09 [C] The recorded live runs of seed 7, measured
 - RES-10 [C] The estimator against known elasticities
 - RES-11 [H] Seed 7 under the first agent designs
 - RES-12 [H] Seed 7 and seeds 1 to 20 with the capped estimate

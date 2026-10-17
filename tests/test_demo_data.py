@@ -74,7 +74,8 @@ def test_the_reasons_come_from_the_recorded_live_run(demo_file):
     held = _rows(demo_file, "SELECT DISTINCT reason_source, outcome FROM queue WHERE NOT queued")
     assert held == [("code", "held")]
     assert recorded_run(7) == ROOT / "tests" / "fixtures" / "live_seed7"
-    assert recorded_run(1) is None
+    assert recorded_run(7, 4) == ROOT / "tests" / "fixtures" / "live_seed7_intraday"
+    assert recorded_run(1) is None and recorded_run(1, 4) is None
     # The file says where its reasons came from, for the page's sidebar.
     assert _rows(demo_file, "SELECT seed, reason_source FROM run") == [
         (7, "the model's, from the recorded live run")
@@ -407,9 +408,11 @@ def test_at_four_ticks_the_news_names_each_feeds_tick_and_the_filings_outcome(de
     """At four ticks a day the news says which tick a feed landed at, the filing day adds the
     first flag, the first accepted raise, its stay dates and what they earned against the
     fixed-rate run, the queue holds every tick's flags, a planned rate names its tick, and the
-    template writes every reason, because the recording is daily."""
+    template writes every reason, because the recording at this clock is the intraday market's
+    and none of its requests is this market's."""
     out, source = demo_file_4
-    assert source.startswith("the template's, as the recorded run is at one tick a day")
+    assert source.startswith("the model's where the recorded live run covers the request and the")
+    assert source.endswith("it does not")
     assert _rows(out, "SELECT seed, reason_source FROM run") == [(7, source)]
     day20 = _rows(
         out,
@@ -474,9 +477,25 @@ def test_the_intraday_file_holds_each_ticks_news_queue_and_chart_rows(demo_file_
     the tick its news landed at, the queue holds each tick's flags under that tick, and the chart
     rows come once per tick as of it. On day 25 the lifestyle hotel's concert lands at tick 2
     with the raise accepted at the same tick, the outcome line lands at tick 4, and tick 1 has
-    nothing yet; the day-20 filing lands at tick 1 and the day-45 repricing at tick 3."""
+    nothing yet; the day-20 filing lands at tick 1 and the day-45 repricing at tick 3. The
+    reasons are the recorded intraday run's (tests/fixtures/live_seed7_intraday), which covers
+    every request, so the concert's raise carries the model's reason."""
     out = demo_file_intraday
     assert _rows(out, "SELECT ticks FROM run") == [(4,)]
+    assert _rows(out, "SELECT reason_source FROM run") == [
+        ("the model's, from the recorded live run",)
+    ]
+    assert _rows(out, "SELECT DISTINCT reason_source FROM queue WHERE queued") == [("model",)]
+    record = json.loads(
+        (
+            ROOT / "tests" / "fixtures" / "live_seed7_intraday" / "day025-t2_lifestyle.json"
+        ).read_text()
+    )
+    reasons = _rows(
+        out,
+        "SELECT reason FROM queue WHERE as_of_day = 25 AND hotel = 'lifestyle' AND queued",
+    )
+    assert len(reasons) == 1 and reasons[0][0] in {d["reason"] for d in record["decisions"]}
     news = _rows(
         out,
         "SELECT as_of_tick, kind, text FROM news WHERE as_of_day = 25 AND hotel = 'lifestyle' "

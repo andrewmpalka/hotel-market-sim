@@ -5,13 +5,17 @@ The demo page's data. One command writes one DuckDB file with everything the pag
     hotel-market demo-data --seed 7              # writes demo.duckdb
     hotel-market demo-data --seed 7 --out FILE --customer customers/demo.toml
     hotel-market demo-data --seed 7 --ticks 4 --out demo4.duckdb
+    hotel-market demo-data --seed 7 --customer customers/demo-intraday.toml --ticks 4 \
+        --out demo-intraday.duckdb
 
-The file holds the eight stored tables for days 0 to 59 (stored.py). The daily path writes them
-with a client that answers from the recorded live run (tests/fixtures/live_seed7) wherever the
-recording holds the same request, so the page shows the model's reasons, and it needs no API
-key. A request the recording does not cover, because the market or the world changed, gets the
-template's answer, and the command prints one warning line naming the day and the hotel. For a
-seed with no recording, the template writes every reason.
+The file holds the eight stored tables for days 0 to 59 (stored.py). It writes them with a
+client that answers from the recorded live run wherever the recording holds the same request, so
+the page shows the model's reasons, and it needs no API key. On the daily clock the recording is
+tests/fixtures/live_seed7, the demo market's run. A file at several ticks a day reads
+tests/fixtures/live_seed7_intraday, the demo-intraday market's run at four, whose records name
+their tick. A request the recording does not cover, because the market, the clock or the world
+changed, gets the template's answer, and the command prints one warning line naming the day and
+the hotel. For a seed with no recording, the template writes every reason.
 
 The file adds the tables the page reads as they are (sql/demo.sql): hotels, days, news,
 stay_dates, queue, scorecard, outcome and gains, and a run table with the seed and the words for
@@ -66,7 +70,7 @@ from hotel_market.world import HORIZON_DAYS, SIM_DAYS, Hotel, stay_window, weekd
 
 DEMO_FILE = Path("demo.duckdb")  # where the command writes by default
 DEMO_SCHEMA_FILE = Path("sql") / "demo.sql"  # the page's tables; relative to the root
-RECORDED_RUNS = Path("tests") / "fixtures"  # live_seed7 holds the recorded run of seed 7
+RECORDED_RUNS = Path("tests") / "fixtures"  # live_seed7 and live_seed7_intraday: seed 7's runs
 DEMO_TABLES = (
     "hotels", "days", "news", "stay_dates", "queue", "scorecard", "outcome", "gains"
 )  # fmt: skip
@@ -80,9 +84,10 @@ NUMBER_WORDS = ("no", "one", "two", "three", "four", "five", "six", "seven", "ei
 
 class Recorded:
     """A client that answers from a recorded live run and falls back to the template. It is
-    uncached, so it looks each request up itself: the record for the day and hotel, when it holds
-    the same request, gives the model's decisions under the name model. Otherwise the template's
-    decisions answer under the name template, and one warning line names the day and the hotel.
+    uncached, so it looks each request up itself: a record of the day and hotel, at any tick,
+    that holds the same request gives the model's decisions under the name model. Otherwise the
+    template's decisions answer under the name template, and one warning line names the day and
+    the hotel.
     ask() reads the name after each answer, so each decision records its own source."""
 
     cached = False
@@ -96,11 +101,12 @@ class Recorded:
     def complete(self, system: str, prompt: str, schema: dict) -> str:
         request = json.loads(prompt)
         day, hotel = request["day"], request["hotel"]["name"]
-        path = self.recording / f"day{day:03d}_{self.keys[hotel]}.json"
-        record = json.loads(path.read_text()) if path.exists() else None
-        if record is not None and record["request_digest"] == request_digest(request):
-            self.name = "model"
-            return json.dumps({"decisions": record["decisions"]})
+        digest = request_digest(request)
+        for path in sorted(self.recording.glob(f"day{day:03d}*_{self.keys[hotel]}.json")):
+            record = json.loads(path.read_text())
+            if record["request_digest"] == digest:
+                self.name = "model"
+                return json.dumps({"decisions": record["decisions"]})
         self.name = "template"
         self.fallbacks += 1
         print(
@@ -110,11 +116,14 @@ class Recorded:
         return json.dumps({"decisions": template_decisions(request)})
 
 
-def recorded_run(seed: int) -> Path | None:
-    """The recorded live run of the seed, under tests/fixtures, or None when there is none. The
-    folder is looked up under the working directory, then the repository root."""
+def recorded_run(seed: int, ticks: int = 1) -> Path | None:
+    """The recorded live run of the seed at the clock, under tests/fixtures, or None when there
+    is none: live_seed7 on the daily clock, live_seed7_intraday on a finer one, where a record's
+    name carries its tick, as the agent's cache names it. The folder is looked up under the
+    working directory, then the repository root."""
+    name = f"live_seed{seed}" + ("_intraday" if ticks > 1 else "")
     for base in (Path.cwd(), Path(__file__).resolve().parents[2]):
-        folder = base / RECORDED_RUNS / f"live_seed{seed}"
+        folder = base / RECORDED_RUNS / name
         if folder.is_dir():
             return folder
     return None
@@ -133,7 +142,7 @@ def build(
     for leftover in (out, out.with_name(out.name + ".wal")):
         if leftover.exists():
             leftover.unlink()
-    recording = recorded_run(seed) if ticks == 1 else None  # the recording is at one tick a day
+    recording = recorded_run(seed, ticks)
     rows: dict[str, list[tuple]] = {table: [] for table in DEMO_TABLES}
     rows["hotels"] = [
         (
@@ -196,7 +205,7 @@ def build(
             observe=observe,
             ticks=ticks,
         )
-    source = reason_source(recording, client.fallbacks if client is not None else 0, ticks)
+    source = reason_source(recording, client.fallbacks if client is not None else 0)
     final["fixed"] = simulate(seed, record_fixed, customer=customer, ticks=ticks)
     if ticks > 1:
         _add_outcomes(texts, entries_of, final["agent"], final["fixed"], customer, ticks)
@@ -228,14 +237,10 @@ def build(
     return source
 
 
-def reason_source(recording: Path | None, fallbacks: int = 0, ticks: int = 1) -> str:
+def reason_source(recording: Path | None, fallbacks: int = 0) -> str:
     """Where the file's reasons came from, as the sidebar says it: the recorded run's, the
     template's, or the recorded run's where it covers the request and the template's for the
-    rest. On a finer clock the template writes every reason, as the recording is daily."""
-    if ticks > 1:
-        return (
-            f"the template's, as the recorded run is at one tick a day and this file is at {ticks}"
-        )
+    rest."""
     if recording is None:
         return "the template's, as no run is recorded"
     if fallbacks:

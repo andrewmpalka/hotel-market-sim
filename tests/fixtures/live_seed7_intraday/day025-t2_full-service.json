@@ -1,0 +1,129 @@
+{
+  "request_digest": "daba5e44e3450e1a16f78abcc9e45db7940b314d411f8cd6f84b069fef27b43a",
+  "prompt_digest": "75b2efa7e9d4af86e86b3141bad0141de91313103a8e527d6da12572868f364c",
+  "request": {
+    "day": 25,
+    "hotel": {
+      "name": "Downtown full-service hotel",
+      "rooms": "250",
+      "floor": "$133",
+      "ceiling": "$266",
+      "cost_per_occupied_room": "$63"
+    },
+    "elasticity": {
+      "elasticity": "1.5",
+      "mode": "assumed",
+      "standard_error": null,
+      "prior": null,
+      "observations": null,
+      "market_elasticity": "1"
+    },
+    "entries": [
+      {
+        "id": "31-32",
+        "stay_dates": "31 to 32",
+        "what_changed": [
+          "event announced"
+        ],
+        "numbers": {
+          "days_out": "6 to 7",
+          "rooms_on_books": "297",
+          "unsold_rooms": "203",
+          "remaining_demand": "269",
+          "pace_gap": "20 rooms ahead of pace",
+          "seat_change": "unchanged",
+          "seat_revision": "unchanged",
+          "rate": "$190",
+          "comp_median": "$186 to $190",
+          "rate_vs_median": "0.3% to 1.9% above the median",
+          "median_change": "down 1.5% to 2.0%",
+          "new_event": "Concert"
+        },
+        "by_day_of_week": [
+          {
+            "day": "Thu",
+            "stay_dates": [
+              31
+            ],
+            "candidates": [
+              {
+                "name": "hold",
+                "rates": "$190",
+                "estimated_contribution": "$11,270",
+                "versus_hold": "the same as holding"
+              },
+              {
+                "name": "raise 5%",
+                "rates": "$200",
+                "estimated_contribution": "$12,120",
+                "versus_hold": "$850 more than holding"
+              },
+              {
+                "name": "raise 10%",
+                "rates": "$209",
+                "estimated_contribution": "$12,960",
+                "versus_hold": "$1,690 more than holding"
+              },
+              {
+                "name": "lower 5%",
+                "rates": "$180",
+                "estimated_contribution": "$10,430",
+                "versus_hold": "$850 less than holding"
+              }
+            ],
+            "best": "raise 10%"
+          },
+          {
+            "day": "Fri",
+            "stay_dates": [
+              32
+            ],
+            "candidates": [
+              {
+                "name": "hold",
+                "rates": "$190",
+                "estimated_contribution": "$14,370",
+                "versus_hold": "the same as holding"
+              },
+              {
+                "name": "raise 5%",
+                "rates": "$200",
+                "estimated_contribution": "$15,220",
+                "versus_hold": "$840 more than holding"
+              },
+              {
+                "name": "raise 10%",
+                "rates": "$209",
+                "estimated_contribution": "$15,750",
+                "versus_hold": "$1,380 more than holding"
+              },
+              {
+                "name": "lower 5%",
+                "rates": "$180",
+                "estimated_contribution": "$13,350",
+                "versus_hold": "$1,020 less than holding"
+              }
+            ],
+            "best": "raise 10%"
+          }
+        ],
+        "plan": "raise 10% on Thu, Fri",
+        "value_at_stake": "$3,070 more than holding",
+        "options": [
+          "raise 10% on Thu, Fri",
+          "hold"
+        ],
+        "earlier_changes_on_these_dates": []
+      }
+    ]
+  },
+  "source": "model",
+  "decisions": [
+    {
+      "id": "31-32",
+      "choice": "raise 10% on Thu, Fri",
+      "reason": "A concert has been announced for stay dates 31 to 32, which are 20 rooms ahead of pace at $190, 0.3% to 1.9% above the median, while the comp median is down 1.5% to 2.0%. We recommend raising rates 10% to $209 on Thursday and Friday. The estimates show $1,690 on Thursday and $1,380 on Friday, $3,070 more than holding in all."
+    }
+  ],
+  "model": "claude-opus-5-5"
+}

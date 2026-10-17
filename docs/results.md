@@ -173,6 +173,22 @@ The recorded live run of seed 7, made on 2026-10-15 on world v2 with `make live-
 | Figures the audit cannot match to a request phrase | 5 |
 | Sentences without a request figure | 4 |
 
+The recorded live run of seed 7 on the intraday market, made on 2026-10-16 with `python scripts/live_audit.py --seed 7 --customer customers/demo-intraday.toml --ticks 4` and recorded with the same command and `--record-fixture`. The run is at four ticks a day on customers/demo-intraday.toml, so the agent asked at the tick its news landed: the concert's announcement on day 25 at tick 2 brought one request at each of the two hotels it lifts. The model chose the template's option on every entry, so the contribution change is the template run's. The audit lists eleven figures it cannot match to a request phrase. Seven are per-day gains the request holds as "more than holding" phrases and the reason wrote as "$720 on Monday". Four are the days and rooms of earlier changes paraphrased from the request's read-back lines. The demo page's intraday file reads these records, so its day-25 reasons are the model's.
+
+| Measure | Value |
+| --- | ---: |
+| Model calls | 10, on days 0, 18, 20, 23, 25, 37, 38 and 40, at ticks 1 to 4 |
+| Plans accepted | 13 of 13 |
+| Input tokens | 33,304 (1,938 to 7,472 a call) |
+| Output tokens | 3,254 (139 to 702 a call) |
+| Time in the model | 53 s (2.9 to 8.1 s a call, median 5.0 s) |
+| Whole run, both simulations | 57 s |
+| Cost at list prices | $0.20 |
+| Prompt cache read or written | none |
+| Contribution change | +$29,366, the template run's |
+| Figures the audit cannot match to a request phrase | 11 |
+| Sentences without a request figure | 5 |
+
 Seed 7 with fixed rates: occupancy by hotel over stay dates 0 to 59 and over 140 to 149, measured on 2026-10-15 on world v2. The last column is the emptiest of those last ten nights.
 
 | Hotel | Occupancy, stay dates 0 to 59 | Occupancy, stay dates 140 to 149 | Emptiest night, 140 to 149 |

@@ -233,6 +233,34 @@ def test_the_recorded_live_run_replays_without_a_key_and_gives_19796(tmp_path):
     assert {(e.day, names[e.hotel], e.id): e.reason for e in decided} == recorded
 
 
+FIXTURE_INTRADAY = ROOT / "tests" / "fixtures" / "live_seed7_intraday"
+
+
+def test_the_recorded_intraday_run_of_seed_7_passes_the_audit(capsys):
+    """One live run of seed 7 on the intraday market at four ticks a day, with claude-opus-5-5,
+    is kept as a second fixture, its records named by their tick. The audit on them finds no
+    declined plan. It lists eleven figures it cannot match to a request phrase, per-day gains the
+    request holds as "more than holding" phrases and the days and rooms of earlier changes the
+    reasons paraphrased, and five sentences without a request figure."""
+    audit.audit(FIXTURE_INTRADAY)
+    out = capsys.readouterr().out
+    assert "Day 25, tick 2, Lifestyle hotel" in out
+    assert "10 model calls, 13 entries decided, 0 declined." in out
+    assert "11 figures in reasons do not appear in their request." in out
+    assert "day020-t1_lifestyle.json entry 75-75: 18" in out
+    assert "5 sentences hold no figure from the request." in out
+    names = sorted(p.name for p in FIXTURE_INTRADAY.glob("day*_*.json"))
+    assert len(names) == 10 and all("-t" in name for name in names)
+    assert "day025-t2_lifestyle.json" in names and "day025-t2_full-service.json" in names
+    assert all(json.loads(p.read_text())["model"] == MODEL for p in FIXTURE_INTRADAY.glob("*.json"))
+    lines = (FIXTURE_INTRADAY / "calls.jsonl").read_text().splitlines()
+    calls = [json.loads(line) for line in lines]
+    assert len(calls) == 10
+    assert {c["stop_reason"] for c in calls} == {"end_turn"}
+    assert {c["model"] for c in calls} == {"claude-opus-5-5"}
+    assert not any(c["fallback"] for c in calls)
+
+
 def test_record_fixture_copies_the_cache_records_and_the_calls_into_the_fixture(tmp_path):
     cache = tmp_path / "cache" / "seed7"
     cache.mkdir(parents=True)
@@ -258,6 +286,7 @@ def test_record_fixture_copies_the_cache_records_and_the_calls_into_the_fixture(
     assert (target / "day020_airport.json").read_text() == '{"record": "day020_airport.json"}'
     assert (target / "calls.jsonl").read_text() == '{"call": 1}\n'
     assert audit.FIXTURE.name == "live_seed7" and audit.FIXTURE.parent.name == "fixtures"
+    assert audit.fixture() == audit.FIXTURE and audit.fixture(4).name == "live_seed7_intraday"
     with pytest.raises(SystemExit, match="no cache records"):
         audit.record_fixture(tmp_path / "empty", calls, target)
 
@@ -296,3 +325,46 @@ def test_record_fixture_replays_the_run_from_its_cache_and_keeps_its_calls(
         "day010_convention.json",
     ]
     assert (tmp_path / "calls.jsonl").exists()
+
+
+def test_record_fixture_at_four_ticks_reads_the_markets_cache_and_names_the_intraday_folder(
+    tmp_path, monkeypatch, capsys, day10
+):
+    """With --customer and --ticks the audit reads the cache folder the agent names for that
+    market and clock, whose records carry their tick, prints the tick with the day, and copies
+    into the daily fixture's name with _intraday added."""
+    _, table = day10
+    hotel = demo().hotel("convention")
+    entries = [entry_for(10, f, table) for f in flags(10, table) if f.hotel == "convention"]
+    request = request_for(10, hotel, entries)
+    cache = tmp_path / "cache" / "demo-intraday" / "seed7-ticks4"
+    cache.mkdir(parents=True)
+    record = {"request_digest": "x", "request": request, "source": "model"}
+    record["decisions"] = template_decisions(request)
+    (cache / "day010-t2_convention.json").write_text(json.dumps(record))
+    call = {
+        "input_tokens": 1000,
+        "output_tokens": 500,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "seconds": 4.0,
+        "stop_reason": "end_turn",
+        "model": "claude-opus-5-5",
+        "fallback": False,
+    }
+    (tmp_path / "calls.jsonl").write_text(json.dumps(call) + "\n")
+    monkeypatch.setattr(audit, "FIXTURE", tmp_path / "fixture")
+    monkeypatch.setattr(audit, "live_run", lambda *a, **k: pytest.fail("the model ran again"))
+    market = ROOT / "customers" / "demo-intraday.toml"
+    audit.main(
+        ["--seed", "7", "--record-fixture", "--out", str(tmp_path)]
+        + ["--customer", str(market), "--ticks", "4"]
+    )
+    out = capsys.readouterr().out
+    assert "Day 10, tick 2, Downtown convention hotel" in out
+    assert "1 model calls, 1 entries decided, 0 declined." in out
+    assert sorted(p.name for p in (tmp_path / "fixture_intraday").iterdir()) == [
+        "calls.jsonl",
+        "day010-t2_convention.json",
+    ]
+    assert not (tmp_path / "fixture").exists()

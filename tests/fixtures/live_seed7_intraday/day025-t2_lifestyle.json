@@ -1,0 +1,129 @@
+{
+  "request_digest": "0a28c8c99f8f25085d9f9d042ddc34f36ba9fc872d8ed2ecaeec9c4795223df7",
+  "prompt_digest": "75b2efa7e9d4af86e86b3141bad0141de91313103a8e527d6da12572868f364c",
+  "request": {
+    "day": 25,
+    "hotel": {
+      "name": "Lifestyle hotel",
+      "rooms": "120",
+      "floor": "$168",
+      "ceiling": "$336",
+      "cost_per_occupied_room": "$80"
+    },
+    "elasticity": {
+      "elasticity": "1.5",
+      "mode": "assumed",
+      "standard_error": null,
+      "prior": null,
+      "observations": null,
+      "market_elasticity": "1"
+    },
+    "entries": [
+      {
+        "id": "31-32",
+        "stay_dates": "31 to 32",
+        "what_changed": [
+          "event announced"
+        ],
+        "numbers": {
+          "days_out": "6 to 7",
+          "rooms_on_books": "137",
+          "unsold_rooms": "103",
+          "remaining_demand": "173",
+          "pace_gap": "3 rooms behind pace",
+          "seat_change": "unchanged",
+          "seat_revision": "unchanged",
+          "rate": "$240",
+          "comp_median": "$241 to $242",
+          "rate_vs_median": "0.3% to 0.9% below the median",
+          "median_change": "down 0.3% to up 1.3%",
+          "new_event": "Concert"
+        },
+        "by_day_of_week": [
+          {
+            "day": "Thu",
+            "stay_dates": [
+              31
+            ],
+            "candidates": [
+              {
+                "name": "hold",
+                "rates": "$240",
+                "estimated_contribution": "$7,360",
+                "versus_hold": "the same as holding"
+              },
+              {
+                "name": "raise 5%",
+                "rates": "$252",
+                "estimated_contribution": "$7,910",
+                "versus_hold": "$550 more than holding"
+              },
+              {
+                "name": "raise 10%",
+                "rates": "$264",
+                "estimated_contribution": "$8,460",
+                "versus_hold": "$1,100 more than holding"
+              },
+              {
+                "name": "lower 5%",
+                "rates": "$228",
+                "estimated_contribution": "$6,810",
+                "versus_hold": "$550 less than holding"
+              }
+            ],
+            "best": "raise 10%"
+          },
+          {
+            "day": "Fri",
+            "stay_dates": [
+              32
+            ],
+            "candidates": [
+              {
+                "name": "hold",
+                "rates": "$240",
+                "estimated_contribution": "$9,120",
+                "versus_hold": "the same as holding"
+              },
+              {
+                "name": "raise 5%",
+                "rates": "$252",
+                "estimated_contribution": "$9,800",
+                "versus_hold": "$680 more than holding"
+              },
+              {
+                "name": "raise 10%",
+                "rates": "$264",
+                "estimated_contribution": "$10,490",
+                "versus_hold": "$1,370 more than holding"
+              },
+              {
+                "name": "lower 5%",
+                "rates": "$228",
+                "estimated_contribution": "$8,440",
+                "versus_hold": "$680 less than holding"
+              }
+            ],
+            "best": "raise 10%"
+          }
+        ],
+        "plan": "raise 10% on Thu, Fri",
+        "value_at_stake": "$2,470 more than holding",
+        "options": [
+          "raise 10% on Thu, Fri",
+          "hold"
+        ],
+        "earlier_changes_on_these_dates": []
+      }
+    ]
+  },
+  "source": "model",
+  "decisions": [
+    {
+      "id": "31-32",
+      "choice": "raise 10% on Thu, Fri",
+      "reason": "A concert was announced for stay dates 31 to 32, which are 6 to 7 days out and 3 rooms behind pace, with our $240 rate 0.3% to 0.9% below the median. We recommend raising 10% to $264 on Thursday and Friday. It is the best option on both days, estimated at $1,100 on Thursday and $1,370 on Friday, $2,470 more than holding in all."
+    }
+  ],
+  "model": "claude-opus-5-5"
+}

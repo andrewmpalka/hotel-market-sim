@@ -82,14 +82,14 @@ here for the rest.
 - Evidence: test_the_recorded_live_run_of_seed_7_passes_the_audit, test_the_recorded_live_run_replays_without_a_key_and_gives_19796
 - Links: [[DEC-44]], [[UNK-01]], [[UNK-02]], [[MOD-22]], [[RES-09]]
 
-### RES-09 [C] The recorded live run of seed 7, measured
-- Ran: `make live-audit SEED=7` on 2026-10-15 on world v2 with claude-opus-5-5; its cache and its calls.jsonl are kept as [[DAT-29]]. The model chose the template's option on every entry.
-- Result: the 4 calls used 15,469 input tokens (1,936 to 7,474 a call) and 1,034 output tokens (131 to 493). They cost $0.08 at list prices of $4 and $20 per million tokens.
-- Time: the model took 18 s in all, 3.0 to 5.7 s a call with a median of 4.5 s. The whole run with both simulations took 19 s, and no prompt cache was read or written.
-- Calls: every call ended with the stop reason end_turn. None was refused and none fell back to another model. Every answer parsed and named the entry's id and an allowed choice.
-- Audit: 6 plans accepted, none declined. 5 figures match no request phrase: three per-day gains restated as "$2,780 on Monday" and an earlier change paraphrased. 4 sentences hold no request figure.
-- Table: docs/results.md, "The recorded live run of seed 7"
-- Evidence: test_the_recorded_live_run_of_seed_7_passes_the_audit
+### RES-09 [C] The recorded live runs of seed 7, measured
+- Ran: `make live-audit SEED=7` on 2026-10-15 on world v2, and `python scripts/live_audit.py --seed 7 --customer customers/demo-intraday.toml --ticks 4` on 2026-10-16, both with claude-opus-5-5. The records are [[DAT-29]].
+- Daily: the 4 calls used 15,469 input tokens (1,936 to 7,474 a call) and 1,034 output tokens (131 to 493). They cost $0.08 at list prices of $4 and $20 per million tokens. The model took 18 s, 3.0 to 5.7 s a call. The run took 19 s.
+- Intraday: the 10 calls used 33,304 input tokens (1,938 to 7,472 a call) and 3,254 output tokens (139 to 702). They cost $0.20 at the same prices. The model took 53 s, 2.9 to 8.1 s a call. The run took 57 s.
+- Calls: every call of both runs ended with the stop reason end_turn, none was refused, none fell back to another model and no prompt cache was read or written. Every answer parsed and named an allowed choice.
+- Audit: the model took the template's option on all 6 daily and 13 intraday entries. 5 daily and 11 intraday figures match no request phrase: per-day gains restated and earlier changes paraphrased. 4 and 5 sentences hold no request figure.
+- Table: docs/results.md, "The recorded live run of seed 7" and "The recorded live run of seed 7 on the intraday market"
+- Evidence: test_the_recorded_live_run_of_seed_7_passes_the_audit, test_the_recorded_intraday_run_of_seed_7_passes_the_audit
 - Links: [[UNK-09]], [[UNK-02]], [[DAT-29]], [[MOD-22]], [[RUL-46]]
 
 ### RES-10 [C] The estimator against known elasticities

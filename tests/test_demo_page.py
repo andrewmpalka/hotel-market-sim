@@ -226,9 +226,10 @@ def test_at_four_ticks_the_day_20_page_names_the_ticks_in_the_news_and_the_legen
     )
     assert "against the fixed-rate run." in text
     assert "Planned rate (tick 3 of 4)" in _rate_chart_spec(page)
+    # The recording at this clock is the intraday market's, so the template answers.
     assert [caption.value for caption in page.sidebar.caption][0].startswith(
-        "Seed 7 of the simulated market. The reasons are the template's, as the recorded run is "
-        "at one tick a day"
+        "Seed 7 of the simulated market. The reasons are the model's where the recorded live "
+        "run covers the request and the template's for the"
     )
 
 

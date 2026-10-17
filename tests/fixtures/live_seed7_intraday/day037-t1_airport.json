@@ -1,0 +1,102 @@
+{
+  "request_digest": "a14e771bd6088f2ba0aad0578d1bd185513b12bf30fec586923affb2be4b65b7",
+  "prompt_digest": "75b2efa7e9d4af86e86b3141bad0141de91313103a8e527d6da12572868f364c",
+  "request": {
+    "day": 37,
+    "hotel": {
+      "name": "Airport hotel",
+      "rooms": "150",
+      "floor": "$98",
+      "ceiling": "$196",
+      "cost_per_occupied_room": "$47"
+    },
+    "elasticity": {
+      "elasticity": "1.5",
+      "mode": "assumed",
+      "standard_error": null,
+      "prior": null,
+      "observations": null,
+      "market_elasticity": "1"
+    },
+    "entries": [
+      {
+        "id": "118-118",
+        "stay_dates": "118",
+        "what_changed": [
+          "comp median down"
+        ],
+        "numbers": {
+          "days_out": "81",
+          "rooms_on_books": "2",
+          "unsold_rooms": "148",
+          "remaining_demand": "154",
+          "pace_gap": "on pace",
+          "seat_change": "up 16.7%",
+          "seat_revision": "unchanged",
+          "rate": "$140",
+          "comp_median": "$136",
+          "rate_vs_median": "2.9% above the median",
+          "median_change": "down 5.2%",
+          "new_event": null
+        },
+        "by_day_of_week": [
+          {
+            "day": "Sun",
+            "stay_dates": [
+              118
+            ],
+            "candidates": [
+              {
+                "name": "hold",
+                "rates": "$140",
+                "estimated_contribution": "$13,340",
+                "versus_hold": "the same as holding"
+              },
+              {
+                "name": "raise 5%",
+                "rates": "$147",
+                "estimated_contribution": "$13,650",
+                "versus_hold": "$300 more than holding"
+              },
+              {
+                "name": "raise 10%",
+                "rates": "$154",
+                "estimated_contribution": "$13,710",
+                "versus_hold": "$370 more than holding"
+              },
+              {
+                "name": "lower 5%",
+                "rates": "$133",
+                "estimated_contribution": "$12,670",
+                "versus_hold": "$670 less than holding"
+              },
+              {
+                "name": "lower halfway to the new median",
+                "rates": "$138",
+                "estimated_contribution": "$13,190",
+                "versus_hold": "$150 less than holding"
+              }
+            ],
+            "best": "raise 10%"
+          }
+        ],
+        "plan": "raise 10% on Sun",
+        "value_at_stake": "$370 more than holding",
+        "options": [
+          "raise 10% on Sun",
+          "hold"
+        ],
+        "earlier_changes_on_these_dates": []
+      }
+    ]
+  },
+  "source": "model",
+  "decisions": [
+    {
+      "id": "118-118",
+      "choice": "raise 10% on Sun",
+      "reason": "The comp median for this Sunday stay date is down 5.2% to $136, leaving our $140 rate 2.9% above the median, with bookings on pace and 148 rooms unsold at 81 days out. We recommend raising the rate 10% to $154. Our estimates put this at $370 more than holding, the best of the options compared, while lowering 5% or lowering halfway to the new median would earn less than holding."
+    }
+  ],
+  "model": "claude-opus-5-5"
+}

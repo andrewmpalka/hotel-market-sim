@@ -1,0 +1,605 @@
+{
+  "request_digest": "e0f2395aee1c55f4e236bd831f0cdc76e353363b52c42979a0b125564fe662f2",
+  "prompt_digest": "75b2efa7e9d4af86e86b3141bad0141de91313103a8e527d6da12572868f364c",
+  "request": {
+    "day": 20,
+    "hotel": {
+      "name": "Airport hotel",
+      "rooms": "150",
+      "floor": "$98",
+      "ceiling": "$196",
+      "cost_per_occupied_room": "$47"
+    },
+    "elasticity": {
+      "elasticity": "1.5",
+      "mode": "assumed",
+      "standard_error": null,
+      "prior": null,
+      "observations": null,
+      "market_elasticity": "1"
+    },
+    "entries": [
+      {
+        "id": "50-63",
+        "stay_dates": "50 to 63",
+        "what_changed": [
+          "seats up"
+        ],
+        "numbers": {
+          "days_out": "30 to 43",
+          "rooms_on_books": "296",
+          "unsold_rooms": "1,804",
+          "remaining_demand": "1,640",
+          "pace_gap": "8 rooms ahead of pace",
+          "seat_change": "up 12.8% to 17.1%",
+          "seat_revision": "up 12.8% to 17.1%",
+          "rate": "$140",
+          "comp_median": "$138 to $142",
+          "rate_vs_median": "1.5% below to 1.6% above the median",
+          "median_change": "down 3.3% to up 2.5%",
+          "new_event": null
+        },
+        "by_day_of_week": [
+          {
+            "day": "Mon",
+            "stay_dates": [
+              56,
+              63
+            ],
+            "candidates": [
+              {
+                "name": "hold",
+                "rates": "$140",
+                "estimated_contribution": "$22,780",
+                "versus_hold": "the same as holding"
+              },
+              {
+                "name": "raise 5%",
+                "rates": "$147",
+                "estimated_contribution": "$23,350",
+                "versus_hold": "$560 more than holding"
+              },
+              {
+                "name": "raise 10%",
+                "rates": "$154",
+                "estimated_contribution": "$23,500",
+                "versus_hold": "$720 more than holding"
+              },
+              {
+                "name": "lower 5%",
+                "rates": "$133",
+                "estimated_contribution": "$21,640",
+                "versus_hold": "$1,150 less than holding"
+              }
+            ],
+            "best": "raise 10%"
+          },
+          {
+            "day": "Tue",
+            "stay_dates": [
+              50,
+              57
+            ],
+            "candidates": [
+              {
+                "name": "hold",
+                "rates": "$140",
+                "estimated_contribution": "$19,900",
+                "versus_hold": "the same as holding"
+              },
+              {
+                "name": "raise 5%",
+                "rates": "$147",
+                "estimated_contribution": "$19,900",
+                "versus_hold": "the same as holding"
+              },
+              {
+                "name": "raise 10%",
+                "rates": "$154",
+                "estimated_contribution": "$19,860",
+                "versus_hold": "$40 less than holding"
+              },
+              {
+                "name": "lower 5%",
+                "rates": "$133",
+                "estimated_contribution": "$19,770",
+                "versus_hold": "$130 less than holding"
+              }
+            ],
+            "best": "raise 5%"
+          },
+          {
+            "day": "Wed",
+            "stay_dates": [
+              51,
+              58
+            ],
+            "candidates": [
+              {
+                "name": "hold",
+                "rates": "$140",
+                "estimated_contribution": "$21,500",
+                "versus_hold": "the same as holding"
+              },
+              {
+                "name": "raise 5%",
+                "rates": "$147",
+                "estimated_contribution": "$21,620",
+                "versus_hold": "$130 more than holding"
+              },
+              {
+                "name": "raise 10%",
+                "rates": "$154",
+                "estimated_contribution": "$21,600",
+                "versus_hold": "$110 more than holding"
+              },
+              {
+                "name": "lower 5%",
+                "rates": "$133",
+                "estimated_contribution": "$21,010",
+                "versus_hold": "$480 less than holding"
+              }
+            ],
+            "best": "raise 5%"
+          },
+          {
+            "day": "Thu",
+            "stay_dates": [
+              52,
+              59
+            ],
+            "candidates": [
+              {
+                "name": "hold",
+                "rates": "$140",
+                "estimated_contribution": "$22,340",
+                "versus_hold": "the same as holding"
+              },
+              {
+                "name": "raise 5%",
+                "rates": "$147",
+                "estimated_contribution": "$22,700",
+                "versus_hold": "$360 more than holding"
+              },
+              {
+                "name": "raise 10%",
+                "rates": "$154",
+                "estimated_contribution": "$22,770",
+                "versus_hold": "$420 more than holding"
+              },
+              {
+                "name": "lower 5%",
+                "rates": "$133",
+                "estimated_contribution": "$21,440",
+                "versus_hold": "$900 less than holding"
+              }
+            ],
+            "best": "raise 10%"
+          },
+          {
+            "day": "Fri",
+            "stay_dates": [
+              53,
+              60
+            ],
+            "candidates": [
+              {
+                "name": "hold",
+                "rates": "$140",
+                "estimated_contribution": "$21,820",
+                "versus_hold": "the same as holding"
+              },
+              {
+                "name": "raise 5%",
+                "rates": "$147",
+                "estimated_contribution": "$21,880",
+                "versus_hold": "$60 more than holding"
+              },
+              {
+                "name": "raise 10%",
+                "rates": "$154",
+                "estimated_contribution": "$21,840",
+                "versus_hold": "$20 more than holding"
+              },
+              {
+                "name": "lower 5%",
+                "rates": "$133",
+                "estimated_contribution": "$21,480",
+                "versus_hold": "$340 less than holding"
+              }
+            ],
+            "best": "raise 5%"
+          },
+          {
+            "day": "Sat",
+            "stay_dates": [
+              54,
+              61
+            ],
+            "candidates": [
+              {
+                "name": "hold",
+                "rates": "$140",
+                "estimated_contribution": "$19,350",
+                "versus_hold": "the same as holding"
+              },
+              {
+                "name": "raise 5%",
+                "rates": "$147",
+                "estimated_contribution": "$19,330",
+                "versus_hold": "$20 less than holding"
+              },
+              {
+                "name": "raise 10%",
+                "rates": "$154",
+                "estimated_contribution": "$19,290",
+                "versus_hold": "$60 less than holding"
+              },
+              {
+                "name": "lower 5%",
+                "rates": "$133",
+                "estimated_contribution": "$19,320",
+                "versus_hold": "$30 less than holding"
+              }
+            ],
+            "best": "hold"
+          },
+          {
+            "day": "Sun",
+            "stay_dates": [
+              55,
+              62
+            ],
+            "candidates": [
+              {
+                "name": "hold",
+                "rates": "$140",
+                "estimated_contribution": "$22,720",
+                "versus_hold": "the same as holding"
+              },
+              {
+                "name": "raise 5%",
+                "rates": "$147",
+                "estimated_contribution": "$23,120",
+                "versus_hold": "$400 more than holding"
+              },
+              {
+                "name": "raise 10%",
+                "rates": "$154",
+                "estimated_contribution": "$23,180",
+                "versus_hold": "$460 more than holding"
+              },
+              {
+                "name": "lower 5%",
+                "rates": "$133",
+                "estimated_contribution": "$21,760",
+                "versus_hold": "$960 less than holding"
+              }
+            ],
+            "best": "raise 10%"
+          }
+        ],
+        "plan": "raise 5% on Tue, Wed, Fri; raise 10% on Mon, Thu, Sun",
+        "value_at_stake": "$1,790 more than holding",
+        "options": [
+          "raise 5% on Tue, Wed, Fri; raise 10% on Mon, Thu, Sun",
+          "hold"
+        ],
+        "earlier_changes_on_these_dates": []
+      },
+      {
+        "id": "65-109",
+        "stay_dates": "65 to 109",
+        "what_changed": [
+          "seats up"
+        ],
+        "numbers": {
+          "days_out": "45 to 89",
+          "rooms_on_books": "235",
+          "unsold_rooms": "6,515",
+          "remaining_demand": "6,109",
+          "pace_gap": "21 rooms behind pace",
+          "seat_change": "up 13.6% to 20.4%",
+          "seat_revision": "up 13.6% to 20.4%",
+          "rate": "$140",
+          "comp_median": "$136 to $143",
+          "rate_vs_median": "2.4% below to 2.9% above the median",
+          "median_change": "down 3.4% to up 3.1%",
+          "new_event": null
+        },
+        "by_day_of_week": [
+          {
+            "day": "Mon",
+            "stay_dates": [
+              70,
+              77,
+              84,
+              91,
+              98,
+              105
+            ],
+            "candidates": [
+              {
+                "name": "hold",
+                "rates": "$140",
+                "estimated_contribution": "$78,090",
+                "versus_hold": "the same as holding"
+              },
+              {
+                "name": "raise 5%",
+                "rates": "$147",
+                "estimated_contribution": "$79,870",
+                "versus_hold": "$1,770 more than holding"
+              },
+              {
+                "name": "raise 10%",
+                "rates": "$154",
+                "estimated_contribution": "$80,250",
+                "versus_hold": "$2,160 more than holding"
+              },
+              {
+                "name": "lower 5%",
+                "rates": "$133",
+                "estimated_contribution": "$74,240",
+                "versus_hold": "$3,850 less than holding"
+              }
+            ],
+            "best": "raise 10%"
+          },
+          {
+            "day": "Tue",
+            "stay_dates": [
+              71,
+              78,
+              85,
+              92,
+              99,
+              106
+            ],
+            "candidates": [
+              {
+                "name": "hold",
+                "rates": "$140",
+                "estimated_contribution": "$70,490",
+                "versus_hold": "the same as holding"
+              },
+              {
+                "name": "raise 5%",
+                "rates": "$147",
+                "estimated_contribution": "$70,530",
+                "versus_hold": "$40 more than holding"
+              },
+              {
+                "name": "raise 10%",
+                "rates": "$154",
+                "estimated_contribution": "$70,370",
+                "versus_hold": "$120 less than holding"
+              },
+              {
+                "name": "lower 5%",
+                "rates": "$133",
+                "estimated_contribution": "$69,850",
+                "versus_hold": "$640 less than holding"
+              }
+            ],
+            "best": "raise 5%"
+          },
+          {
+            "day": "Wed",
+            "stay_dates": [
+              65,
+              72,
+              79,
+              86,
+              93,
+              100,
+              107
+            ],
+            "candidates": [
+              {
+                "name": "hold",
+                "rates": "$140",
+                "estimated_contribution": "$87,610",
+                "versus_hold": "the same as holding"
+              },
+              {
+                "name": "raise 5%",
+                "rates": "$147",
+                "estimated_contribution": "$88,620",
+                "versus_hold": "$1,010 more than holding"
+              },
+              {
+                "name": "raise 10%",
+                "rates": "$154",
+                "estimated_contribution": "$88,670",
+                "versus_hold": "$1,070 more than holding"
+              },
+              {
+                "name": "lower 5%",
+                "rates": "$133",
+                "estimated_contribution": "$84,590",
+                "versus_hold": "$3,020 less than holding"
+              }
+            ],
+            "best": "raise 10%"
+          },
+          {
+            "day": "Thu",
+            "stay_dates": [
+              66,
+              73,
+              80,
+              87,
+              94,
+              101,
+              108
+            ],
+            "candidates": [
+              {
+                "name": "hold",
+                "rates": "$140",
+                "estimated_contribution": "$90,830",
+                "versus_hold": "the same as holding"
+              },
+              {
+                "name": "raise 5%",
+                "rates": "$147",
+                "estimated_contribution": "$92,590",
+                "versus_hold": "$1,760 more than holding"
+              },
+              {
+                "name": "raise 10%",
+                "rates": "$154",
+                "estimated_contribution": "$92,910",
+                "versus_hold": "$2,070 more than holding"
+              },
+              {
+                "name": "lower 5%",
+                "rates": "$133",
+                "estimated_contribution": "$86,710",
+                "versus_hold": "$4,130 less than holding"
+              }
+            ],
+            "best": "raise 10%"
+          },
+          {
+            "day": "Fri",
+            "stay_dates": [
+              67,
+              74,
+              81,
+              88,
+              95,
+              102,
+              109
+            ],
+            "candidates": [
+              {
+                "name": "hold",
+                "rates": "$140",
+                "estimated_contribution": "$87,900",
+                "versus_hold": "the same as holding"
+              },
+              {
+                "name": "raise 5%",
+                "rates": "$147",
+                "estimated_contribution": "$88,810",
+                "versus_hold": "$910 more than holding"
+              },
+              {
+                "name": "raise 10%",
+                "rates": "$154",
+                "estimated_contribution": "$88,820",
+                "versus_hold": "$920 more than holding"
+              },
+              {
+                "name": "lower 5%",
+                "rates": "$133",
+                "estimated_contribution": "$84,980",
+                "versus_hold": "$2,920 less than holding"
+              }
+            ],
+            "best": "raise 10%"
+          },
+          {
+            "day": "Sat",
+            "stay_dates": [
+              68,
+              75,
+              82,
+              89,
+              96,
+              103
+            ],
+            "candidates": [
+              {
+                "name": "hold",
+                "rates": "$140",
+                "estimated_contribution": "$66,240",
+                "versus_hold": "the same as holding"
+              },
+              {
+                "name": "raise 5%",
+                "rates": "$147",
+                "estimated_contribution": "$66,200",
+                "versus_hold": "$40 less than holding"
+              },
+              {
+                "name": "raise 10%",
+                "rates": "$154",
+                "estimated_contribution": "$66,050",
+                "versus_hold": "$190 less than holding"
+              },
+              {
+                "name": "lower 5%",
+                "rates": "$133",
+                "estimated_contribution": "$66,020",
+                "versus_hold": "$220 less than holding"
+              }
+            ],
+            "best": "hold"
+          },
+          {
+            "day": "Sun",
+            "stay_dates": [
+              69,
+              76,
+              83,
+              90,
+              97,
+              104
+            ],
+            "candidates": [
+              {
+                "name": "hold",
+                "rates": "$140",
+                "estimated_contribution": "$77,630",
+                "versus_hold": "the same as holding"
+              },
+              {
+                "name": "raise 5%",
+                "rates": "$147",
+                "estimated_contribution": "$79,270",
+                "versus_hold": "$1,640 more than holding"
+              },
+              {
+                "name": "raise 10%",
+                "rates": "$154",
+                "estimated_contribution": "$79,590",
+                "versus_hold": "$1,960 more than holding"
+              },
+              {
+                "name": "lower 5%",
+                "rates": "$133",
+                "estimated_contribution": "$73,920",
+                "versus_hold": "$3,710 less than holding"
+              }
+            ],
+            "best": "raise 10%"
+          }
+        ],
+        "plan": "raise 5% on Tue; raise 10% on Mon, Wed, Thu, Fri, Sun",
+        "value_at_stake": "$8,220 more than holding",
+        "options": [
+          "raise 5% on Tue; raise 10% on Mon, Wed, Thu, Fri, Sun",
+          "hold"
+        ],
+        "earlier_changes_on_these_dates": []
+      }
+    ]
+  },
+  "source": "model",
+  "decisions": [
+    {
+      "id": "50-63",
+      "choice": "raise 5% on Tue, Wed, Fri; raise 10% on Mon, Thu, Sun",
+      "reason": "Airline seats into the market are up 12.8% to 17.1% for stay dates 50 to 63, and we are 8 rooms ahead of pace at $140, 1.5% below to 1.6% above the median. We recommend raising 10% on Monday, Thursday and Sunday and 5% on Tuesday, Wednesday and Friday, while holding Saturday, for an estimated $1,790 more than holding. The largest gains are $720 on Monday, $460 on Sunday and $420 on Thursday, though the Tuesday raise is estimated at the same as holding."
+    },
+    {
+      "id": "65-109",
+      "choice": "raise 5% on Tue; raise 10% on Mon, Wed, Thu, Fri, Sun",
+      "reason": "Airline seats are up 13.6% to 20.4% for stay dates 65 to 109, though we are 21 rooms behind pace at $140, 2.4% below to 2.9% above the median. We recommend raising 10% on Monday, Wednesday, Thursday, Friday and Sunday and 5% on Tuesday, while holding Saturday, for an estimated $8,220 more than holding. The biggest gains are $2,160 on Monday, $2,070 on Thursday and $1,960 on Sunday, while Tuesday adds only $40."
+    }
+  ],
+  "model": "claude-opus-5-5"
+}

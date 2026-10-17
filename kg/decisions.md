@@ -604,7 +604,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 
 ### DEC-57 [C] A read-only demo page over a file code writes
 - Decided: the demo page ([[MOD-27]]) is a Streamlit app, the optional extra demo. It reads one DuckDB file ([[DAT-33]]) that hotel-market demo-data writes ([[MOD-26]]) and computes nothing.
-- Reasons: the file's reasons come from the recorded live run of seed 7 ([[DAT-29]]) where it covers the request. Elsewhere the template answers and the command warns, so any market or seed builds with no API key. The run table says which.
+- Reasons: they come from the live run of seed 7 recorded at the file's clock ([[DAT-29]]) where it covers the request. Elsewhere the template answers with a warning, so any market or seed builds with no key. The run table says which.
 - Scorecard: the file holds the nights already stayed as of each day, stay dates 0 to the day before, and the outcome once every stay date is complete, which is the seed-7 table in docs/results.md ([[RES-02]], [[DEC-58]]).
 - Guard: a test parses the page and fails on an import from the package, an arithmetic operator or an aggregate call. Every figure the page shows is a row code wrote ([[RUL-01]]).
 - Replaces: CLAUDE.md's rule 5 allowed no web UI. It now allows this page, and nothing else.

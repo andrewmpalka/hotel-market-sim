@@ -10,6 +10,10 @@ One seed with the live model, measured and audited.
                                                        # audit the cache a live run left, then
                                                        # copy its records and calls.jsonl into
                                                        # tests/fixtures/live_seed7
+    python scripts/live_audit.py --seed 7 --customer customers/demo-intraday.toml --ticks 4
+                                                       # the intraday market at four ticks a day;
+                                                       # with --record-fixture the copy goes to
+                                                       # tests/fixtures/live_seed7_intraday
 
 The run is the hotel-market command's run for the seed in the given mode. The default mode
 applies unless --elasticity says otherwise. It makes both simulations, decisions.jsonl and the
@@ -52,6 +56,7 @@ from pathlib import Path
 from hotel_market.agent import TRUE_MODE, Agent, ElasticityMode
 from hotel_market.bench import PRICES
 from hotel_market.cli import cache_root, run, summary
+from hotel_market.customer import Customer, demo, load
 from hotel_market.demand import DEMAND_BIAS, MARKET_ELASTICITY
 from hotel_market.model import HOLD, MODEL, ClaudeClient, Measured
 
@@ -69,16 +74,30 @@ SPAN = re.compile(rf"(?P<a>{_FIGURE})\s*(?:–|—|-|to)\s*(?P<b>{_FIGURE})")
 SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
 
 
-def live_run(seed: int, out_dir: Path, mode: ElasticityMode = TRUE_MODE) -> list[dict]:
-    """Seed `seed` with the live model in `mode`, writing decisions.jsonl, cache/ and
-    calls.jsonl under out_dir. A Measured client (model.py) records each call; the file holds
-    this run's calls only. Returns the calls' measurements."""
+def live_run(
+    seed: int,
+    out_dir: Path,
+    mode: ElasticityMode = TRUE_MODE,
+    customer: Customer | None = None,
+    ticks: int = 1,
+) -> list[dict]:
+    """Seed `seed` with the live model in `mode`, on the customer's market at `ticks` a day,
+    writing decisions.jsonl, cache/ and calls.jsonl under out_dir. A Measured client (model.py)
+    records each call; the file holds this run's calls only. Returns the calls' measurements."""
     calls_path = out_dir / "calls.jsonl"
     if calls_path.exists():
         calls_path.unlink()
     client = Measured(ClaudeClient(), calls_path)
     start = time.perf_counter()
-    fixed, books, agent = run(seed, out_dir / "decisions.jsonl", out_dir / "cache", client, mode)
+    fixed, books, agent = run(
+        seed,
+        out_dir / "decisions.jsonl",
+        out_dir / "cache",
+        client,
+        mode,
+        customer=customer,
+        ticks=ticks,
+    )
     total = time.perf_counter() - start
     print(summary(seed, fixed, books, agent))
     print()
@@ -100,7 +119,9 @@ def audit(cache_dir: Path) -> None:
             continue
         entries = {entry["id"]: entry for entry in request["entries"]}
         phrases, tokens = quotable(request)
-        print(f"\nDay {request['day']}, {request['hotel']['name']}")
+        moment = path.name.split("_")[0]  # day025, or day025-t2 on a finer clock
+        tick = f", tick {moment.split('-t')[1]}" if "-t" in moment else ""
+        print(f"\nDay {request['day']}{tick}, {request['hotel']['name']}")
         for decision in decisions:
             entry = entries[decision["id"]]
             action = "declined" if decision["choice"] == HOLD else "accepted"
@@ -283,7 +304,21 @@ def main(argv: list[str] | None = None) -> None:
         "--record-fixture",
         action="store_true",
         help="audit the cache a live run left, as --audit-only does, then copy its records and "
-        "calls.jsonl into tests/fixtures/live_seed7, replacing the recorded run the tests replay",
+        "calls.jsonl into tests/fixtures/live_seed7, or live_seed7_intraday with --ticks above "
+        "1, replacing the recorded run the tests replay",
+    )
+    parser.add_argument(
+        "--customer",
+        type=Path,
+        default=None,
+        metavar="FILE",
+        help="the market's file, customers/demo.toml by default; another names the cache folder",
+    )
+    parser.add_argument(
+        "--ticks",
+        type=int,
+        default=1,
+        help="ticks a day, 1 by default; above 1 the records name their tick, as day025-t2",
     )
     parser.add_argument(
         "--market-elasticity",
@@ -300,24 +335,33 @@ def main(argv: list[str] | None = None) -> None:
         args.elasticity = replace(args.elasticity, cautious=True)
     # The arm's folder, as the command and the agent name it; a bench arm keeps its calls.jsonl
     # inside it.
+    customer = load(args.customer) if args.customer else demo()
     root = cache_root(args.out / "cache", DEMAND_BIAS, args.react, args.market_elasticity)
-    cache_dir = Agent(args.seed, root, elasticity=args.elasticity).cache_dir
+    cache_dir = Agent(
+        args.seed, root, elasticity=args.elasticity, customer=customer, ticks=args.ticks
+    ).cache_dir
     calls_file = next(
         (p for p in (cache_dir / "calls.jsonl", args.out / "calls.jsonl") if p.exists()), None
     )
     calls: list[dict] = []
     if not args.audit_only:
-        calls = live_run(args.seed, args.out, args.elasticity)
+        calls = live_run(args.seed, args.out, args.elasticity, customer, args.ticks)
     elif calls_file is not None:
         calls = [json.loads(line) for line in calls_file.read_text().splitlines() if line]
     audit(cache_dir)
     print()
     report_calls(calls)
     if args.record_fixture:
-        record_fixture(cache_dir, calls_file or args.out / "calls.jsonl", FIXTURE)
+        record_fixture(cache_dir, calls_file or args.out / "calls.jsonl", fixture(args.ticks))
 
 
 FIXTURE = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "live_seed7"
+
+
+def fixture(ticks: int = 1) -> Path:
+    """Where a run is recorded: FIXTURE on the daily clock, with _intraday added on a finer one,
+    which demo_data.recorded_run reads for a file at that clock."""
+    return FIXTURE if ticks == 1 else FIXTURE.with_name(FIXTURE.name + "_intraday")
 
 
 def record_fixture(cache_dir: Path, calls_file: Path, target: Path = FIXTURE) -> list[Path]:

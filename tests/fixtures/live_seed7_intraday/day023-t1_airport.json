@@ -1,0 +1,96 @@
+{
+  "request_digest": "2f4fbc1b4e1385e5c2ea7831d79d22746a0cac87b1706f3adf4bf6b65e8ade04",
+  "prompt_digest": "75b2efa7e9d4af86e86b3141bad0141de91313103a8e527d6da12572868f364c",
+  "request": {
+    "day": 23,
+    "hotel": {
+      "name": "Airport hotel",
+      "rooms": "150",
+      "floor": "$98",
+      "ceiling": "$196",
+      "cost_per_occupied_room": "$47"
+    },
+    "elasticity": {
+      "elasticity": "1.5",
+      "mode": "assumed",
+      "standard_error": null,
+      "prior": null,
+      "observations": null,
+      "market_elasticity": "1"
+    },
+    "entries": [
+      {
+        "id": "28-28",
+        "stay_dates": "28",
+        "what_changed": [
+          "ahead of pace"
+        ],
+        "numbers": {
+          "days_out": "5",
+          "rooms_on_books": "107",
+          "unsold_rooms": "43",
+          "remaining_demand": "55",
+          "pace_gap": "28 rooms ahead of pace",
+          "seat_change": "unchanged",
+          "seat_revision": "unchanged",
+          "rate": "$140",
+          "comp_median": "$141",
+          "rate_vs_median": "0.4% below the median",
+          "median_change": "down 0.1%",
+          "new_event": null
+        },
+        "by_day_of_week": [
+          {
+            "day": "Mon",
+            "stay_dates": [
+              28
+            ],
+            "candidates": [
+              {
+                "name": "hold",
+                "rates": "$140",
+                "estimated_contribution": "$4,000",
+                "versus_hold": "the same as holding"
+              },
+              {
+                "name": "raise 5%",
+                "rates": "$147",
+                "estimated_contribution": "$4,270",
+                "versus_hold": "$270 more than holding"
+              },
+              {
+                "name": "raise 10%",
+                "rates": "$154",
+                "estimated_contribution": "$4,510",
+                "versus_hold": "$510 more than holding"
+              },
+              {
+                "name": "lower 5%",
+                "rates": "$133",
+                "estimated_contribution": "$3,710",
+                "versus_hold": "$290 less than holding"
+              }
+            ],
+            "best": "raise 10%"
+          }
+        ],
+        "plan": "raise 10% on Mon",
+        "value_at_stake": "$510 more than holding",
+        "options": [
+          "raise 10% on Mon",
+          "hold"
+        ],
+        "earlier_changes_on_these_dates": []
+      }
+    ]
+  },
+  "source": "model",
+  "decisions": [
+    {
+      "id": "28-28",
+      "choice": "raise 10% on Mon",
+      "reason": "Monday the 28th is now 28 rooms ahead of pace with 43 rooms unsold, and our $140 rate sits 0.4% below the median. We recommend raising 10% to $154 on Monday. Among the options we compared it has the highest estimated contribution, $4,510, which is $510 more than holding."
+    }
+  ],
+  "model": "claude-opus-5-5"
+}

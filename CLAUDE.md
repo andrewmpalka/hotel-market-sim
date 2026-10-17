@@ -75,7 +75,9 @@ with pip install -e ".[dev]" and import it as hotel_market.<module>.
 | demo_page.py | the read-only demo page: a Streamlit app that reads that file, computes nothing, offers a tick on a file written at several, and fits one 1440 by 900 window |
 
 Around the package, tests/ holds one test file per module, conftest.py and
-tests/fixtures/live_seed7/, one recorded live run. customers/demo.toml is the
+two recorded live runs, tests/fixtures/live_seed7/ on the daily clock and
+tests/fixtures/live_seed7_intraday/ on the intraday market at four ticks a
+day. customers/demo.toml is the
 demo market, customers/harbour.toml a second market of three hotels, which
 runs with --customer alone, and customers/demo-intraday.toml the demo market
 with its news inside the day, for --ticks 4. sql/schema.sql defines the eight stored tables and

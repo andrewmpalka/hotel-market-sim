@@ -17,7 +17,7 @@ and a RES node records the run. A claim that no test can confirm stays [U].
 
 ### UNK-02 [C] Whether the enum schema behaves as expected against the live API
 - Was unknown: the per-request schema ([[DEC-34]]) had been tested with a fake client only.
-- Measured: in the recorded live run of seed 7 ([[DAT-29]]), all 4 answers parsed as JSON and chose an allowed option. The check of the answer therefore never raised ([[RES-09]]).
+- Measured: in the recorded live runs of seed 7 ([[DAT-29]]), all 14 answers parsed as JSON and chose an allowed option. The check of the answer therefore never raised ([[RES-09]]).
 - Calls: every call ended with the stop reason end_turn, none was refused and none fell back to another model. The four world v1 runs of the same seed, not kept, did the same over 28 calls.
 - Invalid: Sonnet gave the first invalid answer seen live, on seed 1 at fixed:1.0, day 40. It left an entry out; a retry fixed it. It did so in six requests, one of them twice, in a failed run and its rerun. Opus and Haiku never did.
 - Schema: the decisions are an object with one required property per entry id ([[DEC-34]]). The API refused an array bound of 2 with a 400 on 2026-10-12, and allows a required property. An omission is now unrepresentable.
@@ -67,7 +67,7 @@ and a RES node records the run. A claim that no test can confirm stays [U].
 
 ### UNK-09 [C] What a live run costs and takes
 - Was unknown: no live call had been made from this repository. The guess was about seven calls, a few cents to under a dollar, and under a minute.
-- Measured: seed 7 in the default mode makes 4 calls on world v2, on days 18, 20 and 23. The recorded run cost $0.08 at list prices in a run of 19 seconds ([[RES-09]]).
+- Measured: seed 7 in the default mode makes 4 calls on world v2, on days 18, 20 and 23, which cost $0.08 at list prices. On the intraday market at four ticks a day it makes 10 calls, which cost $0.20 ([[RES-09]]).
 - Formats: the four world v1 runs of the same seed, with other request formats, made 7 calls each and cost $0.12 to $0.18 ([[RES-08]]).
 - Scope: a declined plan would change later flags and so the number of calls. A learn-mode run adds nothing to the calls, only to the estimates.
 - Bench: per seed, Opus costs $0.41 at fixed:1.0, $0.42 at fixed:2.0 and $0.14 in the true mode. Sonnet costs $0.17, $0.17 and $0.07 a seed, Haiku a cent or two. An arm is a mode and a reviewer over all the seeds ([[RES-19]]).

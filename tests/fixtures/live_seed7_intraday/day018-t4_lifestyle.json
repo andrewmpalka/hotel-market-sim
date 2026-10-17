@@ -1,0 +1,96 @@
+{
+  "request_digest": "e9ec67189295a884902da5dd0e6c3656e7b9711306f3cac6995cffc36258ac0c",
+  "prompt_digest": "75b2efa7e9d4af86e86b3141bad0141de91313103a8e527d6da12572868f364c",
+  "request": {
+    "day": 18,
+    "hotel": {
+      "name": "Lifestyle hotel",
+      "rooms": "120",
+      "floor": "$168",
+      "ceiling": "$336",
+      "cost_per_occupied_room": "$80"
+    },
+    "elasticity": {
+      "elasticity": "1.5",
+      "mode": "assumed",
+      "standard_error": null,
+      "prior": null,
+      "observations": null,
+      "market_elasticity": "1"
+    },
+    "entries": [
+      {
+        "id": "75-75",
+        "stay_dates": "75",
+        "what_changed": [
+          "ahead of pace"
+        ],
+        "numbers": {
+          "days_out": "57",
+          "rooms_on_books": "40",
+          "unsold_rooms": "80",
+          "remaining_demand": "90",
+          "pace_gap": "15 rooms ahead of pace",
+          "seat_change": "unchanged",
+          "seat_revision": "unchanged",
+          "rate": "$240",
+          "comp_median": "$234",
+          "rate_vs_median": "2.7% above the median",
+          "median_change": "down 0.7%",
+          "new_event": null
+        },
+        "by_day_of_week": [
+          {
+            "day": "Sat",
+            "stay_dates": [
+              75
+            ],
+            "candidates": [
+              {
+                "name": "hold",
+                "rates": "$240",
+                "estimated_contribution": "$12,600",
+                "versus_hold": "the same as holding"
+              },
+              {
+                "name": "raise 5%",
+                "rates": "$252",
+                "estimated_contribution": "$13,190",
+                "versus_hold": "$590 more than holding"
+              },
+              {
+                "name": "raise 10%",
+                "rates": "$264",
+                "estimated_contribution": "$13,520",
+                "versus_hold": "$930 more than holding"
+              },
+              {
+                "name": "lower 5%",
+                "rates": "$228",
+                "estimated_contribution": "$11,790",
+                "versus_hold": "$800 less than holding"
+              }
+            ],
+            "best": "raise 10%"
+          }
+        ],
+        "plan": "raise 10% on Sat",
+        "value_at_stake": "$930 more than holding",
+        "options": [
+          "raise 10% on Sat",
+          "hold"
+        ],
+        "earlier_changes_on_these_dates": []
+      }
+    ]
+  },
+  "source": "model",
+  "decisions": [
+    {
+      "id": "75-75",
+      "choice": "raise 10% on Sat",
+      "reason": "Saturday stay date 75 is now 15 rooms ahead of pace at 57 days out, with our $240 rate 2.7% above the median and the comp median down 0.7%. We recommend raising the rate 10% to $264 on Saturday. Our estimate puts this at $930 more than holding, the best of the options compared."
+    }
+  ],
+  "model": "claude-opus-5-5"
+}
