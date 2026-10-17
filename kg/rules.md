@@ -180,22 +180,20 @@ marked [H], with one line that names the node it moved to.
 - Value: 2
 - File: src/hotel_market/world.py
 - Kind: parameter
-- Meaning: the tick of the day the rate shop lands at with N ticks, tick 1 when N is under 2 (arrival_tick). Before it lands, a question on a tick gets the day before's shop ([[DEC-67]]).
+- Meaning: the default slot of the rate shop with N ticks, tick 1 when N is under 2 (arrival_tick). A market's shop_ticks may name other shops, one per tick ([[DAT-27]]). Before a shop lands, a tick gets the previous one ([[DEC-67]]).
 - Evidence: test_each_feed_lands_at_its_tick_and_answers_the_previous_value_before_it
 
 ### RUL-130 [C] FILING_TICK
 - Value: 3
 - File: src/hotel_market/world.py
 - Kind: parameter
-- Meaning: the tick the airlines' filing lands at with N ticks, tick 1 when N is under 3. Before it lands, a question gets the schedule as filed by the day before ([[DEC-67]]).
+- Meaning: the default slot of the airlines' filings with N ticks, tick 1 when N is under 3. A filing may land at a tick of its own ([[DAT-03]]). Before it lands, a question gets the schedule as filed by the day before ([[DEC-67]]).
 - Evidence: test_each_feed_lands_at_its_tick_and_answers_the_previous_value_before_it
 
-### RUL-131 [C] EVENT_TICK
-- Value: 4
-- File: src/hotel_market/world.py
-- Kind: parameter
-- Meaning: the tick the events feed lands at with N ticks, tick 1 when N is under 4. Before it lands, a question gets the calendar as of the day before ([[DEC-67]]).
-- Evidence: test_each_feed_lands_at_its_tick_and_answers_the_previous_value_before_it
+### RUL-131 [H] EVENT_TICK
+- Value was: 4
+- Meaning: the tick the events feed landed at with N ticks, tick 1 when N was under 4. An event now lands at its known_tick, the day's last tick when the file names none ([[DAT-05]]).
+- Replaced by: [[DAT-05]]
 
 ### RUL-14 [H] FLOOR_SHARE
 - Moved to: [[RUL-59]]

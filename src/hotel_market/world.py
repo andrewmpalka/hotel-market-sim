@@ -13,6 +13,7 @@ Nothing here is random. The seed only matters once competitor rates and bookings
 from __future__ import annotations
 
 import statistics
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import timedelta
 
@@ -26,12 +27,14 @@ LOOKAHEAD_DAYS = 90  # stay dates each hotel looks at on each simulation day
 # ticks counted 1 to N. At 1, the default, a tick is the whole day and the loop is the daily one.
 # --ticks N sets a run's value; the sources default a question to the last tick of its day.
 TICKS_PER_DAY = 1
-# With N ticks, each feed lands at a fixed tick of the day: bookings at every tick, the rate shop
-# at tick 2, the airlines' filings at tick 3 and the events at tick 4, each at tick 1 when N is
-# smaller than its slot. Until a feed lands, a question on a tick gets the previous value.
+# With N ticks, the bookings land at every tick, the rate shop at SHOP_TICK and the airlines'
+# filings at FILING_TICK, each at tick 1 when N is smaller than its slot (arrival_tick). An
+# event lands at the last tick of its known day, and a competitor's cut shows in every shop of
+# its known day. A customer file may name other ticks: its market's shop_ticks, one per shop,
+# a filing's tick, and an event's or a cut's known_tick (news_tick). Until a feed lands, a
+# question on a tick gets the previous value.
 SHOP_TICK = 2
 FILING_TICK = 3
-EVENT_TICK = 4
 
 
 @dataclass(frozen=True)
@@ -51,6 +54,7 @@ class RateCut:
     hotel: str  # key of the hotel whose comp set this is
     competitors: tuple[str, ...]  # names of the competitors that cut
     cut: float  # 0.20 means rates are 20% lower
+    known_tick: int | None = None  # the first shop tick of that day to show it; None is every shop
 
     def covers(self, hotel_key: str, competitor: str, stay_day: int) -> bool:
         return (
@@ -109,6 +113,23 @@ def arrival_tick(slot: int, ticks: int = TICKS_PER_DAY) -> int:
     """The tick a feed with this slot lands at on a day of `ticks` ticks: its slot, or tick 1 when
     the day has fewer ticks than the slot."""
     return slot if slot <= ticks else 1
+
+
+def news_tick(known_tick: int | None, ticks: int, default: int) -> int:
+    """The tick a piece of news lands at on a day of `ticks` ticks: the tick its file names, as
+    arrival_tick lands it, or the default when the file names none. An event's default is the
+    day's last tick and a cut's is tick 1, so every file written without ticks reads as it did."""
+    return default if known_tick is None else arrival_tick(known_tick, ticks)
+
+
+def shop_landings(slots: Sequence[int], ticks: int = TICKS_PER_DAY) -> tuple[tuple[int, int], ...]:
+    """A day's rate shops as (tick, slot) pairs in tick order: each slot of the market's
+    shop_ticks lands at arrival_tick(slot, ticks), and when two slots land at one tick the first
+    keeps it. With one tick a day every market has one shop, at tick 1."""
+    found: dict[int, int] = {}
+    for slot in slots:
+        found.setdefault(arrival_tick(slot, ticks), slot)
+    return tuple(sorted(found.items()))
 
 
 def weekday(day: int) -> int:

@@ -19,6 +19,7 @@ Run `python -m hotel_market.simulated --seed 7` to print the flags of a fixed-ra
 from __future__ import annotations
 
 import argparse
+import statistics
 from functools import lru_cache
 
 import numpy as np
@@ -38,7 +39,7 @@ from hotel_market.schedule import (
     seats_by_day,
 )
 from hotel_market.shocks import events_as_of
-from hotel_market.shops import comp_median, comp_rates
+from hotel_market.shops import comp_rates
 from hotel_market.sources import (
     BookingHistory,
     Bookings,
@@ -50,13 +51,13 @@ from hotel_market.sources import (
     Sources,
 )
 from hotel_market.world import (
-    EVENT_TICK,
     FILING_TICK,
-    SHOP_TICK,
     SIM_DAYS,
     TICKS_PER_DAY,
     Hotel,
     arrival_tick,
+    news_tick,
+    shop_landings,
 )
 
 
@@ -109,7 +110,8 @@ class SimulatedBookings(Limited, Bookings):
 class SimulatedRateShops(Limited, RateShops):
     """The rate shops the simulator draws from the seed, and the log of the medians it used
     through the day, copied. With the reaction on, each shop carries the hotel's lagged change,
-    read from the copied rates, so the agent sees the shop the simulator used."""
+    read from the copied rates, so the agent sees the shop the simulator used. A market with
+    several shops a day (world.shop_landings) answers a tick with the last shop landed by it."""
 
     def __init__(self, books: Books, as_of_day: int | None = None, as_of_tick: int | None = None):
         self.as_of_day = as_of_day
@@ -118,24 +120,24 @@ class SimulatedRateShops(Limited, RateShops):
         self._seed = books.seed
         self._react = books.react
         self._customer = books.customer  # its events and rate cuts move the shops
+        self._shops = shop_landings(books.customer.shop_ticks, books.ticks)  # (tick, slot) pairs
         self._daily_rates = books.daily_rates[: _through(as_of_day)].copy()
         self._daily_medians = books.daily_medians[: _through(as_of_day)].copy()
 
     def _hotel_change(self, shop_day: int, hotel: Hotel, stay_day: int) -> float:
         return lagged_change(self._daily_rates, self._react, shop_day, hotel, stay_day)
 
-    def _landed(self, shop_day: int, as_of_tick: int | None) -> int:
-        """The shop a question on (shop_day, tick) sees: the day's own once it has landed, else the
-        day before's, the previous value."""
+    def _landed(self, shop_day: int, as_of_tick: int | None) -> tuple[int, int, int]:
+        """The shop a question on (shop_day, tick) sees, as (day, tick, slot): the day's last shop
+        landed by the tick, else the day before's last, the previous value."""
         self._known(shop_day, as_of_tick)
-        if self._tick(as_of_tick) >= arrival_tick(SHOP_TICK, self.ticks):
-            return shop_day
-        return max(shop_day - 1, -1)  # the opening shop, day -1, is the earliest there is
+        tick = self._tick(as_of_tick)
+        landed = [(t, slot) for t, slot in self._shops if t <= tick]
+        if landed:
+            return (shop_day, *landed[-1])
+        return (max(shop_day - 1, -1), *self._shops[-1])  # day -1 is the opening shop
 
-    def competitor_rates(
-        self, shop_day: int, hotel: Hotel, stay_day: int, as_of_tick: int | None = None
-    ) -> dict[str, float]:
-        shop_day = self._landed(shop_day, as_of_tick)
+    def _rates(self, shop_day: int, hotel: Hotel, stay_day: int, tick: int, slot: int) -> dict:
         return comp_rates(
             shop_day,
             hotel,
@@ -143,20 +145,22 @@ class SimulatedRateShops(Limited, RateShops):
             seed=self._seed,
             hotel_change=self._hotel_change(shop_day, hotel, stay_day),
             customer=self._customer,
+            slot=slot,
+            shop_tick=tick,
+            ticks=self.ticks,
         )
+
+    def competitor_rates(
+        self, shop_day: int, hotel: Hotel, stay_day: int, as_of_tick: int | None = None
+    ) -> dict[str, float]:
+        day, tick, slot = self._landed(shop_day, as_of_tick)
+        return self._rates(day, hotel, stay_day, tick, slot)
 
     def median(
         self, shop_day: int, hotel: Hotel, stay_day: int, as_of_tick: int | None = None
     ) -> float:
-        shop_day = self._landed(shop_day, as_of_tick)
-        return comp_median(
-            shop_day,
-            hotel,
-            stay_day,
-            seed=self._seed,
-            hotel_change=self._hotel_change(shop_day, hotel, stay_day),
-            customer=self._customer,
-        )
+        day, tick, slot = self._landed(shop_day, as_of_tick)
+        return statistics.median(self._rates(day, hotel, stay_day, tick, slot).values())
 
     def median_history(self, as_of_day: int) -> np.ndarray:
         self._known(as_of_day, before=True)
@@ -166,7 +170,8 @@ class SimulatedRateShops(Limited, RateShops):
 class SimulatedSchedules(Limited, Schedules):
     """The schedule as filed by each filing day through the day under the run's scenario, counted
     to arriving seats and passengers once per filing. It holds those counts and not the scenario,
-    so a filing still to come is not in it."""
+    so a filing still to come is not in it. A filing lands at its tick (Shock.tick), the slot
+    FILING_TICK when the scenario names none; a day with two filings lands at the earlier."""
 
     def __init__(
         self,
@@ -180,6 +185,10 @@ class SimulatedSchedules(Limited, Schedules):
         self.ticks = ticks
         last = HORIZON_DAYS - 1 if as_of_day is None else as_of_day
         self._filed = {day: _counts(day, scenario) for day in (-1, *scenario.filing_days(last))}
+        self._landing = {-1: 1}  # the tick each filing day's schedule lands at
+        for shock in scenario.shocks:
+            tick = arrival_tick(FILING_TICK if shock.tick is None else shock.tick, ticks)
+            self._landing[shock.known_day] = min(self._landing.get(shock.known_day, tick), tick)
 
     def _filing(
         self, as_of_day: int, as_of_tick: int | None = None
@@ -187,9 +196,13 @@ class SimulatedSchedules(Limited, Schedules):
         """The schedule a question on (day, tick) sees: the day's filing once it has landed, else
         the schedule as filed by the day before."""
         self._known(as_of_day, as_of_tick)
-        if self._tick(as_of_tick) < arrival_tick(FILING_TICK, self.ticks):
-            as_of_day = max(as_of_day - 1, -1)  # the first schedule is the earliest there is
-        return self._filed[max(day for day in self._filed if day <= as_of_day)]
+        tick = self._tick(as_of_tick)
+        landed = [
+            day
+            for day in self._filed
+            if day < as_of_day or (day == as_of_day and tick >= self._landing[day])
+        ]
+        return self._filed[max(landed)]
 
     def seats(self, as_of_day: int, as_of_tick: int | None = None) -> np.ndarray:
         return self._filing(as_of_day, as_of_tick)[0]
@@ -225,12 +238,19 @@ class SimulatedEvents(Limited, Events):
         self._events = events_as_of(HORIZON_DAYS if as_of_day is None else as_of_day, customer)
 
     def known(self, as_of_day: int, as_of_tick: int | None = None) -> list[Event]:
-        """The events announced by the day and landed by the tick: the day's own announcements
-        land at the events' tick, before which the day before's calendar answers."""
+        """The events announced by the day and landed by the tick: an announcement lands at the
+        event's known_tick, the day's last tick when its file names none (world.news_tick)."""
         self._known(as_of_day, as_of_tick)
-        if self._tick(as_of_tick) < arrival_tick(EVENT_TICK, self.ticks):
-            as_of_day = max(as_of_day - 1, -1)
-        return [event for event in self._events if event.known_day <= as_of_day]
+        tick = self._tick(as_of_tick)
+        return [
+            event
+            for event in self._events
+            if event.known_day < as_of_day
+            or (
+                event.known_day == as_of_day
+                and tick >= news_tick(event.known_tick, self.ticks, self.ticks)
+            )
+        ]
 
 
 def simulated_sources(

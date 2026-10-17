@@ -25,7 +25,8 @@ the plans, the model's request and answer, and what the command writes.
 ### DAT-03 [C] Route and Shock
 - File: src/hotel_market/schedule.py
 - Fields: Route(origin, origin_city, origin_state, marketing, operating, flights, equipment, distance, first_flight_number, reduced_tue_sat, codeshare_partner, destination, service_type, periods, time_shift).
-- Shock: Shock(known_day, kind of [[RUL-89]], start_day, end_day, routes, origin, marketing, equipment, operating, flights, minutes). The last four serve the equipment, frequency and time kinds.
+- Shock: Shock(known_day, kind of [[RUL-89]], start_day, end_day, routes, origin, marketing, equipment, operating, flights, minutes, tick). The four before tick serve the equipment, frequency and time kinds.
+- Tick: a filing's tick is the tick of its known day it lands at, [[RUL-130]]'s slot when None. Scenario.with_filing_ticks(ticks) copies the scenario with the ticks a customer file names by known day ([[DAT-27]]).
 - Scenario: Scenario(name, shocks), frozen, with filing_days(). DEFAULT_SCENARIO holds AIR_SHOCKS, and SCENARIOS maps each name to its scenario ([[DEC-53]]). with_churn(scenario, seed) adds the seed's churn ([[SHK-07]]).
 - Held in: BASE_ROUTES (13 routes, one of them the bus) and AIR_SHOCKS ([[SHK-02]], [[SHK-04]]). routes_as_of(as_of_day, scenario) applies the shocks known by a day.
 - Read by: [[MOD-01]]
@@ -43,16 +44,18 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-05 [C] Event and RateCut
 - File: src/hotel_market/world.py
-- Fields: Event(name, known_day, start_day, end_day, hotels, uplift, comp_rate_raise) with covers(hotel_key, stay_day). It is defined at the boundary in [[MOD-17]], so the agent and the simulator share it.
-- Cut: RateCut(known_day, start_day, end_day, hotel, competitors, cut) with covers(hotel_key, competitor, stay_day), in [[MOD-02]], the simulator's alone.
+- Fields: Event(name, known_day, start_day, end_day, hotels, uplift, comp_rate_raise, known_tick) with covers(hotel_key, stay_day). It is defined at the boundary in [[MOD-17]], so the agent and the simulator share it.
+- Cut: RateCut(known_day, start_day, end_day, hotel, competitors, cut, known_tick) with covers(hotel_key, competitor, stay_day), in [[MOD-02]], the simulator's alone.
+- Ticks: known_tick is the tick of the known day the news lands at, optional in the file. An event's default is the day's last tick and a cut's the day's first shop (world.news_tick), so a file without ticks reads as it did.
 - Held in: Customer.events and Customer.rate_cuts ([[DAT-27]]), read from the market's customer file ([[DEC-69]]). The demo market's are [[SHK-01]] and [[SHK-03]].
 - Read by: [[MOD-03]] (the lookups), [[MOD-04]], [[MOD-05]], [[MOD-19]], which hands the events to the agent through [[DAT-25]]
 - Evidence: test_shocks_name_hotels_and_competitors_that_exist, test_convention_raises_downtown_demand_35_percent_on_days_45_to_48_from_day_10, test_the_lookups_read_the_customers_own_calendar
 
 ### DAT-06 [C] The rate shop
 - File: src/hotel_market/shops.py
-- Made by: comp_rates(shop_day, hotel, stay_day, seed, hotel_change), a dict of competitor name to rate on the shop day. comp_median(...) is their median. hotel_change is the lagged change the competitors follow ([[DEC-51]]).
-- Noise: one read-only array per seed and competitor, shape (shop days, stay dates), from a stream keyed by the seed, the hotel's key and the competitor's name ([[RUL-20]], [[DEC-62]], [[DEC-64]]).
+- Made by: comp_rates(shop_day, hotel, stay_day, seed, hotel_change, customer, slot, shop_tick, ticks), competitor name to rate on the shop day; comp_median(...) is their median. hotel_change is the lagged change they follow ([[DEC-51]]).
+- Noise: one read-only array per seed, competitor and slot, shape (shop days, stay dates), from a stream keyed by the seed, the hotel's key and the competitor's name ([[RUL-20]], [[DEC-62]]); a slot other than [[RUL-129]] joins the key.
+- Shops a day: a market's shop_ticks ([[DAT-27]]) land one shop per tick (world.shop_landings). The simulator's day shops at the first; a cut known that day shows from its known_tick ([[DAT-05]]).
 - Read by: [[MOD-06]] (bookings scale with rate over comp median), [[MOD-07]] (rate against median, median change since yesterday), [[MOD-08]] (estimates)
 - Evidence: test_comp_median_moves_every_day_and_beyond_the_threshold_only_on_a_shock, test_hotel_starts_level_with_its_comp_median
 
@@ -238,7 +241,8 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-27 [C] Customer
 - File: src/hotel_market/customer.py
-- Fields: Customer(name, target, hotels, floor_share, ceiling_share, cost_share, pace_share, pace_noise_sd, seat_threshold, median_threshold, hold_days, min_value_at_stake, market_elasticity, events, rate_cuts), frozen.
+- Fields: Customer(name, target, hotels, floor_share, ceiling_share, cost_share, pace_share, pace_noise_sd, seat_threshold, median_threshold, hold_days, min_value_at_stake, market_elasticity, events, rate_cuts, shop_ticks, filing_ticks).
+- Ticks: shop_ticks are the ticks a day's rate shops land at, ([[RUL-129]],) by default, and filing_ticks the (known day, tick) pairs of filings landing off their slot. Both are optional in the file ([[DAT-06]], [[DAT-03]]).
 - Methods: hotel(key) finds a hotel ([[DAT-04]]), which carries its own booking curve ([[CON-01]]). scores_contribution() says whether the target is contribution ([[RUL-58]]).
 - Settings: one market's description and settings, read from its TOML file by load(path) ([[MOD-20]]). The demo market's settings are the nodes [[RUL-57]] to [[RUL-69]], and its calendar [[SHK-01]] and [[SHK-03]] ([[DEC-69]]).
 - Written by: [[MOD-20]]; demo() holds the demo market, the default wherever no customer is given

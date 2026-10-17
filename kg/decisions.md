@@ -81,7 +81,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Replaces: nothing built; with one tick a day the loop is the daily one, and its log is byte for byte what it was.
 - Reason: a fixed-rate run must book the same rooms per hotel and stay date at every N, not the same in expectation, so a finer clock changes only what the agent sees and when it acts.
 - Change: a rate changed at tick t applies from tick t+1. The bookings still to come that day are thinned by a binomial, or topped up by a Poisson, at (new / old) ** -ELASTICITY ([[RUL-21]]).
-- Feeds: each feed lands at a fixed tick, the shop at [[RUL-129]], the filing at [[RUL-130]], the events at [[RUL-131]], and bookings at every tick. Before a feed lands, a tick reads the previous value.
+- Feeds: the shop lands at [[RUL-129]], the filing at [[RUL-130]], an event at the day's last tick, and bookings at every tick; a customer file may name other ticks ([[DAT-27]]). Before a feed lands, a tick reads the previous value.
 - Evidence: test_the_fixed_rate_run_books_the_same_rooms_at_one_tick_a_day_and_at_four, test_a_rate_changed_at_a_tick_thins_or_tops_up_the_ticks_after_it, test_the_default_clock_books_byte_for_byte_what_it_booked_before_the_split
 - Links: [[MOD-06]], [[MOD-19]], [[DAT-07]], [[RUL-128]], [[DEC-22]], [[DEC-64]]
 
@@ -343,7 +343,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Decided: TICKS_PER_DAY is 1 and --ticks N sets a run's clock ([[RUL-128]]). A moment is (day, tick). Every source takes as_of_tick, the day's last by default, and a source made for a tick refuses a later one.
 - Replaces: nothing built; the daily loop stays the default and every pinned figure is measured on it.
 - Reason: an event-driven agent must read a feed when it lands and act before the day ends. A configurable clock gives that without a wall clock, and N of 1 keeps the daily loop byte for byte.
-- Feeds: each simulated feed lands at a fixed tick, the shop at [[RUL-129]], the filing at [[RUL-130]], the events at [[RUL-131]], bookings at every tick ([[DEC-67]]). Real time is this loop with a wall clock behind the sources.
+- Feeds: the shop lands at [[RUL-129]], the filing at [[RUL-130]], an event at the day's last tick and bookings at every tick, or where the customer file puts them ([[DAT-27]]). Real time is this loop with a wall clock behind the sources.
 - Record: with more than one tick a day, flags, plans and decisions carry as_of_tick, and each line data_arrived and decided ([[DAT-18]], [[DAT-28]]). The cache names the tick ([[DEC-23]]). The outcomes table credits later days only.
 - Evidence: test_a_source_made_for_a_tick_refuses_a_later_tick_of_its_day_on_both_routes, test_the_default_clock_books_byte_for_byte_what_it_booked_before_the_split
 - Links: [[RUL-128]], [[DEC-46]], [[DEC-67]], [[MOD-02]], [[MOD-06]], [[MOD-10]], [[MOD-19]], [[MOD-21]], [[RES-43]]

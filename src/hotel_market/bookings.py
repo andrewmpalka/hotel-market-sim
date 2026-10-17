@@ -54,7 +54,7 @@ from hotel_market.customer import Customer, demo
 from hotel_market.demand import DEMAND_BIAS, expected_demand, normal_demand
 from hotel_market.schedule import DEFAULT_SCENARIO, HORIZON_DAYS, Scenario, with_churn
 from hotel_market.shops import REACTION_LAG, comp_median
-from hotel_market.world import SIM_DAYS, TICKS_PER_DAY, Hotel, stay_window
+from hotel_market.world import SIM_DAYS, TICKS_PER_DAY, Hotel, shop_landings, stay_window
 
 ELASTICITY = 1.5  # bookings scale with (rate / comp median) ** -ELASTICITY
 BOOKING_STREAM = (
@@ -125,6 +125,10 @@ class Books:
         )
         self.churn = churn  # whether the airline also files the seed's weekly revisions
         self.scenario = with_churn(scenario, seed) if churn else scenario  # the air schedule's
+        # The customer file may land a filing at a tick of its own (simulated.py reads it).
+        self.scenario = self.scenario.with_filing_ticks(dict(self.customer.filing_ticks))
+        # The day's rate shops as (tick, slot) pairs; the day's draw shops at the first.
+        self.shops = shop_landings(self.customer.shop_ticks, ticks)
         hotels = self.customer.hotels
         # Each hotel draws its luck from a stream keyed by its key, so a hotel added to the
         # customer file leaves every other hotel's bookings as they were.
@@ -197,10 +201,20 @@ class Books:
         return lagged_change(self.daily_rates, self.react, day, hotel, stay_day)
 
     def comp_median(self, day: int, hotel: Hotel, stay_day: int) -> float:
-        """The comp median the run shops on a day, with the reaction when it is on."""
+        """The comp median the run shops on a day, with the reaction when it is on: the day's
+        first shop, which a cut known later that day is not in."""
         change = self.hotel_change(day, hotel, stay_day)
+        tick, slot = self.shops[0]
         return comp_median(
-            day, hotel, stay_day, seed=self.seed, hotel_change=change, customer=self.customer
+            day,
+            hotel,
+            stay_day,
+            seed=self.seed,
+            hotel_change=change,
+            customer=self.customer,
+            slot=slot,
+            shop_tick=tick,
+            ticks=self.ticks,
         )
 
     def book(self, day: int, tick: int = 1) -> None:

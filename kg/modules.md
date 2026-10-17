@@ -19,7 +19,7 @@ which is also the order in which they depend on each other.
 - File: src/hotel_market/world.py
 - Owns: the types a market is described with: Hotel, Competitor ([[DAT-04]]) and RateCut ([[DAT-05]]). A Hotel carries its rooms, rate, air share, base occupancy, weekday factors, curve ([[CON-01]]), comp set, limits, room cost and row.
 - Level: Hotel.starting_median() is the comp set's base-rate median, the level the market term and the forecast measure a shopped median against ([[DEC-52]], [[DEC-62]]).
-- Holds: the calendar: SIM_DAYS ([[RUL-12]]), the 90-day window ([[RUL-13]]), the clock TICKS_PER_DAY ([[RUL-128]]) and weekday. The hotels come from the customer file ([[MOD-20]], [[DEC-41]]). Nothing here is random.
+- Holds: the calendar: SIM_DAYS ([[RUL-12]]), the window ([[RUL-13]]), TICKS_PER_DAY ([[RUL-128]]), weekday, and the landings: arrival_tick for a slot, news_tick for a known_tick ([[DAT-05]]), shop_landings for the shops ([[DAT-06]]).
 - Reads: [[MOD-01]] for SIM_START and HORIZON_DAYS
 - Writes: [[DAT-04]]
 - Tests: tests/test_world.py

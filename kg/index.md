@@ -9,17 +9,17 @@ nodes and its words, len(text.split()) over the file.
 | File | Nodes | Words |
 | --- | ---: | ---: |
 | modules.md | 32 | 4,441 |
-| data.md | 33 | 4,495 |
-| rules.md | 132 | 5,763 |
+| data.md | 33 | 4,652 |
+| rules.md | 132 | 5,778 |
 | shocks.md | 7 | 813 |
 | concepts.md | 12 | 1,370 |
 | measures.md | 14 | 962 |
 | sources.md | 4 | 855 |
-| decisions.md | 70 | 10,387 |
+| decisions.md | 70 | 10,396 |
 | results.md | 44 | 7,438 |
 | forks.md | 14 | 2,037 |
 | unknowns.md | 16 | 2,164 |
-| every node file | 378 | 40,725 |
+| every node file | 378 | 40,906 |
 | index.md | | 2,969 |
 
 ## Modules (`modules.md`)
@@ -113,7 +113,7 @@ nodes and its words, len(text.split()) over the file.
 - RUL-128 [C] TICKS_PER_DAY — src/hotel_market/world.py
 - RUL-129 [C] SHOP_TICK — src/hotel_market/world.py
 - RUL-130 [C] FILING_TICK — src/hotel_market/world.py
-- RUL-131 [C] EVENT_TICK — src/hotel_market/world.py
+- RUL-131 [H] EVENT_TICK — kg/rules.md
 - RUL-14 [H] FLOOR_SHARE — kg/rules.md
 - RUL-15 [H] CEILING_SHARE — kg/rules.md
 - RUL-16 [H] COST_SHARE — kg/rules.md

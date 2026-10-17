@@ -39,6 +39,7 @@ the arrangement, so the carrier pair expresses it.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
 from datetime import date, datetime, time, timedelta
 
@@ -132,6 +133,7 @@ class Shock:
     operating: str | None = None  # for "equipment": a new operating carrier, if the code brings one
     flights: int | None = None  # for "frequency": the new daily flights
     minutes: int = 0  # for "time": the departure shift, minutes either way
+    tick: int | None = None  # the tick of the known day it lands at; None is world.FILING_TICK
 
 
 AIR_SHOCKS = [
@@ -162,6 +164,14 @@ class Scenario:
     def filing_days(self, last_day: int = HORIZON_DAYS - 1) -> tuple[int, ...]:
         """The days the airline files something, through last_day."""
         return tuple(sorted({s.known_day for s in self.shocks if s.known_day <= last_day}))
+
+    def with_filing_ticks(self, ticks: Mapping[int, int]) -> Scenario:
+        """A copy whose filings on the given known days land at the given ticks, as a customer
+        file sets them; every other filing keeps its tick."""
+        if not ticks:
+            return self
+        shocks = tuple(replace(s, tick=ticks.get(s.known_day, s.tick)) for s in self.shocks)
+        return Scenario(self.name, shocks)
 
 
 DEFAULT_SCENARIO = Scenario("default", tuple(AIR_SHOCKS))

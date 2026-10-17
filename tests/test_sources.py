@@ -297,29 +297,18 @@ def test_a_source_made_for_a_tick_refuses_a_later_tick_of_its_day_on_both_routes
 
 def test_each_feed_lands_at_its_tick_and_answers_the_previous_value_before_it():
     """With four ticks a day the rate shop lands at tick 2, the airlines' filing at tick 3 and the
-    events at tick 4, and the bookings at every tick. Before a feed lands, a question on a tick
-    gets the previous value, the day before's. With one tick a day every feed lands at tick 1."""
-    from hotel_market.world import EVENT_TICK, FILING_TICK, SHOP_TICK, arrival_tick
+    events at tick 4, the day's last, and the bookings at every tick. Before a feed lands, a
+    question on a tick gets the previous value, the day before's. With one tick a day every feed
+    lands at tick 1."""
+    from hotel_market.world import FILING_TICK, SHOP_TICK, arrival_tick, news_tick
 
-    assert (
-        arrival_tick(SHOP_TICK, 4),
-        arrival_tick(FILING_TICK, 4),
-        arrival_tick(EVENT_TICK, 4),
-    ) == (
-        2,
-        3,
-        4,
-    )
-    assert (
-        arrival_tick(SHOP_TICK, 2),
-        arrival_tick(FILING_TICK, 2),
-        arrival_tick(EVENT_TICK, 2),
-    ) == (
-        2,
-        1,
-        1,
-    )
-    assert {arrival_tick(slot, 1) for slot in (SHOP_TICK, FILING_TICK, EVENT_TICK)} == {1}
+    assert (arrival_tick(SHOP_TICK, 4), arrival_tick(FILING_TICK, 4)) == (2, 3)
+    assert (arrival_tick(SHOP_TICK, 2), arrival_tick(FILING_TICK, 2)) == (2, 1)
+    assert {arrival_tick(slot, 1) for slot in (SHOP_TICK, FILING_TICK)} == {1}
+    # An event lands at the day's last tick, and a cut shows in the day's first shop, unless the
+    # file names a tick; a named tick beyond the day's last lands at tick 1, as a slot does.
+    assert news_tick(None, 4, 4) == 4 and news_tick(None, 2, 2) == 2 and news_tick(None, 1, 1) == 1
+    assert news_tick(None, 4, 1) == 1 and news_tick(2, 4, 4) == 2 and news_tick(4, 2, 2) == 1
     books = simulate(7, last_day=21, ticks=4)
     sources = simulated_sources(books)  # made with no day: any day, any tick
     hotel = DEMO.hotel("convention")
@@ -352,3 +341,63 @@ def test_each_feed_lands_at_its_tick_and_answers_the_previous_value_before_it():
     assert (
         sources.bookings.on_books(20, 4) == books.preload + books.daily_rooms[:21].sum(axis=0)
     ).all()
+
+
+def test_news_lands_at_the_ticks_the_customer_file_names(tmp_path):
+    """A market that shops at every tick, announces its convention at tick 2, shows its day-30
+    cut from tick 3 and lands the day-20 filing at tick 1: each feed answers the previous value
+    before its tick and the new one from it. Each shop draws its own noise, the shop at the
+    default slot is the demo market's own, and the simulator's day shops at the day's first. At
+    one tick a day every piece of news lands at the day's one tick."""
+    from hotel_market.customer import DEMO_FILE, load
+
+    text = (Path(hotel_market.__file__).resolve().parents[2] / DEMO_FILE).read_text()
+    path = tmp_path / "intraday.toml"
+    path.write_text(
+        text.replace("elasticity = 1.0\n", "elasticity = 1.0\nshop_ticks = [1, 2, 3, 4]\n")
+        .replace("known_day = 10\n", "known_day = 10\nknown_tick = 2\n")
+        .replace("known_day = 30\n", "known_day = 30\nknown_tick = 3\n")
+        + "\n[[filings]]\nknown_day = 20\ntick = 1\n"
+    )
+    market = load(path)
+    books = simulate(7, last_day=31, customer=market, ticks=4)
+    sources = simulated_sources(books)
+    convention, full = market.hotel("convention"), market.hotel("full-service")
+    # The events: the convention lands at tick 2 of day 10.
+    assert sources.events.known(10, 1) == [] and sources.events.known(9) == []
+    assert [e.name for e in sources.events.known(10, 2)] == ["Convention"]
+    assert [e.name for e in sources.events.known(10, 4)] == ["Convention"]
+    # The cut: the shops at ticks 1 and 2 of day 30 do not show it, the shop at tick 3 does.
+    cheapest = full.competitors[0]
+    for tick in (1, 2):
+        assert sources.shops.competitor_rates(30, full, 38, tick)[cheapest.name] > (
+            0.9 * cheapest.base_rate
+        )
+    cut = 0.85 * cheapest.base_rate
+    assert sources.shops.competitor_rates(30, full, 38, 3)[cheapest.name] < cut
+    assert sources.shops.competitor_rates(31, full, 38, 1)[cheapest.name] < cut
+    # The shops: a shop at every tick, each with its own noise, so four medians on day 10; the
+    # shop at slot 2 is the demo market's day-10 shop, noise for noise.
+    assert len({sources.shops.median(10, convention, 46, tick) for tick in (1, 2, 3, 4)}) == 4
+    demo_sources = simulated_sources(simulate(7, last_day=10, ticks=4))
+    assert sources.shops.competitor_rates(10, convention, 46, 2) == (
+        demo_sources.shops.competitor_rates(10, convention, 46, 2)
+    )
+    assert sources.shops.competitor_rates(10, convention, 46, 1) != (
+        demo_sources.shops.competitor_rates(10, convention, 46, 2)
+    )
+    # The simulator's day-30 draw shopped the day's first shop, before the cut showed.
+    assert books.daily_medians[30, full.row, 38] == sources.shops.median(30, full, 38, 1)
+    assert books.daily_medians[30, full.row, 38] > sources.shops.median(30, full, 38, 3)
+    # The filing: tick 1 of day 20 already shows the new flights, and tick 2 adds nothing.
+    assert sources.schedules.seats(20, 1)[55] == 4964 and sources.schedules.seats(19, 4)[55] == 4244
+    assert sources.schedules.passenger_revision(20, 1)[55] > 0
+    assert sources.schedules.passenger_revision(20, 2)[55] == 0
+    # One tick a day: the day's one shop is the first slot's, and the day's news is all in.
+    daily = simulated_sources(simulate(7, last_day=31, customer=market))
+    assert [e.name for e in daily.events.known(10)] == ["Convention"]
+    assert daily.shops.competitor_rates(30, full, 38)[cheapest.name] < cut
+    assert daily.shops.competitor_rates(10, convention, 46) == (
+        sources.shops.competitor_rates(10, convention, 46, 1)
+    )
+    assert daily.schedules.seats(20)[55] == 4964

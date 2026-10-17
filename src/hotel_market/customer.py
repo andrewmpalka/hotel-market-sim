@@ -8,6 +8,12 @@ candidates on, "contribution" or "revenue", complete it, with the market's calen
 that lift some of its hotels, and the scripted cuts by some hotel's competitors (shocks.py looks
 them up). customers/harbour.toml is a second market with three hotels of other shapes.
 
+On a finer clock the file may also say when its news lands within the day: the market's
+shop_ticks, one rate shop per tick named, each with its own noise; an event's or a cut's
+known_tick; and a [[filings]] table giving a filing's known_day and the tick it lands at. Each
+is optional, and a file without them lands its feeds where world.py's slots put them, so it
+reads as it did. customers/demo-intraday.toml is the demo market with such news inside the day.
+
 Both sides read it: the simulator to make the market, the agent to know its hotels and settings. The
 constants of the simulator itself, the calendar, the elasticity, the noise, the schedule and the
 shocks, stay in the code. The demo file is the default wherever no customer is given, so the demo
@@ -23,7 +29,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from hotel_market.sources import Event
-from hotel_market.world import Competitor, Hotel, RateCut
+from hotel_market.world import SHOP_TICK, Competitor, Hotel, RateCut
 
 TARGETS = ("contribution", "revenue")  # what the agent may score candidates on
 DEMO_FILE = Path("customers") / "demo.toml"  # the demo market, relative to the repository root
@@ -49,6 +55,8 @@ class Customer:
     market_elasticity: float  # the market's own price response, which a run may override
     events: tuple[Event, ...] = ()  # the events that lift some of the hotels, by the day announced
     rate_cuts: tuple[RateCut, ...] = ()  # scripted cuts by some hotel's competitors
+    shop_ticks: tuple[int, ...] = (SHOP_TICK,)  # the ticks a day's rate shops land at, one each
+    filing_ticks: tuple[tuple[int, int], ...] = ()  # (known day, tick) of filings landing off slot
 
     def hotel(self, key: str) -> Hotel:
         for hotel in self.hotels:
@@ -92,6 +100,8 @@ def load(path: Path | str) -> Customer:
         market_elasticity=market["elasticity"],
         events=tuple(Event(**_event(entry)) for entry in data.get("events", [])),
         rate_cuts=tuple(RateCut(**_rate_cut(entry)) for entry in data.get("rate_cuts", [])),
+        shop_ticks=tuple(market.get("shop_ticks", (SHOP_TICK,))),
+        filing_ticks=tuple((f["known_day"], f["tick"]) for f in data.get("filings", [])),
     )
 
 
@@ -108,9 +118,21 @@ def _validate(path: Path | str, data: dict) -> None:
     The market elasticity is zero or more, the shares lie between 0 and 1, the floor sits below
     the ceiling, and every hotel has seven weekday factors, positive rooms, a positive start rate
     and a booking curve that starts at 1 on the night and falls with the days out. An event names
-    hotels of the market, and a rate cut names a hotel and competitors of its comp set."""
+    hotels of the market, and a rate cut names a hotel and competitors of its comp set. Every tick
+    the file names, a shop's, a filing's or a piece of news's known_tick, is a whole number from
+    1, and the market has at least one shop."""
     limits, detect = data["limits"], data["detect"]
     keys = {entry["key"]: entry for entry in data["hotels"]}
+    shop_ticks = data["market"].get("shop_ticks", [SHOP_TICK])
+    if not shop_ticks:
+        raise ValueError(f"{path}: market.shop_ticks names no tick; a day has one shop or more")
+    for tick in shop_ticks:
+        _tick(path, "market.shop_ticks", tick)
+    for filing in data.get("filings", []):
+        _tick(path, f"the filing on day {filing['known_day']}", filing["tick"])
+    for news in data.get("events", []) + data.get("rate_cuts", []):
+        if "known_tick" in news:
+            _tick(path, f"known_tick on day {news['known_day']}", news["known_tick"])
     for event in data.get("events", []):
         unknown = set(event["hotels"]) - set(keys)
         if unknown:
@@ -170,6 +192,12 @@ def _curve(path: Path | str, hotel: str, curve: dict) -> None:
         raise ValueError(
             f"{where}.share must start at 1 on the night and fall to 0 or more, not {share!r}"
         )
+
+
+def _tick(path: Path | str, where: str, value) -> None:
+    """A tick a market file names is a whole number from 1; the clock lands it (world.news_tick)."""
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        raise ValueError(f"{path}: {where}: a tick is a whole number from 1, not {value!r}")
 
 
 def _share(path: Path | str, table: dict, field: str, hotel: str | None = None) -> None:

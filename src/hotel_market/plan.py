@@ -46,16 +46,12 @@ import pandas as pd
 from hotel_market.customer import Customer, demo
 from hotel_market.detect import (
     MEDIAN_DOWN,
-    MEDIAN_UP,
-    NEW_EVENT,
-    SEATS_CUT,
-    SEATS_UP,
     Flag,
     days_in,
 )
 from hotel_market.estimate import ELASTICITY_MAX, ELASTICITY_MIN
 from hotel_market.forecast import ORACLE_MARKET_ELASTICITY
-from hotel_market.world import EVENT_TICK, FILING_TICK, SHOP_TICK, Hotel, arrival_tick, weekday
+from hotel_market.world import Hotel, weekday
 
 # The elasticity the default mode prices with. It is the simulator's own value, handed to
 # the agent as an oracle: a real hotel has no oracle, which is what the other modes test.
@@ -358,17 +354,12 @@ class Entry:
         return line
 
 
-# The tick of the day each flag cause's data lands at: the feed's slot, or for a pace cause the
-# bookings, which land at every tick.
-_CAUSE_SLOTS = {SEATS_UP: FILING_TICK, SEATS_CUT: FILING_TICK, MEDIAN_UP: SHOP_TICK}
-_CAUSE_SLOTS.update({MEDIAN_DOWN: SHOP_TICK, NEW_EVENT: EVENT_TICK})
-
-
 def data_arrived(causes: tuple[str, ...], tick: int, ticks: int) -> int:
-    """The tick of the day the last piece of data behind a flag arrived: the latest of its
-    causes' feeds' ticks, and the flag's own tick for a pace cause, since bookings land at every
-    tick."""
-    return max(arrival_tick(_CAUSE_SLOTS[c], ticks) if c in _CAUSE_SLOTS else tick for c in causes)
+    """The tick of the day the last piece of data behind a flag arrived: the flag's own tick,
+    because the detector raises a feed's flag at the tick the feed lands and the bookings land at
+    every tick. The feeds' ticks come from the customer file, so no table of slots could say
+    more; the causes and the clock stay in the call for the record's sake."""
+    return tick
 
 
 def _weekday_json(group: WeekdayGroup) -> dict:

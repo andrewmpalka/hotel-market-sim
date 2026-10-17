@@ -308,7 +308,7 @@ def test_at_four_ticks_a_day_the_agent_runs_after_each_tick_and_each_feed_flags_
         assert line["data_arrived"][1] <= entry.tick
     assert data_arrived((NEW_EVENT,), 4, 4) == 4 and data_arrived((SEATS_UP,), 3, 4) == 3
     assert data_arrived((AHEAD,), 2, 4) == 2 and data_arrived((AHEAD, MEDIAN_UP), 2, 4) == 2
-    assert data_arrived((NEW_EVENT,), 1, 2) == 1  # with two ticks the events land at tick 1
+    assert data_arrived((NEW_EVENT,), 1, 2) == 1  # the flag's own tick, whatever the clock
     for advice in agent.advice:
         line = advice.to_json()
         assert line["as_of_tick"] == advice.tick and line["decided"] == [advice.day, advice.tick]

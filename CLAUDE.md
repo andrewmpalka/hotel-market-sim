@@ -53,7 +53,7 @@ with pip install -e ".[dev]" and import it as hotel_market.<module>.
 | --- | --- |
 | schedule.py | the air schedule as known on a day, its seats and the passengers they carry, the filings, scenarios and churn |
 | world.py | the Hotel, Competitor and RateCut dataclasses, each hotel's booking curve, the calendar and the clock: ticks a day and the tick each feed lands at |
-| customer.py | reads a market's customer file, its hotels and its events and rate cuts; demo() is customers/demo.toml, found under the package's repository or through HOTEL_MARKET_CUSTOMER |
+| customer.py | reads a market's customer file, its hotels, its events and rate cuts and the ticks its news lands at; demo() is customers/demo.toml, found under the package's repository or through HOTEL_MARKET_CUSTOMER |
 | sources.py | the four interfaces: Bookings, RateShops, Schedules, Events |
 | shocks.py | the lookups over a market's events and competitor rate cuts as of a day; the demo's are the convention (known day 10) and the cut (day 30) |
 | demand.py | the simulator's expected and normal demand per hotel and stay date, and the market's price response |

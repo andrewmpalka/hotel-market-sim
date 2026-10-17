@@ -37,6 +37,7 @@ class Event:
     hotels: tuple[str, ...]  # keys of the hotels whose demand rises
     uplift: float  # 0.35 means demand is 35% higher
     comp_rate_raise: float  # 0.15 means those hotels' competitors charge 15% more
+    known_tick: int | None = None  # the tick of the known day it is announced at; None is the last
 
     def covers(self, hotel_key: str, stay_day: int) -> bool:
         return hotel_key in self.hotels and self.start_day <= stay_day <= self.end_day

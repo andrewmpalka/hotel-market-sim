@@ -47,7 +47,14 @@ from hotel_market.sources import (
     Schedules,
     Sources,
 )
-from hotel_market.world import HORIZON_DAYS, LOOKAHEAD_DAYS, TICKS_PER_DAY, Hotel, stay_window
+from hotel_market.world import (
+    HORIZON_DAYS,
+    LOOKAHEAD_DAYS,
+    TICKS_PER_DAY,
+    Hotel,
+    shop_landings,
+    stay_window,
+)
 
 SCHEMA_FILE = Path("sql") / "schema.sql"  # relative to the repository root
 TABLES = (
@@ -290,6 +297,7 @@ class StoredRateShops(Limited, RateShops):
         self.as_of_tick = as_of_tick
         self.ticks = ticks
         self.hotels = customer.hotels
+        self._day_shop = shop_landings(customer.shop_ticks, ticks)[0][0]  # the day's first shop
         self._shops: dict[tuple[int, int], dict[tuple[str, int], dict[str, float]]] = {}
 
     def competitor_rates(
@@ -321,8 +329,8 @@ class StoredRateShops(Limited, RateShops):
         return self._shops[(shop_day, tick)]
 
     def median_history(self, as_of_day: int) -> np.ndarray:
-        """The medians the simulator used each day before as_of_day: the day's own shop, which is
-        the one in the tables at the day's last tick."""
+        """The medians the simulator used each day before as_of_day: the day's own first shop,
+        which is the one in the tables at the tick it lands at."""
         self._known(as_of_day, before=True)
         medians = np.zeros((as_of_day, len(self.hotels), HORIZON_DAYS))
         if as_of_day <= 0:
@@ -334,7 +342,7 @@ class StoredRateShops(Limited, RateShops):
             "WHERE as_of_day >= 0 AND as_of_day < ? AND as_of_tick = ? "
             "AND stay_day BETWEEN as_of_day AND as_of_day + ? "
             "ORDER BY as_of_day, hotel, stay_day, competitor",
-            [as_of_day, self.ticks, LOOKAHEAD_DAYS - 1],
+            [as_of_day, self._day_shop, LOOKAHEAD_DAYS - 1],
         )
         for hotel in self.hotels:
             rows = frame[frame["hotel"] == hotel.key]

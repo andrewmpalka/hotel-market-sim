@@ -8,7 +8,7 @@ import pytest
 from hotel_market import customer
 from hotel_market.agent import Agent, ElasticityMode
 from hotel_market.bookings import Books, simulate
-from hotel_market.cli import main
+from hotel_market.cli import main, run
 from hotel_market.customer import CUSTOMER_VARIABLE, DEMO_FILE, demo, demo_path, load
 from hotel_market.demand import MARKET_ELASTICITY
 from hotel_market.detect import detect_numbers, flags
@@ -266,3 +266,54 @@ def test_the_customer_variable_names_the_default_file(tmp_path, monkeypatch):
     else:  # the package is installed, as in the image: the error names the two ways out
         with pytest.raises(FileNotFoundError, match=CUSTOMER_VARIABLE):
             demo_path()
+
+
+def _with_ticks(tmp_path, shop_ticks, event_tick, cut_tick, filing_tick):
+    """A copy of the demo file that names the ticks its news lands at."""
+    text = (ROOT / DEMO_FILE).read_text()
+    assert text.count("elasticity = 1.0\n") == 1
+    text = (
+        text.replace("elasticity = 1.0\n", f"elasticity = 1.0\nshop_ticks = {list(shop_ticks)}\n")
+        .replace("known_day = 10\n", f"known_day = 10\nknown_tick = {event_tick}\n")
+        .replace("known_day = 30\n", f"known_day = 30\nknown_tick = {cut_tick}\n")
+        + f"\n[[filings]]\nknown_day = 20\ntick = {filing_tick}\n"
+    )
+    path = tmp_path / "ticks.toml"
+    path.write_text(text)
+    return path
+
+
+def test_a_file_may_name_the_ticks_its_news_lands_at(tmp_path):
+    """The market's shop_ticks, a filing's tick and an event's or a cut's known_tick are optional.
+    The demo file names none, so it reads as it did, and a tick that is not a whole number from 1,
+    or a market with no shop, is refused."""
+    assert DEMO.shop_ticks == (2,) and DEMO.filing_ticks == ()
+    assert DEMO.events[0].known_tick is None and DEMO.rate_cuts[0].known_tick is None
+    market = load(_with_ticks(tmp_path, [1, 2, 3, 4], 2, 3, 1))
+    assert market.shop_ticks == (1, 2, 3, 4) and market.filing_ticks == ((20, 1),)
+    assert market.events[0].known_tick == 2 and market.rate_cuts[0].known_tick == 3
+    assert market.events == (replace(DEMO.events[0], known_tick=2),)
+    for bad in ((0, 2, 3, 1), (1, 0, 1, 1), (1, 2, 0, 1), (1, 2, 3, 0), (1.5, 2, 3, 1)):
+        with pytest.raises(ValueError, match="a tick is a whole number from 1"):
+            load(_with_ticks(tmp_path, bad[:1], *bad[1:]))
+    with pytest.raises(ValueError, match="names no tick"):
+        load(_with_ticks(tmp_path, [], 2, 3, 1))
+
+
+def test_the_default_file_runs_as_before_with_its_ticks_spelled_out(tmp_path):
+    """A copy of the demo file that names the ticks the file defaults to, the shop at slot 2, the
+    filing at tick 3, the convention at the day's last tick and the cut in the day's first shop,
+    books the same rooms and writes the same decisions file byte for byte, at one tick a day and
+    at four. The clock lands a named tick 4 at tick 1 of a one-tick day, as it lands a slot."""
+    spelled = load(_with_ticks(tmp_path, [2], 4, 1, 3))
+    for ticks in (1, 4):
+        fixed, books, _ = run(7, tmp_path / f"demo{ticks}.jsonl", tmp_path / "a", ticks=ticks)
+        named, named_books, _ = run(
+            7, tmp_path / f"named{ticks}.jsonl", tmp_path / "b", customer=spelled, ticks=ticks
+        )
+        assert (fixed.rooms == named.rooms).all() and (books.rooms == named_books.rooms).all()
+        assert (books.revenue == named_books.revenue).all()
+        assert (books.tick_rooms == named_books.tick_rooms).all()
+        assert (tmp_path / f"demo{ticks}.jsonl").read_bytes() == (
+            tmp_path / f"named{ticks}.jsonl"
+        ).read_bytes()
