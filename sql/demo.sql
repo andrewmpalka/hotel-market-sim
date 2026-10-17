@@ -1,9 +1,9 @@
 -- The tables the demo page reads, written by hotel-market demo-data into the
 -- same file as the eight stored tables (schema.sql). The page formats and draws
 -- these rows and computes nothing, so every figure here is final: code wrote it.
--- Every date reads as a calendar date with its day of the week and the day
--- number in brackets, such as "Thu 18 Feb [45]". A table keyed by as_of_day and
--- hotel answers the page's two choices.
+-- Every date reads as a calendar date with its day of the week, such as
+-- "Thu 18 Feb". A table keyed by as_of_day and hotel answers the page's two
+-- choices. demo_data.py also writes the run and strip tables.
 
 -- The hotels of the market, in the customer file's order, with the rate chart's
 -- y axis: 75% to 125% of the start rate.
@@ -18,12 +18,13 @@ CREATE TABLE IF NOT EXISTS hotels (
     PRIMARY KEY (key)
 );
 
--- One row per simulation day: the day as the title shows it, and the window of
--- stay dates the charts span.
+-- One row per simulation day: the day as the title shows it, the window of stay
+-- dates the charts span, and the day's number, which the page shows small.
 CREATE TABLE IF NOT EXISTS days (
     as_of_day INTEGER NOT NULL,
-    label VARCHAR NOT NULL,            -- "Thu 14 Jan 2027 [day 10]"
-    stay_window VARCHAR NOT NULL,      -- "Thu 14 Jan [10] to Tue 13 Apr [99]"
+    label VARCHAR NOT NULL,            -- "Thu 14 Jan 2027"
+    stay_window VARCHAR NOT NULL,      -- "Thu 14 Jan to Tue 13 Apr"
+    index VARCHAR NOT NULL,            -- "day 10"
     PRIMARY KEY (as_of_day)
 );
 
@@ -48,7 +49,7 @@ CREATE TABLE IF NOT EXISTS stay_dates (
     hotel VARCHAR NOT NULL,
     as_of_tick INTEGER NOT NULL,       -- the tick the row is as of; 1 on the daily clock
     stay_day INTEGER NOT NULL,
-    label VARCHAR NOT NULL,            -- "Thu 18 Feb [45]", the x axis value
+    label VARCHAR NOT NULL,            -- "Thu 18 Feb", the x axis value
     tick BOOLEAN NOT NULL,             -- whether the x axis labels this date (the Mondays)
     rate DOUBLE NOT NULL,              -- the hotel's rate in force on the day
     comp_median DOUBLE NOT NULL,       -- the comp set median shopped on the day
@@ -58,7 +59,7 @@ CREATE TABLE IF NOT EXISTS stay_dates (
     causes VARCHAR NOT NULL,           -- the flag's causes, comma-separated; empty when not flagged
     flag VARCHAR NOT NULL,             -- the flag's id, "45-48"; empty when not flagged
     planned_rate DOUBLE,               -- the rate an accepted plan sets from tomorrow; NULL without one
-    decided_at VARCHAR NOT NULL,       -- "tick 3 of 4" on a finer clock; empty on the daily clock or without a plan
+    decided_at VARCHAR NOT NULL,       -- "14:00" at four ticks a day; empty on the daily clock or without a plan
     PRIMARY KEY (as_of_day, hotel, as_of_tick, stay_day)
 );
 
@@ -71,7 +72,7 @@ CREATE TABLE IF NOT EXISTS queue (
     hotel VARCHAR NOT NULL,
     as_of_tick INTEGER NOT NULL,       -- the tick the flag was decided at; 1 on the daily clock
     position INTEGER NOT NULL,
-    stays VARCHAR NOT NULL,            -- "Thu 18 Feb [45]" or "Thu 18 Feb [45] to Sun 21 Feb [48]"
+    stays VARCHAR NOT NULL,            -- "Thu 18 Feb" or "Thu 18 Feb to Sun 21 Feb"
     causes VARCHAR NOT NULL,
     plan VARCHAR NOT NULL,             -- the changes in words, or hold
     value DOUBLE NOT NULL,             -- the plan's estimated gain over holding
@@ -83,6 +84,9 @@ CREATE TABLE IF NOT EXISTS queue (
     alternative VARCHAR NOT NULL,      -- held only: the best alternative to holding, in words
     alternative_text VARCHAR NOT NULL, -- held only: how far it fell short of holding or of the minimum
     since_last_change VARCHAR NOT NULL, -- queued only: the stored request's earlier changes on the stay dates, as it lists them; empty when none
+    since_last_change_text VARCHAR NOT NULL, -- the same with dates for day numbers: "Fri 22 Jan: raised 10% to $264 on Sat 20 Mar; ..."
+    headline VARCHAR NOT NULL,         -- queued only: "+$730 over holding · raise 10% on Saturday · Sat 20 Mar"; empty when held
+    request_digest VARCHAR NOT NULL,   -- queued only: the digest of the request, as the decisions table stores it; empty when held
     PRIMARY KEY (as_of_day, hotel, as_of_tick, position)
 );
 
@@ -94,7 +98,8 @@ CREATE TABLE IF NOT EXISTS scorecard (
     as_of_day INTEGER NOT NULL,
     hotel VARCHAR NOT NULL,            -- a hotel's key, or all
     title VARCHAR NOT NULL,            -- the hotel's name, or "All four hotels"
-    nights VARCHAR NOT NULL,           -- "Mon 4 Jan [0] to Wed 13 Jan [9]"
+    nights VARCHAR NOT NULL,           -- "Mon 4 Jan to Wed 13 Jan"
+    night_count INTEGER NOT NULL,      -- the nights in it, 10
     position INTEGER NOT NULL,         -- the tile's place, 0 to 4
     measure VARCHAR NOT NULL,          -- Occupancy, ADR, RevPAR, Room revenue or Contribution
     agent DOUBLE NOT NULL,             -- the agent run's figure
@@ -111,7 +116,8 @@ CREATE TABLE IF NOT EXISTS scorecard (
 CREATE TABLE IF NOT EXISTS outcome (
     hotel VARCHAR NOT NULL,
     title VARCHAR NOT NULL,
-    nights VARCHAR NOT NULL,           -- "Mon 4 Jan [0] to Wed 2 Jun [149]"
+    nights VARCHAR NOT NULL,           -- "Mon 4 Jan to Wed 2 Jun"
+    night_count INTEGER NOT NULL,      -- 150
     position INTEGER NOT NULL,
     measure VARCHAR NOT NULL,
     agent DOUBLE NOT NULL,
@@ -128,7 +134,7 @@ CREATE TABLE IF NOT EXISTS gains (
     hotel VARCHAR NOT NULL,            -- a hotel's key, or all
     title VARCHAR NOT NULL,
     stay_day INTEGER NOT NULL,
-    label VARCHAR NOT NULL,            -- "Thu 18 Feb [45]"
+    label VARCHAR NOT NULL,            -- "Thu 18 Feb"
     tick BOOLEAN NOT NULL,             -- whether the x axis labels this date (every fourth Monday)
     agent DOUBLE NOT NULL,             -- the agent run's contribution on the stay date
     fixed DOUBLE NOT NULL,

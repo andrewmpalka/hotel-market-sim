@@ -20,8 +20,8 @@ FIGURE_FUNCTIONS = {
 }  # fmt: skip
 ALLOWED_IMPORTS = {"os", "pathlib", "altair", "duckdb", "streamlit"}
 AIRPORT_DAY_20 = (  # the plan line, then the recorded run's reason, its dollar signs escaped
-    "**Accepted:** raise 5% on Tue, Fri; raise 10% on Mon, Wed, Thu, Sun for Tue 23 Feb [50] to "
-    "Fri 23 Apr [109], \\$10,140 more than holding. "
+    "**Accepted:** raise 5% on Tue, Fri; raise 10% on Mon, Wed, Thu, Sun for Tue 23 Feb to "
+    "Fri 23 Apr, \\$10,140 more than holding. "
     + json.loads((ROOT / "tests" / "fixtures" / "live_seed7" / "day020_airport.json").read_text())[
         "decisions"
     ][0]["reason"].replace("$", "\\$")
@@ -87,19 +87,19 @@ def test_the_page_does_no_arithmetic_on_a_figure():
 def test_the_page_shows_the_airport_hotel_on_day_20(demo_file, monkeypatch):
     testing = pytest.importorskip("streamlit.testing.v1")
     page = _page(testing, monkeypatch, demo_file)
-    assert page.subheader[0].value == "Downtown convention hotel, Mon 4 Jan 2027 [day 0]"
+    assert page.subheader[0].value == "Downtown convention hotel, Mon 4 Jan 2027"
     assert '"planned_rate"' not in _rate_chart_spec(page)  # no accepted plan, no legend entry
     page.sidebar.selectbox[0].select("Airport hotel")
     page.sidebar.slider[0].set_value(20)
     page.run()
     assert not page.exception
-    assert page.subheader[0].value == "Airport hotel, Sun 24 Jan 2027 [day 20]"
+    assert page.subheader[0].value == "Airport hotel, Sun 24 Jan 2027"
     text = _text(page)
     assert (
         "The airlines filed a schedule change: arriving passengers are up 12.8% to 23.0% for "
-        "Tue 23 Feb [50] to Wed 2 Jun [149]."
+        "Tue 23 Feb to Wed 2 Jun."
     ) in text
-    assert "**Stay dates ahead, Sun 24 Jan [20] to Fri 23 Apr [109].**" in text
+    assert "**Stay dates ahead, Sun 24 Jan to Fri 23 Apr.**" in text
     assert AIRPORT_DAY_20 in text
     assert "No flag was held today." in text and not page.expander
     assert "Since the last change" not in text  # the airport's request listed no earlier change
@@ -109,8 +109,8 @@ def test_the_page_shows_the_airport_hotel_on_day_20(demo_file, monkeypatch):
     # The scorecard: the nights already stayed for the hotel and for all four, each labelled;
     # five tiles each, and a zero change written "0" (no arrow). The end-of-run result is off.
     stayed = [
-        "Airport hotel: nights already stayed, Mon 4 Jan [0] to Sat 23 Jan [19]",
-        "All four hotels: nights already stayed, Mon 4 Jan [0] to Sat 23 Jan [19]",
+        "Airport hotel: nights already stayed, Mon 4 Jan to Sat 23 Jan",
+        "All four hotels: nights already stayed, Mon 4 Jan to Sat 23 Jan",
     ]
     assert [caption.value for caption in page.main.caption] == stayed
     labels = ["Occupancy", "ADR", "RevPAR", "Room revenue", "Contribution"]
@@ -126,7 +126,7 @@ def test_the_page_shows_the_airport_hotel_on_day_20(demo_file, monkeypatch):
     page.sidebar.checkbox[0].check()
     page.run()
     assert not page.exception
-    complete = "Once every stay date is complete, Mon 4 Jan [0] to Wed 2 Jun [149]"
+    complete = "Once every stay date is complete, Mon 4 Jan to Wed 2 Jun"
     assert [caption.value for caption in page.main.caption] == [
         stayed[0],
         complete,
@@ -145,7 +145,7 @@ def test_the_query_string_opens_a_hotel_and_a_day_and_the_held_flags_are_open(
 ):
     testing = pytest.importorskip("streamlit.testing.v1")
     page = _page(testing, monkeypatch, demo_file, "full-service", 30, end=True)
-    assert page.subheader[0].value == "Downtown full-service hotel, Wed 3 Feb 2027 [day 30]"
+    assert page.subheader[0].value == "Downtown full-service hotel, Wed 3 Feb 2027"
     assert page.sidebar.slider[0].value == 30
     assert page.sidebar.checkbox[0].value and len(page.metric) == 20  # ?end=1 turns it on
     text = _text(page)
@@ -153,7 +153,7 @@ def test_the_query_string_opens_a_hotel_and_a_day_and_the_held_flags_are_open(
     assert page.expander[0].label == "Held flags: 1" and page.expander[0].proto.expanded
     held = "\n".join(block.value for block in page.expander[0].markdown)
     assert (
-        "Wed 10 Feb [37] to Fri 12 Feb [39], comp median down. The best alternative, raise 5% "
+        "Wed 10 Feb to Fri 12 Feb, comp median down. The best alternative, raise 5% "
         "on Wed, Fri; lower halfway to the new median on Thu, is \\$10 less than holding."
     ) in held
     # A day with no night stayed, and a query string the file does not know.
@@ -161,7 +161,7 @@ def test_the_query_string_opens_a_hotel_and_a_day_and_the_held_flags_are_open(
     assert page.main.caption[0].value == "Airport hotel: nights already stayed, none yet"
     assert len(page.metric) == 0 and not page.sidebar.checkbox[0].value
     page = _page(testing, monkeypatch, demo_file, "nowhere", 999)
-    assert page.subheader[0].value == "Downtown convention hotel, Mon 4 Jan 2027 [day 0]"
+    assert page.subheader[0].value == "Downtown convention hotel, Mon 4 Jan 2027"
 
 
 def test_the_decision_panel_shows_the_stored_requests_earlier_change_last(demo_file, monkeypatch):
@@ -177,7 +177,7 @@ def test_the_decision_panel_shows_the_stored_requests_earlier_change_last(demo_f
     )
     assert blocks.count(label) == 1 and sum("Since the last change" in b for b in blocks) == 1
     at = blocks.index(label)
-    assert blocks[at - 1].startswith("**Accepted:** ") and "Sat 20 Mar [75]" in blocks[at - 1]
+    assert blocks[at - 1].startswith("**Accepted:** ") and "Sat 20 Mar" in blocks[at - 1]
     assert at + 1 == len(blocks) or not blocks[at + 1].startswith("**Since")
 
 
@@ -219,13 +219,10 @@ def test_at_four_ticks_the_day_20_page_names_the_ticks_in_the_news_and_the_legen
     build(7, file, ticks=4)
     page = _page(testing, monkeypatch, file, hotel="airport", day=20)
     text = _text(page)
-    assert "The airlines filed a schedule change at tick 3 of 4: arriving passengers are" in text
-    assert (
-        "The first flag rose at tick 3 of 4, and the first raise was accepted at tick 3 of 4"
-        in text
-    )
+    assert "At 14:00 the airlines filed a schedule change: arriving passengers are" in text
+    assert "The first flag rose at 14:00, and the first raise was accepted at 14:00" in text
     assert "against the fixed-rate run." in text
-    assert "Planned rate (tick 3 of 4)" in _rate_chart_spec(page)
+    assert "Planned rate (14:00)" in _rate_chart_spec(page)
     # The recording at this clock is the intraday market's, so the template answers.
     assert [caption.value for caption in page.sidebar.caption][0].startswith(
         "Seed 7 of the simulated market. The reasons are the model's where the recorded live "
@@ -241,7 +238,7 @@ def test_the_tick_slider_shows_the_state_as_of_a_tick(demo_file_intraday, demo_f
     The daily file has no tick slider and no tick in its title."""
     testing = pytest.importorskip("streamlit.testing.v1")
     page = _page(testing, monkeypatch, demo_file_intraday, "lifestyle", 25, tick=1)
-    assert page.subheader[0].value == "Lifestyle hotel, Fri 29 Jan 2027 [day 25], tick 1 of 4"
+    assert page.subheader[0].value == "Lifestyle hotel, Fri 29 Jan 2027, tick 1 of 4"
     assert [slider.label for slider in page.sidebar.slider] == ["Day", "Tick"]
     assert page.sidebar.slider[1].value == 1
     text = _text(page)
@@ -252,13 +249,13 @@ def test_the_tick_slider_shows_the_state_as_of_a_tick(demo_file_intraday, demo_f
     assert not page.exception
     assert page.subheader[0].value.endswith(", tick 2 of 4")
     text = _text(page)
-    assert "An event, the concert, was announced at tick 2 of 4" in text
-    assert "**Accepted:** raise 10% on Thu, Fri for Thu 4 Feb [31] to Fri 5 Feb [32]" in text
+    assert "At 11:00 an event, the concert, was announced" in text
+    assert "**Accepted:** raise 10% on Thu, Fri for Thu 4 Feb to Fri 5 Feb" in text
     assert "The first flag rose" not in text
-    assert "Planned rate (tick 2 of 4)" in _rate_chart_spec(page)
+    assert "Planned rate (11:00)" in _rate_chart_spec(page)
     page = _page(testing, monkeypatch, demo_file_intraday, "lifestyle", 25)
     assert page.sidebar.slider[1].value == 4  # the day's last tick, the whole day, by default
-    assert "The first flag rose at tick 2 of 4, and the first raise was accepted" in _text(page)
+    assert "The first flag rose at 11:00, and the first raise was accepted" in _text(page)
     page = _page(testing, monkeypatch, demo_file, "lifestyle", 20)
     assert [slider.label for slider in page.sidebar.slider] == ["Day"]
-    assert page.subheader[0].value == "Lifestyle hotel, Sun 24 Jan 2027 [day 20]"
+    assert page.subheader[0].value == "Lifestyle hotel, Sun 24 Jan 2027"

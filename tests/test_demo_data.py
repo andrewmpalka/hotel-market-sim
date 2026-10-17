@@ -14,6 +14,7 @@ from hotel_market.demo_data import (
     DEMO_TABLES,
     MEASURES,
     NOTHING_NEW,
+    day_index,
     day_label,
     delta_text,
     figures,
@@ -56,6 +57,8 @@ def test_the_file_holds_the_stored_tables_for_every_day_and_the_pages_tables(dem
     assert counts["scorecard"] == (SIM_DAYS - 1) * 5 * 5
     assert counts["outcome"] == 5 * 5
     assert counts["gains"] == 5 * HORIZON_DAYS
+    # The strip has a row for every day and hotel, with or without a flag.
+    assert _rows(demo_file, "SELECT count(*) FROM strip") == [(SIM_DAYS * 4,)]
 
 
 def test_the_reasons_come_from_the_recorded_live_run(demo_file):
@@ -76,20 +79,24 @@ def test_the_reasons_come_from_the_recorded_live_run(demo_file):
     assert recorded_run(7) == ROOT / "tests" / "fixtures" / "live_seed7"
     assert recorded_run(7, 4) == ROOT / "tests" / "fixtures" / "live_seed7_intraday"
     assert recorded_run(1) is None and recorded_run(1, 4) is None
-    # The file says where its reasons came from, for the page's sidebar.
-    assert _rows(demo_file, "SELECT seed, reason_source FROM run") == [
-        (7, "the model's, from the recorded live run")
+    # The file says where its reasons came from, for the page's sidebar, and names its market.
+    assert _rows(demo_file, "SELECT seed, reason_source, market FROM run") == [
+        (7, "the model's, from the recorded live run", "demo")
     ]
 
 
-def test_every_date_reads_as_a_calendar_date_with_its_day_number_in_brackets(demo_file):
-    # Day 0 is Monday 4 January 2027 (schedule.SIM_START).
-    assert stay_label(0) == "Mon 4 Jan [0]" and stay_label(45) == "Thu 18 Feb [45]"
-    assert stay_span(46, 46) == "Fri 19 Feb [46]"
-    assert stay_span(45, 48) == "Thu 18 Feb [45] to Sun 21 Feb [48]"
-    assert day_label(10) == "Thu 14 Jan 2027 [day 10]"
-    assert _rows(demo_file, "SELECT label, stay_window FROM days WHERE as_of_day = 10") == [
-        ("Thu 14 Jan 2027 [day 10]", "Thu 14 Jan [10] to Tue 13 Apr [99]")
+def test_every_date_reads_as_a_calendar_date(demo_file):
+    # Day 0 is Monday 4 January 2027 (schedule.SIM_START). The day's number is a column of its
+    # own, which the page shows small under the title.
+    assert stay_label(0) == "Mon 4 Jan" and stay_label(45) == "Thu 18 Feb"
+    assert stay_span(46, 46) == "Fri 19 Feb"
+    assert stay_span(45, 48) == "Thu 18 Feb to Sun 21 Feb"
+    assert day_label(10) == "Thu 14 Jan 2027" and day_index(10) == "day 10"
+    assert _rows(demo_file, "SELECT label, stay_window, index FROM days WHERE as_of_day = 10") == [
+        ("Thu 14 Jan 2027", "Thu 14 Jan to Tue 13 Apr", "day 10")
+    ]
+    assert _rows(demo_file, "SELECT count(*) FROM days WHERE index <> 'day ' || as_of_day") == [
+        (0,)
     ]
     labels = _rows(
         demo_file,
@@ -98,9 +105,9 @@ def test_every_date_reads_as_a_calendar_date_with_its_day_number_in_brackets(dem
         "ORDER BY stay_day",
     )
     assert labels == [
-        (10, "Thu 14 Jan [10]", False),
-        (14, "Mon 18 Jan [14]", True),
-        (45, "Thu 18 Feb [45]", False),
+        (10, "Thu 14 Jan", False),
+        (14, "Mon 18 Jan", True),
+        (45, "Thu 18 Feb", False),
     ]
     # The x axis labels the Mondays of the window and nothing else.
     ticks = _rows(
@@ -112,7 +119,16 @@ def test_every_date_reads_as_a_calendar_date_with_its_day_number_in_brackets(dem
     stays = _rows(
         demo_file, "SELECT stays FROM queue WHERE as_of_day = 10 AND hotel = 'convention'"
     )
-    assert stays == [("Thu 18 Feb [45] to Sun 21 Feb [48]",)]
+    assert stays == [("Thu 18 Feb to Sun 21 Feb",)]
+    # No stay label anywhere in the file carries a bracket.
+    bracketed = (
+        "SELECT (SELECT count(*) FROM stay_dates WHERE label LIKE '%[%') "
+        "+ (SELECT count(*) FROM gains WHERE label LIKE '%[%') "
+        "+ (SELECT count(*) FROM queue WHERE stays LIKE '%[%' OR headline LIKE '%[%') "
+        "+ (SELECT count(*) FROM news WHERE text LIKE '%[%') "
+        "+ (SELECT count(*) FROM days WHERE label LIKE '%[%' OR stay_window LIKE '%[%')"
+    )
+    assert _rows(demo_file, bracketed) == [(0,)]
 
 
 def test_the_scorecard_counts_the_nights_already_stayed(demo_file):
@@ -126,7 +142,9 @@ def test_the_scorecard_counts_the_nights_already_stayed(demo_file):
     )
     assert [row[:2] for row in day10] == list(enumerate(MEASURES))
     assert {row[2] for row in day10} == {"Downtown convention hotel"}
-    assert {row[3] for row in day10} == {"Mon 4 Jan [0] to Wed 13 Jan [9]"}
+    assert {row[3] for row in day10} == {"Mon 4 Jan to Wed 13 Jan"}
+    counted = "SELECT DISTINCT night_count FROM scorecard WHERE as_of_day = 10"
+    assert _rows(demo_file, counted) == [(10,)]
     assert all(row[4] == row[5] and row[6] == 0 and row[8] == "0" for row in day10)
     assert [row[7] for row in day10][:2] == ["76.1%", "$220.00"]
     # The figures are the Books measures over those nights, at fixed rates on day 10.
@@ -166,7 +184,8 @@ def test_the_outcome_is_the_result_once_every_stay_date_is_complete(demo_file):
     by_hotel = {row[0]: row for row in outcome}
     assert by_hotel["convention"][3] == 0
     assert by_hotel[ALL][3] == pytest.approx(19796, abs=1)
-    assert by_hotel[ALL][1:3] == ("All four hotels", "Mon 4 Jan [0] to Wed 2 Jun [149]")
+    assert by_hotel[ALL][1:3] == ("All four hotels", "Mon 4 Jan to Wed 2 Jun")
+    assert _rows(demo_file, "SELECT DISTINCT night_count FROM outcome") == [(HORIZON_DAYS,)]
     assert by_hotel[ALL][4] == "+$19,796" and by_hotel["convention"][4] == "0"
     revenue = _rows(
         demo_file, f"SELECT delta_text FROM outcome WHERE hotel = '{ALL}' AND position = 3"
@@ -221,7 +240,7 @@ def test_a_held_flag_names_the_best_alternative_and_how_far_it_fell_short(demo_f
         "WHERE as_of_day = 30 AND hotel = 'full-service' ORDER BY position",
     )
     assert day30[0] == (
-        "Wed 10 Feb [37] to Fri 12 Feb [39]",
+        "Wed 10 Feb to Fri 12 Feb",
         "comp median down",
         "hold",
         "held",
@@ -245,16 +264,21 @@ def test_a_held_flag_names_the_best_alternative_and_how_far_it_fell_short(demo_f
 
 def test_a_queued_plan_carries_the_stored_requests_earlier_changes(demo_file):
     # Day 20 at the lifestyle hotel: the request's entry for stay date 75 lists the day-18 raise
-    # with the rooms booked since, and the queue row carries that line as the request wrote it.
-    # No other queued row, the airport's day-20 plan included, carries one, and a held flag was
-    # never asked, so it carries none either.
+    # with the rooms booked since, and the queue row carries that line as the request wrote it,
+    # and again with its day numbers as dates for the page. No other queued row, the airport's
+    # day-20 plan included, carries one, and a held flag was never asked, so it carries none
+    # either.
     line = "day 18: raised 10% to $264 on Sat 75; since then 2 rooms booked against 1 expected"
+    dated = (
+        "Fri 22 Jan: raised 10% to $264 on Sat 20 Mar; since then 2 rooms booked against 1 expected"
+    )
     rows = _rows(
         demo_file,
-        "SELECT stays, since_last_change FROM queue "
+        "SELECT stays, since_last_change, since_last_change_text FROM queue "
         "WHERE as_of_day = 20 AND hotel = 'lifestyle' AND queued ORDER BY position",
     )
-    assert [(stays, since) for stays, since in rows if since] == [(stay_label(75), line)]
+    assert [row for row in rows if row[1]] == [(stay_label(75), line, dated)]
+    assert all(text == "" for _, since, text in rows if not since)
     [(stored,)] = _rows(
         demo_file,
         "SELECT request FROM decisions WHERE as_of_day = 20 AND hotel = 'lifestyle' AND queued "
@@ -269,6 +293,69 @@ def test_a_queued_plan_carries_the_stored_requests_earlier_changes(demo_file):
     assert _rows(demo_file, "SELECT DISTINCT since_last_change FROM queue WHERE NOT queued") == [
         ("",)
     ]
+    # Each queued row carries the digest of its request as the decisions table stores it.
+    digests = (
+        "SELECT DISTINCT request_digest FROM {} "
+        "WHERE as_of_day = 20 AND hotel = 'lifestyle' AND queued"
+    )
+    queued = _rows(demo_file, digests.format("queue"))
+    assert queued == _rows(demo_file, digests.format("decisions")) and len(queued) == 1
+    assert _rows(demo_file, "SELECT DISTINCT request_digest FROM queue WHERE NOT queued") == [("",)]
+
+
+def test_a_queued_plans_headline_leads_with_the_money(demo_file):
+    # The value at stake to the nearest $10, as the request shows it, then the plan with its days
+    # of the week written out, then its stay dates. A held flag has no headline.
+    [(value, headline)] = _rows(
+        demo_file,
+        "SELECT value, headline FROM queue WHERE as_of_day = 20 AND hotel = 'lifestyle' "
+        "AND stays = 'Sat 20 Mar'",
+    )
+    money = f"+${10 * round(value / 10):,}"
+    assert headline == f"{money} over holding · raise 10% on Saturday · Sat 20 Mar"
+    assert money == "+$730"
+    # Two days join with "and", three or more with commas and a last "and".
+    [(airport,)] = _rows(
+        demo_file, "SELECT headline FROM queue WHERE as_of_day = 20 AND hotel = 'airport'"
+    )
+    assert airport == (
+        "+$10,140 over holding · raise 5% on Tuesday and Friday; raise 10% on Monday, Wednesday, "
+        "Thursday and Sunday · Tue 23 Feb to Fri 23 Apr"
+    )
+    assert _rows(demo_file, "SELECT DISTINCT headline FROM queue WHERE NOT queued") == [("",)]
+
+
+def test_the_strip_counts_the_moments_flags_and_recommendations(demo_file):
+    # Day 20 at the lifestyle hotel: the filing is the day's first news, the day's flags cover
+    # the stay dates the charts band in red, and the three accepted plans' values add up.
+    [(news, nights, count, money)] = _rows(
+        demo_file,
+        "SELECT news, nights_flagged, recommendations, value_at_stake FROM strip "
+        "WHERE as_of_day = 20 AND hotel = 'lifestyle' AND as_of_tick = 1",
+    )
+    assert news.startswith("The airlines filed a schedule change")
+    assert nights > 0 and count == 3
+    values = _rows(
+        demo_file,
+        "SELECT value FROM queue WHERE as_of_day = 20 AND hotel = 'lifestyle' "
+        "AND outcome = 'accepted'",
+    )
+    assert money == f"+${10 * round(sum(value for (value,) in values) / 10):,}"
+    # Everywhere, the nights flagged are the stay dates the charts mark flagged at that moment.
+    differ = _rows(
+        demo_file,
+        "SELECT count(*) FROM strip s WHERE nights_flagged <> (SELECT count(*) FROM stay_dates d "
+        "WHERE d.as_of_day = s.as_of_day AND d.hotel = s.hotel AND d.as_of_tick = s.as_of_tick "
+        "AND d.flagged)",
+    )
+    assert differ == [(0,)]
+    # A day with no news, no flag and no plan.
+    quiet = _rows(
+        demo_file,
+        "SELECT news, nights_flagged, recommendations, value_at_stake FROM strip "
+        "WHERE as_of_day = 0 AND hotel = 'convention'",
+    )
+    assert quiet == [("Nothing new", 0, 0, "$0")]
 
 
 def test_the_news_names_the_convention_the_filings_and_the_comp_set_cut(demo_file):
@@ -282,12 +369,12 @@ def test_the_news_names_the_convention_the_filings_and_the_comp_set_cut(demo_fil
     assert day10 == [
         (
             "event",
-            "An event, the convention, was announced for Thu 18 Feb [45] to Sun 21 Feb [48]. "
+            "An event, the convention, was announced for Thu 18 Feb to Sun 21 Feb. "
             "Demand there is up 35.0%, and the comp set's rates are up 15.0%.",
         ),
         (
             "comp set",
-            "The comp set median is up 10.3% to 17.1% for Thu 18 Feb [45] to Sun 21 Feb [48].",
+            "The comp set median is up 10.3% to 17.1% for Thu 18 Feb to Sun 21 Feb.",
         ),
     ]
     filings = _rows(
@@ -298,20 +385,18 @@ def test_the_news_names_the_convention_the_filings_and_the_comp_set_cut(demo_fil
         (
             20,
             "The airlines filed a schedule change: arriving passengers are up 12.8% to 23.0% "
-            "for Tue 23 Feb [50] to Wed 2 Jun [149].",
+            "for Tue 23 Feb to Wed 2 Jun.",
         ),
         (
             40,
             "The airlines filed a schedule change: arriving passengers are down 8.1% to 9.9% "
-            "for Mon 15 Mar [70] to Sun 4 Apr [90].",
+            "for Mon 15 Mar to Sun 4 Apr.",
         ),
     ]
     day30 = _rows(
         demo_file, "SELECT text FROM news WHERE as_of_day = 30 AND hotel = 'full-service'"
     )
-    assert day30 == [
-        ("The comp set median is down 8.3% to 11.0% for Wed 10 Feb [37] to Fri 12 Feb [39].",)
-    ]
+    assert day30 == [("The comp set median is down 8.3% to 11.0% for Wed 10 Feb to Fri 12 Feb.",)]
 
 
 def test_the_chart_rows_mark_the_flagged_stay_dates_and_carry_the_planned_rate(demo_file):
@@ -405,11 +490,11 @@ def demo_file_4(tmp_path_factory):
 
 
 def test_at_four_ticks_the_news_names_each_feeds_tick_and_the_filings_outcome(demo_file_4):
-    """At four ticks a day the news says which tick a feed landed at, the filing day adds the
-    first flag, the first accepted raise, its stay dates and what they earned against the
-    fixed-rate run, the queue holds every tick's flags, a planned rate names its tick, and the
-    template writes every reason, because the recording at this clock is the intraday market's
-    and none of its requests is this market's."""
+    """At four ticks a day each news line opens with the time of day its feed landed at, the
+    filing day adds the first flag, the first accepted raise, its stay dates and what they earned
+    against the fixed-rate run, the queue holds every tick's flags, a planned rate names its time,
+    and the template writes every reason, because the recording at this clock is the intraday
+    market's and none of its requests is this market's."""
     out, source = demo_file_4
     assert source.startswith("the model's where the recorded live run covers the request and the")
     assert source.endswith("it does not")
@@ -420,14 +505,14 @@ def test_at_four_ticks_the_news_names_each_feeds_tick_and_the_filings_outcome(de
     )
     assert day20[0] == (
         "schedule",
-        "The airlines filed a schedule change at tick 3 of 4: arriving passengers are up 12.8% "
-        "to 23.0% for Tue 23 Feb [50] to Wed 2 Jun [149].",
+        "At 14:00 the airlines filed a schedule change: arriving passengers are up 12.8% "
+        "to 23.0% for Tue 23 Feb to Wed 2 Jun.",
     )
     kinds = [kind for kind, _ in day20]
     assert "decision" in kinds
     decision = next(text for kind, text in day20 if kind == "decision")
     assert decision.startswith(
-        "The first flag rose at tick 3 of 4, and the first raise was accepted at tick 3 of 4 for "
+        "The first flag rose at 14:00, and the first raise was accepted at 14:00 for "
     )
     assert "those stay dates earned " in decision and "against the fixed-rate run." in decision
     day10 = _rows(
@@ -437,8 +522,10 @@ def test_at_four_ticks_the_news_names_each_feeds_tick_and_the_filings_outcome(de
     )
     # The shop lands at tick 2 and the event at tick 4; the event's day closes with its outcome.
     assert [kind for kind, _ in day10] == ["comp set", "event", "decision"]
-    assert "at tick 2 of 4" in day10[0][1] and "was announced at tick 4 of 4" in day10[1][1]
-    assert day10[2][1].startswith("The first flag rose at tick 4 of 4")
+    assert day10[0][1].startswith("At 11:00 the comp set median is")
+    assert day10[1][1].startswith("At 17:00 an event, the convention, was announced for")
+    assert day10[2][1].startswith("The first flag rose at 17:00")
+    assert _rows(out, "SELECT count(*) FROM news WHERE text LIKE '%tick%'") == [(0,)]
     assert _rows(out, "SELECT DISTINCT text FROM news WHERE as_of_day = 0") == [(NOTHING_NEW,)]
     assert _rows(out, "SELECT COUNT(*) FROM news WHERE text = ?", NOTHING_NEW)[0][0] <= SIM_DAYS * 4
     planned = _rows(
@@ -446,7 +533,7 @@ def test_at_four_ticks_the_news_names_each_feeds_tick_and_the_filings_outcome(de
         "SELECT DISTINCT decided_at FROM stay_dates WHERE as_of_day = 20 AND hotel = 'airport' "
         "AND planned_rate IS NOT NULL",
     )
-    assert planned == [("tick 3 of 4",)]
+    assert planned == [("14:00",)]
     assert _rows(out, "SELECT DISTINCT decided_at FROM stay_dates WHERE planned_rate IS NULL") == [
         ("",)
     ]
@@ -475,9 +562,9 @@ def test_at_one_tick_a_day_the_demo_file_has_no_tick_in_it(demo_file):
 def test_the_intraday_file_holds_each_ticks_news_queue_and_chart_rows(demo_file_intraday):
     """On the intraday market at four ticks a day, the run table says four, each news row names
     the tick its news landed at, the queue holds each tick's flags under that tick, and the chart
-    rows come once per tick as of it. On day 25 the lifestyle hotel's concert lands at tick 2
-    with the raise accepted at the same tick, the outcome line lands at tick 4, and tick 1 has
-    nothing yet; the day-20 filing lands at tick 1 and the day-45 repricing at tick 3. The
+    rows come once per tick as of it. On day 25 the lifestyle hotel's concert lands at tick 2,
+    11:00, with the raise accepted at the same tick, the outcome line lands at tick 4, and tick 1
+    has nothing yet; the day-20 filing lands at tick 1 and the day-45 repricing at tick 3. The
     reasons are the recorded intraday run's (tests/fixtures/live_seed7_intraday), which covers
     every request, so the concert's raise carries the model's reason."""
     out = demo_file_intraday
@@ -503,11 +590,11 @@ def test_the_intraday_file_holds_each_ticks_news_queue_and_chart_rows(demo_file_
     )
     assert [(tick, kind) for tick, kind, _ in news] == [(2, "event"), (4, "decision")]
     assert news[0][2].startswith(
-        "An event, the concert, was announced at tick 2 of 4 for Thu 4 Feb [31] to Fri 5 Feb [32]."
+        "At 11:00 an event, the concert, was announced for Thu 4 Feb to Fri 5 Feb."
     )
     assert news[1][2].startswith(
-        "The first flag rose at tick 2 of 4, and the first raise was accepted at tick 2 of 4 for "
-        "Thu 4 Feb [31] to Fri 5 Feb [32]; those stay dates earned "
+        "The first flag rose at 11:00, and the first raise was accepted at 11:00 for "
+        "Thu 4 Feb to Fri 5 Feb; those stay dates earned "
     )
     queue = _rows(
         out,
@@ -522,10 +609,21 @@ def test_the_intraday_file_holds_each_ticks_news_queue_and_chart_rows(demo_file_
     )
     assert charts == [
         (1, 90, None, ""),
-        (2, 90, 264.0, "tick 2 of 4"),
-        (3, 90, 264.0, "tick 2 of 4"),
-        (4, 90, 264.0, "tick 2 of 4"),
+        (2, 90, 264.0, "11:00"),
+        (3, 90, 264.0, "11:00"),
+        (4, 90, 264.0, "11:00"),
     ]
+    # The concert's plan leads with its money, and the strip counts it at 11:00 alone.
+    assert _rows(
+        out, "SELECT headline FROM queue WHERE as_of_day = 25 AND hotel = 'lifestyle'"
+    ) == [("+$2,470 over holding · raise 10% on Thursday and Friday · Thu 4 Feb to Fri 5 Feb",)]
+    strip = _rows(
+        out,
+        "SELECT as_of_tick, nights_flagged, recommendations, value_at_stake FROM strip "
+        "WHERE as_of_day = 25 AND hotel = 'lifestyle' ORDER BY as_of_tick",
+    )
+    assert strip == [(1, 0, 0, "$0"), (2, 2, 1, "+$2,470"), (3, 2, 0, "$0"), (4, 2, 0, "$0")]
+    assert _rows(out, "SELECT count(*) FROM strip") == [(60 * 4 * 4,)]
     landed = "SELECT as_of_tick FROM news WHERE as_of_day = ? AND hotel = ? AND kind = ?"
     assert _rows(out, landed, 20, "airport", "schedule") == [(1,)]
     assert _rows(out, landed, 45, "lifestyle", "event") == [(3,)]
