@@ -6,7 +6,7 @@ The four shocks, with the day each becomes known. Two live in the schedule
 becomes known, and every lookup on them takes the day it is made on
 ([[RUL-03]]). kg_check.py fails when a shock in the demo file or a filing in
 the code has no node here whose File and Known on day match it, so a new
-shock needs a node.
+shock needs a node. The intraday market's two extra shocks follow at the end.
 
 ### SHK-01 [C] The convention
 - Known on day: 10
@@ -67,3 +67,22 @@ shock needs a node.
 - File: src/hotel_market/schedule.py
 - Flags: none, by construction: a day moves at most 96 seats against a threshold of 212 ([[RUL-64]]). The finding is that the detector keys on the day-over-day revision and not on a filing ([[RES-28]]).
 - Evidence: test_the_churn_files_weekly_revisions_below_the_threshold, test_a_detector_that_fires_on_any_revision_is_caught_by_the_churn
+
+
+### SHK-08 [C] The concert
+- Known on day: 25, at tick 2 of a four-tick day
+- Stay dates: 31 and 32
+- Effect: demand at the lifestyle and full-service hotels triples on the two nights, enough to sell both out, and half of that demand books by the end of day 26 ([[DEC-71]]). The comp sets do not move.
+- File: customers/demo-intraday.toml
+- Held in: the intraday file's events, the demo market with news inside the day ([[DAT-05]]). The demo file has no such event, so its pinned run is unchanged.
+- Flags: [[RUL-37]] at both hotels on day 25 at the announcement's tick, then pace flags as the rush lands ahead of the curve.
+- Evidence: test_the_intraday_market_is_the_demo_market_with_news_inside_the_day
+
+### SHK-09 [C] The weekend repricing
+- Known on day: 45, at tick 3 of a four-tick day
+- Stay dates: 47 and 48
+- Effect: the lifestyle hotel's competitors charge 10% more on the Saturday and Sunday, from the shop at tick 3. Demand does not move.
+- File: customers/demo-intraday.toml
+- Held in: the intraday file's events, as an event with no uplift ([[DAT-05]]).
+- Flags: [[RUL-37]] and [[RUL-35]] at the lifestyle hotel on day 45 at tick 3, when the shop shows the move.
+- Evidence: test_the_intraday_market_is_the_demo_market_with_news_inside_the_day

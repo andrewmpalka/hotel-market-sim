@@ -11,7 +11,7 @@ nodes and its words, len(text.split()) over the file.
 | modules.md | 32 | 4,456 |
 | data.md | 33 | 4,685 |
 | rules.md | 132 | 5,778 |
-| shocks.md | 7 | 813 |
+| shocks.md | 9 | 1,032 |
 | concepts.md | 12 | 1,370 |
 | measures.md | 14 | 962 |
 | sources.md | 4 | 855 |
@@ -19,8 +19,8 @@ nodes and its words, len(text.split()) over the file.
 | results.md | 44 | 7,438 |
 | forks.md | 14 | 2,037 |
 | unknowns.md | 16 | 2,164 |
-| every node file | 379 | 41,156 |
-| index.md | | 2,983 |
+| every node file | 381 | 41,375 |
+| index.md | | 2,994 |
 
 ## Modules (`modules.md`)
 
@@ -185,6 +185,8 @@ nodes and its words, len(text.split()) over the file.
 - SHK-05 [C] The upgauge
 - SHK-06 [C] The frequency cut
 - SHK-07 [C] The churn
+- SHK-08 [C] The concert
+- SHK-09 [C] The weekend repricing
 
 ## Concepts (`concepts.md`)
 

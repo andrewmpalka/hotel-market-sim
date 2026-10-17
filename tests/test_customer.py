@@ -21,6 +21,7 @@ from hotel_market.world import RateCut
 
 ROOT = Path(__file__).resolve().parents[1]
 HARBOUR_FILE = ROOT / "customers" / "harbour.toml"
+INTRADAY_FILE = ROOT / "customers" / "demo-intraday.toml"
 DEMO = demo()
 
 
@@ -324,3 +325,33 @@ def test_the_default_file_runs_as_before_with_its_ticks_spelled_out(tmp_path):
         assert (tmp_path / f"demo{ticks}.jsonl").read_bytes() == (
             tmp_path / f"named{ticks}.jsonl"
         ).read_bytes()
+
+
+def test_the_intraday_market_is_the_demo_market_with_news_inside_the_day():
+    """customers/demo-intraday.toml keeps the demo's hotels, limits, thresholds, curves and four
+    shocks and adds a shop at every tick, the cut from the day's second shop, the day-20 filing
+    at tick 1, a concert a week out with a rush that sells its two hotels out, and a comp set
+    that reprices a weekend on Thursday afternoon. At four ticks the concert's rooms land from
+    the tick it is announced at."""
+    market = load(INTRADAY_FILE)
+    assert market.name == "demo-intraday" and market.hotels == DEMO.hotels
+    settings = (
+        "target", "floor_share", "ceiling_share", "cost_share", "pace_share", "pace_noise_sd",
+        "seat_threshold", "median_threshold", "hold_days", "min_value_at_stake",
+        "market_elasticity",
+    )  # fmt: skip
+    assert all(getattr(market, name) == getattr(DEMO, name) for name in settings)
+    assert market.shop_ticks == (1, 2, 3, 4) and market.filing_ticks == ((20, 1),)
+    assert market.rate_cuts == (replace(DEMO.rate_cuts[0], known_tick=2),)
+    convention, concert, repricing = market.events
+    assert convention == DEMO.events[0]
+    assert concert == Event("Concert", 25, 31, 32, ("lifestyle", "full-service"), 2.0, 0.0, 2, 0.5)
+    assert repricing == Event("Weekend repricing", 45, 47, 48, ("lifestyle",), 0.0, 0.10, 3)
+    intraday = simulate(7, last_day=32, customer=market, ticks=4)
+    daily = simulate(7, last_day=32, ticks=4)
+    for key in ("lifestyle", "full-service"):
+        hotel = market.hotel(key)
+        assert (intraday.rooms[hotel.row, 31:33] == hotel.rooms).all()
+        assert (daily.rooms[hotel.row, 31:33] < 0.8 * hotel.rooms).all()
+        landed = intraday.tick_rooms[25, :, hotel.row, 31]
+        assert landed[1:].sum() > 3 * landed[0]  # the rush books from tick 2 of day 25

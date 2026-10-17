@@ -1,0 +1,175 @@
+# The demo market with news inside the day: the same four hotels, limits,
+# thresholds, curves and four shocks as customers/demo.toml, plus a rate shop
+# at every tick, a cut and a filing that land at a tick of their own, a
+# close-in concert that books in a rush, and a comp set that reprices a
+# weekend two days out. Run it with --ticks 4; at one tick a day every piece
+# of news lands at the day's one tick. Every number is synthetic.
+
+name = "demo-intraday"
+# What the agent scores candidates on: "contribution" (room revenue minus the
+# cost of servicing every room sold) or "revenue".
+target = "contribution"
+
+[limits]
+floor_share = 0.70     # the rate floor as a share of the start rate
+ceiling_share = 1.40   # the rate ceiling as a share of the start rate
+cost_share = 0.3333333333333333  # the cost to service an occupied room, as a share of the start rate
+
+[detect]
+pace_share = 0.10       # a pace gap counts when it is beyond this share of the hotel's rooms
+pace_noise_sd = 3       # ... and beyond this many standard deviations of booking noise
+seat_threshold = 0.05   # a revision in arriving passengers of this much either way raises a flag
+median_threshold = 0.05 # a comp median that moved this much since yesterday raises a flag
+hold_days = 7           # an action accepted on day d holds its stay dates on days d+1 to d+hold_days
+
+[agent]
+min_value_at_stake = 250  # a plan worth less than this over holding is held, not queued
+
+# The market's own price response: expected demand scales with (the comp median
+# as shopped / its starting level) to the power of minus this. 1.0 is the choice
+# because a market-wide rate rise should lose demand in proportion, and not for
+# any result it gives. The --market-elasticity option overrides it for a run,
+# and the agent is told the run's value.
+[market]
+elasticity = 1.0
+# The comp set is shopped four times a day, so the median moves between ticks.
+shop_ticks = [1, 2, 3, 4]
+
+# Each hotel: its rooms, start rate, share of guests arriving by air, share of
+# rooms sold on a normal night, demand factors Monday to Sunday, its booking
+# curve and its four competitors, each at an offset from the hotel's start
+# rate. The offsets are symmetric, so every comp set's median starts at the
+# hotel's own rate. The booking curve is the share of final bookings normally
+# on the books by days before arrival, linear in between and flat beyond the
+# last point, 1.00 on the night for all. The convention hotel holds a quarter
+# of its rooms as group blocks 90 or more days out and the full-service hotel
+# a tenth; the lifestyle hotel keeps the transient curve; the airport hotel
+# books late. Each is chosen for the kind of hotel, not for any result.
+
+[[hotels]]
+key = "convention"
+name = "Downtown convention hotel"
+rooms = 400
+start_rate = 220
+air_share = 0.60
+base_occupancy = 0.75
+weekday_factors = [0.95, 1.10, 1.10, 1.05, 0.90, 0.95, 0.80]
+booking_curve = { days_out = [0, 7, 30, 60, 90], share = [1.00, 0.85, 0.60, 0.45, 0.25] }
+competitors = [
+    { name = "convention comp 1", offset = -0.08 },
+    { name = "convention comp 2", offset = -0.03 },
+    { name = "convention comp 3", offset = 0.03 },
+    { name = "convention comp 4", offset = 0.08 },
+]
+
+[[hotels]]
+key = "full-service"
+name = "Downtown full-service hotel"
+rooms = 250
+start_rate = 190
+air_share = 0.45
+base_occupancy = 0.75
+weekday_factors = [0.95, 1.10, 1.10, 1.05, 0.90, 0.95, 0.80]
+booking_curve = { days_out = [0, 7, 30, 60, 90], share = [1.00, 0.75, 0.50, 0.30, 0.10] }
+competitors = [
+    { name = "full-service comp 1", offset = -0.08 },
+    { name = "full-service comp 2", offset = -0.03 },
+    { name = "full-service comp 3", offset = 0.03 },
+    { name = "full-service comp 4", offset = 0.08 },
+]
+
+[[hotels]]
+key = "lifestyle"
+name = "Lifestyle hotel"
+rooms = 120
+start_rate = 240
+air_share = 0.50
+base_occupancy = 0.75
+weekday_factors = [0.85, 0.85, 0.90, 1.00, 1.20, 1.25, 0.90]
+booking_curve = { days_out = [0, 7, 30, 60, 90], share = [1.00, 0.70, 0.40, 0.20, 0.00] }
+competitors = [
+    { name = "lifestyle comp 1", offset = -0.08 },
+    { name = "lifestyle comp 2", offset = -0.03 },
+    { name = "lifestyle comp 3", offset = 0.03 },
+    { name = "lifestyle comp 4", offset = 0.08 },
+]
+
+# 0.85 is a scenario choice: at 0.75 the new flights never fill the airport hotel.
+[[hotels]]
+key = "airport"
+name = "Airport hotel"
+rooms = 150
+start_rate = 140
+air_share = 0.80
+base_occupancy = 0.85
+weekday_factors = [1.05, 0.90, 1.00, 1.05, 1.00, 0.85, 1.05]
+booking_curve = { days_out = [0, 7, 30, 60, 90], share = [1.00, 0.50, 0.20, 0.05, 0.00] }
+competitors = [
+    { name = "airport comp 1", offset = -0.08 },
+    { name = "airport comp 2", offset = -0.03 },
+    { name = "airport comp 3", offset = 0.03 },
+    { name = "airport comp 4", offset = 0.08 },
+]
+
+# The market's calendar: the events that lift some of its hotels, each from the
+# day it is announced, and the scripted cuts by some hotel's competitors, each
+# from the first shop day that shows it. shocks.py looks both up as of a day.
+# The two air-schedule filings are the simulator's (schedule.py), so every
+# market shares them; the table at the end lands the day-20 filing early.
+
+# Announced on day 10: a convention on stay dates 45 to 48 raises demand 35%
+# at the two downtown hotels, and their competitors raise rates 15% on those
+# nights. Its peak night is not set here: forecast.peak_night() works it out
+# from expected demand.
+[[events]]
+name = "Convention"
+known_day = 10
+start_day = 45
+end_day = 48
+hotels = ["convention", "full-service"]
+uplift = 0.35
+comp_rate_raise = 0.15
+
+# A stadium concert announced on day 25 mid-morning for a week out: demand on
+# its two nights triples at the two hotels nearest the stadium, enough to sell
+# both out, and half of that demand books by the end of the next day.
+[[events]]
+name = "Concert"
+known_day = 25
+known_tick = 2
+start_day = 31
+end_day = 32
+hotels = ["lifestyle", "full-service"]
+uplift = 2.0
+comp_rate_raise = 0.0
+rush = 0.5
+
+# The lifestyle hotel's comp set reprices the coming weekend up 10% on
+# Thursday afternoon, as a comp set does once it sees Saturday filling.
+[[events]]
+name = "Weekend repricing"
+known_day = 45
+known_tick = 3
+start_day = 47
+end_day = 48
+hotels = ["lifestyle"]
+uplift = 0.0
+comp_rate_raise = 0.10
+
+# Shopped from day 30: the two cheapest competitors of the full-service hotel
+# cut their rates 20% for stay dates 37 to 39, and the cut shows from the
+# second shop of the day, mid-morning.
+[[rate_cuts]]
+known_day = 30
+known_tick = 2
+start_day = 37
+end_day = 39
+hotel = "full-service"
+competitors = ["full-service comp 1", "full-service comp 2"]
+cut = 0.20
+
+# The airline files the new flights first thing in the morning of day 20, so
+# the agent reads them at tick 1 instead of the afternoon.
+[[filings]]
+known_day = 20
+tick = 1

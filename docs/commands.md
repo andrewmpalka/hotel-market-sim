@@ -19,6 +19,7 @@ Python 3.11 or later, from the repository root:
     hotel-market --seed 7 --customer customers/demo.toml --target revenue           # another market or target
     hotel-market --customer customers/harbour.toml --seed 7 --template   # the second market: three hotels and its own calendar, nothing changed in the agent; its answers go under cache/harbour/
     hotel-market --customer customers/harbour.toml --seeds 1 20          # its 20-seed sweep
+    hotel-market --customer customers/demo-intraday.toml --seed 7 --template --ticks 4   # the demo market with its news inside the day: a shop every tick, a concert that books in a rush, a cut, a filing and a comp move at ticks of their own
     hotel-market run-day --seed 7 --as-of 20 --from 0   # days 0 to 20, one day at a time, through stored tables
     hotel-market replay --as-of 20                      # day 20's plans again, from the stored tables alone
     python scripts/live_audit.py --seed 7               # a live run, every model call measured, then audited
