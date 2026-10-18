@@ -24,9 +24,8 @@ AIRPORT_HEADLINE = (  # the plan's headline, its dollar sign escaped
     "**+\\$10,140 over holding · raise 5% on Tuesday and Friday; raise 10% on Monday, Wednesday, "
     "Thursday and Sunday · Tue 23 Feb to Fri 23 Apr**"
 )
-AIRPORT_WHY = (  # then the recorded run's reason, its dollar signs escaped
-    "<small>Why</small> "
-    + json.loads((ROOT / "tests" / "fixtures" / "live_seed7" / "day020_airport.json").read_text())[
+AIRPORT_REASON = (  # the recorded run's reason under Why, its dollar signs escaped
+    json.loads((ROOT / "tests" / "fixtures" / "live_seed7" / "day020_airport.json").read_text())[
         "decisions"
     ][0]["reason"].replace("$", "\\$")
 )
@@ -35,7 +34,8 @@ SIDEBAR = (  # the seed's place among the results' runs
     "The reasons are the model's own words."
 )
 STAND_IN = "Reasons marked * are the stand-in's, not the model's."
-STRIP = ["Today's news", "Nights flagged", "Recommendations", "Value at stake today"]
+STRIP = ["Nights flagged", "Recommendations", "Value at stake today"]
+AIRPORT_STAYS = "Stay dates 50 to 109 are Tue 23 Feb to Fri 23 Apr."  # its numbers, dated
 RED_BANDS = "The red bands are the stay dates flagged today."
 # The program's words, which only the engineers' expander may show. "flagged" is the exception,
 # in the strip's label and the charts' caption, so "flag" matches only as a word of its own.
@@ -130,9 +130,9 @@ def test_the_page_shows_the_airport_hotel_on_day_20(demo_file, monkeypatch):
     assert not page.exception
     assert page.subheader[0].value == "Airport hotel · Sun 24 Jan 2027"
     assert page.main.caption[0].value == "day 20"
-    # The strip under the title: the file's four tiles for the day, as stored.
-    assert [metric.label for metric in page.metric][:4] == STRIP
-    assert [metric.value for metric in page.metric][1:4] == ["60", "1", "+$10,140"]
+    # The strip under the news: the file's three tiles for the day, as stored.
+    assert [metric.label for metric in page.metric][:3] == STRIP
+    assert [metric.value for metric in page.metric][:3] == ["60", "1", "+$10,140"]
     text = _text(page)
     assert (
         "The airlines filed a schedule change: arriving passengers are up 12.8% to 23.0% for "
@@ -140,9 +140,15 @@ def test_the_page_shows_the_airport_hotel_on_day_20(demo_file, monkeypatch):
     ) in text
     assert "**Stay dates ahead, Sun 24 Jan to Fri 23 Apr.**" in text
     assert "**Today's recommendations**" in text and "Today's queue" not in text
-    assert AIRPORT_HEADLINE in text and AIRPORT_WHY in text
+    assert AIRPORT_HEADLINE in text
+    # The model's reason sits in a closed expander under its plan, after the stay dates'
+    # numbers as the request writes them, with their dates.
+    why = [expander for expander in page.expander if expander.label == "Why"]
+    assert len(why) == 1 and not why[0].proto.expanded
+    assert [caption.value for caption in why[0].caption] == [AIRPORT_STAYS]
+    assert [block.value for block in why[0].markdown] == [AIRPORT_REASON]
     assert "Nothing else needed a decision today." in text
-    assert [expander.label for expander in page.expander] == ["For engineers"]
+    assert [expander.label for expander in page.expander] == ["Why", "For engineers"]
     assert "Since our last change" not in text  # the airport's request listed no earlier change
     # The recommended rate is a dashed line in its own colour, with a legend entry.
     spec = _rate_chart_spec(page)
@@ -153,10 +159,11 @@ def test_the_page_shows_the_airport_hotel_on_day_20(demo_file, monkeypatch):
     # The scorecard: the nights already stayed for the hotel and for all four, each labelled;
     # five tiles each, and no chip on a change that rounds to nothing. The five months are off.
     stayed = ["Airport hotel: 20 nights stayed", "All four hotels: 20 nights stayed"]
-    assert [caption.value for caption in page.main.caption] == ["day 20", RED_BANDS, *stayed]
+    captions = ["day 20", RED_BANDS, AIRPORT_STAYS]
+    assert [caption.value for caption in page.main.caption] == [*captions, *stayed]
     labels = ["Occupancy", "ADR", "RevPAR", "Room revenue", "Contribution"]
     assert [metric.label for metric in page.metric] == STRIP + labels * 2
-    assert page.metric[5].value == "$140.00" and page.metric[5].delta == ""
+    assert page.metric[4].value == "$140.00" and page.metric[4].delta == ""
     assert not page.sidebar.checkbox[0].value and len(page.get("vega_lite_chart")) == 2
     # The sidebar says which run of the results this is, and defines contribution.
     assert [caption.value for caption in page.sidebar.caption] == [
@@ -170,8 +177,7 @@ def test_the_page_shows_the_airport_hotel_on_day_20(demo_file, monkeypatch):
     assert not page.exception
     complete = "All five months: 150 nights"
     assert [caption.value for caption in page.main.caption] == [
-        "day 20",
-        RED_BANDS,
+        *captions,
         stayed[0],
         complete,
         stayed[1],
@@ -179,8 +185,8 @@ def test_the_page_shows_the_airport_hotel_on_day_20(demo_file, monkeypatch):
         "Contribution difference by stay date, once every stay date is complete",
     ]
     assert [metric.label for metric in page.metric] == STRIP + labels * 4
-    assert page.metric[13].value == "$1,879,045" and page.metric[13].delta == "+$6,125"
-    assert page.metric[23].value == "$14,505,130" and page.metric[23].delta == "+$19,796"
+    assert page.metric[12].value == "$1,879,045" and page.metric[12].delta == "+$6,125"
+    assert page.metric[22].value == "$14,505,130" and page.metric[22].delta == "+$19,796"
     assert len(page.get("vega_lite_chart")) == 3
 
 
@@ -191,7 +197,7 @@ def test_the_query_string_opens_a_hotel_and_a_day_and_the_held_flags_are_open(
     page = _page(testing, monkeypatch, demo_file, "full-service", 30, end=True)
     assert page.subheader[0].value == "Downtown full-service hotel · Wed 3 Feb 2027"
     assert page.sidebar.slider[0].value == 30
-    assert page.sidebar.checkbox[0].value and len(page.metric) == 4 + 20  # ?end=1 turns it on
+    assert page.sidebar.checkbox[0].value and len(page.metric) == 3 + 20  # ?end=1 turns it on
     text = _text(page)
     assert "No recommendation today." in text
     # The flags held by code sit in an expander, closed until the reader opens it.
@@ -206,16 +212,20 @@ def test_the_query_string_opens_a_hotel_and_a_day_and_the_held_flags_are_open(
     # A day with no night stayed, and a query string the file does not know.
     page = _page(testing, monkeypatch, demo_file, "airport", 0)
     assert "Airport hotel: no nights stayed yet" in [caption.value for caption in page.main.caption]
-    assert len(page.metric) == 4 and not page.sidebar.checkbox[0].value  # the strip alone
-    assert [metric.value for metric in page.metric] == ["Nothing new", "0", "0", "$0"]
+    assert len(page.metric) == 3 and not page.sidebar.checkbox[0].value  # the strip alone
+    assert [metric.value for metric in page.metric] == ["0", "0", "$0"]
+    assert "Nothing new became known today." in _text(page)  # the file's own line for the day
     page = _page(testing, monkeypatch, demo_file, "nowhere", 999)
     assert page.subheader[0].value == "Downtown convention hotel · Mon 4 Jan 2027"
 
 
-def test_the_decision_panel_shows_the_stored_requests_earlier_change_last(demo_file, monkeypatch):
-    """The lifestyle hotel's day-20 page: the plan for stay date 75 ends with the earlier change
+def test_the_decision_panel_shows_the_stored_requests_earlier_change_under_its_headline(
+    demo_file, monkeypatch
+):
+    """The lifestyle hotel's day-20 page: under the plan for stay date 75 comes the earlier change
     the stored request listed, under its label and with dates for the request's day numbers, the
-    dollar sign escaped; nothing else on the page carries the label."""
+    dollar sign escaped; nothing else on the page carries the label. Each plan's reason then sits
+    in a closed expander, after the request's numbers for its stay dates with their dates."""
     testing = pytest.importorskip("streamlit.testing.v1")
     page = _page(testing, monkeypatch, demo_file, "lifestyle", 20)
     blocks = [block.value for block in page.markdown]
@@ -225,9 +235,12 @@ def test_the_decision_panel_shows_the_stored_requests_earlier_change_last(demo_f
     )
     assert blocks.count(label) == 1 and sum("Since our last change" in b for b in blocks) == 1
     at = blocks.index(label)
-    assert blocks[at - 2] == "**+\\$730 over holding · raise 10% on Saturday · Sat 20 Mar**"
-    assert blocks[at - 1].startswith("<small>Why</small> Stay date 75 is")
-    assert at + 1 == len(blocks) or not blocks[at + 1].startswith("**Since")
+    assert blocks[at - 1] == "**+\\$730 over holding · raise 10% on Saturday · Sat 20 Mar**"
+    why = [expander for expander in page.expander if expander.label == "Why"]
+    assert len(why) == 3 and not any(expander.proto.expanded for expander in why)
+    assert why[1].caption[0].value == "Stay date 75 is Sat 20 Mar."
+    assert why[1].markdown[0].value.startswith("Stay date 75 is")
+    assert blocks[at + 1] == why[1].markdown[0].value  # the reason follows the earlier change
 
 
 def test_a_reason_with_two_dollar_amounts_shows_both_as_written(demo_file, monkeypatch, tmp_path):
@@ -248,7 +261,7 @@ def test_a_reason_with_two_dollar_amounts_shows_both_as_written(demo_file, monke
         connection.close()
     page = _page(testing, monkeypatch, file, "airport", 20)
     text = _text(page)
-    assert "<small>Why</small> A \\$120 raise earns \\$1,000 more than holding." in text
+    assert "A \\$120 raise earns \\$1,000 more than holding." in text
     assert "$120 raise earns $1,000" not in text
     assert (
         "See \\[the plan\\](http://example.com), \\~\\~hold\\~\\~ and \\<http://example.com\\>."
@@ -282,7 +295,7 @@ def test_at_four_ticks_the_day_20_page_names_the_times_of_day_in_the_news_and_th
         "Contribution is room revenue minus the cost of servicing every room sold.",
     ]
     page = _page(testing, monkeypatch, file, hotel="airport", day=20, tick=3)
-    reasons = [block.value for block in page.markdown if block.value.startswith("<small>Why")]
+    reasons = [block.value for e in page.expander if e.label == "Why" for block in e.markdown]
     assert reasons and all(reason.endswith(" *") for reason in reasons)
 
 
@@ -343,4 +356,4 @@ def test_the_engineers_expander_is_the_only_place_the_programs_words_appear(demo
         assert inside[:2] == ["Seed 7. Day 20.", "Market file: demo"]
         assert inside[-1] == "This page reads a file demo\\_data.py wrote and computes nothing."
         digests = [line for line in inside if line.startswith("Request digest: ")]
-        assert len(digests) == len([b for b in page.markdown if b.value.startswith("<small>Why")])
+        assert len(digests) == len([e for e in page.expander if e.label == "Why"])

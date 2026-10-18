@@ -22,8 +22,8 @@ repository has no Cirium data and no affiliation with Cirium.
 ![The lifestyle hotel on day 20](docs/images/day20.png)
 
 *Day 20 at the lifestyle hotel: the filing in the news, three recommendations
-with the model's reasons, and what happened since the last change on those
-dates.*
+with the model's reasons closed under Why, and what happened since the last
+change on those dates.*
 
 ## Run it
 
@@ -188,7 +188,7 @@ the same thresholds on both markets. The difference is the news.
 ![The lifestyle hotel on day 25 at 11:00](docs/images/day25.png)
 
 *Day 25 at the lifestyle hotel, 11:00: the concert just announced, the
-recommendation, and the model's reason.*
+recommendation, and the model's reason opened under Why.*
 
 Details: [the clock](docs/results.md#the-clock-one-tick-a-day-against-four),
 [the clock with intraday news](docs/results.md#the-clock-on-the-world-with-intraday-news).

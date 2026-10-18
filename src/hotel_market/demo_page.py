@@ -9,14 +9,16 @@ The page reads the file and computes nothing. Every figure it shows is a row cod
 imports anything from the package or does arithmetic on a figure. The sidebar picks one hotel and
 one day, and the query string can name them (?hotel=convention&day=10). The sidebar also says
 which of the results' runs this is, marks the stand-in's reasons when the file holds any, and
-defines contribution. Under the title and the day's number, four tiles give the day's first news,
-the nights flagged, the recommendations and their value at stake together. The page then shows
-what became known that day, the stay dates ahead as two charts side by side, the day's
-recommendations, each led by its value at stake with its reason under it, and the scorecard: the
-nights already stayed for the hotel and for all the hotels together. Where the stored request
-listed the hotel's earlier changes on a plan's stay dates, the plan's last line shows them under
-"Since our last change on these dates", with dates for the request's day numbers. The flags held
-by code sit in a closed expander. A sidebar checkbox, off by default, adds the full five months:
+defines contribution. Under the title and the day's number come what became known that day and
+three tiles: the nights flagged, the recommendations and their value at stake together. The page
+then shows the stay dates ahead as two charts side by side, the day's recommendations and the
+scorecard: the nights already stayed for the hotel and for all the hotels together. Each
+recommendation is one line led by its value at stake. Where the stored request listed the
+hotel's earlier changes on a plan's stay dates, the next line shows them under "Since our last
+change on these dates", with dates for the request's day numbers. The model's reason sits in a
+closed expander under the plan, after a line that dates the request's numbers for its stay
+dates, so the day reads first and the reason is one click away. The flags held by code sit in a
+closed expander. A sidebar checkbox, off by default, adds the full five months:
 the tiles once every stay date is complete and the contribution difference by stay date. The
 query string can turn it on (&end=1). When the file was written on a finer clock, a time-of-day
 slider under the day slider picks a tick of the day (&tick=2), the day's last by default, and the
@@ -63,7 +65,7 @@ STYLE = """<style>
 [data-testid="stHeader"] {height: 2rem !important; background: transparent !important;}
 .block-container {padding-top: 0.75rem; padding-bottom: 0.25rem;}
 [data-testid="stVerticalBlock"] {gap: 0.2rem;}
-h3 {padding-top: 0 !important; padding-bottom: 0.25rem !important;}
+h3 {padding-top: 0 !important; padding-bottom: 0.25rem !important; line-height: 1.05 !important;}
 [data-testid="stMarkdownContainer"] p:has(> strong:only-child) {line-height: 1.25;}
 [data-testid="stMetric"] {padding: 0;}
 [data-testid="stMetricLabel"] {line-height: 1.1; min-height: 0;}
@@ -77,6 +79,7 @@ h3 {padding-top: 0 !important; padding-bottom: 0.25rem !important;}
 [data-testid="stExpander"] details summary {padding: 0.1rem 0.5rem;}
 .st-key-queue p {font-size: 0.9rem; line-height: 1.25;}
 .st-key-news p {line-height: 1.2;}
+.st-key-index {margin-top: 0.4rem;}
 .st-key-index p {font-size: 0.8rem; line-height: 1.1;}
 .st-key-strip [data-testid="stMetricLabel"] p {font-size: 0.8rem;}
 .st-key-strip [data-testid="stMetricValue"] {font-size: 1rem;}
@@ -257,20 +260,6 @@ def main() -> None:
     st.subheader(f"{name} · {today['label']}{clock}")
     with st.container(key="index"):  # the key names the day's number for STYLE's small text
         st.caption(today["index"])
-    strip = rows(
-        "SELECT news, nights_flagged, recommendations, value_at_stake FROM strip "
-        "WHERE as_of_day = ? AND hotel = ? AND as_of_tick = ?",
-        day,
-        key,
-        tick,
-    ).iloc[0]
-    with st.container(key="strip"):  # the key names the strip for STYLE
-        tiles = st.columns([3, 1, 1, 1])  # the news tile wide enough for its 60 characters
-        first = strip["news"] if len(strip["news"]) <= 60 else f"{strip['news'][:59]}…"
-        tiles[0].metric("Today's news", first)
-        tiles[1].metric("Nights flagged", strip["nights_flagged"])
-        tiles[2].metric("Recommendations", strip["recommendations"])
-        tiles[3].metric("Value at stake today", strip["value_at_stake"])
     news = rows(
         "SELECT text FROM news WHERE as_of_day = ? AND hotel = ? AND as_of_tick <= ? "
         "ORDER BY as_of_tick, position",
@@ -280,6 +269,18 @@ def main() -> None:
     )
     with st.container(key="news"):  # the key names the news for STYLE's tighter lines
         st.markdown("  \n".join(plain(text) for text in news["text"].tolist()) or NOTHING_YET)
+    strip = rows(
+        "SELECT nights_flagged, recommendations, value_at_stake FROM strip "
+        "WHERE as_of_day = ? AND hotel = ? AND as_of_tick = ?",
+        day,
+        key,
+        tick,
+    ).iloc[0]
+    with st.container(key="strip"):  # the key names the strip for STYLE
+        tiles = st.columns(3)
+        tiles[0].metric("Nights flagged", strip["nights_flagged"])
+        tiles[1].metric("Recommendations", strip["recommendations"])
+        tiles[2].metric("Value at stake today", strip["value_at_stake"])
 
     # ---- the stay dates ahead -------------------------------------------------------------------
     stays = rows(
@@ -367,7 +368,8 @@ def main() -> None:
     # ---- today's recommendations and the scorecard, side by side ------------------------------
     queue = rows(
         "SELECT stays, causes, reason, reason_source, outcome, queued, alternative, "
-        "alternative_text, since_last_change_text, headline, request_digest FROM queue "
+        "alternative_text, since_last_change_text, headline, request_digest, stay_numbers_text "
+        "FROM queue "
         "WHERE as_of_day = ? AND hotel = ? AND as_of_tick = ? ORDER BY position",
         day,
         key,
@@ -384,15 +386,14 @@ def main() -> None:
             held_by_model = "Held: " if plan.outcome == "declined" else ""
             star = " *" if plan.reason_source == "template" else ""
             st.markdown(f"**{held_by_model}{plain(plan.headline)}**")
-            st.markdown(
-                f"<small>Why</small> {plain(plan.reason, REASON_MARKS)}{star}",
-                unsafe_allow_html=True,
-            )
             if plan.since_last_change_text:  # the stored request's own line, with dates
                 st.markdown(
                     f"**Since our last change on these dates:** "
                     f"{plain(plan.since_last_change_text)}"
                 )
+            with st.expander("Why", expanded=False):  # the model's words, one click away
+                st.caption(plain(plan.stay_numbers_text))
+                st.markdown(f"{plain(plan.reason, REASON_MARKS)}{star}")
         if held.empty:
             st.markdown("Nothing else needed a decision today.")
         else:

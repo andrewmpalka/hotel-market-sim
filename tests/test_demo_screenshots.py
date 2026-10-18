@@ -79,7 +79,7 @@ def test_every_checked_page_fits_the_window_and_six_are_saved(screenshots, demo_
             assert path is None
         # The strip's four tiles, then five a row of the scorecard: two rows, or four with the
         # five months on.
-        assert measured["window"] == 900 and measured["metrics"] == (24 if state == "on" else 14)
+        assert measured["window"] == 900 and measured["metrics"] == (23 if state == "on" else 13)
         assert not screenshots.too_tall(measured), (hotel, day, state, measured)
     assert sorted(file.name for file in (tmp_path / "shots").iterdir()) == [
         "airport-day20-end.png",
@@ -125,6 +125,6 @@ def test_the_intraday_pages_fit_the_window_at_every_tick_and_nothing_is_saved(
     ]
     for hotel, day, tick, state, measured, path in results:
         assert (hotel, day) == ("lifestyle", 25) and path is None
-        assert measured["window"] == 900 and measured["metrics"] == (24 if state == "on" else 14)
+        assert measured["window"] == 900 and measured["metrics"] == (23 if state == "on" else 13)
         assert not screenshots.too_tall(measured), (tick, state, measured)
     assert [file.name for file in (tmp_path / "shots").iterdir()] == [screenshots.SERVER_LOG]

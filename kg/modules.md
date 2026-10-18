@@ -259,9 +259,9 @@ which is also the order in which they depend on each other.
 
 ### MOD-27 [C] demo_page.py
 - File: src/hotel_market/demo_page.py
-- Owns: the read-only demo page ([[DEC-57]], [[DEC-58]]) over [[DAT-33]]. On a finer clock, the sidebar picks a time of day ([[RUL-133]], [[RUL-134]]). A strip of four tiles opens the page. An engineers' expander closes it.
+- Owns: the read-only demo page ([[DEC-57]], [[DEC-58]]) over [[DAT-33]]. On a finer clock, the sidebar picks a time of day ([[RUL-133]], [[RUL-134]]). The news opens the page, then a strip of three tiles. An engineers' expander closes it.
 - Charts: one chart shows our rate, the comp set median and the recommended rate, dashed aqua. The other shows the rooms on the books against the usual pace. The recommended rate joins the legend only with an accepted plan.
-- Queue: each recommendation leads with the money, and its reason follows. The stored request's earlier changes follow with dates. The held flags sit closed. Its text is a size smaller, so three plans fit.
+- Queue: each recommendation is one line that leads with the money. The stored request's earlier changes follow with dates. Its reason sits closed under Why. The held flags sit closed.
 - Scorecard: the nights already stayed for the hotel and for all together, as five large tiles each. With the checkbox on, the five months' tiles follow each, in a compact size, then the small line. A zero change has no chip.
 - Holds: the file, parameter, plot, tile, colour and mark constants, FILE_VARIABLE to REASON_MARKS ([[RUL-105]], [[RUL-106]], [[RUL-112]] to [[RUL-123]], [[RUL-133]], [[RUL-134]]), and STYLE.
 - Reads: nothing in the package; streamlit, altair and duckdb only, the optional extra demo. The page computes nothing, and a test parses it for an arithmetic operator or an aggregate call. Tests: tests/test_demo_page.py.
