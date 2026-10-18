@@ -614,7 +614,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 ### DEC-58 [C] The demo page fits one window, and every date is a calendar date
 - Decided: the page fits 1440 by 900 pixels with nothing cut off, from the title to the engineers' expander. scripts/demo_screenshots.py ([[MOD-28]]) measures every hotel on seven days, and four days at every tick.
 - Dates: every date reads as a calendar date with its day of the week, such as "Thu 18 Feb" ([[DAT-33]]). The day's number sits small under the title. The recorded reasons keep their day numbers.
-- Plan: on the day a plan is accepted, the rate chart draws the new rate as a dashed line beside the current one. A held day of the week keeps the current rate on that line.
+- Plan: the charts show the nights flagged so far today, or the next two weeks. The rate chart draws each accepted change as an arrow from the current rate to the new one.
 - Held: the held flags sit in a closed expander, "Also looked at today". Each shows its stay dates, its cause, the best alternative and how far it fell short of holding, or of the minimum when its plan beats holding ([[RUL-67]]).
 - Text: the page escapes the markdown marks in every reason and plan, so a pair of dollar amounts is not a formula and a model's text cannot draw a link. A tile draws no chip for a change that rounds to nothing.
 - Layout: the charts sit side by side, the recommendations beside the scorecard, and the toolbar is hidden. The five months sit behind a checkbox, off by default. Smaller text and tighter lines let a busy day fit.

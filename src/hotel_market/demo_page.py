@@ -10,8 +10,10 @@ imports anything from the package or does arithmetic on a figure. The sidebar pi
 one day, and the query string can name them (?hotel=convention&day=10). The sidebar also says
 which of the results' runs this is, marks the stand-in's reasons when the file holds any, and
 defines contribution. Under the title and the day's number come what became known that day and
-three tiles: the nights flagged, the recommendations and their value at stake together. The page
-then shows the stay dates ahead as two charts side by side, the day's recommendations and the
+three tiles: the nights flagged, the recommendations and their value at stake together. Two
+charts follow, side by side, for the nights flagged so far that day, or the next two weeks when
+none was: our rate, the comp set median and each recommended change as an arrow, and the rooms
+on the books as bars against the usual pace. Then come the day's recommendations and the
 scorecard: the nights already stayed for the hotel and for all the hotels together. Each
 recommendation is one line led by its value at stake. Where the stored request listed the
 hotel's earlier changes on a plan's stay dates, the next line shows them under "Since our last
@@ -52,6 +54,8 @@ PLOT_HEIGHTS = {
     "small": 50,
 }  # the plot areas, in pixels: a stay-date chart, the small line
 AXIS_LABEL_SIZE = 12  # the axes' tick labels, in points
+_NEXT_NIGHTS = 14  # the nights the charts show on a day that flagged none
+_LABELLED_NIGHTS = 7  # up to this many nights, the charts print each value
 TILE_SIZES = {
     "compact": (0.75, 1.1),
     "large": (0.9, 1.2),
@@ -137,7 +141,7 @@ def _axis(order: list[str], ticks: list[str]) -> alt.X:
             labelOverlap=True,
             labelSeparation=8,
         ),
-        scale=alt.Scale(paddingInner=0, paddingOuter=0),
+        scale=alt.Scale(paddingInner=0.25, paddingOuter=0.15),
     )
 
 
@@ -146,13 +150,15 @@ def _y(field: str, title: str | None, **axis) -> alt.Y:
     return alt.Y(field, title=title, axis=alt.Axis(labelFontSize=AXIS_LABEL_SIZE, **axis))
 
 
-def _legend(label_expr: str | None = None, orient: str = "top") -> alt.Legend:
+def _legend(
+    label_expr: str | None = None, orient: str = "top", symbol: str = "stroke"
+) -> alt.Legend:
     """A legend above the plot, off the lines, with stroke symbols that show a dash. Its labels are
     the axes' size, so "Recommended rate (from 11:00)" fits beside the other two."""
     legend = alt.Legend(
         orient=orient,
         title=None,
-        symbolType="stroke",
+        symbolType=symbol,
         symbolStrokeWidth=2,
         offset=6,
         labelLimit=240,
@@ -282,7 +288,7 @@ def main() -> None:
         tiles[1].metric("Recommendations", strip["recommendations"])
         tiles[2].metric("Value at stake today", strip["value_at_stake"])
 
-    # ---- the stay dates ahead -------------------------------------------------------------------
+    # ---- the nights today's news touched --------------------------------------------------------
     stays = rows(
         "SELECT stay_day, label, tick, rate, comp_median, rooms_on_books, pace, flagged, "
         "causes, flag, planned_rate, decided_at FROM stay_dates WHERE as_of_day = ? AND hotel = ? "
@@ -291,79 +297,133 @@ def main() -> None:
         key,
         tick,
     )
-    axis = _axis(stays["label"].tolist(), stays.loc[stays["tick"], "label"].tolist())
     flagged = stays.loc[stays["flagged"]]
-    planned = stays.loc[stays["planned_rate"].notna()].assign(line="planned_rate")
-    marks = (
-        alt.Chart(flagged)
-        .mark_rect(color=COLORS["red"], opacity=0.2)
-        .encode(x=axis, tooltip=[alt.Tooltip("label:N", title="Flagged"), "causes:N"])
-    )
-    # The planned rate joins the lines and the legend only on a day with an accepted plan.
-    rate_lines = {
-        "rate": ("Our rate", "blue", [1, 0]),
-        "comp_median": ("Comp set median", "orange", [1, 0]),
-    }
-    if not planned.empty:
-        decided_at = planned.iloc[0]["decided_at"]  # "14:00" on a finer clock, else empty
-        label = f"Recommended rate (from {decided_at})" if decided_at else "Recommended rate"
-        rate_lines["planned_rate"] = (label, "aqua", [6, 4])
-    rate_series = _series(rate_lines)
-    dollars = _y("dollars:Q", "Rate ($)")
-    dollars["scale"] = alt.Scale(
-        domain=[float(hotel["rate_axis_low"]), float(hotel["rate_axis_high"])]
-    )
+    # The charts show the nights flagged so far today, so the day's change fills them; a day that
+    # flagged none shows the next two weeks.
+    shown = stays.head(_NEXT_NIGHTS) if flagged.empty else flagged
+    labels = shown["label"].tolist()
+    span = labels[0] if len(labels) == 1 else f"{labels[0]} to {labels[-1]}"
+    few = len(labels) <= _LABELLED_NIGHTS  # few enough nights to mark and print each one
+    axis = _axis(labels, labels)
+    planned = shown.loc[shown["planned_rate"].notna()]
+    moved = planned.loc[planned["planned_rate"] != planned["rate"]]  # the nights a plan changes
     stay_date = alt.Tooltip("label:N", title="Stay date")
-    rates = (
-        alt.Chart(stays)
-        .transform_fold(["rate", "comp_median"], as_=["line", "dollars"])
-        .mark_line(strokeWidth=2, clip=True)
-        .encode(
-            x=axis,
-            y=dollars,
-            tooltip=[stay_date, alt.Tooltip("dollars:Q", format="$,.0f")],
-            **rate_series,
+    money = {"format": "$,.0f"}
+    # Our rate and the market's median, as dots and dashes on a few nights and as lines on many,
+    # and each recommended change as an arrow from our rate to the new one. The axis fits the
+    # nights, with room above and below, so a 5% move shows.
+    names = {"rate": "Our rate", "comp_median": "Comp set median"}
+    if not moved.empty:  # once the rate has moved, our rate shows it and the arrow goes
+        decided_at = moved.iloc[0]["decided_at"]  # "14:00" on a finer clock, else empty
+        names["planned_rate"] = (
+            f"Recommended rate (from {decided_at})" if decided_at else "Recommended rate"
         )
+    colors = {"rate": "blue", "comp_median": "orange", "planned_rate": "aqua"}
+    series = alt.Color(
+        "series:N",
+        scale=alt.Scale(domain=list(names.values()), range=[COLORS[colors[key]] for key in names]),
+        legend=_legend(symbol="circle"),
     )
-    layers = [marks, rates]
-    if not planned.empty:
-        layers.append(
-            alt.Chart(planned)
-            .mark_line(strokeWidth=2, clip=True)
-            .encode(
-                x=axis,
-                y=_y("planned_rate:Q", "Rate ($)"),
-                detail="flag:N",
-                tooltip=[
-                    stay_date,
-                    alt.Tooltip("planned_rate:Q", title="Planned", format="$,.0f"),
-                ],
-                **rate_series,
+    dollars = alt.Y(
+        "rate:Q",
+        title="Rate ($)",
+        scale=alt.Scale(zero=False, nice=True, padding=20),
+        axis=alt.Axis(labelFontSize=AXIS_LABEL_SIZE, tickCount=8, **money),
+    )
+    ours = alt.Chart(shown.assign(series=names["rate"]))
+    market = alt.Chart(shown.assign(series=names["comp_median"]))
+    our_tip = [stay_date, alt.Tooltip("rate:Q", title="Our rate", **money)]
+    market_tip = [stay_date, alt.Tooltip("comp_median:Q", title="Comp set median", **money)]
+    if few:
+        layers = [
+            market.mark_tick(thickness=2, size=22).encode(
+                x=axis, y=alt.Y("comp_median:Q"), color=series, tooltip=market_tip
+            ),
+            ours.mark_point(filled=True, size=80, opacity=1).encode(
+                x=axis, y=dollars, color=series, tooltip=our_tip
+            ),
+            ours.mark_text(dy=16, fontSize=AXIS_LABEL_SIZE, color="white").encode(
+                x=axis, y=alt.Y("rate:Q"), text=alt.Text("rate:Q", **money)
+            ),
+        ]
+    else:
+        layers = [
+            market.mark_line(strokeWidth=1.5, opacity=0.8).encode(
+                x=axis, y=alt.Y("comp_median:Q"), color=series, tooltip=market_tip
+            ),
+            ours.mark_line(strokeWidth=2.5).encode(
+                x=axis, y=dollars, color=series, tooltip=our_tip
+            ),
+        ]
+    if not moved.empty:
+        chosen = alt.Chart(moved.assign(series=names["planned_rate"]))
+        layers.extend(
+            [
+                chosen.mark_rule(strokeWidth=3).encode(
+                    x=axis, y="rate:Q", y2="planned_rate:Q", color=series
+                ),
+                chosen.mark_point(filled=True, size=90, shape="triangle-up", opacity=1).encode(
+                    x=axis,
+                    y=alt.Y("planned_rate:Q"),
+                    color=series,
+                    tooltip=[
+                        stay_date,
+                        alt.Tooltip("rate:Q", title="Our rate", **money),
+                        alt.Tooltip("planned_rate:Q", title="Recommended", **money),
+                    ],
+                ),
+            ]
+        )
+        if few:
+            layers.append(
+                chosen.mark_text(dy=-14, fontSize=AXIS_LABEL_SIZE, color="white").encode(
+                    x=axis, y=alt.Y("planned_rate:Q"), text=alt.Text("planned_rate:Q", **money)
+                )
+            )
+    # The rooms on the books as bars, and the usual pace by now as a dash on each bar on a few
+    # nights and as a line on many.
+    kinds = {"rooms_on_books": "Rooms on the books", "pace": "Usual pace"}
+    paced = alt.Color(
+        "series:N",
+        scale=alt.Scale(domain=list(kinds.values()), range=[COLORS["aqua"], COLORS["orange"]]),
+        legend=_legend(symbol="square"),
+    )
+    rooms_y = alt.Y(
+        "rooms_on_books:Q",
+        title="Rooms",
+        scale=alt.Scale(domainMin=0, nice=True),
+        axis=alt.Axis(labelFontSize=AXIS_LABEL_SIZE, tickCount=5),
+    )
+    booked = alt.Chart(shown.assign(series=kinds["rooms_on_books"]))
+    pace = alt.Chart(shown.assign(series=kinds["pace"]))
+    pace_tip = [stay_date, alt.Tooltip("pace:Q", title="Usual pace", format=",.0f")]
+    rooms = [
+        booked.mark_bar(opacity=0.85).encode(
+            x=axis,
+            y=rooms_y,
+            color=paced,
+            tooltip=[stay_date, alt.Tooltip("rooms_on_books:Q", title="Rooms on the books")],
+        ),
+        pace.mark_tick(thickness=3, size=26).encode(
+            x=axis, y=alt.Y("pace:Q"), color=paced, tooltip=pace_tip
+        )
+        if few
+        else pace.mark_line(strokeWidth=2).encode(
+            x=axis, y=alt.Y("pace:Q"), color=paced, tooltip=pace_tip
+        ),
+    ]
+    if few:
+        rooms.append(
+            booked.mark_text(dy=-9, fontSize=AXIS_LABEL_SIZE, color="white").encode(
+                x=axis, y=alt.Y("rooms_on_books:Q"), text="rooms_on_books:Q"
             )
         )
-    room_series = _series(
-        {
-            "rooms_on_books": ("Rooms on the books", "aqua", [1, 0]),
-            "pace": ("Usual pace", "orange", [1, 0]),
-        }
-    )
-    rooms = (
-        alt.Chart(stays)
-        .transform_fold(["rooms_on_books", "pace"], as_=["line", "rooms"])
-        .mark_line(strokeWidth=2)
-        .encode(
-            x=axis,
-            y=_y("rooms:Q", "Rooms"),
-            tooltip=[stay_date, alt.Tooltip("rooms:Q", format=",.0f")],
-            **room_series,
-        )
-    )
-    st.markdown(f"**Stay dates ahead, {plain(today['stay_window'])}.**")
+    heading = "Nothing flagged today. The next two weeks" if flagged.empty else "Flagged today"
+    st.markdown(f"**{heading}: {plain(span)}.**")
     left, right = st.columns(2)
     height = PLOT_HEIGHTS["chart"]
     left.altair_chart(_sized(alt.layer(*layers), height), width="stretch")
-    right.altair_chart(_sized(alt.layer(marks, rooms), height), width="stretch")
-    st.caption("The red bands are the stay dates flagged today.")
+    right.altair_chart(_sized(alt.layer(*rooms), height), width="stretch")
 
     # ---- today's recommendations and the scorecard, side by side ------------------------------
     queue = rows(

@@ -36,9 +36,8 @@ SIDEBAR = (  # the seed's place among the results' runs
 STAND_IN = "Reasons marked * are the stand-in's, not the model's."
 STRIP = ["Nights flagged", "Recommendations", "Value at stake today"]
 AIRPORT_STAYS = "Stay dates 50 to 109 are Tue 23 Feb to Fri 23 Apr."  # its numbers, dated
-RED_BANDS = "The red bands are the stay dates flagged today."
 # The program's words, which only the engineers' expander may show. "flagged" is the exception,
-# in the strip's label and the charts' caption, so "flag" matches only as a word of its own.
+# in the strip's label and the charts' heading, so "flag" matches only as a word of its own.
 PROGRAMS_WORDS = re.compile(
     r"\b(?:seeds?|ticks?|digests?|fixed-rate|templates?|stand-in|queue[sd]?|flags?|files?)\b",
     re.IGNORECASE,
@@ -138,7 +137,7 @@ def test_the_page_shows_the_airport_hotel_on_day_20(demo_file, monkeypatch):
         "The airlines filed a schedule change: arriving passengers are up 12.8% to 23.0% for "
         "Tue 23 Feb to Wed 2 Jun."
     ) in text
-    assert "**Stay dates ahead, Sun 24 Jan to Fri 23 Apr.**" in text
+    assert "**Flagged today: Tue 23 Feb to Fri 23 Apr.**" in text  # the charts' nights
     assert "**Today's recommendations**" in text and "Today's queue" not in text
     assert AIRPORT_HEADLINE in text
     # The model's reason sits in a closed expander under its plan, after the stay dates'
@@ -150,16 +149,15 @@ def test_the_page_shows_the_airport_hotel_on_day_20(demo_file, monkeypatch):
     assert "Nothing else needed a decision today." in text
     assert [expander.label for expander in page.expander] == ["Why", "For engineers"]
     assert "Since our last change" not in text  # the airport's request listed no earlier change
-    # The recommended rate is a dashed line in its own colour, with a legend entry.
+    # Each recommended change is an arrow in its own colour, with a legend entry.
     spec = _rate_chart_spec(page)
     assert '"planned_rate"' in spec and "#1baf7a" in spec and "#2a78d6" in spec
-    assert (
-        "'Recommended rate'" in spec and "'Usual pace'" in page.get("vega_lite_chart")[1].proto.spec
-    )
+    assert '"Recommended rate"' in spec
+    assert '"Usual pace"' in page.get("vega_lite_chart")[1].proto.spec
     # The scorecard: the nights already stayed for the hotel and for all four, each labelled;
     # five tiles each, and no chip on a change that rounds to nothing. The five months are off.
     stayed = ["Airport hotel: 20 nights stayed", "All four hotels: 20 nights stayed"]
-    captions = ["day 20", RED_BANDS, AIRPORT_STAYS]
+    captions = ["day 20", AIRPORT_STAYS]
     assert [caption.value for caption in page.main.caption] == [*captions, *stayed]
     labels = ["Occupancy", "ADR", "RevPAR", "Room revenue", "Contribution"]
     assert [metric.label for metric in page.metric] == STRIP + labels * 2
@@ -272,7 +270,7 @@ def test_at_four_ticks_the_day_20_page_names_the_times_of_day_in_the_news_and_th
     monkeypatch, tmp_path_factory
 ):
     """The airport hotel's day-20 page on a four-tick file: the news line names the filing's time
-    of day and the decision's with the raise's stay dates and what they earned, and the
+    of day and the decision's with the raise's stay dates and what they earned, and at 14:00 the
     recommended rate's legend entry names the time it was decided at. The stand-in answers this
     file's requests, so the sidebar says so and each reason carries its mark."""
     testing = pytest.importorskip("streamlit.testing.v1")
@@ -286,7 +284,6 @@ def test_at_four_ticks_the_day_20_page_names_the_times_of_day_in_the_news_and_th
     assert "At 14:00 the airlines filed a schedule change: arriving passengers are" in text
     assert "The first flag rose at 14:00, and the first raise was accepted at 14:00" in text
     assert "against the fixed-rate run." in text
-    assert "Recommended rate (from 14:00)" in _rate_chart_spec(page)
     # The recording at this clock is the intraday market's, so the template answers, and the
     # sidebar marks its reasons.
     assert [caption.value for caption in page.sidebar.caption] == [
@@ -295,6 +292,7 @@ def test_at_four_ticks_the_day_20_page_names_the_times_of_day_in_the_news_and_th
         "Contribution is room revenue minus the cost of servicing every room sold.",
     ]
     page = _page(testing, monkeypatch, file, hotel="airport", day=20, tick=3)
+    assert "Recommended rate (from 14:00)" in _rate_chart_spec(page)  # before the rate moves
     reasons = [block.value for e in page.expander if e.label == "Why" for block in e.markdown]
     assert reasons and all(reason.endswith(" *") for reason in reasons)
 
@@ -314,6 +312,7 @@ def test_the_tick_slider_shows_the_state_as_of_a_tick(demo_file_intraday, demo_f
     assert page.sidebar.select_slider[0].value == "08:00"
     text = _text(page)
     assert "Nothing new has become known yet today." in text
+    assert "**Nothing flagged today. The next two weeks: Fri 29 Jan to Thu 11 Feb.**" in text
     assert "No recommendation today." in text and '"planned_rate"' not in _rate_chart_spec(page)
     page.sidebar.select_slider[0].set_value("11:00")
     page.run()
@@ -321,6 +320,7 @@ def test_the_tick_slider_shows_the_state_as_of_a_tick(demo_file_intraday, demo_f
     assert page.subheader[0].value.endswith(" · 11:00")
     text = _text(page)
     assert "At 11:00 an event, the concert, was announced" in text
+    assert "**Flagged today: Thu 4 Feb to Fri 5 Feb.**" in text  # the charts show those nights
     assert (
         "**+\\$2,470 over holding · raise 10% on Thursday and Friday · Thu 4 Feb to Fri 5 Feb**"
         in text
@@ -341,7 +341,7 @@ def test_the_engineers_expander_is_the_only_place_the_programs_words_appear(demo
     """The day-20 pages of the daily file speak to a revenue executive: outside the closed
     expander for engineers no text names the seed, a tick, a digest, the fixed-rate run, the
     template or the stand-in, the queue, a flag or the file. "flagged", in the strip's label and
-    the charts' caption, is the one exception, and the stand-in's caption shows only on a file
+    the charts' heading, is the one exception, and the stand-in's caption shows only on a file
     the stand-in answered. The expander names them."""
     testing = pytest.importorskip("streamlit.testing.v1")
     for hotel in ("airport", "lifestyle"):
@@ -349,7 +349,8 @@ def test_the_engineers_expander_is_the_only_place_the_programs_words_appear(demo
         shown = _shown(page)
         found = [word for text in shown for word in PROGRAMS_WORDS.findall(text)]
         assert not found, found
-        assert any(text.startswith("Nights flagged") for text in shown) and RED_BANDS in shown
+        assert any(text.startswith("Nights flagged") for text in shown)
+        assert "**Flagged today: Tue 23 Feb to Fri 23 Apr.**" in shown
         engineers = [e for e in page.expander if e.label == "For engineers"]
         assert len(engineers) == 1 and not engineers[0].proto.expanded
         inside = _shown(page, engineers=True)
