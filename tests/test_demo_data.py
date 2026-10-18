@@ -325,6 +325,25 @@ def test_a_queued_plans_headline_leads_with_the_money(demo_file):
     assert _rows(demo_file, "SELECT DISTINCT headline FROM queue WHERE NOT queued") == [("",)]
 
 
+def test_a_queued_plan_dates_the_requests_numbers_for_its_stay_dates(demo_file):
+    # The reasons name stay dates by the request's numbers, so each queued plan's row gives
+    # them the page's dates. A held flag has none.
+    dated = dict(
+        _rows(
+            demo_file,
+            "SELECT stays, stay_numbers_text FROM queue "
+            "WHERE as_of_day = 20 AND hotel = 'lifestyle' AND queued",
+        )
+    )
+    assert dated == {
+        "Tue 23 Feb to Fri 19 Mar": "Stay dates 50 to 74 are Tue 23 Feb to Fri 19 Mar.",
+        "Sat 20 Mar": "Stay date 75 is Sat 20 Mar.",
+        "Sun 21 Mar to Fri 23 Apr": "Stay dates 76 to 109 are Sun 21 Mar to Fri 23 Apr.",
+    }
+    held = _rows(demo_file, "SELECT DISTINCT stay_numbers_text FROM queue WHERE NOT queued")
+    assert held == [("",)]
+
+
 def test_the_strip_counts_the_moments_flags_and_recommendations(demo_file):
     # Day 20 at the lifestyle hotel: the filing is the day's first news, the day's flags cover
     # the stay dates the charts band in red, and the three accepted plans' values add up.

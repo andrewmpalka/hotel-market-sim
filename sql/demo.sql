@@ -87,6 +87,7 @@ CREATE TABLE IF NOT EXISTS queue (
     since_last_change_text VARCHAR NOT NULL, -- the same with dates for day numbers: "Fri 22 Jan: raised 10% to $264 on Sat 20 Mar; ..."
     headline VARCHAR NOT NULL,         -- queued only: "+$730 over holding · raise 10% on Saturday · Sat 20 Mar"; empty when held
     request_digest VARCHAR NOT NULL,   -- queued only: the digest of the request, as the decisions table stores it; empty when held
+    stay_numbers_text VARCHAR NOT NULL, -- queued only: "Stay dates 50 to 74 are Tue 23 Feb to Fri 19 Mar.", the request's numbers with their dates; empty when held
     PRIMARY KEY (as_of_day, hotel, as_of_tick, position)
 );
 

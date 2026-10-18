@@ -19,10 +19,11 @@ the hotel. For a seed with no recording, the template writes every reason.
 
 The file adds the tables the page reads as they are (sql/demo.sql): hotels, days, news,
 stay_dates, queue, scorecard, outcome and gains. It also adds a run table with the seed, the words
-for where the reasons came from and the market's name, and a strip table with the four tiles under
-the page's title at each moment: the first news so far, the stay dates flagged, the accepted plans
-and their value at stake together. A queued plan's row carries a headline that leads with its
-value at stake, and the earlier changes on its stay dates as the stored request lists them, the
+for where the reasons came from and the market's name, and a strip table for each moment: the
+first news so far, the stay dates flagged, the accepted plans and their value at stake together,
+the last three of which the page shows as tiles. A queued plan's row carries a headline that
+leads with its value at stake, a line that gives the request's numbers for its stay dates their
+dates, and the earlier changes on its stay dates as the stored request lists them, the
 read-back the page shows under "Since our last change on these dates", once as written and once
 with its day numbers as dates. Code computes every figure in them and writes every date as a
 calendar date with its day of the week, "Thu 18 Feb"; the days table adds the day's number,
@@ -507,10 +508,11 @@ def _queue_rows(
     """A moment's flags for the hotel: each plan, its value, its reason and what became of it. A
     held flag also carries the best alternative to holding and how far it fell short. A queued
     flag carries its headline, the earlier changes on its stay dates as the stored request lists
-    them, again with dates for day numbers, and the request's digest as the decisions table
-    stores it. The request is the one the hotel's queue was asked with (`asked`), so the page
-    shows what the last change did without computing it; a held flag was never asked. On a finer
-    clock each tick's flags sit under their tick, in the agent's order."""
+    them, again with dates for day numbers, the request's digest as the decisions table stores it,
+    and the request's numbers for its stay dates with their dates. The request is the one the
+    hotel's queue was asked with (`asked`), so the page shows what the last change did without
+    computing it; a held flag was never asked. On a finer clock each tick's flags sit under their
+    tick, in the agent's order."""
     request, answer = asked if asked else ({}, {})
     since = {
         entry["id"]: "; ".join(entry.get("earlier_changes_on_these_dates", []))
@@ -546,9 +548,19 @@ def _queue_rows(
                 _with_dates(line),
                 _headline(entry) if entry.queued else "",
                 digest if entry.queued else "",
+                _stay_numbers(entry) if entry.queued else "",
             )
         )
     return rows
+
+
+def _stay_numbers(entry: Entry) -> str:
+    """The request's numbers for a queued plan's stay dates with the page's dates, for a reason
+    that names the nights by number: "Stay dates 50 to 74 are Tue 23 Feb to Fri 19 Mar."."""
+    if entry.first_stay == entry.last_stay:
+        return f"Stay date {entry.first_stay} is {stay_label(entry.first_stay)}."
+    span = stay_span(entry.first_stay, entry.last_stay)
+    return f"Stay dates {entry.first_stay} to {entry.last_stay} are {span}."
 
 
 def _headline(entry: Entry) -> str:
