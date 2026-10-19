@@ -6,6 +6,7 @@ schedule.csv
 *.duckdb
 *.duckdb.wal
 /screenshots/
+/.screenshots/
 
 # Python packaging and test leftovers
 __pycache__/
