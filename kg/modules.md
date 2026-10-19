@@ -260,7 +260,7 @@ which is also the order in which they depend on each other.
 ### MOD-27 [C] demo_page.py
 - File: src/hotel_market/demo_page.py
 - Owns: the read-only demo page ([[DEC-57]], [[DEC-58]]) over [[DAT-33]]. On a finer clock, the sidebar picks a time of day ([[RUL-133]], [[RUL-134]]). The news opens the page, then a strip of three tiles. An engineers' expander closes it.
-- Charts: both show the nights flagged so far today, or the next two weeks. One shows our rate, the comp set median and each recommended change as an arrow. The other shows the rooms on the books as bars against the usual pace.
+- Charts: both cover the next two weeks, or the first flagged night to the last, two weeks at least. Both shade the flagged nights. One shows our rate, the comp set median and each change as an arrow. The other shows rooms against pace.
 - Queue: each recommendation is one line that leads with the money. The stored request's earlier changes follow with dates. Its reason sits closed under Why. The held flags sit closed.
 - Scorecard: the nights already stayed for the hotel and for all together, as five large tiles each. With the checkbox on, the five months' tiles follow each, in a compact size, then the small line. A zero change has no chip.
 - Holds: the file, parameter, plot, tile, colour and mark constants, FILE_VARIABLE to REASON_MARKS ([[RUL-105]], [[RUL-106]], [[RUL-112]] to [[RUL-123]], [[RUL-133]], [[RUL-134]]), and STYLE.

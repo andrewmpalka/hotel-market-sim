@@ -154,6 +154,7 @@ def test_the_page_shows_the_airport_hotel_on_day_20(demo_file, monkeypatch):
     assert '"planned_rate"' in spec and "#1baf7a" in spec and "#2a78d6" in spec
     assert '"Recommended rate"' in spec
     assert '"Usual pace"' in page.get("vega_lite_chart")[1].proto.spec
+    assert '"rect"' not in spec  # every night shown is flagged, so none is shaded
     # The scorecard: the nights already stayed for the hotel and for all four, each labelled;
     # five tiles each, and no chip on a change that rounds to nothing. The five months are off.
     stayed = ["Airport hotel: 20 nights stayed", "All four hotels: 20 nights stayed"]
@@ -320,7 +321,9 @@ def test_the_tick_slider_shows_the_state_as_of_a_tick(demo_file_intraday, demo_f
     assert page.subheader[0].value.endswith(" · 11:00")
     text = _text(page)
     assert "At 11:00 an event, the concert, was announced" in text
-    assert "**Flagged today: Thu 4 Feb to Fri 5 Feb.**" in text  # the charts show those nights
+    # The concert's two nights are shaded in the same two weeks the charts showed at 08:00.
+    assert "**Flagged today, shaded: Thu 4 Feb to Fri 5 Feb.**" in text
+    assert '"Fri 29 Jan"' in _rate_chart_spec(page)
     assert (
         "**+\\$2,470 over holding · raise 10% on Thursday and Friday · Thu 4 Feb to Fri 5 Feb**"
         in text
@@ -335,6 +338,21 @@ def test_the_tick_slider_shows_the_state_as_of_a_tick(demo_file_intraday, demo_f
     assert [slider.label for slider in page.sidebar.slider] == ["Day"]
     assert not page.sidebar.select_slider
     assert page.subheader[0].value == "Lifestyle hotel · Sun 24 Jan 2027"
+
+
+def test_the_charts_keep_two_weeks_and_shade_the_flagged_nights(demo_file, monkeypatch):
+    """The charts show two weeks at least and shade the nights flagged today. The lifestyle
+    hotel's one flagged night on day 32 sits in the next two weeks. The convention hotel's three
+    on day 44 lie up to five weeks apart, so the charts run from the first to the last, every
+    night between in its place, and the heading names each flagged night."""
+    testing = pytest.importorskip("streamlit.testing.v1")
+    page = _page(testing, monkeypatch, demo_file, "lifestyle", 32)
+    assert "**Flagged today, shaded: Wed 10 Feb.**" in _text(page)
+    spec = _rate_chart_spec(page)
+    assert '"Fri 5 Feb"' in spec and '"Thu 18 Feb"' in spec and '"rect"' in spec
+    page = _page(testing, monkeypatch, demo_file, "convention", 44)
+    assert "**Flagged today, shaded: Thu 18 Feb, Sun 21 Feb and Fri 26 Mar.**" in _text(page)
+    assert '"Wed 10 Mar"' in _rate_chart_spec(page)  # a night between them, not flagged
 
 
 def test_the_engineers_expander_is_the_only_place_the_programs_words_appear(demo_file, monkeypatch):
