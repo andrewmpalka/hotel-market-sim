@@ -435,6 +435,24 @@ def test_a_declined_plan_is_named_under_the_recommendations_tile(demo_file, monk
     assert any(block.startswith("**Held: ") for block in _text(page).splitlines())
 
 
+def test_the_rate_chart_has_a_line_legend_and_points_where_it_has_no_bands(demo_file, monkeypatch):
+    """Every series on the rate chart is a line or an arrow, so its legend draws lines, not the
+    hollow ring of a switched-off series. On a quiet day the chart draws lines alone, so its dates
+    are points with no gap between bands for Vega to drop; on a shaded day they are bands."""
+    testing = pytest.importorskip("streamlit.testing.v1")
+    for day, banded in ((36, False), (32, True)):
+        layers = json.loads(
+            _rate_chart_spec(_page(testing, monkeypatch, demo_file, "lifestyle", day))
+        )["layer"]
+        assert all(
+            ("paddingInner" in layer["encoding"]["x"]["scale"]) == banded for layer in layers
+        )
+        legends = [
+            layer["encoding"]["color"]["legend"] for layer in layers if "color" in layer["encoding"]
+        ]
+        assert legends and all(legend["symbolType"] == "stroke" for legend in legends)
+
+
 def test_one_night_stayed_reads_as_one_night(demo_file, monkeypatch):
     """On day 1 the scorecard counts one night stayed, in the singular."""
     testing = pytest.importorskip("streamlit.testing.v1")

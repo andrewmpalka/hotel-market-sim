@@ -135,9 +135,13 @@ def _tile_style(size: str) -> str:
     )
 
 
-def _axis(order: list[str], ticks: list[str]) -> alt.X:
+def _axis(order: list[str], ticks: list[str], banded: bool = True) -> alt.X:
     """The stay-date axis: every date in the window in order, the Mondays labelled, and the
-    labels that would overlap left out."""
+    labels that would overlap left out. On a chart with bars or bands each date is a band with a
+    gap to the next; on one with lines alone it is a point, which takes no gap (`banded`)."""
+    padding = (
+        {"paddingInner": _BAND_GAP, "paddingOuter": 0.15} if banded else {"paddingOuter": 0.15}
+    )
     return alt.X(
         "label:O",
         sort=order,
@@ -149,7 +153,7 @@ def _axis(order: list[str], ticks: list[str]) -> alt.X:
             labelOverlap=True,
             labelSeparation=8,
         ),
-        scale=alt.Scale(paddingInner=_BAND_GAP, paddingOuter=0.15),
+        scale=alt.Scale(**padding),
     )
 
 
@@ -330,7 +334,8 @@ def main() -> None:
     ]
     shade = not (flagged.empty or shown["flagged"].all())  # set the flagged nights apart
     few = 0 < len(flagged) <= _LABELLED_NIGHTS  # few enough flagged nights to print each value
-    axis = _axis(labels, labels)
+    axis = _axis(labels, labels, banded=shade)  # the rate chart has bands only when shaded
+    rooms_axis = _axis(labels, labels)  # the rooms chart's bars are bands
     planned = shown.loc[shown["planned_rate"].notna()]
     moved = planned.loc[planned["planned_rate"] != planned["rate"]]  # the nights a plan changes
     stay_date = alt.Tooltip("label:N", title="Stay date")
@@ -349,7 +354,7 @@ def main() -> None:
     series = alt.Color(
         "series:N",
         scale=alt.Scale(domain=list(names.values()), range=[COLORS[colors[key]] for key in names]),
-        legend=_legend(symbol="circle"),
+        legend=_legend(),  # a line for each, as every series is drawn as a line or an arrow
     )
     dollars = alt.Y(
         "rate:Q",
@@ -430,20 +435,20 @@ def main() -> None:
     pace_tip = [stay_date, alt.Tooltip("pace:Q", title="Usual pace", format=",.0f")]
     rooms = [
         booked.mark_bar(opacity=0.85).encode(
-            x=axis,
+            x=rooms_axis,
             y=rooms_y,
             color=paced,
             tooltip=[stay_date, alt.Tooltip("rooms_on_books:Q", title="Rooms on the books")],
         ),
         pace.mark_line(strokeWidth=2).encode(
-            x=axis, y=alt.Y("pace:Q"), color=paced, tooltip=pace_tip
+            x=rooms_axis, y=alt.Y("pace:Q"), color=paced, tooltip=pace_tip
         ),
     ]
     if few:
         rooms.append(
             alt.Chart(flagged)
             .mark_text(dy=-9, fontSize=AXIS_LABEL_SIZE, color="white")
-            .encode(x=axis, y=alt.Y("rooms_on_books:Q"), text="rooms_on_books:Q")
+            .encode(x=rooms_axis, y=alt.Y("rooms_on_books:Q"), text="rooms_on_books:Q")
         )
     # A grey band behind the flagged nights, under both charts' marks. Each night's band fills its
     # whole slot on the axis, so a run of flagged nights reads as one band. (Vega-Lite's x2 on
@@ -452,7 +457,7 @@ def main() -> None:
         band = (
             alt.Chart(flagged)
             .mark_rect(color="#888888", opacity=0.22, width={"band": _SLOT}, align="center")
-            .encode(x=axis)
+            .encode(x=rooms_axis)  # banded, as the rate chart's axis is when shaded
         )
         layers.insert(0, band)
         rooms.insert(0, band)
@@ -567,7 +572,7 @@ def _gain_line(rows, key: str, stay_date: alt.Tooltip) -> None:
         alt.Chart(gains)
         .mark_line(strokeWidth=1.5)
         .encode(
-            x=_axis(own["label"].tolist(), own.loc[own["tick"], "label"].tolist()),
+            x=_axis(own["label"].tolist(), own.loc[own["tick"], "label"].tolist(), banded=False),
             y=_y("difference:Q", None, format="$,.0f"),
             color=alt.Color(
                 "title:N",
