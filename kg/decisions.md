@@ -617,7 +617,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Plan: the charts cover two weeks at least and shade the nights flagged so far today. Each accepted change is an arrow from our rate to the new one. When the news runs past the window, the heading says how far the agent looks.
 - Held: the held flags sit in a closed expander, "Also looked at today". Each shows its stay dates, its cause, the best alternative and how far it fell short of holding, or of the minimum when its plan beats holding ([[RUL-67]]).
 - Text: the page escapes the markdown marks in every reason and plan, so a pair of dollar amounts is not a formula and a model's text cannot draw a link. A tile draws no chip for a change that rounds to nothing.
-- Layout: the charts sit side by side, the recommendations beside the scorecard, and the toolbar is hidden. The five months sit behind a checkbox, off by default. Smaller text and tighter lines let a busy day fit.
+- Layout: the charts sit side by side, the recommendations beside the scorecard, and the toolbar is hidden. The five months sit behind a checkbox, off by default. Smaller text and tighter lines let a busy day fit. The theme stays dark.
 - Evidence: test_every_checked_page_fits_the_window_and_six_are_saved, test_a_held_flag_names_the_best_alternative_and_how_far_it_fell_short, test_every_date_reads_as_a_calendar_date
 - Links: [[DEC-57]], [[MOD-26]], [[MOD-27]], [[MOD-28]], [[DAT-33]], [[RUL-67]], [[RUL-109]]
 

@@ -1,0 +1,10 @@
+# The demo page's theme. Streamlit otherwise follows the browser's light or dark setting, and the
+# page draws its chart labels in white, so it pins the dark theme. Streamlit reads this file from
+# the folder it starts in, the repository's root, as make demo starts it.
+[theme]
+base = "dark"
+
+# Streamlit's own dark colours for the sidebar; without them it logs that their colours are empty.
+[theme.sidebar]
+primaryColor = "#ff4b4b"
+textColor = "#fafafa"

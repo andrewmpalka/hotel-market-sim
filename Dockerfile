@@ -13,7 +13,8 @@ ARG PYTHON=3.12
 FROM python:${PYTHON}-slim
 
 # Install the package, pytest and ruff from a copy of the source. The tests also read
-# the scripts, the docs, the Makefile and this file, so the copy carries them too.
+# the scripts, the docs, the Makefile, the demo page's theme and this file, so the copy
+# carries them too.
 WORKDIR /app
 COPY pyproject.toml README.md Makefile Dockerfile kg_check.py ./
 COPY src ./src
@@ -23,6 +24,7 @@ COPY kg ./kg
 COPY docs ./docs
 COPY customers ./customers
 COPY sql ./sql
+COPY .streamlit ./.streamlit
 RUN pip install --no-cache-dir ".[dev]"
 # The installed package has no checkout to find the demo market in, so the variable names it.
 ENV HOTEL_MARKET_CUSTOMER=/app/customers/demo.toml

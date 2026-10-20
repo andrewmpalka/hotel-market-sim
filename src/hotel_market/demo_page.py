@@ -34,8 +34,9 @@ charts and the recommended rate as of it. The seed, the tick, the market's file 
 requests' digests sit in a closed expander for engineers at the bottom. Everything fits a 1440 by
 900 window in both states and at every tick, which scripts/demo_screenshots.py checks; the
 recommendations' text is set a size smaller than the page's and the news's lines tighter, so a
-day with three accepted plans and two lines of news still fits. Streamlit is an optional extra:
-pip install -e ".[demo]".
+day with three accepted plans and two lines of news still fits. The chart labels are white, so
+.streamlit/config.toml pins Streamlit's dark theme rather than follow the browser's setting.
+Streamlit is an optional extra: pip install -e ".[demo]".
 """
 
 import os

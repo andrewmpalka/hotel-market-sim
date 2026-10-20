@@ -5,6 +5,7 @@ import ast
 import json
 import re
 import shutil
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -398,6 +399,17 @@ def test_the_axes_step_in_whole_dollars_and_whole_rooms(demo_file, monkeypatch):
             if encoding.get("field") == field and "axis" in encoding
         ]
         assert axes and all(axis["tickMinStep"] == 1 for axis in axes)
+
+
+def test_the_page_pins_the_dark_theme():
+    """The chart labels are white, so the page pins Streamlit's dark theme rather than follow the
+    browser's setting. Streamlit reads .streamlit/config.toml from the folder it starts in, and
+    make demo starts it from the repository's root."""
+    config = tomllib.loads((ROOT / ".streamlit" / "config.toml").read_text())
+    assert config["theme"]["base"] == "dark"
+    # Without the sidebar's colours Streamlit logs in the browser's console that they are empty.
+    assert set(config["theme"]["sidebar"]) == {"primaryColor", "textColor"}
+    assert "streamlit run src/hotel_market/demo_page.py" in (ROOT / "Makefile").read_text()
 
 
 def test_one_night_stayed_reads_as_one_night(demo_file, monkeypatch):
