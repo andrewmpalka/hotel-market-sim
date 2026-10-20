@@ -816,7 +816,7 @@ hotels themselves are data ([[DAT-04]]).
 - Value: "Nothing new became known today."
 - File: src/hotel_market/demo_data.py
 - Kind: label
-- Meaning: the one news row of a day with no event, filing or comp set move for the hotel ([[DAT-33]]).
+- Meaning: the one news row of a day with no event, filing, comp set move or pace flag for the hotel ([[DAT-33]]).
 - Evidence: test_the_news_names_the_convention_the_filings_and_the_comp_set_cut
 
 ### RUL-105 [C] FILE_VARIABLE

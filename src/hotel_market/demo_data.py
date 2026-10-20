@@ -63,7 +63,7 @@ from hotel_market import stored
 from hotel_market.agent import Agent
 from hotel_market.bookings import Books, simulate
 from hotel_market.customer import Customer, demo, load
-from hotel_market.detect import NEW_EVENT, SEATS_UP, detect_numbers, moment_index
+from hotel_market.detect import AHEAD, BEHIND, NEW_EVENT, SEATS_UP, detect_numbers, moment_index
 from hotel_market.model import request_digest, template_decisions
 from hotel_market.plan import DAY_NAMES, HOLD, PLAN_ORDER, Entry, WeekdayGroup
 from hotel_market.schedule import SIM_START
@@ -188,6 +188,7 @@ def build(
             texts.setdefault((day, hotel.key), []).extend(
                 (tick, kind, text)
                 for kind, text in _news_texts(day, hotel, feed, table, customer, tick, ticks)
+                + _pace_texts(entries_of[(day, hotel.key)], tick, ticks)
             )
             asked = (day, hotel.key) if ticks == 1 else (day, tick, hotel.key)
             rows["queue"] += _queue_rows(
@@ -393,6 +394,35 @@ def _news_texts(
             )
         )
     return texts
+
+
+def _pace_texts(today: Sequence[Entry], tick: int, ticks: int) -> list[tuple[str, str]]:
+    """The nights a flag covers because their bookings run ahead of or behind the usual pace,
+    which no feed reports, as (kind, text) pairs: "Bookings are running ahead of the usual pace
+    for Thu 18 Feb, Sun 21 Feb and Fri 26 Mar." A night is named once a day, at the first tick a
+    pace flag covers it, and a list of more than three runs of nights ends "and 2 more"."""
+    time = _time(tick, ticks) if ticks > 1 else ""
+    texts = []
+    for cause, how in ((AHEAD, "ahead of"), (BEHIND, "behind")):
+        now = _covered(e for e in today if e.tick == tick and cause in e.causes)
+        before = _covered(e for e in today if e.tick < tick and cause in e.causes)
+        spans = [stay_span(first, last) for first, last in _runs(now - before)]
+        if len(spans) > 3:
+            spans = [*spans[:3], f"{len(spans) - 3} more"]
+        if spans:
+            sentence = f"Bookings are running {how} the usual pace for {_listed(spans)}."
+            texts.append(("pace", _at(time, sentence)))
+    return texts
+
+
+def _covered(entries: Iterable[Entry]) -> set[int]:
+    """The stay dates the entries cover."""
+    return {stay for e in entries for stay in range(e.first_stay, e.last_stay + 1)}
+
+
+def _listed(items: Sequence[str]) -> str:
+    """Items in a sentence: "A", "A and B", "A, B and C"."""
+    return items[0] if len(items) == 1 else f"{', '.join(items[:-1])} and {items[-1]}"
 
 
 def _landed(table, column: str) -> bool:

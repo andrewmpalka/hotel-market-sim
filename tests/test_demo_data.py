@@ -418,6 +418,23 @@ def test_the_news_names_the_convention_the_filings_and_the_comp_set_cut(demo_fil
     assert day30 == [("The comp set median is down 8.3% to 11.0% for Wed 10 Feb to Fri 12 Feb.",)]
 
 
+def test_a_flag_from_pace_alone_says_why_in_the_news(demo_file, demo_file_intraday):
+    """Pace is no feed, so the news names the nights a pace flag covers: on convention day 44
+    three nights run ahead of the usual pace. No moment with a flagged night says that nothing
+    new became known, on either clock."""
+    pace = "Bookings are running ahead of the usual pace for Thu 18 Feb, Sun 21 Feb and Fri 26 Mar."
+    assert _rows(
+        demo_file, "SELECT kind, text FROM news WHERE as_of_day = 44 AND hotel = 'convention'"
+    ) == [("pace", pace)]
+    unexplained = (
+        "SELECT count(*) FROM strip s WHERE nights_flagged > 0 AND NOT EXISTS (SELECT 1 FROM news "
+        "n WHERE n.as_of_day = s.as_of_day AND n.hotel = s.hotel AND n.as_of_tick <= s.as_of_tick "
+        "AND n.kind <> 'none')"
+    )
+    assert _rows(demo_file, unexplained) == [(0,)]
+    assert _rows(demo_file_intraday, unexplained) == [(0,)]
+
+
 def test_the_chart_rows_mark_the_flagged_stay_dates_and_carry_the_planned_rate(demo_file):
     flagged = _rows(
         demo_file,

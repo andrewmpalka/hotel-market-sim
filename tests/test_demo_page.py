@@ -360,8 +360,12 @@ def test_the_charts_keep_two_weeks_and_shade_the_flagged_nights(demo_file, monke
     spec = _rate_chart_spec(page)
     assert '"Fri 5 Feb"' in spec and '"Thu 18 Feb"' in spec and '"rect"' in spec
     page = _page(testing, monkeypatch, demo_file, "convention", 44)
-    assert "**Flagged today, shaded: Thu 18 Feb, Sun 21 Feb and Fri 26 Mar.**" in _text(page)
+    text = _text(page)
+    assert "**Flagged today, shaded: Thu 18 Feb, Sun 21 Feb and Fri 26 Mar.**" in text
     assert '"Wed 10 Mar"' in _rate_chart_spec(page)  # a night between them, not flagged
+    # The news says why, as pace is no feed: bookings run ahead on those nights.
+    pace = "Bookings are running ahead of the usual pace for Thu 18 Feb, Sun 21 Feb and Fri 26 Mar."
+    assert pace in text and "Nothing new became known today." not in text
 
 
 def test_a_run_of_flagged_nights_is_shaded_as_one_band(demo_file, monkeypatch):

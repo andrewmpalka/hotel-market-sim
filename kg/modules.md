@@ -250,7 +250,7 @@ which is also the order in which they depend on each other.
 ### MOD-26 [C] demo_data.py
 - File: src/hotel_market/demo_data.py
 - Owns: the demo file ([[DAT-33]], [[DEC-57]], [[DEC-58]]) at --ticks N. build() runs days 0 to 59 through run_days ([[MOD-12]]) with the client of the run recorded at that clock, or the template with a warning; both book to day 149.
-- Rows: _news_texts, _stay_rows and _queue_rows fill the tables per moment ([[MOD-07]], [[MOD-11]]); _add_outcomes closes a filing's or event's day. A queued plan's headline leads with the money. _strip_row counts the day so far.
+- Rows: _news_texts, _pace_texts, _stay_rows and _queue_rows fill the tables per moment ([[MOD-07]], [[MOD-11]]); _add_outcomes closes a filing's or event's day. A plan's headline leads with the money. _strip_row counts the day so far.
 - Scorecard: figures() gives the five measures over hotels and stay dates together ([[MEA-01]] to [[MEA-05]]). _stayed takes stay dates 0 to the day before, _outcome_rows every stay date, and _gain_rows the contribution by stay date.
 - Dates: stay_label, stay_span and day_label write a date as "Thu 18 Feb" from SIM_START ([[RUL-01]]). day_index writes "day 10". At four ticks a day, a tick reads as its time of day, such as "11:00".
 - Holds: DEMO_FILE, DEMO_SCHEMA_FILE and RECORDED_RUNS, the paths, and DEMO_TABLES, NOTHING_NEW, ALL, MEASURES, RATE_AXIS, GAIN_TICK_DAYS and NUMBER_WORDS ([[RUL-103]], [[RUL-104]], [[RUL-107]] to [[RUL-111]]).
