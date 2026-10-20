@@ -20,10 +20,10 @@ the hotel. For a seed with no recording, the template writes every reason.
 The file adds the tables the page reads as they are (sql/demo.sql): hotels, days, news,
 stay_dates, queue, scorecard, outcome and gains. It also adds a run table with the seed, the words
 for where the reasons came from and the market's name, and a strip table for each moment: the
-first news so far, the stay dates flagged, the accepted plans and their value at stake together,
-the last three of which the page shows as tiles. A queued plan's row carries a headline that
-leads with its value at stake, a line that gives the request's numbers for its stay dates their
-dates, and the earlier changes on its stay dates as the stored request lists them, the
+first news so far, the stay dates flagged, the plans accepted so far that day and their value at
+stake together, the last three of which the page shows as tiles. A queued plan's row carries a
+headline that leads with its value at stake, a line that gives the request's numbers for its stay
+dates their dates, and the earlier changes on its stay dates as the stored request lists them, the
 read-back the page shows under "Since our last change on these dates", once as written and once
 with its day numbers as dates. Code computes every figure in them and writes every date as a
 calendar date with its day of the week, "Thu 18 Feb"; the days table adds the day's number,
@@ -34,8 +34,10 @@ before. The outcome holds the result once every stay date is complete, every boo
 for all the hotels together.
 
 With --ticks N the run is the finer clock's (world.py): each news line opens with the time its
-feed landed at, the queue holds each tick's flags under that tick, the chart rows are written per
-tick as of it, a planned rate names the time it was decided at, and on a day a filing or an
+feed landed at, the queue holds each tick's flags under that tick, a queued plan names the time
+it was decided at and an accepted one the time it is in effect from, the next tick's, the chart
+rows are written per tick as of it, a planned rate names the time it was decided at, the strip
+counts the plans accepted at every tick of the day so far, and on a day a filing or an
 event lands the news adds, at the day's last tick, the first flag, the first accepted raise on
 its stay dates and what they earned against the fixed-rate run. At four ticks a day a time is the
 tick's time of day, 08:00, 11:00, 14:00 or 17:00; on another finer clock it is "tick 2 of 3".
@@ -189,7 +191,7 @@ def build(
             )
             asked = (day, hotel.key) if ticks == 1 else (day, tick, hotel.key)
             rows["queue"] += _queue_rows(
-                day, hotel, own, customer.min_value_at_stake, tick, agent.asked.get(asked)
+                day, hotel, own, customer.min_value_at_stake, tick, agent.asked.get(asked), ticks
             )
             rows["stay_dates"] += _stay_rows(
                 day, hotel, table, entries_of[(day, hotel.key)], ticks, tick
@@ -504,6 +506,7 @@ def _queue_rows(
     minimum: float,
     tick: int = 1,
     asked: tuple[dict, dict] | None = None,
+    ticks: int = 1,
 ) -> list[tuple]:
     """A moment's flags for the hotel: each plan, its value, its reason and what became of it. A
     held flag also carries the best alternative to holding and how far it fell short. A queued
@@ -512,7 +515,8 @@ def _queue_rows(
     and the request's numbers for its stay dates with their dates. The request is the one the
     hotel's queue was asked with (`asked`), so the page shows what the last change did without
     computing it; a held flag was never asked. On a finer clock each tick's flags sit under their
-    tick, in the agent's order."""
+    tick, in the agent's order, and a queued plan also names the time it was decided at and an
+    accepted one the time it is in effect from."""
     request, answer = asked if asked else ({}, {})
     since = {
         entry["id"]: "; ".join(entry.get("earlier_changes_on_these_dates", []))
@@ -549,9 +553,18 @@ def _queue_rows(
                 _headline(entry) if entry.queued else "",
                 digest if entry.queued else "",
                 _stay_numbers(entry) if entry.queued else "",
+                _time(tick, ticks) if ticks > 1 and entry.queued else "",
+                _in_effect(tick, ticks) if outcome == "accepted" else "",
             )
         )
     return rows
+
+
+def _in_effect(tick: int, ticks: int) -> str:
+    """When a plan accepted at a tick takes effect, the next tick's time, as the page adds it once
+    the day has moved on: "in effect from 14:00". Empty on the daily clock and at the day's last
+    tick, whose plans take effect the next day."""
+    return f"in effect from {_time(tick + 1, ticks)}" if 1 < ticks and tick < ticks else ""
 
 
 def _stay_numbers(entry: Entry) -> str:
@@ -597,14 +610,11 @@ def _strip_row(
     day: int, hotel: Hotel, tick: int, news: Sequence[tuple], today: Sequence[Entry]
 ) -> tuple:
     """The tiles under the page's title at a moment: the first news so far, or "Nothing new"; the
-    stay dates the day's flags so far cover, which the charts band in red; and the moment's
-    accepted plans with their value at stake together, "$0" when there is none."""
+    stay dates the day's flags so far cover, which the charts shade; and the plans accepted so far
+    that day with their value at stake together, "$0" when there is none. On the daily clock the
+    day so far is its one tick."""
     nights = {stay for entry in today for stay in range(entry.first_stay, entry.last_stay + 1)}
-    accepted = [
-        entry.value_at_stake
-        for entry in today
-        if entry.tick == tick and entry.queued and entry.action != HOLD
-    ]
+    accepted = [entry.value_at_stake for entry in today if entry.queued and entry.action != HOLD]
     first = news[0][2] if news else "Nothing new"
     return (day, hotel.key, tick, first, len(nights), len(accepted), _money(sum(accepted)))
 

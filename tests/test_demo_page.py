@@ -302,9 +302,10 @@ def test_the_tick_slider_shows_the_state_as_of_a_tick(demo_file_intraday, demo_f
     """On a file written at four ticks a day the sidebar adds a time-of-day slider under the day
     slider, the day's last time by default, and the page shows the state as of the tick: on day
     25 at the lifestyle hotel, 08:00 has nothing yet and no recommendation, 11:00 has the
-    concert's news, the accepted raise and the rate recommended from 11:00, and 17:00 adds the
-    outcome line. The query string still names the tick by number. The daily file has no
-    time-of-day slider and no time in its title."""
+    concert's news, the accepted raise led by its time and the rate recommended from 11:00, 14:00
+    still lists that raise, in effect from 14:00, and counts it in the tiles as the day so far,
+    and 17:00 adds the outcome line. The query string still names the tick by number. The daily
+    file has no time-of-day slider and no time in its title."""
     testing = pytest.importorskip("streamlit.testing.v1")
     page = _page(testing, monkeypatch, demo_file_intraday, "lifestyle", 25, tick=1)
     assert page.subheader[0].value == "Lifestyle hotel · Fri 29 Jan 2027 · 08:00"
@@ -314,7 +315,8 @@ def test_the_tick_slider_shows_the_state_as_of_a_tick(demo_file_intraday, demo_f
     text = _text(page)
     assert "Nothing new has become known yet today." in text
     assert "**Nothing flagged today. The next two weeks: Fri 29 Jan to Thu 11 Feb.**" in text
-    assert "No recommendation today." in text and '"planned_rate"' not in _rate_chart_spec(page)
+    assert "No recommendation so far today." in text
+    assert '"planned_rate"' not in _rate_chart_spec(page)
     page.sidebar.select_slider[0].set_value("11:00")
     page.run()
     assert not page.exception
@@ -324,12 +326,19 @@ def test_the_tick_slider_shows_the_state_as_of_a_tick(demo_file_intraday, demo_f
     # The concert's two nights are shaded in the same two weeks the charts showed at 08:00.
     assert "**Flagged today, shaded: Thu 4 Feb to Fri 5 Feb.**" in text
     assert '"Fri 29 Jan"' in _rate_chart_spec(page)
-    assert (
-        "**+\\$2,470 over holding · raise 10% on Thursday and Friday · Thu 4 Feb to Fri 5 Feb**"
-        in text
-    )
+    concert = "+\\$2,470 over holding · raise 10% on Thursday and Friday · Thu 4 Feb to Fri 5 Feb"
+    assert f"**11:00 · {concert}**" in text
     assert "The first flag rose" not in text
     assert "Recommended rate (from 11:00)" in _rate_chart_spec(page)
+    page.sidebar.select_slider[0].set_value("14:00")
+    page.run()
+    assert not page.exception
+    assert f"**11:00 · {concert} · in effect from 14:00**" in _text(page)
+    assert [(metric.label, metric.value) for metric in page.metric][:3] == [
+        ("Nights flagged", "2"),
+        ("Recommendations so far today", "1"),
+        ("Value at stake so far today", "+$2,470"),
+    ]
     page = _page(testing, monkeypatch, demo_file_intraday, "lifestyle", 25)
     assert page.sidebar.select_slider[0].value == "17:00"  # the day's last tick by default
     assert page.subheader[0].value.endswith(" · 17:00")

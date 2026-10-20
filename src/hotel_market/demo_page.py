@@ -25,8 +25,10 @@ closed expander. A sidebar checkbox, off by default, adds the full five months:
 the tiles once every stay date is complete and the contribution difference by stay date. The
 query string can turn it on (&end=1). When the file was written on a finer clock, a time-of-day
 slider under the day slider picks a tick of the day (&tick=2), the day's last by default, and the
-page shows the state as of that tick: the news landed so far, the recommendations made at that
-tick, the charts and the recommended rate as of it. The seed, the tick, the market's file and the
+page shows the state as of that tick: the news landed so far, every recommendation made so far
+that day, each led by the time it was decided at and, once a later tick has come, the time it is
+in effect from, the tiles counting them as "so far today", the flags held at that tick, and the
+charts and the recommended rate as of it. The seed, the tick, the market's file and the
 requests' digests sit in a closed expander for engineers at the bottom. Everything fits a 1440 by
 900 window in both states and at every tick, which scripts/demo_screenshots.py checks; the
 recommendations' text is set a size smaller than the page's and the news's lines tighter, so a
@@ -285,11 +287,15 @@ def main() -> None:
         key,
         tick,
     ).iloc[0]
+    so_far = "so far today" if ticks > 1 else "today"  # a finer clock counts the day up to the tick
     with st.container(key="strip"):  # the key names the strip for STYLE
         tiles = st.columns(3)
         tiles[0].metric("Nights flagged", strip["nights_flagged"])
-        tiles[1].metric("Recommendations", strip["recommendations"])
-        tiles[2].metric("Value at stake today", strip["value_at_stake"])
+        tiles[1].metric(
+            "Recommendations so far today" if ticks > 1 else "Recommendations",
+            strip["recommendations"],
+        )
+        tiles[2].metric(f"Value at stake {so_far}", strip["value_at_stake"])
 
     # ---- the nights today's news touched --------------------------------------------------------
     stays = rows(
@@ -450,25 +456,27 @@ def main() -> None:
 
     # ---- today's recommendations and the scorecard, side by side ------------------------------
     queue = rows(
-        "SELECT stays, causes, reason, reason_source, outcome, queued, alternative, "
-        "alternative_text, since_last_change_text, headline, request_digest, stay_numbers_text "
-        "FROM queue "
-        "WHERE as_of_day = ? AND hotel = ? AND as_of_tick = ? ORDER BY position",
+        "SELECT as_of_tick, stays, causes, reason, reason_source, outcome, queued, alternative, "
+        "alternative_text, since_last_change_text, headline, request_digest, stay_numbers_text, "
+        "decided_at, in_effect FROM queue "
+        "WHERE as_of_day = ? AND hotel = ? AND as_of_tick <= ? ORDER BY as_of_tick, position",
         day,
         key,
         tick,
     )
-    plans = queue.loc[queue["queued"]]
-    held = queue.loc[~queue["queued"]]
+    plans = queue.loc[queue["queued"]]  # the day's plans so far, from every tick up to this one
+    held = queue.loc[~queue["queued"] & (queue["as_of_tick"] == tick)]  # the flags held at it
     left, right = st.columns([5, 6])
     with left.container(key="queue"):  # the key names the panel for STYLE's smaller text
         st.markdown("**Today's recommendations**")
         if plans.empty:
-            st.markdown("No recommendation today.")
+            st.markdown(f"No recommendation {so_far}.")
         for plan in plans.itertuples():
             held_by_model = "Held: " if plan.outcome == "declined" else ""
+            at = f"{plan.decided_at} · " if plan.decided_at else ""  # its time, on a finer clock
+            effect = f" · {plan.in_effect}" if plan.in_effect and plan.as_of_tick < tick else ""
             star = " *" if plan.reason_source == "template" else ""
-            st.markdown(f"**{held_by_model}{plain(plan.headline)}**")
+            st.markdown(f"**{held_by_model}{plain(f'{at}{plan.headline}{effect}')}**")
             if plan.since_last_change_text:  # the stored request's own line, with dates
                 st.markdown(
                     f"**Since our last change on these dates:** "

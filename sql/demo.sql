@@ -66,7 +66,9 @@ CREATE TABLE IF NOT EXISTS stay_dates (
 -- The day's flags for the hotel in the agent's order: the queued plans with the
 -- model's or the template's reason, and the flags held by code with their cause
 -- and the best alternative to holding. On a finer clock, each tick's flags
--- under the tick they were decided at.
+-- under the tick they were decided at, a queued plan with its time of day and
+-- an accepted one with the time it is in effect from, so the page can list the
+-- day's plans so far.
 CREATE TABLE IF NOT EXISTS queue (
     as_of_day INTEGER NOT NULL,
     hotel VARCHAR NOT NULL,
@@ -88,6 +90,8 @@ CREATE TABLE IF NOT EXISTS queue (
     headline VARCHAR NOT NULL,         -- queued only: "+$730 over holding · raise 10% on Saturday · Sat 20 Mar"; empty when held
     request_digest VARCHAR NOT NULL,   -- queued only: the digest of the request, as the decisions table stores it; empty when held
     stay_numbers_text VARCHAR NOT NULL, -- queued only: "Stay dates 50 to 74 are Tue 23 Feb to Fri 19 Mar.", the request's numbers with their dates; empty when held
+    decided_at VARCHAR NOT NULL,       -- queued only, on a finer clock: "11:00", the time the plan was decided at; empty otherwise
+    in_effect VARCHAR NOT NULL,        -- accepted only, on a finer clock: "in effect from 14:00", the next tick's time; empty at the day's last tick and otherwise
     PRIMARY KEY (as_of_day, hotel, as_of_tick, position)
 );
 

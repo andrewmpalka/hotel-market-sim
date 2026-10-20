@@ -568,10 +568,11 @@ def test_at_four_ticks_the_news_names_each_feeds_tick_and_the_filings_outcome(de
 
 
 def test_at_one_tick_a_day_the_demo_file_has_no_tick_in_it(demo_file):
-    """The daily clock's file reads as before: no tick words in the news, no decided-at text, and
-    the demo-data command takes --ticks with 1 as its default."""
+    """The daily clock's file reads as before: no tick words in the news, no decided-at or
+    in-effect text, and the demo-data command takes --ticks with 1 as its default."""
     assert _rows(demo_file, "SELECT COUNT(*) FROM news WHERE text LIKE '%tick%'") == [(0,)]
     assert _rows(demo_file, "SELECT DISTINCT decided_at FROM stay_dates") == [("",)]
+    assert _rows(demo_file, "SELECT DISTINCT decided_at, in_effect FROM queue") == [("", "")]
     assert _rows(demo_file, "SELECT DISTINCT kind FROM news WHERE kind = 'decision'") == []
     assert _rows(demo_file, "SELECT ticks FROM run") == [(1,)]
     for table in ("news", "stay_dates", "queue"):
@@ -632,16 +633,34 @@ def test_the_intraday_file_holds_each_ticks_news_queue_and_chart_rows(demo_file_
         (3, 90, 264.0, "11:00"),
         (4, 90, 264.0, "11:00"),
     ]
-    # The concert's plan leads with its money, and the strip counts it at 11:00 alone.
+    # The concert's plan leads with its money and names its time and when it is in effect from,
+    # and the strip counts it from 11:00 on, as the day so far.
     assert _rows(
-        out, "SELECT headline FROM queue WHERE as_of_day = 25 AND hotel = 'lifestyle'"
-    ) == [("+$2,470 over holding · raise 10% on Thursday and Friday · Thu 4 Feb to Fri 5 Feb",)]
+        out,
+        "SELECT headline, decided_at, in_effect FROM queue WHERE as_of_day = 25 AND "
+        "hotel = 'lifestyle'",
+    ) == [
+        (
+            "+$2,470 over holding · raise 10% on Thursday and Friday · Thu 4 Feb to Fri 5 Feb",
+            "11:00",
+            "in effect from 14:00",
+        )
+    ]
     strip = _rows(
         out,
         "SELECT as_of_tick, nights_flagged, recommendations, value_at_stake FROM strip "
         "WHERE as_of_day = 25 AND hotel = 'lifestyle' ORDER BY as_of_tick",
     )
-    assert strip == [(1, 0, 0, "$0"), (2, 2, 1, "+$2,470"), (3, 2, 0, "$0"), (4, 2, 0, "$0")]
+    assert strip == [
+        (1, 0, 0, "$0"),
+        (2, 2, 1, "+$2,470"),
+        (3, 2, 1, "+$2,470"),
+        (4, 2, 1, "+$2,470"),
+    ]
+    # A plan accepted at the day's last tick takes effect the next day, so it names no tick.
+    assert _rows(
+        out, "SELECT DISTINCT in_effect FROM queue WHERE as_of_tick = 4 OR outcome <> 'accepted'"
+    ) == [("",)]
     assert _rows(out, "SELECT count(*) FROM strip") == [(60 * 4 * 4,)]
     landed = "SELECT as_of_tick FROM news WHERE as_of_day = ? AND hotel = ? AND kind = ?"
     assert _rows(out, landed, 20, "airport", "schedule") == [(1,)]

@@ -250,7 +250,7 @@ which is also the order in which they depend on each other.
 ### MOD-26 [C] demo_data.py
 - File: src/hotel_market/demo_data.py
 - Owns: the demo file ([[DAT-33]], [[DEC-57]], [[DEC-58]]) at --ticks N. build() runs days 0 to 59 through run_days ([[MOD-12]]) with the client of the run recorded at that clock, or the template with a warning; both book to day 149.
-- Rows: _news_texts, _stay_rows and _queue_rows fill the tables per moment ([[MOD-07]], [[MOD-11]]); _add_outcomes closes a filing's or event's day. A queued plan's headline leads with the money. _strip_row writes the strip.
+- Rows: _news_texts, _stay_rows and _queue_rows fill the tables per moment ([[MOD-07]], [[MOD-11]]); _add_outcomes closes a filing's or event's day. A queued plan's headline leads with the money. _strip_row counts the day so far.
 - Scorecard: figures() gives the five measures over hotels and stay dates together ([[MEA-01]] to [[MEA-05]]). _stayed takes stay dates 0 to the day before, _outcome_rows every stay date, and _gain_rows the contribution by stay date.
 - Dates: stay_label, stay_span and day_label write a date as "Thu 18 Feb" from SIM_START ([[RUL-01]]). day_index writes "day 10". At four ticks a day, a tick reads as its time of day, such as "11:00".
 - Holds: DEMO_FILE, DEMO_SCHEMA_FILE and RECORDED_RUNS, the paths, and DEMO_TABLES, NOTHING_NEW, ALL, MEASURES, RATE_AXIS, GAIN_TICK_DAYS and NUMBER_WORDS ([[RUL-103]], [[RUL-104]], [[RUL-107]] to [[RUL-111]]).
@@ -261,7 +261,7 @@ which is also the order in which they depend on each other.
 - File: src/hotel_market/demo_page.py
 - Owns: the read-only demo page ([[DEC-57]], [[DEC-58]]) over [[DAT-33]]. On a finer clock, the sidebar picks a time of day ([[RUL-133]], [[RUL-134]]). The news opens the page, then a strip of three tiles. An engineers' expander closes it.
 - Charts: both cover the next two weeks, or the first flagged night to the last, two weeks at least. Both shade the flagged nights. One shows our rate, the comp set median and each change as an arrow. The other shows rooms against pace.
-- Queue: each recommendation is one line that leads with the money. The stored request's earlier changes follow with dates. Its reason sits closed under Why. The held flags sit closed.
+- Queue: each recommendation is one line that leads with the money, and on a finer clock with its time. The panel lists the day's plans so far. Earlier changes follow with dates. Its reason sits closed under Why. The held flags sit closed.
 - Scorecard: the nights already stayed for the hotel and for all together, as five large tiles each. With the checkbox on, the five months' tiles follow each, in a compact size, then the small line. A zero change has no chip.
 - Holds: the file, parameter, plot, tile, colour and mark constants, FILE_VARIABLE to REASON_MARKS ([[RUL-105]], [[RUL-106]], [[RUL-112]] to [[RUL-123]], [[RUL-133]], [[RUL-134]]), and STYLE.
 - Reads: nothing in the package; streamlit, altair and duckdb only, the optional extra demo. The page computes nothing, and a test parses it for an arithmetic operator or an aggregate call. Tests: tests/test_demo_page.py.
