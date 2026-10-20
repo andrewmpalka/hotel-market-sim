@@ -17,9 +17,9 @@ nodes and its words, len(text.split()) over the file.
 | sources.md | 4 | 855 |
 | decisions.md | 71 | 10,614 |
 | results.md | 45 | 7,681 |
-| forks.md | 14 | 2,037 |
+| forks.md | 14 | 2,067 |
 | unknowns.md | 16 | 2,172 |
-| every node file | 384 | 41,802 |
+| every node file | 384 | 41,832 |
 | index.md | | 2,999 |
 
 ## Modules (`modules.md`)

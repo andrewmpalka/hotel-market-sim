@@ -221,7 +221,7 @@ convention hotel has most of those nights on the books by then. The plans
 earn +$614 a seed on its stay dates, and +$100 if the competitors do not
 raise with it. The money in a convention is in the group block and the
 minimum stay; the agent only advises on the second and never touches the
-first. The next version puts an event known before the run into the day-0
+first. A later version puts an event known before the run into the day-0
 books.
 
 **Faster only helps where the news is fast.** The clock table above. I built
@@ -230,6 +230,28 @@ where it showed, and the reason is the feeds, not the agent.
 
 Details: [the rule-based control](docs/results.md#the-rule-based-control),
 [the convention](docs/results.md#the-convention-without-the-competitors-raise).
+
+## What I'd build next
+
+The design in [docs/prd-v2-next-steps.md](docs/prd-v2-next-steps.md) is where
+I'd go next, and none of it is built. It starts from five gaps that this
+version's own runs show. The first is that the model sees a plan and its
+numbers and nothing else, so it can't find out why a plan might be wrong. The
+design splits the model's job in two. An investigator, which is a model with
+read-only tools, looks up what a revenue manager would check before acting,
+such as the rooms booked over the last week against the forecast, the comp
+median at each of the last five shops and the hotel's own recent changes on
+those nights. It writes down what it found and cannot choose an action. A
+decider then reads that evidence and chooses to recommend the plan, hold it or
+send it to a person, and code checks the choice before anything changes.
+
+The proposed decider is TypeSafe's Jev, which returns one typed choice with a
+probability for each option. The current reviewer sits behind the same
+interface, so the benchmark can compare the two on identical evidence. Three
+fixes need no model, such as not counting a comp move that follows our own
+change, so they come first. Each part ships only if the benchmark shows it
+beats the simpler thing it would replace, and all of it sits behind a setting,
+so every figure in this README stays reproducible.
 
 ## How it was built
 
@@ -243,6 +265,7 @@ before anyone else saw it.
 - [docs/results.md](docs/results.md): every experiment, one table each.
 - [docs/reviewers.md](docs/reviewers.md): the model as a reviewer.
 - [docs/limits.md](docs/limits.md): what this does not model, and the next version.
+- [docs/prd-v2-next-steps.md](docs/prd-v2-next-steps.md): the design for the next version, not yet built.
 - [docs/commands.md](docs/commands.md): every command and make target.
 - [docs/schedule-feed.md](docs/schedule-feed.md): the air schedule feed as modelled.
 - [kg/README.md](kg/README.md): the knowledge graph's legend.

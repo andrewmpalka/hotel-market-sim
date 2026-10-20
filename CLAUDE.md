@@ -96,8 +96,9 @@ window. kg/ and kg_check.py are
 the knowledge graph and its checker. Makefile and Dockerfile wrap the setup.
 docs/results.md holds the experiment tables, docs/commands.md every command,
 docs/reviewers.md the model as a reviewer, docs/limits.md the known limits,
-docs/schedule-feed.md the air schedule feed as modelled, and docs/prd.md the
-product requirements as written before the build.
+docs/schedule-feed.md the air schedule feed as modelled, docs/prd.md the
+product requirements as written before the build, and
+docs/prd-v2-next-steps.md the design for the next version, none of it built.
 
 ## Commands
 

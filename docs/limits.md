@@ -74,7 +74,7 @@ limit names world v1.
   them in the request.
 - The convention hotel's early booking curve puts most of the convention on the
   books before day 0, and its uplift applies only to demand after day 0. An
-  event announced on day 10 therefore adds little, and the next version puts an
+  event announced on day 10 therefore adds little, and a later version puts an
   event known before the run into the preload.
 - The seed-7 checksum is a byte-for-byte test on one platform, because this
   machine's numpy 2.5.4 and pandas 3.0.6 give 263387b3 where a Linux run gave
@@ -166,8 +166,12 @@ recording and its checksum unchanged.
 
 </details>
 
-The next version adds per-weekday terms to the estimator, adds cancellations and
-segments, and puts an event known before the run into the preload. The request
-already lists each hotel's earlier changes on an entry's stay dates, with the
-rooms booked since against the rooms expected. The competitors' reaction is
-already an option that a run turns on.
+The next version is a design in
+[docs/prd-v2-next-steps.md](prd-v2-next-steps.md), and none of it is built. It
+leaves the simulator and the planner's choice of rates as they are, and it
+changes how a plan is checked before it goes ahead. A later version adds
+per-weekday terms to the estimator, adds cancellations and segments, and puts an
+event known before the run into the preload. The request already lists each
+hotel's earlier changes on an entry's stay dates, with the rooms booked since
+against the rooms expected. The competitors' reaction is already an option that
+a run turns on.

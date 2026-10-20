@@ -70,6 +70,7 @@ it. None of these is in progress.
 - Live: the reviewer arm at 0.5 shows Opus 556 plans on dates changed within 14 days. It holds 43 ([[RES-37]], [[MEA-14]]). Its reasons cite the cautious band's display and never the earlier raise, which the request does not carry.
 - Before: the simulator pays the second raise, so the oracle holds 1 of the 556. Opus's holds therefore cost $5,824 a seed. Opus does not decline the second raise as such. The 43 holds are the before measurement for this fix.
 - History: Opus did not decline the second raise as such, because the request carries no history of the hotel's own changes. [[DEC-45]] keeps each decision's outcome in the tables, so the request can carry that history next.
+- Plan: phase 0 of docs/prd-v2-next-steps.md proposes one answer. Code drops a comp move within REACTION_LAG days of our own change on the same dates. The reaction sweep measures it.
 - Links: [[DEC-45]], [[DEC-51]], [[DEC-52]], [[RUL-65]], [[RUL-84]], [[RUL-85]], [[RES-24]], [[RES-26]], [[RES-37]], [[MEA-14]]
 
 ### FRK-10 [O] An arrival time column
@@ -103,5 +104,5 @@ it. None of these is in progress.
 - Choice: whether an event announced before day 0 shapes the day-0 preload ([[DEC-03]]). Today only the demand after day 0 carries its uplift ([[DEC-09]], [[SRC-04]]).
 - Known: on world v2 the convention hotel's early booking curve ([[DEC-66]]) puts most of the convention's business on the books before day 0. The uplift applies to demand after day 0 only.
 - Consequence: an event announced on day 10 adds little. The convention plans earn +$614 a seed on their stay dates ([[RES-41]]).
-- Open: the next version puts an event known before the run into the preload, so the day-0 books carry it.
+- Open: a later version puts an event known before the run into the preload, so the day-0 books carry it.
 - Links: [[DEC-03]], [[DEC-09]], [[DEC-66]], [[SRC-04]], [[RES-41]]
