@@ -384,6 +384,22 @@ def test_a_recommended_cut_points_down(demo_file, demo_file_intraday, monkeypatc
     assert '"triangle-up"' in spec and '"triangle-down"' not in spec
 
 
+def test_the_axes_step_in_whole_dollars_and_whole_rooms(demo_file, monkeypatch):
+    """Neither axis splits its unit: the rate axis steps a dollar at least and the rooms axis a
+    room, so no label repeats and none is a fraction of a room. Lifestyle day 23 has one flagged
+    night with few rooms booked."""
+    testing = pytest.importorskip("streamlit.testing.v1")
+    page = _page(testing, monkeypatch, demo_file, "lifestyle", 23)
+    for chart, field in zip(page.get("vega_lite_chart"), ("rate", "rooms_on_books")):
+        y = [layer["encoding"].get("y", {}) for layer in json.loads(chart.proto.spec)["layer"]]
+        axes = [
+            encoding["axis"]
+            for encoding in y
+            if encoding.get("field") == field and "axis" in encoding
+        ]
+        assert axes and all(axis["tickMinStep"] == 1 for axis in axes)
+
+
 def test_one_night_stayed_reads_as_one_night(demo_file, monkeypatch):
     """On day 1 the scorecard counts one night stayed, in the singular."""
     testing = pytest.importorskip("streamlit.testing.v1")

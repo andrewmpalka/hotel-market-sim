@@ -420,7 +420,7 @@ def main() -> None:
         "rooms_on_books:Q",
         title="Rooms",
         scale=alt.Scale(domainMin=0, nice=True),
-        axis=alt.Axis(labelFontSize=AXIS_LABEL_SIZE, tickCount=5),
+        axis=alt.Axis(labelFontSize=AXIS_LABEL_SIZE, tickCount=5, tickMinStep=1),  # whole rooms
     )
     booked = alt.Chart(shown.assign(series=kinds["rooms_on_books"]))
     pace = alt.Chart(shown.assign(series=kinds["pace"]))
