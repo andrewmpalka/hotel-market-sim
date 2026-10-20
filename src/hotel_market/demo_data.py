@@ -612,7 +612,7 @@ def _queue_rows(
     accepted one the time it is in effect from."""
     request, answer = asked if asked else ({}, {})
     since = {
-        entry["id"]: "; ".join(entry.get("earlier_changes_on_these_dates", []))
+        entry["id"]: entry.get("earlier_changes_on_these_dates", [])
         for entry in request.get("entries", [])
     }
     digest = (answer.get("request_digest") or request_digest(request)) if asked else ""
@@ -623,7 +623,8 @@ def _queue_rows(
         else:
             outcome = "declined" if entry.action == HOLD else "accepted"
         alternative, short = _alternative(entry, minimum) if outcome == "held" else ("", "")
-        line = since.get(entry.id, "") if entry.queued else ""
+        changes = since.get(entry.id, []) if entry.queued else []
+        line = "; ".join(changes)
         rows.append(
             (
                 day,
@@ -642,7 +643,7 @@ def _queue_rows(
                 alternative,
                 short,
                 line,
-                _with_dates(line),
+                _with_dates(latest_changes(changes)),
                 _headline(entry) if entry.queued else "",
                 digest if entry.queued else "",
                 _stay_numbers(entry) if entry.queued else "",
@@ -658,6 +659,21 @@ def _in_effect(tick: int, ticks: int) -> str:
     the day has moved on: "in effect from 14:00". Empty on the daily clock and at the day's last
     tick, whose plans take effect the next day."""
     return f"in effect from {_time(tick + 1, ticks)}" if 1 < ticks and tick < ticks else ""
+
+
+def latest_changes(changes: Sequence[str], keep: int = 3) -> str:
+    """A plan's earlier changes as the page lists them under "Since our last change on these
+    dates": the three made last, in the request's order, then how many more there are, "and 15
+    earlier changes", or "and 15 more changes" when some were made the same day as one shown. The
+    stored request keeps every one."""
+    if len(changes) <= keep:
+        return "; ".join(changes)
+    made = [int(re.match(r"day (\d+):", change)[1]) for change in changes]  # the day it was made
+    shown = sorted(sorted(range(len(changes)), key=lambda i: -made[i])[:keep])
+    rest = [made[i] for i in range(len(changes)) if i not in shown]
+    word = "earlier" if max(rest) < min(made[i] for i in shown) else "more"
+    count = f"{len(rest)} {word} change{'' if len(rest) == 1 else 's'}"
+    return f"{'; '.join(changes[i] for i in shown)}; and {count}"
 
 
 def _stay_numbers(entry: Entry) -> str:

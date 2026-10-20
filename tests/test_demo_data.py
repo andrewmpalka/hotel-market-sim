@@ -18,6 +18,7 @@ from hotel_market.demo_data import (
     day_label,
     delta_text,
     figures,
+    latest_changes,
     main,
     recorded_run,
     stay_label,
@@ -261,6 +262,23 @@ def test_a_held_flag_names_the_best_alternative_and_how_far_it_fell_short(demo_f
         demo_file, "SELECT DISTINCT alternative, alternative_text FROM queue WHERE queued"
     )
     assert queued == [("", "")]
+
+
+def test_a_long_read_back_shows_the_three_changes_made_last(demo_file_intraday):
+    """The stored request lists every earlier change on a plan's stay dates, and the page shows
+    the three made last and counts the rest. The airport hotel's 14:00 cut on day 40 lists 18, all
+    made on day 20, so three show and "and 15 more changes" follows. When the rest were made
+    before the three shown, they are the earlier changes."""
+    [(stored_line, shown)] = _rows(
+        demo_file_intraday,
+        "SELECT since_last_change, since_last_change_text FROM queue "
+        "WHERE as_of_day = 40 AND hotel = 'airport' AND queued",
+    )
+    assert stored_line.count("day 20:") == 18
+    assert shown.count("Sun 24 Jan:") == 3 and shown.endswith("; and 15 more changes")
+    changes = [f"day {day}: raised 5% to $147 on Tue {day + 30}" for day in (18, 19, 20, 21, 22)]
+    assert latest_changes(changes) == "; ".join(changes[2:]) + "; and 2 earlier changes"
+    assert latest_changes(changes[:3]) == "; ".join(changes[:3])
 
 
 def test_a_queued_plan_carries_the_stored_requests_earlier_changes(demo_file):

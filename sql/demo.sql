@@ -88,7 +88,7 @@ CREATE TABLE IF NOT EXISTS queue (
     alternative VARCHAR NOT NULL,      -- held only: the best alternative to holding, in words
     alternative_text VARCHAR NOT NULL, -- held only: how far it fell short of holding or of the minimum
     since_last_change VARCHAR NOT NULL, -- queued only: the stored request's earlier changes on the stay dates, as it lists them; empty when none
-    since_last_change_text VARCHAR NOT NULL, -- the same with dates for day numbers: "Fri 22 Jan: raised 10% to $264 on Sat 20 Mar; ..."
+    since_last_change_text VARCHAR NOT NULL, -- the three made last with dates for day numbers, then how many more: "Fri 22 Jan: raised 10% to $264 on Sat 20 Mar; ...; and 15 more changes"
     headline VARCHAR NOT NULL,         -- queued only: "+$730 over holding · raise 10% on Saturday · Sat 20 Mar"; empty when held
     request_digest VARCHAR NOT NULL,   -- queued only: the digest of the request, as the decisions table stores it; empty when held
     stay_numbers_text VARCHAR NOT NULL, -- queued only: "Stay dates 50 to 74 are Tue 23 Feb to Fri 19 Mar.", the request's numbers with their dates; empty when held
