@@ -128,7 +128,7 @@ marked [H], with one line that names the node it moved to.
 - Value: {"738": "321", "321": "738", "320": "32N", "32N": "320"}
 - File: src/hotel_market/schedule.py
 - Kind: label
-- Meaning: the equipment swaps the churn draws, between codes within 24 seats a flight of each other ([[RUL-11]], [[SHK-07]]). A day moves at most 96 seats, against a threshold of 212.
+- Meaning: the equipment swaps the churn draws, between codes within 24 seats a flight of each other ([[RUL-11]], [[SHK-07]]). A day moves at most 96 seats, 77 passengers, against a threshold of about 170 passengers.
 - Evidence: test_the_churn_files_weekly_revisions_below_the_threshold
 
 ## world.py

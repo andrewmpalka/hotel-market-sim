@@ -61,7 +61,7 @@ and a RES node records the run. A claim that no test can confirm stays [U].
 ### UNK-08 [U] Whether the measured gains say anything about a real hotel
 - Unknown: the agent shares the simulator's demand formula and booking curve in every mode. In the default mode it is also handed the simulator's elasticity, so it knows price response exactly only there ([[DEC-38]]).
 - Best guess: no. The numbers show that the loop detects, scores, decides and records correctly, and nothing more. They are a test of the machinery.
-- Measured: at a demand bias of 0.9 the default mode keeps +$1,913 a seed of its +$32,899 ([[RES-21]]). At 1.1 it earns +$112,082 ([[RES-22]]). A learner that feeds its fitted level back recovers nothing at 0.9 ([[RES-29]], [[DEC-54]]).
+- Measured: at a demand bias of 0.9 the default mode keeps +$1,069 a seed of its +$16,164 ([[RES-21]]). At 1.1 it earns +$66,687 ([[RES-22]]). A learner that feeds its fitted level back recovers nothing at 0.9 ([[RES-29]], [[DEC-54]]).
 - Resolves when: never within this repository.
 - Links: [[DEC-36]], [[DEC-38]], [[DEC-50]], [[RES-21]], [[RES-22]], [[UNK-05]], [[UNK-07]]
 

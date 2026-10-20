@@ -210,7 +210,7 @@ CHURN_STREAM = 3
 CHURN_WEEKS = 8
 CHURN_SHIFTS = (-30, -15, 15, 30)  # the departure-time changes, in minutes
 CHURN_BLOCK = (14, 21)  # a swap lasts this many days: two to three weeks
-# One-day equipment swaps between codes of nearly the same size: at most 30 seats on a day.
+# Equipment swaps between codes of nearly the same size, at most 24 seats a flight.
 SWAPS = {"738": "321", "321": "738", "320": "32N", "32N": "320"}
 
 
@@ -218,7 +218,8 @@ def churn(seed: int) -> tuple[Shock, ...]:
     """The weekly revisions a seed files, each below the detect threshold. On each filing day the
     airline swaps one route's equipment for two to three weeks, starting one to six weeks out,
     and shifts another route's departures for a fortnight. A swap moves at most 24 seats a
-    flight and 96 on a day, against a threshold of 212 on a day of 4,244."""
+    flight and 96 on a day, which is 76.8 passengers at the 0.80 load factor, against a threshold
+    of 5% of a normal day's 3,395.2 passengers, about 170."""
     rng = np.random.default_rng([seed, CHURN_STREAM])
     swappable = [r for r in BASE_ROUTES if r.equipment in SWAPS]
     found = []

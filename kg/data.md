@@ -43,7 +43,7 @@ the plans, the model's request and answer, and what the command writes.
 - Evidence: test_hotels_match_the_table, test_each_hotel_has_four_competitors_within_10_percent_of_its_rate, test_day_of_week_factors_match_the_table
 
 ### DAT-05 [C] Event and RateCut
-- File: src/hotel_market/world.py
+- File: src/hotel_market/sources.py
 - Fields: Event(name, known_day, start_day, end_day, hotels, uplift, comp_rate_raise, known_tick) with covers(hotel_key, stay_day). It is defined at the boundary in [[MOD-17]], so the agent and the simulator share it.
 - Cut: RateCut(known_day, start_day, end_day, hotel, competitors, cut, known_tick) with covers(hotel_key, competitor, stay_day), in [[MOD-02]], the simulator's alone.
 - Ticks: known_tick is the tick of the known day the news lands at, optional in the file. An event's default is the day's last tick and a cut's the day's first shop (world.news_tick), so a file without ticks reads as it did.

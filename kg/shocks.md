@@ -65,7 +65,7 @@ shock needs a node. The intraday market's two extra shocks follow at the end.
 - Stay dates: one to six weeks after each filing, drawn from the seed on [[RUL-90]]
 - Effect: each filing swaps one route's equipment for two to three weeks ([[RUL-95]]), between codes within 24 seats a flight ([[RUL-93]]). It also shifts another route's departures for a fortnight ([[RUL-92]]).
 - File: src/hotel_market/schedule.py
-- Flags: none, by construction: a day moves at most 96 seats against a threshold of 212 ([[RUL-64]]). The finding is that the detector keys on the day-over-day revision and not on a filing ([[RES-28]]).
+- Flags: none, by construction: a day moves at most 96 seats, 77 passengers, against a threshold of about 170 passengers ([[RUL-64]]). The finding is that the detector keys on the day-over-day revision and not on a filing ([[RES-28]]).
 - Evidence: test_the_churn_files_weekly_revisions_below_the_threshold, test_a_detector_that_fires_on_any_revision_is_caught_by_the_churn
 
 

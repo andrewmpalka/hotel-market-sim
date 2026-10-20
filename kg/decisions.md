@@ -392,7 +392,7 @@ design keeps its node, marked [H], and names the decision that replaced it.
 - Kinds: a filing adds routes, suspends one, swaps a route's equipment, sets its daily flights or shifts its departures ([[RUL-89]]). An equipment change moves the seats while the flight count stays. A time change moves no seat.
 - Churn: --churn files the seed's weekly revisions on top, each under the detect threshold ([[SHK-07]]). A detector that fires on any revision fires on them. The threshold detector does not.
 - Reason: a real feed revises every week, and most revisions change no seat count a hotel should act on. The default's two shocks never tested that. The scenario option keeps the default pinned while another story runs.
-- Measured: with the churn, seeds 1 to 20 raise the same 173 seat flags as without it ([[RES-28]]).
+- Measured: with the churn, seeds 1 to 20 raise the same 199 seat flags as without it ([[RES-28]]).
 - Evidence: test_the_churn_files_weekly_revisions_below_the_threshold, test_a_detector_that_fires_on_any_revision_is_caught_by_the_churn, test_a_scenario_and_the_churn_go_to_both_runs
 - Links: [[DAT-03]], [[SHK-05]], [[SHK-06]], [[SHK-07]], [[RUL-89]], [[RES-28]], [[DEC-04]], [[UNK-05]]
 

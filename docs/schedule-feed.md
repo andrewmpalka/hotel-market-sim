@@ -59,7 +59,7 @@ A real feed also revises every week, and most revisions change nothing a hotel s
 which is what the churn stands for. With it on, the airline files an equipment swap of two to
 three weeks and a departure-time change for a fortnight each week, drawn from the seed, and each
 stays under the five per cent threshold the detector uses, because a day moves at most 96 seats,
-77 passengers at the mature load factor, against a threshold of 212 seats. The churn stays
+77 passengers at the mature load factor, against a threshold of about 170 passengers, which is 5% of a normal day's 3,395.2. The churn stays
 under the threshold by construction, so the absence of seat flags proves nothing. The finding
 is that a filing as such never reaches the detector, which keys on the day-over-day passenger
 revision. The test

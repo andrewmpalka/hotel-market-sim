@@ -54,7 +54,7 @@ Python 3.11 or later, from the repository root:
     hotel-market demo-data --seed 7 --ticks 4 --out demo4.duckdb
                                                         # the demo file on four ticks a day; the news names each feed's tick
     hotel-market demo-data --seed 7 --customer customers/demo-intraday.toml --ticks 4 --out demo-intraday.duckdb
-                                                        # the intraday market's file: the page then offers a tick slider and shows the state as of the tick
+                                                        # the intraday market's file: the page then offers a Time of day slider and shows the state as of the chosen tick
     python scripts/demo_screenshots.py --file demo-intraday.duckdb --ticks 4
                                                         # every hotel on days 20, 25, 30 and 45 at every tick, both states, nothing saved, a failure if one is taller
     python scripts/tick_sweep.py --seeds 1 20           # seeds 1 to 20 at one tick a day and at four, with the paired difference and the day-20 filing's lag

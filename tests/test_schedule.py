@@ -208,7 +208,7 @@ def test_the_churn_files_weekly_revisions_below_the_threshold():
             continue
         revision = seat_revision(day, churned)
         assert revision.abs().max() < demo().seat_threshold
-        # At most 24 seats a flight on four flights: 96 on a day, against a threshold of 212.
+        # At most 24 seats a flight on four flights: 96 seats, 77 passengers, against about 170.
         seats = seats_by_day(build_schedule(day, churned)) - seats_by_day(
             build_schedule(day - 1, churned)
         )
