@@ -355,6 +355,20 @@ def test_the_charts_keep_two_weeks_and_shade_the_flagged_nights(demo_file, monke
     assert '"Wed 10 Mar"' in _rate_chart_spec(page)  # a night between them, not flagged
 
 
+def test_a_run_of_flagged_nights_is_shaded_as_one_band(demo_file, monkeypatch):
+    """Each flagged night's band fills its whole slot on the axis, its share of the gap to the
+    next night included, so a run of flagged nights reads as one band, not as a stripe a night.
+    On convention day 40 that is Thu 18 Feb and the run from Mon 15 Mar to Sun 4 Apr."""
+    testing = pytest.importorskip("streamlit.testing.v1")
+    page = _page(testing, monkeypatch, demo_file, "convention", 40)
+    assert "**Flagged today, shaded: Thu 18 Feb and Mon 15 Mar to Sun 4 Apr.**" in _text(page)
+    for chart in page.get("vega_lite_chart"):
+        band, *marks = json.loads(chart.proto.spec)["layer"]
+        gap = marks[0]["encoding"]["x"]["scale"]["paddingInner"]
+        assert band["mark"]["type"] == "rect" and band["mark"]["align"] == "center"
+        assert band["mark"]["width"]["band"] == pytest.approx(1 / (1 - gap))
+
+
 def test_the_engineers_expander_is_the_only_place_the_programs_words_appear(demo_file, monkeypatch):
     """The day-20 pages of the daily file speak to a revenue executive: outside the closed
     expander for engineers no text names the seed, a tick, a digest, the fixed-rate run, the

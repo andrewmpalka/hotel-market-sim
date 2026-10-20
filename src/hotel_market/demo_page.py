@@ -57,6 +57,8 @@ PLOT_HEIGHTS = {
 AXIS_LABEL_SIZE = 12  # the axes' tick labels, in points
 _NEXT_NIGHTS = 14  # the fewest nights the charts show: the next two weeks on a quiet day
 _LABELLED_NIGHTS = 7  # up to this many flagged nights, the charts print each one's values
+_BAND_GAP = 0.25  # the gap between two nights' bands on the axis, as a share of a night's slot
+_SLOT = 1.3333333333333333  # a night's whole slot in bands, 1 / (1 - _BAND_GAP)
 TILE_SIZES = {
     "compact": (0.75, 1.1),
     "large": (0.9, 1.2),
@@ -142,7 +144,7 @@ def _axis(order: list[str], ticks: list[str]) -> alt.X:
             labelOverlap=True,
             labelSeparation=8,
         ),
-        scale=alt.Scale(paddingInner=0.25, paddingOuter=0.15),
+        scale=alt.Scale(paddingInner=_BAND_GAP, paddingOuter=0.15),
     )
 
 
@@ -425,8 +427,15 @@ def main() -> None:
             .mark_text(dy=-9, fontSize=AXIS_LABEL_SIZE, color="white")
             .encode(x=axis, y=alt.Y("rooms_on_books:Q"), text="rooms_on_books:Q")
         )
-    if shade:  # a grey band behind each flagged night, under both charts' marks
-        band = alt.Chart(flagged).mark_rect(color="#888888", opacity=0.22).encode(x=axis)
+    # A grey band behind the flagged nights, under both charts' marks. Each night's band fills its
+    # whole slot on the axis, so a run of flagged nights reads as one band. (Vega-Lite's x2 on
+    # this axis would draw one rect per run, but it lands the run's end on the wrong night.)
+    if shade:
+        band = (
+            alt.Chart(flagged)
+            .mark_rect(color="#888888", opacity=0.22, width={"band": _SLOT}, align="center")
+            .encode(x=axis)
+        )
         layers.insert(0, band)
         rooms.insert(0, band)
     heading = f"Nothing flagged today. The next two weeks: {labels[0]} to {labels[-1]}"
