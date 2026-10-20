@@ -16,6 +16,7 @@ from hotel_market.demo_data import (
     NOTHING_NEW,
     day_index,
     day_label,
+    declined_text,
     delta_text,
     figures,
     latest_changes,
@@ -262,6 +263,13 @@ def test_a_held_flag_names_the_best_alternative_and_how_far_it_fell_short(demo_f
         demo_file, "SELECT DISTINCT alternative, alternative_text FROM queue WHERE queued"
     )
     assert queued == [("", "")]
+
+
+def test_a_plan_the_model_declined_is_named_under_the_recommendations_tile(demo_file):
+    """The recommendations tile counts the accepted plans, so a plan the model declined gets a
+    caption under it. The demo market's model declined none."""
+    assert declined_text(1) == "1 declined by the model" and declined_text(0) == ""
+    assert _rows(demo_file, "SELECT DISTINCT declined_text FROM strip") == [("",)]
 
 
 def test_a_long_read_back_shows_the_three_changes_made_last(demo_file_intraday):

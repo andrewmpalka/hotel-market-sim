@@ -412,6 +412,29 @@ def test_the_page_pins_the_dark_theme():
     assert "streamlit run src/hotel_market/demo_page.py" in (ROOT / "Makefile").read_text()
 
 
+def test_a_declined_plan_is_named_under_the_recommendations_tile(demo_file, monkeypatch, tmp_path):
+    """When the model declines a plan, the panel lists it as held and the caption under the
+    recommendations tile says so, as the file writes it, so the tiles agree with the panel."""
+    testing = pytest.importorskip("streamlit.testing.v1")
+    file = tmp_path / "demo.duckdb"
+    shutil.copy(demo_file, file)
+    connection = stored.connect(file)
+    try:
+        connection.execute(
+            "UPDATE strip SET recommendations = 0, value_at_stake = '$0', "
+            "declined_text = '1 declined by the model' WHERE as_of_day = 20 AND hotel = 'airport'"
+        )
+        connection.execute(
+            "UPDATE queue SET outcome = 'declined' WHERE as_of_day = 20 AND hotel = 'airport' "
+            "AND queued"
+        )
+    finally:
+        connection.close()
+    page = _page(testing, monkeypatch, file, "airport", 20)
+    assert "1 declined by the model" in [caption.value for caption in page.main.caption]
+    assert any(block.startswith("**Held: ") for block in _text(page).splitlines())
+
+
 def test_one_night_stayed_reads_as_one_night(demo_file, monkeypatch):
     """On day 1 the scorecard counts one night stayed, in the singular."""
     testing = pytest.importorskip("streamlit.testing.v1")

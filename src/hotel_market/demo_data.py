@@ -258,9 +258,10 @@ def build(
             "CREATE TABLE IF NOT EXISTS strip (as_of_day INTEGER NOT NULL, hotel VARCHAR NOT NULL, "
             "as_of_tick INTEGER NOT NULL, news VARCHAR NOT NULL, nights_flagged INTEGER NOT NULL, "
             "recommendations INTEGER NOT NULL, value_at_stake VARCHAR NOT NULL, "
-            "horizon_text VARCHAR NOT NULL, PRIMARY KEY (as_of_day, hotel, as_of_tick))"
+            "horizon_text VARCHAR NOT NULL, declined_text VARCHAR NOT NULL, "
+            "PRIMARY KEY (as_of_day, hotel, as_of_tick))"
         )
-        connection.executemany("INSERT INTO strip VALUES (?, ?, ?, ?, ?, ?, ?, ?)", strip)
+        connection.executemany("INSERT INTO strip VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", strip)
     finally:
         connection.close()
     return source
@@ -728,9 +729,11 @@ def _strip_row(
     that day with their value at stake together, "$0" when there is none. On the daily clock the
     day so far is its one tick. When the day's news so far names a stay date past the agent's
     window (`reach`), a clause for the charts' heading says how far the agent looks: "The agent
-    looks 90 nights ahead, to Fri 23 Apr."."""
+    looks 90 nights ahead, to Fri 23 Apr.". The plans the model declined so far that day get a
+    caption under the recommendations tile, which counts only the accepted ones."""
     nights = {stay for entry in today for stay in range(entry.first_stay, entry.last_stay + 1)}
     accepted = [entry.value_at_stake for entry in today if entry.queued and entry.action != HOLD]
+    declined = [entry for entry in today if entry.queued and entry.action == HOLD]
     first = news[0][2] if news else "Nothing new"
     window = stay_window(day)
     ahead = f"The agent looks {len(window)} nights ahead, to {stay_label(window[-1])}."
@@ -743,7 +746,14 @@ def _strip_row(
         len(accepted),
         _money(sum(accepted)),
         ahead if reach > window[-1] else "",
+        declined_text(len(declined)),
     )
+
+
+def declined_text(count: int) -> str:
+    """The caption under the recommendations tile for the plans the model declined, "1 declined
+    by the model", or nothing when it declined none."""
+    return f"{count} declined by the model" if count else ""
 
 
 def _alternative(entry: Entry, minimum: float) -> tuple[str, str]:

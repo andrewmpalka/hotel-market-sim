@@ -284,8 +284,8 @@ def main() -> None:
     with st.container(key="news"):  # the key names the news for STYLE's tighter lines
         st.markdown("  \n".join(plain(text) for text in news["text"].tolist()) or NOTHING_YET)
     strip = rows(
-        "SELECT nights_flagged, recommendations, value_at_stake, horizon_text FROM strip "
-        "WHERE as_of_day = ? AND hotel = ? AND as_of_tick = ?",
+        "SELECT nights_flagged, recommendations, value_at_stake, horizon_text, declined_text "
+        "FROM strip WHERE as_of_day = ? AND hotel = ? AND as_of_tick = ?",
         day,
         key,
         tick,
@@ -298,6 +298,8 @@ def main() -> None:
             "Recommendations so far today" if ticks > 1 else "Recommendations",
             strip["recommendations"],
         )
+        if strip["declined_text"]:  # the tile counts the accepted plans; this names the others
+            tiles[1].caption(strip["declined_text"])
         tiles[2].metric(f"Value at stake {so_far}", strip["value_at_stake"])
 
     # ---- the nights today's news touched --------------------------------------------------------
