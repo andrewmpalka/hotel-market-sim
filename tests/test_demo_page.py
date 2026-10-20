@@ -371,6 +371,19 @@ def test_the_charts_keep_two_weeks_and_shade_the_flagged_nights(demo_file, monke
     assert pace in text and "Nothing new became known today." not in text
 
 
+def test_a_recommended_cut_points_down(demo_file, demo_file_intraday, monkeypatch):
+    """Each recommended change is an arrow from our rate to the new one, its head pointing the way
+    the rate moves: down for the airport hotel's cut at 14:00 on day 40, up for its raises on day
+    20."""
+    testing = pytest.importorskip("streamlit.testing.v1")
+    page = _page(testing, monkeypatch, demo_file_intraday, "airport", 40, tick=3)
+    assert "lower 5% on Tuesday" in _text(page)
+    spec = _rate_chart_spec(page)
+    assert '"triangle-down"' in spec and '"triangle-up"' not in spec
+    spec = _rate_chart_spec(_page(testing, monkeypatch, demo_file, "airport", 20))
+    assert '"triangle-up"' in spec and '"triangle-down"' not in spec
+
+
 def test_one_night_stayed_reads_as_one_night(demo_file, monkeypatch):
     """On day 1 the scorecard counts one night stayed, in the singular."""
     testing = pytest.importorskip("streamlit.testing.v1")

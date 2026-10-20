@@ -377,27 +377,34 @@ def main() -> None:
             ]
         )
     if not moved.empty:
-        chosen = alt.Chart(moved.assign(series=names["planned_rate"]))
-        layers.extend(
-            [
-                chosen.mark_rule(strokeWidth=3).encode(
-                    x=axis, y="rate:Q", y2="planned_rate:Q", color=series
-                ),
-                chosen.mark_point(filled=True, size=90, shape="triangle-up", opacity=1).encode(
-                    x=axis,
-                    y=alt.Y("planned_rate:Q"),
-                    color=series,
-                    tooltip=[
-                        stay_date,
-                        alt.Tooltip("rate:Q", title="Our rate", **money),
-                        alt.Tooltip("planned_rate:Q", title="Recommended", **money),
-                    ],
-                ),
-            ]
+        layers.append(
+            alt.Chart(moved.assign(series=names["planned_rate"]))
+            .mark_rule(strokeWidth=3)
+            .encode(x=axis, y="rate:Q", y2="planned_rate:Q", color=series)
+        )
+    # Each arrowhead points the way the rate moves, a raise's up and a cut's down, with the new
+    # rate printed beyond it.
+    cut = moved["planned_rate"] < moved["rate"]
+    arrows = ((moved.loc[~cut], "triangle-up", -14), (moved.loc[cut], "triangle-down", 14))
+    for part, shape, dy in arrows:
+        if part.empty:
+            continue
+        chosen = alt.Chart(part.assign(series=names["planned_rate"]))
+        layers.append(
+            chosen.mark_point(filled=True, size=90, shape=shape, opacity=1).encode(
+                x=axis,
+                y=alt.Y("planned_rate:Q"),
+                color=series,
+                tooltip=[
+                    stay_date,
+                    alt.Tooltip("rate:Q", title="Our rate", **money),
+                    alt.Tooltip("planned_rate:Q", title="Recommended", **money),
+                ],
+            )
         )
         if few:
             layers.append(
-                chosen.mark_text(dy=-14, fontSize=AXIS_LABEL_SIZE, color="white").encode(
+                chosen.mark_text(dy=dy, fontSize=AXIS_LABEL_SIZE, color="white").encode(
                     x=axis, y=alt.Y("planned_rate:Q"), text=alt.Text("planned_rate:Q", **money)
                 )
             )
