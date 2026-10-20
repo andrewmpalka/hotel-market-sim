@@ -1,6 +1,6 @@
 # PRD v2: Next Steps
 
-**Proposed V2.** This document is a design for a future release. Nothing in it is built, and the demo stays as v1.6 built it. Every figure here comes from the v1.6 code, the README, `docs/results.md`, `docs/limits.md`, the seed-7 demo file, a recorded rehearsal, or TypeSafe's own published material, and each one names its source.
+**Proposed V2.** This document is a design for a future release. Nothing in it is built, and the demo stays as v1.6 built it. Every figure here comes from the v1.6 code, the README, `docs/results.md`, `docs/limits.md`, the seed-7 demo file, a recorded run, or TypeSafe's own published material, and each one names its source.
 
 ## Summary
 
@@ -50,7 +50,7 @@ The bookings carry the warning, because when demand is weaker than forecast, roo
 
 On day 18 the lifestyle hotel raised Sat 20 Mar by 10%, to $264, because bookings were well ahead of pace, with 40 rooms booked against a usual 24.8. On day 20 the new flights flagged the same night, and the agent raised it another 10%, to $290.40. Only two days separated the two raises, and the read-back line on day 20 said "since then 2 rooms booked against 1 expected" (seed-7 demo file). That night became the run's largest single gain, +$3,979 in contribution, so the second raise paid. Even so, a revenue manager would want to know whether the first change had time to show anything before stacking a second change on the same night.
 
-In the harbour market, the airlines added seats on day 20, and the agent proposed cuts at all three hotels (the recorded harbour rehearsal of 2026-10-18).
+In the harbour market, the airlines added seats on day 20, and the agent proposed cuts at all three hotels (a recorded harbour run of 2026-10-18).
 
 - The city-centre hotel's plan lowered prices 5%, worth an estimated $1,230 more than holding, and the model declined it.
 - The resort's plan lowered prices 5% on six days and raised Saturday, worth $2,680, and the model accepted it.
@@ -62,7 +62,7 @@ A plan that moves against the direction of the news needs an explanation, and v1
 
 In v1, one model call does two jobs. It reads the evidence and it chooses the action. Version 2 separates those jobs for three reasons.
 
-The first reason is repeatability. In the author's experience on a production agent system, calculations moved out of the agent and into code because the agent didn't produce them repeatably. Decisions made over a fixed, ordered set of evidence proved more repeatable than workflows that also asked the model to calculate. That's one team's experience, so this design tests it instead of assuming it. The v1 repo already shows one data point. In the rehearsal of 2026-10-18, ten live reruns sent the recorded intraday run's ten requests with the same digests, and the model accepted all 13 plans every time while only the wording of its reasons changed (the author's rehearsal notes, outside this repository). That's an easy case, because every plan was right. Version 2 measures repeatability where the plans are wrong.
+The first reason is repeatability. In the author's experience on a production agent system, calculations moved out of the agent and into code because the agent didn't produce them repeatably. Decisions made over a fixed, ordered set of evidence proved more repeatable than workflows that also asked the model to calculate. That's one team's experience, so this design tests it instead of assuming it. The v1 repo already shows one data point. On 2026-10-18, ten live reruns sent the recorded intraday run's ten requests with the same digests, and the model accepted all 13 plans every time while only the wording of its reasons changed (the author's notes, outside this repository). That's an easy case, because every plan was right. Version 2 measures repeatability where the plans are wrong.
 
 The second reason is auditability. When the investigator's findings and the decision come from separate steps, the record shows what evidence existed at the moment of the decision. A reviewer can then judge the decision against that evidence and nothing else.
 
@@ -201,7 +201,7 @@ Code then records the packet, the disposition, its probabilities, the checks and
 3. `plan.py` exposes the plan's value under the four alternatives that `plan_sensitivity` reports. It computes them with the functions it already uses to score candidates.
 4. `stored.py` and `sql/schema.sql` gain the table `investigation_steps`, with one row for each tool call. The row holds the day, tick, hotel and plan, the step number, the tool, its arguments, its result and a digest of the result. The `decisions` table gains the disposition, the decider's name, its probabilities, the evidence packet's digest and any unresolved question.
 5. `bench.py` gains the arms and worlds described under "How we'll know it works".
-6. `demo_data.py` and `sql/demo.sql` gain an `investigation` table with display text for each step. `demo_page.py` draws it as an audit view in a closed expander under each recommendation, so the page still computes nothing and still fits the window. The audit view is part of the future release and isn't added to the interview demo.
+6. `demo_data.py` and `sql/demo.sql` gain an `investigation` table with display text for each step. `demo_page.py` draws it as an audit view in a closed expander under each recommendation, so the page still computes nothing and still fits the window. The audit view is part of the future release and isn't added to the current demo.
 7. `CLAUDE.md` adds the three new modules to rule 6. `kg/` gains their nodes, a decision node for version 2 and a results node for each benchmark run.
 
 ### The cache and replay
@@ -306,7 +306,7 @@ The packet stays fixed, with identical packets built once and stored, and four d
 
 ### The acceptance cases
 
-Three clearly labeled synthetic cases check the release before any benchmark run. They're proposed acceptance cases for version 2 and aren't additions to the interview demo.
+Three clearly labeled synthetic cases check the release before any benchmark run. They're proposed acceptance cases for version 2 and aren't additions to the current demo.
 
 1. Relevant flights with healthy feeds and a favorable plan. The system may recommend the plan, and the record has to cite the flights, the pickup and the sensitivity.
 2. Flights that don't cover the plan's nights. The planner already limits each flag to the nights its news affects, so this case is built by hand. The test checks that code drops any finding that cites flights for nights outside the plan, and that the decision doesn't rest on them.

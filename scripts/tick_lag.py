@@ -124,7 +124,7 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--seed", type=int, default=7, help="the seed (default 7)")
     parser.add_argument(
         "--hotel",
-        help="the hotel's key (default airport, the walkthrough's, or the event's first hotel)",
+        help="the hotel's key (default airport, the demo's, or the event's first hotel)",
     )
     parser.add_argument(
         "--ticks",

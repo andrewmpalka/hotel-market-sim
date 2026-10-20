@@ -377,7 +377,7 @@ The container image on each Python version was built before world v2 and ran the
 
 Seeds 1 to 20 in the default mode: the agent run against the fixed-rate run, stay dates 0 to 149, run on 2026-10-15 on world v2 with `hotel-market --seeds 1 20 --template`. The reasons are the template's, and candidates are scored on contribution with the simulator's elasticity. The template is a stand-in that answers in the model's place when there is no key; it says yes to every plan and writes a reason from the entry's own figures. The last two rows are the standard deviation across the seeds and the standard error of the mean.
 
-Accepted plans at the two downtown hotels by seed, read from the same sweep's decisions files, run on 2026-10-15 on world v2. It is a lookup for the walkthrough, not a result: a seed with no such plan reads none, and seed 7 is one of the three. The day-10 plans are the convention's, raised on the day it is announced; the others are pace plans on a single stay date.
+Accepted plans at the two downtown hotels by seed, read from the same sweep's decisions files, run on 2026-10-15 on world v2. It is a lookup for the demo, not a result: a seed with no such plan reads none, and seed 7 is one of the three. The day-10 plans are the convention's, raised on the day it is announced; the others are pace plans on a single stay date.
 
 Seed 7, days 0 to 59: what became of the flags, run on 2026-10-15 on world v2 with `hotel-market --seed 7 --template`.
 
