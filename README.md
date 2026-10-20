@@ -2,14 +2,15 @@
 
 [![tests](https://github.com/andrewmpalka/hotel-market-sim/actions/workflows/test.yml/badge.svg)](https://github.com/andrewmpalka/hotel-market-sim/actions/workflows/test.yml)
 
-A made-up city with four hotels, and a pricing agent that reads the city's
-feeds and recommends rate changes. Every number is synthetic. The agent runs
-for 60 days; the bookings run for 150, so every night is finished and counted.
+A pricing agent working for one customer: a hotel brand that runs revenue
+centrally for four hotels in a made-up city. The agent reads the city's feeds
+and recommends rate changes. Every number is synthetic. The agent runs for 60
+days; the bookings run for 150, so every night is finished and counted.
 
 Most days in this city nothing happens. Guests book along the usual curve
 with the usual luck, competitors' rates wobble a little, and the best price
 for an ordinary night is the one the hotel already charges. Four times,
-something does happen, and each is written into the market file in advance:
+something does happen, and each is set before the run starts:
 a convention is announced on day 10, new flights are filed on day 20, a
 competitor cuts its rate on day 30, and an airline suspends a route on day
 40. The repository calls these shocks. They are the only events that change
@@ -24,6 +25,42 @@ repository has no Cirium data and no affiliation with Cirium.
 *Day 20 at the lifestyle hotel: the filing in the news, three recommendations
 with the model's reasons closed under Why, and what happened since the last
 change on those dates.*
+
+## One customer, one file
+
+Everything in this repository runs for one customer. A customer is the hotel
+company the agent works for. This one is a brand that runs revenue centrally
+for four of its hotels. Everything specific to that customer sits in one file,
+[customers/demo.toml](customers/demo.toml). The simulator and the agent both
+read it, and the agent's code never changes for a customer.
+
+| Option | What it sets | This customer |
+| --- | --- | --- |
+| Hotels | Each hotel's rooms and starting rate | Convention 400 rooms at $220, full-service 250 at $190, lifestyle 120 at $240, airport 150 at $140 |
+| Air share | The share of a hotel's guests who fly in, so how much airline news moves it | Convention 60%, full-service 45%, lifestyle 50%, airport 80% |
+| Normal demand | How full a normal night is, and how that varies from Monday to Sunday | 75% full (the airport 85%), with each hotel's own weekday pattern |
+| Booking curve | The share of a night usually booked at each number of days out | The convention hotel has a quarter booked 90 days out; the airport hotel has half booked a week out |
+| Competitors | Four per hotel, priced at fixed offsets from its rate | 8% and 3% below, 3% and 8% above |
+| Rate limits | The lowest and highest rate the agent may set | 70% and 140% of the starting rate |
+| Room cost | The cost of servicing each room sold | A third of the starting rate |
+| Flag thresholds | When a night is flagged for the agent to price | Bookings off pace by 10% of the rooms or 3 standard deviations, whichever is larger; arriving passengers revised by 5%; the comp median moved 5% since yesterday |
+| Hold | How long a changed night ignores pace alone | 7 days |
+| Minimum value | The smallest gain over holding that is worth sending to the model | $250 |
+| Target | What each option is scored on | Contribution, which is room revenue minus the cost of servicing each room sold |
+| Market price response | How much the whole market's demand falls when the comp median rises | 1.0, so demand falls in proportion |
+| Calendar | The news this customer's market sees | A convention announced on day 10 that raises demand 35% at the two downtown hotels on nights 45 to 48; two of the full-service hotel's competitors cutting 20% from day 30 on nights 37 to 39 |
+
+The other two shocks, new flights on day 20 and a suspended route on day 40,
+are not in the customer file. They belong to the simulator's made-up airline
+schedule, [src/hotel_market/schedule.py](src/hotel_market/schedule.py), which
+every customer shares.
+
+Two more files use the same format.
+[customers/demo-intraday.toml](customers/demo-intraday.toml) is the same
+customer with its news landing at set times of day, plus a close-in concert,
+for the runs at four ticks a day. [customers/harbour.toml](customers/harbour.toml)
+is a second customer with three hotels in a made-up harbor city, and it runs
+with one flag and no change to the agent.
 
 ## Run it
 
