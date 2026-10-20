@@ -76,7 +76,7 @@ from hotel_market.text import (
     versus_holding,
     versus_holding_at_end,
 )
-from hotel_market.world import HORIZON_DAYS, SIM_DAYS, Hotel, stay_window, weekday
+from hotel_market.world import HORIZON_DAYS, SIM_DAYS, Hotel, news_tick, stay_window, weekday
 
 DEMO_FILE = Path("demo.duckdb")  # where the command writes by default
 DEMO_SCHEMA_FILE = Path("sql") / "demo.sql"  # the page's tables; relative to the root
@@ -347,24 +347,47 @@ def _news_texts(
 ) -> list[tuple[str, str]]:
     """What became known at a moment for the hotel, in plain words, as (kind, text) pairs. On a
     finer clock each opens with the time its feed landed at, and the table is the moment's, so a
-    move is since the previous tick."""
+    move is since the previous tick. A scripted move is named for what it is: an event that only
+    moves the competitors' rates reads as their raise, and a rate cut from the customer file as
+    the cut with the median's move it makes, so the comp set line leaves out the nights either
+    already explains."""
     time = _time(tick, ticks) if ticks > 1 else ""
     moment = (day, tick) if ticks > 1 else (day, None)
     texts: list[tuple[str, str]] = []
+    explained: set[int] = set()  # nights whose comp set move a line above already gives
     for event in feed.events.known(*moment):
         if event.known_day == day and hotel.key in event.hotels and _landed(table, "new_event"):
-            texts.append(
-                (
-                    "event",
-                    _at(
-                        time,
-                        f"An event, the {event.name.lower()}, was announced for "
-                        f"{stay_span(event.start_day, event.end_day)}. Demand there is "
-                        f"{percent_change(event.uplift)}, and the comp set's rates are "
-                        f"{percent_change(event.comp_rate_raise)}.",
-                    ),
+            span = stay_span(event.start_day, event.end_day)
+            if event.uplift == 0 and event.comp_rate_raise:  # the competitors' move alone
+                moved = "raised" if event.comp_rate_raise > 0 else "cut"
+                sentence = (
+                    f"The {hotel.name.lower()}'s competitors {moved} their rates "
+                    f"{_percent(abs(event.comp_rate_raise))} for {span}."
                 )
+            else:
+                sentence = (
+                    f"An event, the {event.name.lower()}, was announced for {span}. Demand there "
+                    f"is {percent_change(event.uplift)}, and the comp set's rates are "
+                    f"{percent_change(event.comp_rate_raise)}."
+                )
+            texts.append(("event", _at(time, sentence)))
+            if event.comp_rate_raise:
+                explained |= set(range(event.start_day, event.end_day + 1))
+    own = table[table["hotel"] == hotel.key]
+    median = dict(zip(own["stay_day"].tolist(), own["median_change"].tolist()))
+    for cut in customer.rate_cuts:
+        landed = cut.known_day == day and news_tick(cut.known_tick, ticks, 1) == tick
+        if cut.hotel == hotel.key and landed:
+            nights = range(cut.start_day, cut.end_day + 1)
+            sentence = (
+                f"{_competitors(len(cut.competitors))} cut their rates {_percent(cut.cut)} for "
+                f"{stay_span(cut.start_day, cut.end_day)}"
             )
+            change = [median[s] for s in nights if s in median]
+            if any(change):  # the shop at this moment shows the cut
+                sentence += f", so the comp set median is {_whole(percent_change_range(change))}"
+            texts.append(("rate cut", _at(time, f"{sentence}.")))
+            explained |= set(nights)
     revision = feed.schedules.passenger_revision(*moment)
     for first, last in _runs(s for s in range(HORIZON_DAYS) if revision[s] != 0):
         texts.append(
@@ -378,9 +401,12 @@ def _news_texts(
                 ),
             )
         )
-    own = table[table["hotel"] == hotel.key]
     moved = own[own["median_change"].abs() >= customer.median_threshold]
-    changes = dict(zip(moved["stay_day"].tolist(), moved["median_change"].tolist()))
+    changes = {
+        stay: change
+        for stay, change in zip(moved["stay_day"].tolist(), moved["median_change"].tolist())
+        if stay not in explained
+    }
     for first, last in _runs(changes):
         texts.append(
             (
@@ -415,6 +441,22 @@ def _pace_texts(today: Sequence[Entry], tick: int, ticks: int) -> list[tuple[str
     return texts
 
 
+def _whole(text: str) -> str:
+    """A text with each whole percentage written without its ".0": "up 35%", "8.3% to 11%"."""
+    return text.replace(".0%", "%")
+
+
+def _percent(fraction: float) -> str:
+    """A share as a percentage to one decimal, a whole one without its ".0": "20%", "8.3%"."""
+    return _whole(f"{fraction:.1%}")
+
+
+def _competitors(count: int) -> str:
+    """The competitors a scripted cut names, counted in words: "Two competitors"."""
+    word = NUMBER_WORDS[count] if count < len(NUMBER_WORDS) else str(count)
+    return f"{word.capitalize()} competitor{'' if count == 1 else 's'}"
+
+
 def _covered(entries: Iterable[Entry]) -> set[int]:
     """The stay dates the entries cover."""
     return {stay for e in entries for stay in range(e.first_stay, e.last_stay + 1)}
@@ -445,7 +487,10 @@ def _add_outcomes(
             causes.append((SEATS_UP, "the stay dates the filing changed", None))
         for event in customer.events:
             if event.known_day == day and key in event.hotels:
-                causes.append((NEW_EVENT, f"the {event.name.lower()}'s stay dates", event))
+                # the news names an event that only moves the competitors' rates by its nights
+                what = f"the {event.name.lower()}'s stay dates" if event.uplift else ""
+                what = what or stay_span(event.start_day, event.end_day)
+                causes.append((NEW_EVENT, what, event))
         for cause, what, event in causes:
             flagged = [e for e in entries_of.get((day, key), []) if cause in e.causes]
             if event is None:

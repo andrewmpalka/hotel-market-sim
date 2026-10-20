@@ -28,8 +28,9 @@ CREATE TABLE IF NOT EXISTS days (
     PRIMARY KEY (as_of_day)
 );
 
--- What became known on the day, in plain words: an event, a schedule filing, a
--- comp set move, bookings running ahead of or behind the usual pace on the
+-- What became known on the day, in plain words: an event, a competitors' rate
+-- cut from the customer file, a schedule filing, a comp set move that no line
+-- above explains, bookings running ahead of or behind the usual pace on the
 -- nights a flag covers, or one row saying nothing new became known. On a finer clock
 -- each row names the tick its news landed at, and the page shows the rows
 -- landed by the tick it is on; a decision row, the day's outcome, lands last.
@@ -38,7 +39,7 @@ CREATE TABLE IF NOT EXISTS news (
     hotel VARCHAR NOT NULL,
     as_of_tick INTEGER NOT NULL,       -- the tick the news landed at; 1 on the daily clock
     position INTEGER NOT NULL,
-    kind VARCHAR NOT NULL,             -- event, schedule, comp set, pace, decision or none
+    kind VARCHAR NOT NULL,             -- event, rate cut, schedule, comp set, pace, decision or none
     text VARCHAR NOT NULL,
     PRIMARY KEY (as_of_day, hotel, position)
 );

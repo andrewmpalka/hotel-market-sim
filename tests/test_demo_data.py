@@ -378,6 +378,9 @@ def test_the_strip_counts_the_moments_flags_and_recommendations(demo_file):
 
 
 def test_the_news_names_the_convention_the_filings_and_the_comp_set_cut(demo_file):
+    """The news says what became known. The convention's line gives the competitors' raise, so
+    no second line repeats the median's move on its nights, and the scripted cut is named as the
+    competitors' cut with the median's move it makes."""
     day0 = _rows(demo_file, "SELECT DISTINCT text FROM news WHERE as_of_day = 0")
     assert day0 == [(NOTHING_NEW,)]
     day10 = _rows(
@@ -390,10 +393,6 @@ def test_the_news_names_the_convention_the_filings_and_the_comp_set_cut(demo_fil
             "event",
             "An event, the convention, was announced for Thu 18 Feb to Sun 21 Feb. "
             "Demand there is up 35.0%, and the comp set's rates are up 15.0%.",
-        ),
-        (
-            "comp set",
-            "The comp set median is up 10.3% to 17.1% for Thu 18 Feb to Sun 21 Feb.",
         ),
     ]
     filings = _rows(
@@ -413,9 +412,15 @@ def test_the_news_names_the_convention_the_filings_and_the_comp_set_cut(demo_fil
         ),
     ]
     day30 = _rows(
-        demo_file, "SELECT text FROM news WHERE as_of_day = 30 AND hotel = 'full-service'"
+        demo_file, "SELECT kind, text FROM news WHERE as_of_day = 30 AND hotel = 'full-service'"
     )
-    assert day30 == [("The comp set median is down 8.3% to 11.0% for Wed 10 Feb to Fri 12 Feb.",)]
+    assert day30 == [
+        (
+            "rate cut",
+            "Two competitors cut their rates 20% for Wed 10 Feb to Fri 12 Feb, so the comp set "
+            "median is down 8.3% to 11%.",
+        )
+    ]
 
 
 def test_a_flag_from_pace_alone_says_why_in_the_news(demo_file, demo_file_intraday):
@@ -682,6 +687,26 @@ def test_the_intraday_file_holds_each_ticks_news_queue_and_chart_rows(demo_file_
     landed = "SELECT as_of_tick FROM news WHERE as_of_day = ? AND hotel = ? AND kind = ?"
     assert _rows(out, landed, 20, "airport", "schedule") == [(1,)]
     assert _rows(out, landed, 45, "lifestyle", "event") == [(3,)]
+    # The day-45 repricing moves only the competitors' rates, so it reads as their raise, with no
+    # second line for the median's move on its nights; the cut lands with the 11:00 shop.
+    assert _rows(
+        out,
+        "SELECT as_of_tick, kind, text FROM news WHERE as_of_day = 45 AND hotel = 'lifestyle' "
+        "ORDER BY position",
+    ) == [
+        (
+            3,
+            "event",
+            "At 14:00 the lifestyle hotel's competitors raised their rates 10% for Sat 20 Feb to "
+            "Sun 21 Feb.",
+        ),
+        (
+            4,
+            "decision",
+            "The first flag rose at 14:00; no raise was accepted on Sat 20 Feb to Sun 21 Feb.",
+        ),
+    ]
+    assert _rows(out, landed, 30, "full-service", "rate cut") == [(2,)]
     # Every tick of every day has its chart rows for every hotel, and a day with no news holds
     # one row saying so, at tick 1.
     assert _rows(out, "SELECT COUNT(DISTINCT (as_of_day, hotel, as_of_tick)) FROM stay_dates") == [
