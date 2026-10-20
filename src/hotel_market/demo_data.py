@@ -21,7 +21,10 @@ The file adds the tables the page reads as they are (sql/demo.sql): hotels, days
 stay_dates, queue, scorecard, outcome and gains. It also adds a run table with the seed, the words
 for where the reasons came from and the market's name, and a strip table for each moment: the
 first news so far, the stay dates flagged, the plans accepted so far that day and their value at
-stake together, the last three of which the page shows as tiles. A queued plan's row carries a
+stake together, the last three of which the page shows as tiles, and, when the day's news names
+nights past the agent's window, a clause for the charts' heading saying how far the agent looks.
+The news writes a whole percentage without its ".0", and an event's demand against normal, "three
+times normal" when it is a whole multiple. A queued plan's row carries a
 headline that leads with its value at stake, a line that gives the request's numbers for its stay
 dates their dates, and the earlier changes on its stay dates as the stored request lists them, the
 read-back the page shows under "Since our last change on these dates", once as written and once
@@ -175,6 +178,7 @@ def build(
     final: dict[str, Books] = {}
     # (day, hotel) -> the news so far, each with the tick it landed at
     texts: dict[tuple[int, str], list[tuple[int, str, str]]] = {}
+    reach: dict[tuple[int, str], int] = {}  # (day, hotel) -> the last stay date its news names
     entries_of: dict[tuple[int, str], list[Entry]] = {}  # (day, hotel) -> the day's entries so far
 
     def observe(day: int, books: Books, agent: Agent, tick: int = 1) -> None:
@@ -183,13 +187,14 @@ def build(
         feed = simulated_sources(books, day, tick if ticks > 1 else None)
         table = detect_numbers(day, feed, customer, tick=tick if ticks > 1 else None)
         for hotel in customer.hotels:
+            key = (day, hotel.key)
             own = [e for e in agent.entries if e.day == day and e.hotel == hotel.key]
-            entries_of.setdefault((day, hotel.key), []).extend(own)
-            texts.setdefault((day, hotel.key), []).extend(
-                (tick, kind, text)
-                for kind, text in _news_texts(day, hotel, feed, table, customer, tick, ticks)
-                + _pace_texts(entries_of[(day, hotel.key)], tick, ticks)
+            entries_of.setdefault(key, []).extend(own)
+            found = _news_texts(day, hotel, feed, table, customer, tick, ticks) + _pace_texts(
+                entries_of[key], tick, ticks
             )
+            texts.setdefault(key, []).extend((tick, kind, _whole(text)) for kind, text, _ in found)
+            reach[key] = max([reach.get(key, -1), *(last for *_, last in found)])
             asked = (day, hotel.key) if ticks == 1 else (day, tick, hotel.key)
             rows["queue"] += _queue_rows(
                 day, hotel, own, customer.min_value_at_stake, tick, agent.asked.get(asked), ticks
@@ -197,9 +202,7 @@ def build(
             rows["stay_dates"] += _stay_rows(
                 day, hotel, table, entries_of[(day, hotel.key)], ticks, tick
             )
-            strip.append(
-                _strip_row(day, hotel, tick, texts[(day, hotel.key)], entries_of[(day, hotel.key)])
-            )
+            strip.append(_strip_row(day, hotel, tick, texts[key], entries_of[key], reach[key]))
         if tick == ticks:
             figures.update(_stayed(day, "agent", books, customer))
             final["agent"] = books
@@ -255,9 +258,9 @@ def build(
             "CREATE TABLE IF NOT EXISTS strip (as_of_day INTEGER NOT NULL, hotel VARCHAR NOT NULL, "
             "as_of_tick INTEGER NOT NULL, news VARCHAR NOT NULL, nights_flagged INTEGER NOT NULL, "
             "recommendations INTEGER NOT NULL, value_at_stake VARCHAR NOT NULL, "
-            "PRIMARY KEY (as_of_day, hotel, as_of_tick))"
+            "horizon_text VARCHAR NOT NULL, PRIMARY KEY (as_of_day, hotel, as_of_tick))"
         )
-        connection.executemany("INSERT INTO strip VALUES (?, ?, ?, ?, ?, ?, ?)", strip)
+        connection.executemany("INSERT INTO strip VALUES (?, ?, ?, ?, ?, ?, ?, ?)", strip)
     finally:
         connection.close()
     return source
@@ -344,16 +347,17 @@ def _ends(stays: Sequence[int]) -> tuple[int, int]:
 
 def _news_texts(
     day: int, hotel: Hotel, feed: Sources, table, customer: Customer, tick: int = 1, ticks: int = 1
-) -> list[tuple[str, str]]:
-    """What became known at a moment for the hotel, in plain words, as (kind, text) pairs. On a
-    finer clock each opens with the time its feed landed at, and the table is the moment's, so a
-    move is since the previous tick. A scripted move is named for what it is: an event that only
-    moves the competitors' rates reads as their raise, and a rate cut from the customer file as
-    the cut with the median's move it makes, so the comp set line leaves out the nights either
-    already explains."""
+) -> list[tuple[str, str, int]]:
+    """What became known at a moment for the hotel, in plain words, as (kind, text, last stay
+    date it names) triples. On a finer clock each opens with the time its feed landed at, and the
+    table is the moment's, so a move is since the previous tick. A scripted move is named for what
+    it is: an event that only moves the competitors' rates reads as their raise, and a rate cut
+    from the customer file as the cut with the median's move it makes, so the comp set line
+    leaves out the nights either already explains. An event's demand reads against normal, "three
+    times normal" when it is a whole multiple."""
     time = _time(tick, ticks) if ticks > 1 else ""
     moment = (day, tick) if ticks > 1 else (day, None)
-    texts: list[tuple[str, str]] = []
+    texts: list[tuple[str, str, int]] = []
     explained: set[int] = set()  # nights whose comp set move a line above already gives
     for event in feed.events.known(*moment):
         if event.known_day == day and hotel.key in event.hotels and _landed(table, "new_event"):
@@ -366,11 +370,11 @@ def _news_texts(
                 )
             else:
                 sentence = (
-                    f"An event, the {event.name.lower()}, was announced for {span}. Demand there "
-                    f"is {percent_change(event.uplift)}, and the comp set's rates are "
+                    f"An event, the {event.name.lower()}, was announced for {span}. Demand on "
+                    f"those nights is {_demand(event.uplift)}, and the comp set's rates are "
                     f"{percent_change(event.comp_rate_raise)}."
                 )
-            texts.append(("event", _at(time, sentence)))
+            texts.append(("event", _at(time, sentence), event.end_day))
             if event.comp_rate_raise:
                 explained |= set(range(event.start_day, event.end_day + 1))
     own = table[table["hotel"] == hotel.key]
@@ -386,7 +390,7 @@ def _news_texts(
             change = [median[s] for s in nights if s in median]
             if any(change):  # the shop at this moment shows the cut
                 sentence += f", so the comp set median is {_whole(percent_change_range(change))}"
-            texts.append(("rate cut", _at(time, f"{sentence}.")))
+            texts.append(("rate cut", _at(time, f"{sentence}."), cut.end_day))
             explained |= set(nights)
     revision = feed.schedules.passenger_revision(*moment)
     for first, last in _runs(s for s in range(HORIZON_DAYS) if revision[s] != 0):
@@ -399,6 +403,7 @@ def _news_texts(
                     f"{percent_change_range(revision[s] for s in range(first, last + 1))} for "
                     f"{stay_span(first, last)}.",
                 ),
+                last,
             )
         )
     moved = own[own["median_change"].abs() >= customer.median_threshold]
@@ -417,27 +422,29 @@ def _news_texts(
                     f"{percent_change_range(changes[s] for s in range(first, last + 1))} for "
                     f"{stay_span(first, last)}.",
                 ),
+                last,
             )
         )
     return texts
 
 
-def _pace_texts(today: Sequence[Entry], tick: int, ticks: int) -> list[tuple[str, str]]:
+def _pace_texts(today: Sequence[Entry], tick: int, ticks: int) -> list[tuple[str, str, int]]:
     """The nights a flag covers because their bookings run ahead of or behind the usual pace,
-    which no feed reports, as (kind, text) pairs: "Bookings are running ahead of the usual pace
-    for Thu 18 Feb, Sun 21 Feb and Fri 26 Mar." A night is named once a day, at the first tick a
-    pace flag covers it, and a list of more than three runs of nights ends "and 2 more"."""
+    which no feed reports, as (kind, text, last stay date) triples: "Bookings are running ahead
+    of the usual pace for Thu 18 Feb, Sun 21 Feb and Fri 26 Mar." A night is named once a day, at
+    the first tick a pace flag covers it, and a list of more than three runs of nights ends "and
+    2 more"."""
     time = _time(tick, ticks) if ticks > 1 else ""
     texts = []
     for cause, how in ((AHEAD, "ahead of"), (BEHIND, "behind")):
         now = _covered(e for e in today if e.tick == tick and cause in e.causes)
-        before = _covered(e for e in today if e.tick < tick and cause in e.causes)
-        spans = [stay_span(first, last) for first, last in _runs(now - before)]
+        new = now - _covered(e for e in today if e.tick < tick and cause in e.causes)
+        spans = [stay_span(first, last) for first, last in _runs(new)]
         if len(spans) > 3:
             spans = [*spans[:3], f"{len(spans) - 3} more"]
         if spans:
             sentence = f"Bookings are running {how} the usual pace for {_listed(spans)}."
-            texts.append(("pace", _at(time, sentence)))
+            texts.append(("pace", _at(time, sentence), max(new)))
     return texts
 
 
@@ -449,6 +456,17 @@ def _whole(text: str) -> str:
 def _percent(fraction: float) -> str:
     """A share as a percentage to one decimal, a whole one without its ".0": "20%", "8.3%"."""
     return _whole(f"{fraction:.1%}")
+
+
+def _demand(uplift: float) -> str:
+    """An event's demand against normal: "three times normal" or "twice normal" when it is a whole
+    multiple of it, else the change, "up 35%"."""
+    times = 1 + uplift
+    if times < 2 or times != round(times):
+        return percent_change(uplift)
+    count = round(times)
+    word = NUMBER_WORDS[count] if count < len(NUMBER_WORDS) else str(count)
+    return "twice normal" if count == 2 else f"{word} times normal"
 
 
 def _competitors(count: int) -> str:
@@ -682,16 +700,34 @@ def _money(value: float) -> str:
 
 
 def _strip_row(
-    day: int, hotel: Hotel, tick: int, news: Sequence[tuple], today: Sequence[Entry]
+    day: int,
+    hotel: Hotel,
+    tick: int,
+    news: Sequence[tuple],
+    today: Sequence[Entry],
+    reach: int = -1,
 ) -> tuple:
     """The tiles under the page's title at a moment: the first news so far, or "Nothing new"; the
     stay dates the day's flags so far cover, which the charts shade; and the plans accepted so far
     that day with their value at stake together, "$0" when there is none. On the daily clock the
-    day so far is its one tick."""
+    day so far is its one tick. When the day's news so far names a stay date past the agent's
+    window (`reach`), a clause for the charts' heading says how far the agent looks: "The agent
+    looks 90 nights ahead, to Fri 23 Apr."."""
     nights = {stay for entry in today for stay in range(entry.first_stay, entry.last_stay + 1)}
     accepted = [entry.value_at_stake for entry in today if entry.queued and entry.action != HOLD]
     first = news[0][2] if news else "Nothing new"
-    return (day, hotel.key, tick, first, len(nights), len(accepted), _money(sum(accepted)))
+    window = stay_window(day)
+    ahead = f"The agent looks {len(window)} nights ahead, to {stay_label(window[-1])}."
+    return (
+        day,
+        hotel.key,
+        tick,
+        first,
+        len(nights),
+        len(accepted),
+        _money(sum(accepted)),
+        ahead if reach > window[-1] else "",
+    )
 
 
 def _alternative(entry: Entry, minimum: float) -> tuple[str, str]:
@@ -825,12 +861,12 @@ def tiles(agent: Sequence[float], fixed: Sequence[float]) -> list[tuple]:
 
 
 def value_text(position: int, value: float) -> str:
-    """A figure as its tile shows it: occupancy to a tenth of a percent, ADR and RevPAR to the
-    cent, revenue and contribution to the dollar."""
+    """A figure as its tile shows it: occupancy to a tenth of a percent, a whole one without its
+    ".0", ADR and RevPAR to the cent, revenue and contribution to the dollar."""
     if math.isnan(value):
         return "n/a"
     if position == 0:
-        return f"{value:.1%}"
+        return _percent(value)
     if position in (1, 2):
         return f"${value:,.2f}"
     return f"${value:,.0f}"

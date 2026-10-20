@@ -14,7 +14,9 @@ three tiles: the nights flagged, the recommendations and their value at stake to
 charts follow, side by side, over the next two weeks with the nights flagged so far that day
 shaded, or over the first flagged night to the last, two weeks at least, when one lies further
 out: our rate, the comp set median and each recommended change as an arrow, and the rooms on
-the books as bars against the usual pace. Then come the day's recommendations and the
+the books as bars against the usual pace. Their heading names the flagged nights, and when the
+news names nights past the agent's window it adds how far the agent looks, from the file. Then
+come the day's recommendations and the
 scorecard: the nights already stayed for the hotel and for all the hotels together. Each
 recommendation is one line led by its value at stake. Where the stored request listed the
 hotel's earlier changes on a plan's stay dates, the next line shows them under "Since our last
@@ -281,7 +283,7 @@ def main() -> None:
     with st.container(key="news"):  # the key names the news for STYLE's tighter lines
         st.markdown("  \n".join(plain(text) for text in news["text"].tolist()) or NOTHING_YET)
     strip = rows(
-        "SELECT nights_flagged, recommendations, value_at_stake FROM strip "
+        "SELECT nights_flagged, recommendations, value_at_stake, horizon_text FROM strip "
         "WHERE as_of_day = ? AND hotel = ? AND as_of_tick = ?",
         day,
         key,
@@ -448,7 +450,9 @@ def main() -> None:
     if runs:
         nights = runs[0] if len(runs) == 1 else f"{', '.join(runs[:-1])} and {runs[-1]}"
         heading = f"Flagged today{', shaded' if shade else ''}: {nights}"
-    st.markdown(f"**{plain(heading)}.**")
+    # When the news names nights past the agent's window, the heading says how far it looks.
+    ahead = f" {strip['horizon_text']}" if strip["horizon_text"] else ""
+    st.markdown(f"**{plain(heading)}.{plain(ahead)}**")
     left, right = st.columns(2)
     height = PLOT_HEIGHTS["chart"]
     left.altair_chart(_sized(alt.layer(*layers), height), width="stretch")
@@ -518,7 +522,8 @@ def main() -> None:
             if own.empty:
                 st.caption(f"{title}: no nights stayed yet")
             else:
-                st.caption(f"{title}: {own.iloc[0]['night_count']} nights stayed")
+                count = own.iloc[0]["night_count"]
+                st.caption(f"{title}: {count} {'night' if count == 1 else 'nights'} stayed")
                 _tiles(own)
             if show_end:
                 st.caption(f"All five months: {final.iloc[0]['night_count']} nights")

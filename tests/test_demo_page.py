@@ -36,6 +36,9 @@ SIDEBAR = (  # the seed's place among the results' runs
 STAND_IN = "Reasons marked * are the stand-in's, not the model's."
 STRIP = ["Nights flagged", "Recommendations", "Value at stake today"]
 AIRPORT_STAYS = "Stay dates 50 to 109 are Tue 23 Feb to Fri 23 Apr."  # its numbers, dated
+DAY20_HEADING = (  # the charts' heading on day 20, whose filing runs past the agent's window
+    "**Flagged today: Tue 23 Feb to Fri 23 Apr. The agent looks 90 nights ahead, to Fri 23 Apr.**"
+)
 # The program's words, which only the engineers' expander may show. "flagged" is the exception,
 # in the strip's label and the charts' heading, so "flag" matches only as a word of its own.
 PROGRAMS_WORDS = re.compile(
@@ -134,10 +137,10 @@ def test_the_page_shows_the_airport_hotel_on_day_20(demo_file, monkeypatch):
     assert [metric.value for metric in page.metric][:3] == ["60", "1", "+$10,140"]
     text = _text(page)
     assert (
-        "The airlines filed a schedule change: arriving passengers are up 12.8% to 23.0% for "
+        "The airlines filed a schedule change: arriving passengers are up 12.8% to 23% for "
         "Tue 23 Feb to Wed 2 Jun."
     ) in text
-    assert "**Flagged today: Tue 23 Feb to Fri 23 Apr.**" in text  # the charts' nights
+    assert DAY20_HEADING in text  # the charts' nights, and the filing runs past them
     assert "**Today's recommendations**" in text and "Today's queue" not in text
     assert AIRPORT_HEADLINE in text
     # The model's reason sits in a closed expander under its plan, after the stay dates'
@@ -368,6 +371,15 @@ def test_the_charts_keep_two_weeks_and_shade_the_flagged_nights(demo_file, monke
     assert pace in text and "Nothing new became known today." not in text
 
 
+def test_one_night_stayed_reads_as_one_night(demo_file, monkeypatch):
+    """On day 1 the scorecard counts one night stayed, in the singular."""
+    testing = pytest.importorskip("streamlit.testing.v1")
+    page = _page(testing, monkeypatch, demo_file, "convention", 1)
+    captions = [caption.value for caption in page.main.caption]
+    assert "Downtown convention hotel: 1 night stayed" in captions
+    assert "All four hotels: 1 night stayed" in captions
+
+
 def test_a_run_of_flagged_nights_is_shaded_as_one_band(demo_file, monkeypatch):
     """Each flagged night's band fills its whole slot on the axis, its share of the gap to the
     next night included, so a run of flagged nights reads as one band, not as a stripe a night.
@@ -395,7 +407,7 @@ def test_the_engineers_expander_is_the_only_place_the_programs_words_appear(demo
         found = [word for text in shown for word in PROGRAMS_WORDS.findall(text)]
         assert not found, found
         assert any(text.startswith("Nights flagged") for text in shown)
-        assert "**Flagged today: Tue 23 Feb to Fri 23 Apr.**" in shown
+        assert DAY20_HEADING in shown
         engineers = [e for e in page.expander if e.label == "For engineers"]
         assert len(engineers) == 1 and not engineers[0].proto.expanded
         inside = _shown(page, engineers=True)

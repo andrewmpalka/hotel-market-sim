@@ -209,6 +209,7 @@ def test_the_tiles_texts_round_and_a_change_that_rounds_to_nothing_is_zero():
     assert [value_text(p, v) for p, v in enumerate((0.7405, 220, 162.912, 651640, 434426.67))] == [
         "74.1%", "$220.00", "$162.91", "$651,640", "$434,427"
     ]  # fmt: skip
+    assert value_text(0, 0.75) == "75%"  # a whole percentage has no ".0"
     assert value_text(1, math.nan) == "n/a"
     assert delta_text(0, -0.0051) == "-0.5 pts" and delta_text(0, 0.0004) == "0"
     assert delta_text(1, 1.136) == "+$1.14" and delta_text(2, -0.004) == "0"
@@ -346,14 +347,16 @@ def test_a_queued_plan_dates_the_requests_numbers_for_its_stay_dates(demo_file):
 
 def test_the_strip_counts_the_moments_flags_and_recommendations(demo_file):
     # Day 20 at the lifestyle hotel: the filing is the day's first news, the day's flags cover
-    # the stay dates the charts band in red, and the three accepted plans' values add up.
-    [(news, nights, count, money)] = _rows(
+    # the stay dates the charts shade, and the three accepted plans' values add up. The filing
+    # runs to Wed 2 Jun, past the agent's window, so the charts' heading says how far it looks.
+    [(news, nights, count, money, ahead)] = _rows(
         demo_file,
-        "SELECT news, nights_flagged, recommendations, value_at_stake FROM strip "
+        "SELECT news, nights_flagged, recommendations, value_at_stake, horizon_text FROM strip "
         "WHERE as_of_day = 20 AND hotel = 'lifestyle' AND as_of_tick = 1",
     )
     assert news.startswith("The airlines filed a schedule change")
     assert nights > 0 and count == 3
+    assert ahead == "The agent looks 90 nights ahead, to Fri 23 Apr."
     values = _rows(
         demo_file,
         "SELECT value FROM queue WHERE as_of_day = 20 AND hotel = 'lifestyle' "
@@ -371,10 +374,10 @@ def test_the_strip_counts_the_moments_flags_and_recommendations(demo_file):
     # A day with no news, no flag and no plan.
     quiet = _rows(
         demo_file,
-        "SELECT news, nights_flagged, recommendations, value_at_stake FROM strip "
+        "SELECT news, nights_flagged, recommendations, value_at_stake, horizon_text FROM strip "
         "WHERE as_of_day = 0 AND hotel = 'convention'",
     )
-    assert quiet == [("Nothing new", 0, 0, "$0")]
+    assert quiet == [("Nothing new", 0, 0, "$0", "")]
 
 
 def test_the_news_names_the_convention_the_filings_and_the_comp_set_cut(demo_file):
@@ -392,7 +395,7 @@ def test_the_news_names_the_convention_the_filings_and_the_comp_set_cut(demo_fil
         (
             "event",
             "An event, the convention, was announced for Thu 18 Feb to Sun 21 Feb. "
-            "Demand there is up 35.0%, and the comp set's rates are up 15.0%.",
+            "Demand on those nights is up 35%, and the comp set's rates are up 15%.",
         ),
     ]
     filings = _rows(
@@ -402,7 +405,7 @@ def test_the_news_names_the_convention_the_filings_and_the_comp_set_cut(demo_fil
     assert filings == [
         (
             20,
-            "The airlines filed a schedule change: arriving passengers are up 12.8% to 23.0% "
+            "The airlines filed a schedule change: arriving passengers are up 12.8% to 23% "
             "for Tue 23 Feb to Wed 2 Jun.",
         ),
         (
@@ -421,6 +424,22 @@ def test_the_news_names_the_convention_the_filings_and_the_comp_set_cut(demo_fil
             "median is down 8.3% to 11%.",
         )
     ]
+
+
+def test_the_page_texts_write_a_whole_percentage_without_a_point_zero(demo_file):
+    """Every text code writes for the page gives a whole percentage without its ".0", and an
+    event's demand reads against normal. The model's own reasons stay as it wrote them."""
+    for table, column in (
+        ("news", "text"),
+        ("strip", "news"),
+        ("scorecard", "value_text"),
+        ("outcome", "value_text"),
+        ("queue", "headline"),
+        ("queue", "alternative_text"),
+    ):
+        found = f"SELECT count(*) FROM {table} WHERE strpos({column}, ?) > 0"
+        assert _rows(demo_file, found, ".0%") == [(0,)], (table, column)
+        assert _rows(demo_file, found, "Demand there is") == [(0,)], (table, column)
 
 
 def test_a_flag_from_pace_alone_says_why_in_the_news(demo_file, demo_file_intraday):
@@ -547,7 +566,7 @@ def test_at_four_ticks_the_news_names_each_feeds_tick_and_the_filings_outcome(de
     assert day20[0] == (
         "schedule",
         "At 14:00 the airlines filed a schedule change: arriving passengers are up 12.8% "
-        "to 23.0% for Tue 23 Feb to Wed 2 Jun.",
+        "to 23% for Tue 23 Feb to Wed 2 Jun.",
     )
     kinds = [kind for kind, _ in day20]
     assert "decision" in kinds
@@ -631,8 +650,9 @@ def test_the_intraday_file_holds_each_ticks_news_queue_and_chart_rows(demo_file_
         "ORDER BY position",
     )
     assert [(tick, kind) for tick, kind, _ in news] == [(2, "event"), (4, "decision")]
-    assert news[0][2].startswith(
-        "At 11:00 an event, the concert, was announced for Thu 4 Feb to Fri 5 Feb."
+    assert news[0][2] == (
+        "At 11:00 an event, the concert, was announced for Thu 4 Feb to Fri 5 Feb. Demand on "
+        "those nights is three times normal, and the comp set's rates are unchanged."
     )
     assert news[1][2].startswith(
         "The first flag rose at 11:00, and the first raise was accepted at 11:00 for "

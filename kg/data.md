@@ -299,7 +299,7 @@ the plans, the model's request and answer, and what the command writes.
 
 ### DAT-33 [C] The demo file
 - File: sql/demo.sql
-- Tables: eight from sql/demo.sql beside the stored tables ([[DAT-28]]). demo_data.py also creates run (seed, reason_source, ticks, market) and strip (as_of_day, hotel, as_of_tick, news, nights_flagged, recommendations, value_at_stake).
+- Tables: eight from sql/demo.sql beside the stored ones ([[DAT-28]]). demo_data.py adds run (seed, reason_source, ticks, market) and strip (as_of_day, hotel, as_of_tick, news, nights_flagged, recommendations, value_at_stake, horizon_text).
 - Hotels and days: hotels (position, key, name, rooms, start_rate, rate_axis_low, rate_axis_high). days (as_of_day, label, stay_window, index). news (as_of_day, hotel, as_of_tick, position, kind, text) is what became known, by tick.
 - Chart: stay_dates (as_of_day, hotel, as_of_tick, stay_day, label, tick, rate, comp_median, rooms_on_books, pace, flagged, causes, flag, planned_rate, decided_at), one row per stay date in the window, per tick as of it.
 - Queue: queue (as_of_day, hotel, as_of_tick, position, stays, causes, plan, value, value_text, reason, reason_source, queued, outcome, alternative, alternative_text, headline, request_digest, stay_numbers_text, decided_at, in_effect).
