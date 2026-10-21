@@ -2,23 +2,22 @@
 
 [![tests](https://github.com/andrewmpalka/hotel-market-sim/actions/workflows/test.yml/badge.svg)](https://github.com/andrewmpalka/hotel-market-sim/actions/workflows/test.yml)
 
-A pricing agent working for one customer: a hotel brand that runs revenue
-centrally for four hotels in a made-up city. The agent reads the city's feeds
-and recommends rate changes. Every number is synthetic. The agent runs for 60
-days; the bookings run for 150, so every night is finished and counted.
+A pricing agent working for one customer: a brand that runs revenue centrally
+for four hotels in a made-up city. Every number is synthetic. For 60 days the
+agent reads the market's feeds and recommends what to charge. Bookings continue
+for 150, so no night is still on sale at the end.
 
-Most days in this city nothing happens. Guests book along the usual curve
-with the usual luck, competitors' rates wobble a little, and the best price
-for an ordinary night is the one the hotel already charges. Four times,
-something does happen, and each is set before the run starts:
-a convention is announced on day 10, new flights are filed on day 20, a
-competitor cuts its rate on day 30, and an airline suspends a route on day
-40. The repository calls these shocks. They are the only events that change
-demand or move a comp set, which means they are the only moments a pricing
-agent can earn anything, and because each lands on a known day, every dollar
-in the results can be traced to the shock that produced it. The schedule rows
-follow Cirium's published column names; every row is invented, and the
-repository has no Cirium data and no affiliation with Cirium.
+Usually nothing happens. Guests book along the expected curve with random
+variation, competitors' rates wobble a little, and for an ordinary date the
+current price is already the best one. The exceptions fall on days 10, 20, 30
+and 40. In that order, a convention is announced, new flights are filed, a
+rival discounts its rooms, and an airline suspends a route. The repository
+calls these shocks. They are the only events that change demand or move a comp
+set, which means there is nothing to earn at any other time. Because they are
+fixed before the run starts, each dollar in the results can be traced to the
+shock that produced it. The schedule rows follow Cirium's published column
+names, but no data here comes from that company and the project has no
+affiliation with it.
 
 ![The lifestyle hotel on day 20](docs/images/day20.png)
 
@@ -28,86 +27,75 @@ change on those dates.*
 
 ## One customer, one file
 
-Everything in this repository runs for one customer. A customer is the hotel
-company the agent works for. This one is a brand that runs revenue centrally
-for four of its hotels. Everything specific to that customer sits in one file,
-[customers/demo.toml](customers/demo.toml). The simulator and the agent both
-read it, and the agent's code never changes for a customer.
+A customer is the hotel company the agent works for. Everything specific to
+it sits in [customers/demo.toml](customers/demo.toml), which the simulator and
+the agent both read. A new customer gets its own file and needs no code
+changes.
 
 | Option | What it sets | This customer |
 | --- | --- | --- |
-| Hotels | Each hotel's rooms and starting rate | Convention 400 rooms at $220, full-service 250 at $190, lifestyle 120 at $240, airport 150 at $140 |
-| Air share | The share of a hotel's guests who fly in, so how much airline news moves it | Convention 60%, full-service 45%, lifestyle 50%, airport 80% |
-| Normal demand | How full a normal night is, and how that varies from Monday to Sunday | 75% full (the airport 85%), with each hotel's own weekday pattern |
-| Booking curve | The share of a night usually booked at each number of days out | The convention hotel has a quarter booked 90 days out; the airport hotel has half booked a week out |
+| Hotels | Each one's rooms and starting rate | Convention 400 rooms at $220, full-service 250 at $190, lifestyle 120 at $240, airport 150 at $140 |
+| Air share | What fraction of a hotel's guests fly in, and so how much airline news moves it | Convention 60%, full-service 45%, lifestyle 50%, airport 80% |
+| Normal demand | How full a typical night is, and how that varies from Monday to Sunday | 75% (the airport 85%), with each hotel's own weekday pattern |
+| Booking curve | How much of a night is usually booked at each number of days out | Convention a quarter at 90 days, airport half at a week |
 | Competitors | Four per hotel, priced at fixed offsets from its rate | 8% and 3% below, 3% and 8% above |
-| Rate limits | The lowest and highest rate the agent may set | 70% and 140% of the starting rate |
-| Room cost | The cost of servicing each room sold | A third of the starting rate |
-| Flag thresholds | When a night is flagged for the agent to price | Bookings off pace by 10% of the rooms or 3 standard deviations, whichever is larger; arriving passengers revised by 5%; the comp median moved 5% since yesterday |
+| Rate limits | The lowest and highest the agent may charge | 70% and 140% of the starting rate |
+| Room cost | What the hotel spends servicing each sale | A third of the starting rate |
+| Flag thresholds | What sends a night to the agent to price | Bookings off pace by 10% of the rooms or 3 standard deviations, whichever is larger; arriving passengers revised by 5%; the comp median moved 5% since yesterday |
 | Hold | How long a changed night ignores pace alone | 7 days |
-| Minimum value | The smallest gain over holding that is worth sending to the model | $250 |
-| Target | What each option is scored on | Contribution, which is room revenue minus the cost of servicing each room sold |
-| Market price response | How much the whole market's demand falls when the comp median rises | 1.0, so demand falls in proportion |
-| Calendar | The news this customer's market sees | A convention announced on day 10 that raises demand 35% at the two downtown hotels on nights 45 to 48; two of the full-service hotel's competitors cutting 20% from day 30 on nights 37 to 39 |
+| Minimum value | The smallest gain over leaving the price alone that is worth sending to the model | $250 |
+| Target | What each option is scored on | Contribution, which is revenue minus room cost |
+| Market price response | How much demand across the city falls when the comp median rises | 1.0, which is proportional |
+| Calendar | The news this file schedules | A convention announced on day 10 that raises demand 35% at the two downtown hotels on nights 45 to 48; two of the full-service hotel's competitors cutting 20% from day 30 on nights 37 to 39 |
 
 The other two shocks, new flights on day 20 and a suspended route on day 40,
-are not in the customer file. They belong to the simulator's made-up airline
-schedule, [src/hotel_market/schedule.py](src/hotel_market/schedule.py), which
-every customer shares.
+are not in this file. They belong to the simulator's airline schedule,
+[src/hotel_market/schedule.py](src/hotel_market/schedule.py), which all
+markets share.
 
-Two more files use the same format.
-[customers/demo-intraday.toml](customers/demo-intraday.toml) is the same
-customer with its news landing at set times of day, plus a close-in concert,
-for the runs at four ticks a day. [customers/harbour.toml](customers/harbour.toml)
-is a second customer with three hotels in a made-up harbor city, and it runs
-with one flag and no change to the agent.
+Two more files share this format.
+[customers/demo-intraday.toml](customers/demo-intraday.toml) moves the demo's
+news to set hours and adds a close-in concert, for runs at four ticks a day.
+[customers/harbour.toml](customers/harbour.toml) is another customer, three
+hotels in a harbor city, and it runs with one command-line option.
 
 ## Run it
 
     make setup          # .venv with the package, pytest and ruff
-    make test           # the tests; make test-all adds the ten slow ones
-    make demo SEED=7    # the demo page for seed 7, with the model's recorded reasons
+    make test           # the fast suite; make test-all adds the ten slow ones
+    make demo SEED=7    # the read-only page
 
-**Without an API key** you can run everything except a new model call: the
-simulator, the tests, every experiment in docs/results.md, and the demo page.
-The model's answers for seed 7 are recorded in the repository, so the demo
-shows its real reasons offline. Where no answer is recorded, a stand-in
-answers in the model's place: it says yes to every plan and writes a reason
-from the entry's own figures, and the run says so. That is what the tests
-and the 20-seed sweeps use, because they measure the plans, not the model.
+**Without an API key** everything works except a new model call, including
+the simulator, every experiment in docs/results.md and the demo page. Seed 7's
+answers are stored in the repository, so the page shows them offline. Where
+nothing is stored, a stand-in takes the model's place. It approves whatever it
+is given and drafts a reason from the entry's own figures, and the output says
+so. The tests and the 20-seed sweeps rely on it, because they measure what the
+code chooses.
 
-**With an API key** the model reviews each plan and writes each reason
-itself. Put `ANTHROPIC_API_KEY` in `.env` and run `make live SEED=7` for one
-seed, or `make bench` for the reviewer benchmark. Answers are cached by the
-request's digest, so a rerun is free and a replay never calls the model. A
-live seed costs between $0.08 and $0.20; the whole benchmark cost $85.87.
+**With an API key** the model reviews each plan and explains its verdict. Put
+`ANTHROPIC_API_KEY` in `.env`, then run `make live SEED=7`, or `make bench` to
+compare reviewers. Responses are cached by the request's digest, so a rerun or
+a replay is free. A live seed costs between $0.08 and $0.20, and the full
+benchmark came to $85.87.
 
-Every other command is in [docs/commands.md](docs/commands.md).
+The other commands are in [docs/commands.md](docs/commands.md).
 
 ## Same luck twice
 
-A computer cannot roll dice, so it uses a scrambler: give it a number
-and it hands back a stream of numbers that look random, pass every test for
-random, and are completely fixed by the number you started with. That
-starting number is the seed. Set it to 7 and you get one particular stream;
-set it to 7 again, on any machine, and you get the identical stream.
-
-Everything that is luck in this city comes from that stream: which night a
-guest books, how far a rate shop wobbles, how many people turn up for the
-concert. So the seed decides the whole five months of luck before the run
-starts, and running seed 7 twice gives the same five months twice.
-
-That is the point. The agent run and the frozen-rate run both use seed 7,
-so both get the same guests on the same days, and whatever differs between
-them is the agent's doing. Anyone who clones this repository and runs seed 7
-gets the same decisions file, byte for byte, which is how a claim here can
-be checked instead of trusted.
-
-One seed is one roll. Seeds 1 to 20 are twenty different five months, and
-the results are averaged over them with the spread shown, so you can tell a
-real gain from a lucky seed. Seven is the demo seed because it is the number
-typed into the first run; it is one dial position among many, and it
-happens to be row 7 of every table.
+All of the luck in this city comes from one number, the seed. The seed fixes
+a stream of numbers that look random, and the same seed gives the same stream
+on any machine. That stream decides which night each guest books, how far each
+rate shop wobbles and how many people come to the concert, so the seed settles
+all five months of luck before the run starts. The agent run and the
+frozen-rate run use the same seed, which means they see the same guests on the
+same days and any difference between them is the agent's doing. Anyone who
+clones the repository and runs seed 7 gets the same decisions file, byte for
+byte, and can check the results here for themselves. Seeds 1 to 20 give twenty
+different five-month histories, and the results average over them and show
+the spread, so you can tell a real gain from a lucky seed. Seed 7 is the demo
+seed because it was the number typed into the first run, and it is row 7 of
+every table.
 
 ## What the agent does each day
 
@@ -246,56 +234,48 @@ A second market runs from its file with one flag and no change to the agent:
 
 ## What the world taught me
 
-**The neighbours trap.** When competitors follow the hotel's raises, the
-never-cut rule beats the agent by $54,602 a seed, ahead in every seed. Each
-raise moves the comp median, the moved median looks like news, and the news
-allows another raise. Anyone who has watched a comp set shop itself will
-recognise it. The simulator's market only gives back part of the gain, and
-nothing here says how much a real one would.
-
-**The convention didn't matter.** It is announced 35 days out, and a
-convention hotel has most of those nights on the books by then. The plans
-earn +$614 a seed on its stay dates, and +$100 if the competitors do not
-raise with it. The money in a convention is in the group block and the
-minimum stay; the agent only advises on the second and never touches the
-first. A later version puts an event known before the run into the day-0
-books.
-
-**Faster only helps where the news is fast.** The clock table above. I built
-it expecting a gain on the demo market and got none; the intraday market is
-where it showed, and the reason is the feeds, not the agent.
+- When competitors follow the hotel's raises, the agent reads each moved comp
+  median as news and raises again, and the never-cut rule beats it by $54,602
+  a seed.
+- The convention made little difference, because it is announced 35 days out
+  and the convention hotel has most of those nights booked by then, so the
+  plans earn only $614 a seed on its dates.
+- Pricing four times a day instead of once only paid off where news arrived
+  during the day, adding $2,101 a seed on the market with intraday news and
+  $40 on the demo market.
 
 Details: [the rule-based control](docs/results.md#the-rule-based-control),
 [the convention](docs/results.md#the-convention-without-the-competitors-raise).
 
 ## What I'd build next
 
-The design in [docs/prd-v2-next-steps.md](docs/prd-v2-next-steps.md) is where
-I'd go next, and none of it is built. It starts from five gaps that this
-version's own runs show. The first is that the model sees a plan and its
-numbers and nothing else, so it can't find out why a plan might be wrong. The
-design splits the model's job in two. An investigator, which is a model with
-read-only tools, looks up what a revenue manager would check before acting,
-such as the rooms booked over the last week against the forecast, the comp
-median at each of the last five shops and the hotel's own recent changes on
-those nights. It writes down what it found and cannot choose an action. A
-decider then reads that evidence and chooses to recommend the plan, hold it or
-send it to a person, and code checks the choice before anything changes.
+[docs/prd-v2-next-steps.md](docs/prd-v2-next-steps.md) is my design for the
+next version, and none of it is built. It starts from five gaps in this
+version, and the first is that the model sees a plan and its numbers and
+nothing else, so it can't check why a plan might be wrong. The design splits
+the model's job in two. An investigator, which is a model with read-only
+tools, looks up what a revenue manager would check before acting, such as the
+last week's bookings against the forecast, the comp median at each of the last
+five shops and the hotel's own recent changes on those nights. It records what
+it found but can't choose an action. A decider reads that record and chooses
+to recommend the plan, hold it or send it to a person, and code checks the
+choice before anything changes.
 
 The proposed decider is TypeSafe's Jev, which returns one typed choice with a
-probability for each option. The current reviewer sits behind the same
-interface, so the benchmark can compare the two on identical evidence. Three
-fixes need no model, such as not counting a comp move that follows our own
-change, so they come first. Each part ships only if the benchmark shows it
-beats the simpler thing it would replace, and all of it sits behind a setting,
-so every figure in this README stays reproducible.
+probability for each option. The current reviewer uses the same interface, so
+the benchmark can compare the two on the same evidence. Three fixes need no
+model, such as ignoring a comp move that follows our own change, so they come
+first. Each part ships only if the benchmark shows it beats the simpler thing
+it replaces. All of it is controlled by a setting, so every figure in this
+README can still be reproduced.
 
 ## How it was built
 
-A PRD first, kept as it was: [docs/prd.md](docs/prd.md). Then CLAUDE.md as
-the live spec, one module per prompt with its tests, and a knowledge graph
-under [kg/](kg/) that a checker holds to the code. Three adversarial reads
-before anyone else saw it.
+The project started from a PRD, which is kept unchanged in
+[docs/prd.md](docs/prd.md). After that, CLAUDE.md was the live spec, and each
+prompt built one module with its tests. A checker keeps the knowledge graph
+under [kg/](kg/) consistent with the code. The project had three adversarial
+reads before anyone else saw it.
 
 ## Read more
 
