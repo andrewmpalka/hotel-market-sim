@@ -271,16 +271,23 @@ README can still be reproduced.
 
 ## How it was built
 
-The project started from a PRD, which is kept unchanged in
-[docs/prd.md](docs/prd.md). After that, CLAUDE.md was the live spec, and each
-prompt built one module with its tests. A checker keeps the knowledge graph
-under [kg/](kg/) consistent with the code. The project had three adversarial
-reads before anyone else saw it.
+    docs/prd.md      the PRD, written first and kept as it was
+         |
+         v
+    CLAUDE.md        the live spec
+         |
+         v
+    src/, tests/     one module per prompt, each with its tests
+         ^
+         |           kg_check.py fails when the two disagree
+         v
+    kg/              the knowledge graph
 
 ## Read more
 
 - [docs/results.md](docs/results.md): every experiment, one table each.
 - [docs/reviewers.md](docs/reviewers.md): the model as a reviewer.
+- [docs/prd.md](docs/prd.md): the PRD as written before the build.
 - [docs/limits.md](docs/limits.md): what this does not model, and the next version.
 - [docs/prd-v2-next-steps.md](docs/prd-v2-next-steps.md): the design for the next version, not yet built.
 - [docs/commands.md](docs/commands.md): every command and make target.
